@@ -27,12 +27,12 @@
 
 #ifdef __WIN__
 #define MY_CONTEXT_USE_WIN32_FIBERS 1
+#elif defined(HAVE_UCONTEXT_H)
+#define MY_CONTEXT_USE_UCONTEXT
 #elif defined(__GNUC__) && __GNUC__ >= 3 && defined(__x86_64__) && !defined(__ILP32__)
 #define MY_CONTEXT_USE_X86_64_GCC_ASM
 #elif defined(__GNUC__) && __GNUC__ >= 3 && defined(__i386__)
 #define MY_CONTEXT_USE_I386_GCC_ASM
-#elif defined(HAVE_UCONTEXT_H)
-#define MY_CONTEXT_USE_UCONTEXT
 #else
 #define MY_CONTEXT_DISABLE
 #endif

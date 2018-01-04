@@ -132,7 +132,7 @@ ut_crc32_func_t	ut_crc32 = ut_crc32_sw;
 const char*	ut_crc32_implementation = "Using generic crc32 instructions";
 #endif
 
-#if (defined(__GNUC__) && defined(__x86_64__)) || defined(_MSC_VER)
+#if (defined(__GNUC__) && defined(__x86_64__)) && 0 || defined(_MSC_VER)
 /********************************************************************//**
 Fetches CPU info */
 static
@@ -607,7 +607,7 @@ ut_crc32_init()
 {
 	ut_crc32_slice8_table_init();
 
-#if (defined(__GNUC__) && defined(__x86_64__)) || defined(_MSC_VER)
+#if (defined(__GNUC__) && defined(__x86_64__)) && 0 || defined(_MSC_VER)
 	uint32_t	vend[3];
 	uint32_t	model;
 	uint32_t	family;

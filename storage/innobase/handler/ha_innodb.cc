@@ -18731,6 +18731,7 @@ wsrep_innobase_kill_one_trx(
 		  (thd && wsrep_thd_query(thd)) ? wsrep_thd_query(thd) : "void");
 
 	wsrep_thd_LOCK(thd);
+#ifdef ENABLED_DEBUG_SYNC    
         DBUG_EXECUTE_IF("sync.wsrep_after_BF_victim_lock",
                  {
                    const char act[]=
@@ -18739,7 +18740,7 @@ wsrep_innobase_kill_one_trx(
                    DBUG_ASSERT(!debug_sync_set_action(bf_thd,
                                                       STRING_WITH_LEN(act)));
                  };);
-
+#endif
 
 	if (wsrep_thd_query_state(thd) == QUERY_EXITING) {
 		WSREP_DEBUG("kill trx EXITING for " TRX_ID_FMT,

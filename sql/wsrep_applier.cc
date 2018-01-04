@@ -221,6 +221,7 @@ wsrep_cb_status_t wsrep_apply_cb(void* const             ctx,
   assert(thd->wsrep_apply_toi == false);
 
   // Allow tests to block the applier thread using the DBUG facilities.
+#ifdef  ENABLED_DEBUG_SYNC
   DBUG_EXECUTE_IF("sync.wsrep_apply_cb",
                  {
                    const char act[]=
@@ -230,7 +231,7 @@ wsrep_cb_status_t wsrep_apply_cb(void* const             ctx,
                    DBUG_ASSERT(!debug_sync_set_action(thd,
                                                       STRING_WITH_LEN(act)));
                  };);
-
+#endif
   thd->wsrep_trx_meta = *meta;
 
 #ifdef WSREP_PROC_INFO

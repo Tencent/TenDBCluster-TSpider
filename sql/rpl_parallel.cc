@@ -1138,7 +1138,7 @@ handle_rpl_parallel_thread(void *arg)
       {
         bool did_enter_cond= false;
         PSI_stage_info old_stage;
-
+#ifdef ENABLED_DEBUG_SYNC
         DBUG_EXECUTE_IF("rpl_parallel_scheduled_gtid_0_x_100", {
             if (rgi->current_gtid.domain_id == 0 &&
                 rgi->current_gtid.seq_no == 100) {
@@ -1146,7 +1146,7 @@ handle_rpl_parallel_thread(void *arg)
                       STRING_WITH_LEN("now SIGNAL scheduled_gtid_0_x_100"));
             }
           });
-
+#endif
         if(unlikely(thd->wait_for_commit_ptr) && group_rgi != NULL)
         {
           /*
@@ -2082,11 +2082,13 @@ rpl_parallel_entry::choose_thread(rpl_group_info *rgi, bool *did_enter_cond,
         unlock_or_exit_cond(rli->sql_driver_thd, &thr->LOCK_rpl_thread,
                             did_enter_cond, old_stage);
         my_error(ER_CONNECTION_KILLED, MYF(0));
+#ifdef ENABLED_DEBUG_SYNC
         DBUG_EXECUTE_IF("rpl_parallel_wait_queue_max",
           {
             debug_sync_set_action(rli->sql_driver_thd,
                       STRING_WITH_LEN("now SIGNAL wait_queue_killed"));
           };);
+#endif          
         slave_output_error_info(rgi, rli->sql_driver_thd);
         return NULL;
       }
@@ -2104,11 +2106,13 @@ rpl_parallel_entry::choose_thread(rpl_group_info *rgi, bool *did_enter_cond,
             Because debug_sync changes the thd->mysys_var->current_mutex,
             and this can cause THD::awake to use the wrong mutex.
           */
+#ifdef ENABLED_DEBUG_SYNC
           DBUG_EXECUTE_IF("rpl_parallel_wait_queue_max",
             {
               debug_sync_set_action(rli->sql_driver_thd,
                         STRING_WITH_LEN("now SIGNAL wait_queue_ready"));
             };);
+#endif            
           rli->sql_driver_thd->ENTER_COND(&thr->COND_rpl_thread_queue,
                                           &thr->LOCK_rpl_thread,
                                           &stage_waiting_for_room_in_worker_thread,
@@ -2263,11 +2267,13 @@ rpl_parallel::wait_for_done(THD *thd, Relay_log_info *rli)
       }
     }
   }
+#ifdef ENABLED_DEBUG_SYNC  
   DBUG_EXECUTE_IF("rpl_parallel_wait_for_done_trigger",
   {
     debug_sync_set_action(thd,
                           STRING_WITH_LEN("now SIGNAL wait_for_done_waiting"));
   };);
+#endif  
 
   for (i= 0; i < domain_hash.records; ++i)
   {

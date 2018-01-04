@@ -2845,13 +2845,14 @@ void mysql_binlog_send(THD* thd, char* log_ident, my_off_t pos,
 
     if (should_stop(info))
       break;
-
+#ifdef ENABLED_DEBUG_SYNC
     DBUG_EXECUTE_IF("wait_after_binlog_EOF",
                     {
                       const char act[]= "now wait_for signal.rotate_finished";
                       DBUG_ASSERT(!debug_sync_set_action(current_thd,
                                                          STRING_WITH_LEN(act)));
                     };);
+#endif                    
 
     THD_STAGE_INFO(thd,
                    stage_finished_reading_one_binlog_switching_to_next_binlog);

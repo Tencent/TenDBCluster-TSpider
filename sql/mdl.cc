@@ -1074,7 +1074,7 @@ MDL_wait::timed_wait(MDL_context_owner *owner, struct timespec *abs_timeout,
   while (!m_wait_status && !owner->is_killed() &&
          wait_result != ETIMEDOUT && wait_result != ETIME)
   {
-#ifdef WITH_WSREP
+#ifdef ENABLED_DEBUG_SYNC
     // Allow tests to block the applier thread using the DBUG facilities
     DBUG_EXECUTE_IF("sync.wsrep_before_mdl_wait",
                  {
@@ -1089,7 +1089,7 @@ MDL_wait::timed_wait(MDL_context_owner *owner, struct timespec *abs_timeout,
       wait_result= mysql_cond_wait(&m_COND_wait_status, &m_LOCK_wait_status);
     }
     else
-#endif /* WITH_WSREP */
+#endif /* ENABLED_DEBUG_SYNC */
     wait_result= mysql_cond_timedwait(&m_COND_wait_status, &m_LOCK_wait_status,
                                       abs_timeout);
   }

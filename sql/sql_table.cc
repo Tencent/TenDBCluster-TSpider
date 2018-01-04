@@ -9073,7 +9073,7 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
 
   DEBUG_SYNC(thd, "alter_opened_table");
 
-#ifdef WITH_WSREP
+#ifdef ENABLED_DEBUG_SYNC
   DBUG_EXECUTE_IF("sync.alter_opened_table",
                   {
                     const char act[]=
@@ -9082,7 +9082,7 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
                     DBUG_ASSERT(!debug_sync_set_action(thd,
                                                        STRING_WITH_LEN(act)));
                   };);
-#endif // WITH_WSREP
+#endif // ENABLED_DEBUG_SYNC
 
   if (unlikely(error))
     DBUG_RETURN(true);
