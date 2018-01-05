@@ -8419,6 +8419,12 @@ mysql_prepare_alter_table(THD *thd, TABLE *table,
     create_info->comment.str= table->s->comment.str;
     create_info->comment.length= table->s->comment.length;
   }
+  /* mysql bugs  */
+  if (!create_info->connect_string.str)
+  {
+	  create_info->connect_string.str = table->s->connect_string.str;
+	  create_info->connect_string.length = table->s->connect_string.length;
+  }
 
   table->file->update_create_info(create_info);
   if ((create_info->table_options &

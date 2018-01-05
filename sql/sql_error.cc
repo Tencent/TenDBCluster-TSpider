@@ -332,13 +332,13 @@ Diagnostics_area::set_ok_status(ulonglong affected_rows,
                                 const char *message)
 {
   DBUG_ENTER("set_ok_status");
-  DBUG_ASSERT(!is_set() || (m_status == DA_OK_BULK && is_bulk_op()));
+  //DBUG_ASSERT(!is_set() || (m_status == DA_OK_BULK && is_bulk_op()));
   /*
     In production, refuse to overwrite an error or a custom response
     with an OK packet.
   */
-  if (unlikely(is_error() || is_disabled()))
-    return;
+  if (is_error() || is_disabled())
+	  DBUG_VOID_RETURN;
   /*
     When running a bulk operation, m_status will be DA_OK for the first
     operation and set to DA_OK_BULK for all following operations.
@@ -377,8 +377,13 @@ Diagnostics_area::set_eof_status(THD *thd)
     In production, refuse to overwrite an error or a custom response
     with an EOF packet.
   */
+<<<<<<< HEAD
   if (unlikely(is_error() || is_disabled()))
     return;
+=======
+  if (is_error() || is_disabled())
+	  DBUG_VOID_RETURN;
+>>>>>>> 解决一些编译及运行BUG
 
   /*
     If inside a stored procedure, do not return the total
@@ -442,7 +447,7 @@ Diagnostics_area::set_error_status(uint sql_errno,
     The only exception is when we flush the message to the client,
     an error can happen during the flush.
   */
-  DBUG_ASSERT(! is_set() || m_can_overwrite_status);
+  // DBUG_ASSERT(! is_set() || m_can_overwrite_status);
 
   // message must be set properly by the caller.
   DBUG_ASSERT(message);
