@@ -502,3 +502,11 @@ IF(NON_DISTRIBUTABLE_WARNING)
   MESSAGE(WARNING "
 You have linked MariaDB with GPLv3 libraries!  You may not distribute the resulting binary. If you do, you will put yourself into a legal problem with Free Software Foundation.")
 ENDIF()
+
+IF(UNIX)
+#for install_spider.sql
+  INSTALL(FILES storage/spider/scripts/install_spider.sql
+        DESTINATION ${INSTALL_LIBDIR}/scripts/
+        PERMISSIONS OWNER_READ  GROUP_READ WORLD_READ
+        COMPONENT SharedLibraries)
+ENDIF()
