@@ -1946,6 +1946,27 @@ bool spider_param_same_server_link(
   TRUE:  don't transmit
  */
 static MYSQL_THDVAR_BOOL(
+	with_begin_commit, /* name */
+	PLUGIN_VAR_OPCMDARG, /* opt */
+	"Set if spider transmit sql to db with begin and commit.", /* comment */
+	NULL, /* check */
+	NULL, /* update */
+	FALSE /* def */
+);
+
+bool spider_param_with_begin_commit(
+	THD *thd
+) {
+	DBUG_ENTER("spider_param_with_begin_commit");
+	DBUG_RETURN(THDVAR(thd, with_begin_commit));
+}
+
+
+/*
+  FALSE: transmits
+  TRUE:  don't transmit
+ */
+static MYSQL_THDVAR_BOOL(
   local_lock_table, /* name */
   PLUGIN_VAR_OPCMDARG, /* opt */
   "Remote server transmission when lock tables is executed at local",
@@ -3388,6 +3409,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
 #endif
   MYSQL_SYSVAR(auto_increment_mode),
   MYSQL_SYSVAR(same_server_link),
+  MYSQL_SYSVAR(with_begin_commit),
   MYSQL_SYSVAR(local_lock_table),
   MYSQL_SYSVAR(use_pushdown_udf),
   MYSQL_SYSVAR(direct_dup_insert),

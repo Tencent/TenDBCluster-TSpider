@@ -2197,6 +2197,18 @@ bool spider_db_mysql::trx_start_in_bulk_sql()
   DBUG_RETURN(TRUE);
 }
 
+bool spider_db_mysql::trx_transmit_begin_commit()
+{
+	DBUG_ENTER("spider_db_mysql::trx_transmit_begin_commit");
+	THD *thd = current_thd;
+	bool is_with_begin_commit = spider_param_with_begin_commit(thd);
+	if (thd && !is_with_begin_commit && !thd_test_options(thd, OPTION_NOT_AUTOCOMMIT) && !thd_test_options(thd, OPTION_BEGIN))
+	{ /* 1.autocommit is 1; 2. without begin/commit. Default don't transmit begin/commit to remote mysql */
+		DBUG_RETURN(FALSE);
+	}
+	DBUG_RETURN(TRUE);
+}
+
 int spider_db_mysql::start_transaction(
   int *need_mon
 ) {
@@ -2220,14 +2232,16 @@ int spider_db_mysql::commit(
 ) {
   DBUG_ENTER("spider_db_mysql::commit");
   DBUG_PRINT("info",("spider this=%p", this));
-  if (spider_db_query(
-    conn,
-    SPIDER_SQL_COMMIT_STR,
-    SPIDER_SQL_COMMIT_LEN,
-    -1,
-    need_mon)
-  )
-    DBUG_RETURN(spider_db_errorno(conn));
+  if (trx_transmit_begin_commit()) {
+	  if (spider_db_query(
+		  conn,
+		  SPIDER_SQL_COMMIT_STR,
+		  SPIDER_SQL_COMMIT_LEN,
+		  -1,
+		  need_mon)
+		  )
+		  DBUG_RETURN(spider_db_errorno(conn));
+  }
   SPIDER_CLEAR_FILE_POS(&conn->mta_conn_mutex_file_pos);
   pthread_mutex_unlock(&conn->mta_conn_mutex);
   DBUG_RETURN(0);

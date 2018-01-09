@@ -382,7 +382,7 @@ int spider_db_conn_queue_action(
       ) ||
       (
         conn->queued_trx_start &&
-        conn->db_conn->trx_start_in_bulk_sql() &&
+        conn->db_conn->trx_start_in_bulk_sql() && conn->db_conn->trx_transmit_begin_commit() &&
         (error_num = spider_dbton[conn->dbton_id].db_util->
           append_start_transaction(&sql_str))
       ) ||

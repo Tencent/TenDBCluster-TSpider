@@ -329,6 +329,7 @@ public:
     int *need_mon
   );
   bool trx_start_in_bulk_sql();
+  bool trx_transmit_begin_commit();
   int start_transaction(
     int *need_mon
   );

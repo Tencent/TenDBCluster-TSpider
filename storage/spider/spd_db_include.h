@@ -1080,6 +1080,7 @@ public:
     int *need_mon
   ) = 0;
   virtual bool trx_start_in_bulk_sql() = 0;
+  virtual bool trx_transmit_begin_commit() = 0;
   virtual int start_transaction(
     int *need_mon
   ) = 0;

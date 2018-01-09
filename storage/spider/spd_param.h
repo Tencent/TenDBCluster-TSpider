@@ -267,6 +267,9 @@ int spider_param_auto_increment_mode(
 bool spider_param_same_server_link(
   THD *thd
 );
+bool spider_param_with_begin_commit(
+	THD *thd
+);
 bool spider_param_local_lock_table(
   THD *thd
 );
