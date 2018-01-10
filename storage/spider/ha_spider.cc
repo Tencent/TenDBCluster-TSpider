@@ -8581,8 +8581,8 @@ int ha_spider::info(
 #endif
       }
     }
-    if (difftime(tmp_time, share->sts_get_time) >= sts_interval)
-    {
+    if (0 && difftime(tmp_time, share->sts_get_time) >= sts_interval)
+    {/* to do, forbid sts tmporary */
       if (
         sts_interval == 0 ||
         !pthread_mutex_trylock(&share->sts_mutex)
@@ -8738,8 +8738,8 @@ int ha_spider::info(
     }
     if (flag & HA_STATUS_CONST)
     {
-      if ((error_num = check_crd()))
-      {
+      if (0 && (error_num = check_crd()))
+      {/* to do, forbid crd tmporary */
         if (sql_command == SQLCOM_SHOW_CREATE)
         {
           if (thd->is_error())

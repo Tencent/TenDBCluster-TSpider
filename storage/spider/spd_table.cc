@@ -6621,6 +6621,7 @@ int spider_db_done(
   }
 
 #ifndef WITHOUT_SPIDER_BG_SEARCH
+#ifndef SPIDIER_NOT_USING_BG_THREADS
   for (roop_count = spider_param_table_crd_thread_count() - 1;
     roop_count >= 0; roop_count--)
   {
@@ -6632,6 +6633,7 @@ int spider_db_done(
     spider_free_sts_threads(&spider_table_sts_threads[roop_count]);
   }
   spider_free(NULL, spider_table_sts_threads, MYF(0));
+#endif
 #endif
 
   for (roop_count = spider_param_udf_table_mon_mutex_count() - 1;
@@ -7316,7 +7318,8 @@ int spider_db_init(
       spider_udf_table_mon_list_hash[roop_count].array.size_of_element);
   }
 
-#ifndef WITHOUT_SPIDER_BG_SEARCH
+#ifndef WITHOUT_SPIDER_BG_SEARCH  
+#ifndef SPIDIER_NOT_USING_BG_THREADS
   if (!(spider_table_sts_threads = (SPIDER_THREAD *)
     spider_bulk_malloc(NULL, 256, MYF(MY_WME | MY_ZEROFILL),
       &spider_table_sts_threads, sizeof(SPIDER_THREAD) *
@@ -7346,6 +7349,7 @@ int spider_db_init(
     }
   }
 #endif
+#endif
 
   spider_dbton_mysql.dbton_id = dbton_id;
   spider_dbton[dbton_id] = spider_dbton_mysql;
@@ -7373,8 +7377,11 @@ int spider_db_init(
 
   DBUG_RETURN(0);
 
-#ifndef WITHOUT_SPIDER_BG_SEARCH
+#ifndef WITHOUT_SPIDER_BG_SEARCH 
+error : 
+  roop_count = SPIDER_DBTON_SIZE;
 error_init_dbton:
+#ifndef SPIDIER_NOT_USING_BG_THREADS
   for (roop_count--; roop_count >= 0; roop_count--)
   {
     if (spider_dbton[roop_count].deinit)
@@ -7396,6 +7403,7 @@ error_init_table_sts_threads:
   }
   spider_free(NULL, spider_table_sts_threads, MYF(0));
   roop_count = spider_param_udf_table_mon_mutex_count() - 1;
+#endif
 #endif
 error_init_udf_table_mon_list_hash:
   for (; roop_count >= 0; roop_count--)
