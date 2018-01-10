@@ -2618,6 +2618,7 @@ int spider_parse_connect_info(
 
   /* check all_link_count */
   share->all_link_count = 1;
+#ifndef SPIDER_DISABLE_LINK
   if (share->all_link_count < share->server_names_length)
     share->all_link_count = share->server_names_length;
   if (share->all_link_count < share->tgt_table_names_length)
@@ -2706,6 +2707,7 @@ int spider_parse_connect_info(
     share->all_link_count = share->access_balances_length;
   if (share->all_link_count < share->bka_table_name_types_length)
     share->all_link_count = share->bka_table_name_types_length;
+#endif
   if ((error_num = spider_increase_string_list(
     &share->server_names,
     &share->server_names_lengths,

@@ -294,6 +294,14 @@ void *spider_bg_mon_action(
 );
 #endif
 
+#define SPIDER_DISABLE_LINK
+
+#ifdef SPIDER_DISABLE_LINK
+#define spider_conn_first_link_idx(thd, link_statuses, access_balances, conn_link_idx, link_count, link_status) (0)
+#define spider_conn_next_link_idx(thd, link_statuses, access_balances, conn_link_idx, link_idx, link_count, link_status) (0)
+#define spider_conn_link_idx_next(link_statuses, conn_link_idx, link_idx, link_count, link_status) (link_idx+1)
+
+#else
 int spider_conn_first_link_idx(
   THD *thd,
   long *link_statuses,
@@ -320,6 +328,7 @@ int spider_conn_link_idx_next(
   int link_count,
   int link_status
 );
+#endif
 
 int spider_conn_get_link_status(
   long *link_statuses,
