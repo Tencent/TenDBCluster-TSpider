@@ -223,7 +223,7 @@ int spider_fields::make_link_idx_chain(
       spider->conn_link_idx, roop_count, share->link_count,
       link_status)
   ) {
-    conn = spider->conns[roop_count];
+    conn = spider->spider_get_conn_by_idx(roop_count);
     if (!conn->conn_holder_for_direct_join)
     {
       continue;
@@ -307,7 +307,7 @@ int spider_fields::make_link_idx_chain(
           spider->conn_link_idx, roop_count, share->link_count,
           link_status)
       ) {
-        conn = spider->conns[roop_count];
+        conn = spider->spider_get_conn_by_idx(roop_count);
         if (!conn->conn_holder_for_direct_join)
         {
           continue;
@@ -1874,7 +1874,7 @@ group_by_handler *spider_create_group_by_handler(
       }
       continue;
     }
-    conn = spider->conns[roop_count];
+    conn = spider->spider_get_conn_by_idx(roop_count);
     DBUG_PRINT("info",("spider roop_count=%d", roop_count));
     DBUG_PRINT("info",("spider conn=%p", conn));
     DBUG_ASSERT(conn);
@@ -1956,7 +1956,7 @@ group_by_handler *spider_create_group_by_handler(
         }
         continue;
       }
-      conn = spider->conns[roop_count];
+      conn = spider->spider_get_conn_by_idx(roop_count);
       DBUG_PRINT("info",("spider conn=%p", conn));
       if (!fields->check_conn_same_conn(conn))
       {

@@ -1262,7 +1262,7 @@ error:
       tmp_spider = &spider[roop_count];
       if (tmp_spider->conns)
       {
-        tmp_conn = tmp_spider->conns[0];
+        tmp_conn = tmp_spider->spider_get_conn_by_idx(0);
         if (tmp_conn && tmp_conn->db_conn &&
           tmp_conn->db_conn->get_lock_table_hash_count()
         ) {

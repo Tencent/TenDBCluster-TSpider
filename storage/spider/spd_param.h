@@ -270,6 +270,9 @@ bool spider_param_same_server_link(
 bool spider_param_with_begin_commit(
 	THD *thd
 );
+bool spider_param_get_conn_from_idx(
+	THD *thd
+);
 bool spider_param_local_lock_table(
   THD *thd
 );

@@ -1183,4 +1183,6 @@ public:
 #endif
   int init_union_table_name_pos_sql();
   int set_union_table_name_pos_sql();
+  SPIDER_CONN* spider_get_conn_by_idx(int link_idx);
+  int spider_set_trx_status_info();
 };

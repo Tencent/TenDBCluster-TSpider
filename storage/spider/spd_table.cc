@@ -5004,50 +5004,53 @@ SPIDER_SHARE *spider_get_share(
       sql_command != SQLCOM_ALTER_TABLE &&
       sql_command != SQLCOM_SHOW_CREATE
     ) {
-      for (
-        roop_count = spider_conn_link_idx_next(share->link_statuses,
-          spider->conn_link_idx, -1, share->link_count,
-          SPIDER_LINK_STATUS_RECOVERY);
-        roop_count < (int) share->link_count;
-        roop_count = spider_conn_link_idx_next(share->link_statuses,
-          spider->conn_link_idx, roop_count, share->link_count,
-          SPIDER_LINK_STATUS_RECOVERY)
-      ) {
-        if (
-          !(spider->conns[roop_count] =
-            spider_get_conn(share, roop_count, spider->conn_keys[roop_count],
-              spider->trx, spider, FALSE, TRUE, SPIDER_CONN_KIND_MYSQL,
-              error_num))
-        ) {
-          if (
-            share->monitoring_kind[roop_count] &&
-            spider->need_mons[roop_count]
-          ) {
-            *error_num = spider_ping_table_mon_from_table(
-                spider->trx,
-                spider->trx->thd,
-                share,
-                roop_count,
-                (uint32) share->monitoring_sid[roop_count],
-                share->table_name,
-                share->table_name_length,
-                spider->conn_link_idx[roop_count],
-                NULL,
-                0,
-                share->monitoring_kind[roop_count],
-                share->monitoring_limit[roop_count],
-                share->monitoring_flag[roop_count],
-                FALSE
-              );
-          }
-          share->init_error = TRUE;
-          share->init_error_time = (time_t) time((time_t*) 0);
-          share->init = TRUE;
-          spider_free_share(share);
-          goto error_but_no_delete;
-        }
-        spider->conns[roop_count]->error_mode &= spider->error_mode;
-      }
+		if (!spider_param_get_conn_from_idx(thd))
+		{
+			for (
+				roop_count = spider_conn_link_idx_next(share->link_statuses,
+					spider->conn_link_idx, -1, share->link_count,
+					SPIDER_LINK_STATUS_RECOVERY);
+				roop_count < (int)share->link_count;
+				roop_count = spider_conn_link_idx_next(share->link_statuses,
+					spider->conn_link_idx, roop_count, share->link_count,
+					SPIDER_LINK_STATUS_RECOVERY)
+				) {
+				if (
+					!(spider->conns[roop_count] =
+						spider_get_conn(share, roop_count, spider->conn_keys[roop_count],
+							spider->trx, spider, FALSE, TRUE, SPIDER_CONN_KIND_MYSQL,
+							error_num))
+					) {
+					if (
+						share->monitoring_kind[roop_count] &&
+						spider->need_mons[roop_count]
+						) {
+						*error_num = spider_ping_table_mon_from_table(
+							spider->trx,
+							spider->trx->thd,
+							share,
+							roop_count,
+							(uint32)share->monitoring_sid[roop_count],
+							share->table_name,
+							share->table_name_length,
+							spider->conn_link_idx[roop_count],
+							NULL,
+							0,
+							share->monitoring_kind[roop_count],
+							share->monitoring_limit[roop_count],
+							share->monitoring_flag[roop_count],
+							FALSE
+						);
+					}
+					share->init_error = TRUE;
+					share->init_error_time = (time_t)time((time_t*)0);
+					share->init = TRUE;
+					spider_free_share(share);
+					goto error_but_no_delete;
+				}
+				spider->conns[roop_count]->error_mode &= spider->error_mode;
+			}
+		}
     }
     search_link_idx = spider_conn_first_link_idx(thd,
       share->link_statuses, share->access_balances, spider->conn_link_idx,
@@ -5150,6 +5153,7 @@ SPIDER_SHARE *spider_get_share(
       }
 
       if (
+		  0 && 
         (
           !same_server_link ||
           load_sts_at_startup
@@ -5164,6 +5168,7 @@ SPIDER_SHARE *spider_get_share(
         thd->clear_error();
       }
       if (
+		  0 &&
         (
           !same_server_link ||
           load_crd_at_startup
@@ -5524,37 +5529,40 @@ SPIDER_SHARE *spider_get_share(
           spider->conn_link_idx, roop_count, share->link_count,
           SPIDER_LINK_STATUS_RECOVERY)
       ) {
-        if (
-          !(spider->conns[roop_count] =
-            spider_get_conn(share, roop_count, spider->conn_keys[roop_count],
-              spider->trx, spider, FALSE, TRUE, SPIDER_CONN_KIND_MYSQL,
-              error_num))
-        ) {
-          if (
-            share->monitoring_kind[roop_count] &&
-            spider->need_mons[roop_count]
-          ) {
-            *error_num = spider_ping_table_mon_from_table(
-                spider->trx,
-                spider->trx->thd,
-                share,
-                roop_count,
-                (uint32) share->monitoring_sid[roop_count],
-                share->table_name,
-                share->table_name_length,
-                spider->conn_link_idx[roop_count],
-                NULL,
-                0,
-                share->monitoring_kind[roop_count],
-                share->monitoring_limit[roop_count],
-                share->monitoring_flag[roop_count],
-                FALSE
-              );
-          }
-          spider_free_share(share);
-          goto error_but_no_delete;
-        }
-        spider->conns[roop_count]->error_mode &= spider->error_mode;
+		  if (!spider_param_get_conn_from_idx(thd))
+		  {
+			  if (
+				  !(spider->conns[roop_count] =
+					  spider_get_conn(share, roop_count, spider->conn_keys[roop_count],
+						  spider->trx, spider, FALSE, TRUE, SPIDER_CONN_KIND_MYSQL,
+						  error_num))
+				  ) {
+				  if (
+					  share->monitoring_kind[roop_count] &&
+					  spider->need_mons[roop_count]
+					  ) {
+					  *error_num = spider_ping_table_mon_from_table(
+						  spider->trx,
+						  spider->trx->thd,
+						  share,
+						  roop_count,
+						  (uint32)share->monitoring_sid[roop_count],
+						  share->table_name,
+						  share->table_name_length,
+						  spider->conn_link_idx[roop_count],
+						  NULL,
+						  0,
+						  share->monitoring_kind[roop_count],
+						  share->monitoring_limit[roop_count],
+						  share->monitoring_flag[roop_count],
+						  FALSE
+					  );
+				  }
+				  spider_free_share(share);
+				  goto error_but_no_delete;
+			  }
+			  spider->conns[roop_count]->error_mode &= spider->error_mode;
+		  }
       }
     }
     search_link_idx = spider_conn_first_link_idx(thd,

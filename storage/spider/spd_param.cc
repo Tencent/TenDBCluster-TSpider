@@ -1963,6 +1963,26 @@ bool spider_param_with_begin_commit(
 
 
 /*
+TRUE:  get conn when using
+FALSE: get conn when spider_get_share
+*/
+static MYSQL_THDVAR_BOOL(
+	get_conn_from_idx, /* name */
+	PLUGIN_VAR_OPCMDARG, /* opt */
+	"get conn by using spider_get_conn_idx during the execution process.", /* comment */
+	NULL, /* check */
+	NULL, /* update */
+	TRUE/* def */
+);
+
+bool spider_param_get_conn_from_idx(
+	THD *thd
+) {
+	DBUG_ENTER("spider_param_get_conn_from_idx");
+	DBUG_RETURN(THDVAR(thd, get_conn_from_idx));
+}
+
+/*
   FALSE: transmits
   TRUE:  don't transmit
  */
@@ -3410,6 +3430,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(auto_increment_mode),
   MYSQL_SYSVAR(same_server_link),
   MYSQL_SYSVAR(with_begin_commit),
+  MYSQL_SYSVAR(get_conn_from_idx),
   MYSQL_SYSVAR(local_lock_table),
   MYSQL_SYSVAR(use_pushdown_udf),
   MYSQL_SYSVAR(direct_dup_insert),
