@@ -8283,7 +8283,7 @@ int ha_spider::info(
 #endif
       }
     }
-    if (0 && difftime(tmp_time, share->sts_get_time) >= sts_interval)
+    if (spider_param_get_sts_or_crd(thd) && difftime(tmp_time, share->sts_get_time) >= sts_interval)
     {/* to do, forbid sts tmporary */
       if (
         sts_interval == 0 ||
