@@ -279,7 +279,7 @@ static MYSQL_THDVAR_UINT(
   "Connection recycle mode", /* comment */
   NULL, /* check */
   NULL, /* update */
-  0, /* def */
+  1, /* def */
   0, /* min */
   2, /* max */
   0 /* blk */
@@ -938,7 +938,7 @@ static MYSQL_THDVAR_BOOL(
   "Sync time_zone", /* comment */
   NULL, /* check */
   NULL, /* update */
-  FALSE /* def */
+  TRUE/* def */
 );
 
 bool spider_param_sync_time_zone(
@@ -1342,7 +1342,7 @@ static MYSQL_THDVAR_INT(
   "The retrieval result from a remote server is acquired by acquisition one by one", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   3, /* max */
   0 /* blk */
@@ -2300,7 +2300,7 @@ static MYSQL_SYSVAR_INT(
   "Set SQL_LOG_OFF mode on connecting for improved performance of connection, if you know",
   NULL,
   NULL,
-  -1,
+  0,
   -1,
   1,
   0
@@ -2417,7 +2417,7 @@ static MYSQL_THDVAR_INT(
   "Connect retry count", /* comment */
   NULL, /* check */
   NULL, /* update */
-  1000, /* def */
+  20, /* def */
   0, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -3036,7 +3036,7 @@ static MYSQL_SYSVAR_UINT(
   "Log error from remote server in error log",
   NULL,
   NULL,
-  0,
+  1,
   0,
   4,
   0
