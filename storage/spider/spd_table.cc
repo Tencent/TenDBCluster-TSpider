@@ -44,8 +44,13 @@
 #include "spd_direct_sql.h"
 #include "spd_malloc.h"
 #include "spd_group_by_handler.h"
+#include "my_stacktrace.h"
 
-/* Background thread management */
+
+extern HASH spider_conn_meta_info;
+#ifndef SPIDER_HAS_NEXT_THREAD_ID
+ulong *spd_db_att_thread_id;
+#endif
 #ifdef SPIDER_HAS_NEXT_THREAD_ID
 #define SPIDER_set_next_thread_id(A)
 MYSQL_THD create_thd();
@@ -147,6 +152,7 @@ PSI_mutex_key spd_key_mutex_pt_share;
 #endif
 PSI_mutex_key spd_key_mutex_lgtm_tblhnd_share;
 PSI_mutex_key spd_key_mutex_conn;
+PSI_mutex_key spd_key_mutex_conn_meta;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
 PSI_mutex_key spd_key_mutex_hs_r_conn;
 PSI_mutex_key spd_key_mutex_hs_w_conn;
@@ -197,6 +203,7 @@ static PSI_mutex_info all_spider_mutexes[]=
 #endif
   { &spd_key_mutex_lgtm_tblhnd_share, "lgtm_tblhnd_share", PSI_FLAG_GLOBAL},
   { &spd_key_mutex_conn, "conn", PSI_FLAG_GLOBAL},
+  { &spd_key_mutex_conn_meta, "conn_meta", PSI_FLAG_GLOBAL },
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   { &spd_key_mutex_hs_r_conn, "hs_r_conn", PSI_FLAG_GLOBAL},
   { &spd_key_mutex_hs_w_conn, "hs_w_conn", PSI_FLAG_GLOBAL},
@@ -289,6 +296,7 @@ PSI_thread_key spd_key_thd_bg_mon;
 PSI_thread_key spd_key_thd_bg_stss;
 PSI_thread_key spd_key_thd_bg_crds;
 #endif
+PSI_thread_key spd_key_thd_conn_rcyc;
 
 static PSI_thread_info all_spider_threads[] = {
 #ifndef WITHOUT_SPIDER_BG_SEARCH
@@ -299,6 +307,7 @@ static PSI_thread_info all_spider_threads[] = {
   {&spd_key_thd_bg_stss, "bg_stss", 0},
   {&spd_key_thd_bg_crds, "bg_crds", 0},
 #endif
+  { &spd_key_thd_conn_rcyc, "conn_rcyc", 0 },
 };
 #endif
 
@@ -309,6 +318,7 @@ extern const char *spider_open_connections_func_name;
 extern const char *spider_open_connections_file_name;
 extern ulong spider_open_connections_line_no;
 extern pthread_mutex_t spider_conn_mutex;
+extern pthread_mutex_t spider_conn_meta_mutex;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
 extern HASH spider_hs_r_conn_hash;
 extern uint spider_hs_r_conn_hash_id;
@@ -394,6 +404,7 @@ extern ulonglong  spider_free_mem_count[SPIDER_MEM_CALC_LIST_NUM];
 
 static char spider_wild_many = '%', spider_wild_one = '_',
   spider_wild_prefix='\\';
+
 
 // for spider_open_tables
 uchar *spider_tbl_get_key(
@@ -3827,7 +3838,7 @@ int spider_set_connect_info_default(
   if (share->priority == -1)
     share->priority = 1000000;
   if (share->quick_mode == -1)
-    share->quick_mode = 0;
+    share->quick_mode = 1;
   if (share->quick_page_size == -1)
     share->quick_page_size = 100;
   if (share->low_mem_read == -1)
@@ -6849,6 +6860,9 @@ int spider_db_done(
 /*
 DBUG_ASSERT(0);
 */
+  spider_free_conn_recycle_thread();
+  my_hash_free(&spider_conn_meta_info);
+  pthread_mutex_destroy(&spider_conn_meta_mutex);
   DBUG_RETURN(0);
 }
 
@@ -7031,6 +7045,19 @@ int spider_db_init(
     goto error_conn_id_mutex_init;
   }
 #if MYSQL_VERSION_ID < 50500
+  if (pthread_mutex_init(&spider_conn_meta_mutex, MY_MUTEX_INIT_FAST))
+#else
+  if (mysql_mutex_init(spd_key_mutex_conn_meta,
+	  &spider_conn_meta_mutex, MY_MUTEX_INIT_FAST))
+#endif
+  {
+	  error_num = HA_ERR_OUT_OF_MEM;
+	  goto error_conn_meta_mutex_init;
+  }
+  if (error_num = spider_create_conn_recycle_thread()) {
+	  goto error_conn_recycle_thd_init;
+  }
+#if MYSQL_VERSION_ID < 50500
   if (pthread_mutex_init(&spider_ipport_conn_mutex, MY_MUTEX_INIT_FAST))
 #else
   if (mysql_mutex_init(spd_key_mutex_ipport_count,
@@ -7204,6 +7231,13 @@ int spider_db_init(
   ) {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_open_connections_hash_init;
+  }
+  if (
+	  my_hash_init(&spider_conn_meta_info, spd_charset_utf8_bin, 32, 0, 0,
+	  (my_hash_get_key)spider_conn_meta_get_key, spider_free_conn_meta, 0)
+	  ) {
+	  error_num = HA_ERR_OUT_OF_MEM;
+	  goto error_conn_meta_hash_init;
   }
   if(
     my_hash_init(&spider_ipport_conns, spd_charset_utf8_bin, 32, 0, 0,
@@ -7464,6 +7498,8 @@ error_hs_w_conn_hash_init:
   my_hash_free(&spider_hs_r_conn_hash);
 error_hs_r_conn_hash_init:
 #endif
+  my_hash_free(&spider_conn_meta_info);
+error_conn_meta_hash_init:
   spider_free_mem_calc(NULL,
     spider_open_connections_id,
     spider_open_connections.array.max_element *
@@ -7510,6 +7546,14 @@ error_hs_r_conn_mutex_init:
 #endif
   pthread_mutex_destroy(&spider_open_conn_mutex);
 error_open_conn_mutex_init:
+#ifndef WITHOUT_SPIDER_BG_SEARCH
+  pthread_mutex_destroy(&spider_global_trx_mutex);
+error_global_trx_mutex_init:
+#endif
+  spider_free_conn_recycle_thread();
+error_conn_recycle_thd_init:
+  pthread_mutex_destroy(&spider_conn_meta_mutex);
+error_conn_meta_mutex_init:
   pthread_mutex_destroy(&spider_conn_mutex);
 error_conn_mutex_init:
   pthread_mutex_destroy(&spider_lgtm_tblhnd_share_mutex);
@@ -10358,3 +10402,120 @@ void spider_table_remove_share_from_crd_thread(
   DBUG_VOID_RETURN;
 }
 #endif
+
+void
+spider_print_timestamp(
+	FILE*  file) /*!< in: file where to print */
+{
+	DBUG_ENTER("spider_print_timestamp");
+#ifdef __WIN__
+	SYSTEMTIME cal_tm;
+
+	GetLocalTime(&cal_tm);
+
+	fprintf(file, "%02d%02d%02d %2d:%02d:%02d",
+		(int)cal_tm.wYear % 100,
+		(int)cal_tm.wMonth,
+		(int)cal_tm.wDay,
+		(int)cal_tm.wHour,
+		(int)cal_tm.wMinute,
+		(int)cal_tm.wSecond);
+#else
+	struct tm  cal_tm;
+	struct tm* cal_tm_ptr;
+	time_t	   tm;
+
+	time(&tm);
+
+#ifdef HAVE_LOCALTIME_R
+	localtime_r(&tm, &cal_tm);
+	cal_tm_ptr = &cal_tm;
+#else
+	cal_tm_ptr = localtime(&tm);
+#endif
+	fprintf(file, "%02d%02d%02d %2d:%02d:%02d",
+		cal_tm_ptr->tm_year % 100,
+		cal_tm_ptr->tm_mon + 1,
+		cal_tm_ptr->tm_mday,
+		cal_tm_ptr->tm_hour,
+		cal_tm_ptr->tm_min,
+		cal_tm_ptr->tm_sec);
+#endif
+	DBUG_VOID_RETURN;
+}
+
+void
+spider_my_err_logging(const char *fmt, ...)
+{
+	DBUG_ENTER("spider_my_err_logging");
+	va_list args;
+	spider_print_timestamp(stderr);
+	va_start(args, fmt);
+	my_safe_printf_stderr(fmt, args);
+	va_end(args);
+	DBUG_VOID_RETURN;
+}
+
+my_bool
+spider_time_to_str(char *dst, size_t len, void *tm)
+{
+	DBUG_ENTER("spider_time_to_str");
+#ifdef __WIN__ 
+	SYSTEMTIME *cal_tm = (SYSTEMTIME *)tm;
+	if (my_snprintf(dst, len, "%02d%02d%02d %2d:%02d:%02d",
+		(int)cal_tm->wYear % 100,
+		(int)cal_tm->wMonth,
+		(int)cal_tm->wDay,
+		(int)cal_tm->wHour,
+		(int)cal_tm->wMinute,
+		(int)cal_tm->wSecond) < len) {
+		DBUG_RETURN(TRUE);
+	}
+#else
+	struct tm  cal_tm;
+	struct tm* cal_tm_ptr;
+
+#ifdef HAVE_LOCALTIME_R
+	localtime_r((time_t *)tm, &cal_tm);
+	cal_tm_ptr = &cal_tm;
+#else
+	cal_tm_ptr = localtime((time_t *)tm);
+#endif
+	if (my_snprintf(dst, len, "%02d%02d%02d %2d:%02d:%02d",
+		cal_tm_ptr->tm_year % 100,
+		cal_tm_ptr->tm_mon + 1,
+		cal_tm_ptr->tm_mday,
+		cal_tm_ptr->tm_hour,
+		cal_tm_ptr->tm_min,
+		cal_tm_ptr->tm_sec) >= len) {
+		DBUG_RETURN(TRUE);
+	}
+#endif
+	DBUG_RETURN(FALSE);
+}
+
+void
+spider_current_time(void *tm)
+{
+	DBUG_ENTER("spider_current_time");
+#ifdef __WIN__
+	GetLocalTime((SYSTEMTIME *)tm);
+#else
+	time((time_t *)tm);
+#endif
+	DBUG_VOID_RETURN;
+}
+
+void
+spider_make_mysql_time(MYSQL_TIME *ts, time_t *tm)
+{
+	struct tm a_tm_struct;
+	localtime_r(tm, &a_tm_struct);
+	ts->year = a_tm_struct.tm_year + 1900;
+	ts->month = a_tm_struct.tm_mon + 1;
+	ts->day = a_tm_struct.tm_mday;
+	ts->hour = a_tm_struct.tm_hour;
+	ts->minute = a_tm_struct.tm_min;
+	ts->second = a_tm_struct.tm_sec; 
+}
+

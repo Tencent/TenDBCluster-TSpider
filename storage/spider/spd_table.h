@@ -676,6 +676,7 @@ int spider_discover_table_structure(
 );
 #endif
 
+
 #ifndef WITHOUT_SPIDER_BG_SEARCH
 int spider_create_spider_object_for_share(
   SPIDER_TRX *trx,
@@ -727,3 +728,15 @@ void spider_table_remove_share_from_crd_thread(
   SPIDER_SHARE *share
 );
 #endif
+
+void
+spider_print_timestamp(
+	FILE*  file /*!< in: file where to print */
+);
+
+void spider_my_err_logging(const char *fmt, ...);
+my_bool spider_time_to_str(char *dst, size_t len, void *tm);
+void spider_current_time(void *tm);
+void spider_make_mysql_time(MYSQL_TIME *, time_t *);
+int spider_db_init_for_conn_mutexs_conds();
+void spider_gettime_str(char *dst, size_t len);

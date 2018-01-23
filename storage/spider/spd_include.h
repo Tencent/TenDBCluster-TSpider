@@ -541,6 +541,7 @@ typedef struct st_spider_conn
   SPIDER_LINK_IDX_CHAIN *link_idx_chain;
 #endif
   SPIDER_IP_PORT_CONN *ip_port_conn;
+  time_t            last_visited;
 } SPIDER_CONN;
 
 typedef struct st_spider_lgtm_tblhnd_share
@@ -1415,3 +1416,41 @@ typedef struct st_spider_ip_port_conn {
   pthread_cond_t     cond;
   ulonglong          conn_id; /* each conn has it's own conn_id */
 } SPIDER_IP_PORT_CONN;
+
+#define SPIDER_CONN_IS_INIT(a) ((a->status) & 0x0001)
+#define SPIDER_CONN_IS_INIT2(a) ((a->status) & 0x0010)
+#define SPIDER_CONN_IS_ACTIVE(a) ((a->status) & 0x0100)
+#define SPIDER_CONN_IS_INVALID(a) ((a->status) & 0x1000)
+#define SPIDER_CONN_INIT_STATUS 0x0001
+#define SPIDER_CONN_INIT2_STATUS 0x0010
+#define SPIDER_CONN_ACTIVE_STATUS 0x0100
+#define SPIDER_CONN_INVALID_STATUS 0x1000
+#define SPIDER_CONN_INIT_STATUS_STR "INIT" /* just created */
+#define SPIDER_CONN_INIT2_STATUS_STR "INIT2" /* re-use */
+#define SPIDER_CONN_ACTIVE_STATUS_STR "ACTIVE" /* delete from conn pool and in use */
+#define SPIDER_CONN_INVALID_STATUS_STR "INVALID" /* free */
+#define SPIDER_CONN_META_STATUS_TO_STR(a) \
+    (SPIDER_CONN_IS_INIT((a)) ? SPIDER_CONN_INIT_STATUS_STR : \
+    (SPIDER_CONN_IS_INIT2((a)) ? SPIDER_CONN_INIT2_STATUS_STR : \
+    (SPIDER_CONN_IS_ACTIVE((a)) ? SPIDER_CONN_ACTIVE_STATUS_STR : \
+    (SPIDER_CONN_IS_INVALID((a)) ? SPIDER_CONN_INVALID_STATUS_STR : "")))) 
+
+#define SPIDER_CONN_META_BUF_LEN 64
+#define SPIDER_MAX_LOG_SLOW_QUERY 3
+
+typedef struct st_spider_conn_meta_info {
+	char *key;
+	size_t key_len;
+#ifdef SPIDER_HAS_HASH_VALUE_TYPE
+	my_hash_value_type key_hash_value;
+#endif
+	ulonglong conn_id;
+	char remote_user_str[SPIDER_CONN_META_BUF_LEN];
+	char remote_ip_str[SPIDER_CONN_META_BUF_LEN];
+	long remote_port;
+	uint status;
+	ulonglong reusage_counter;
+	time_t alloc_tm;
+	time_t last_visit_tm;
+	time_t free_tm;
+} SPIDER_CONN_META_INFO;

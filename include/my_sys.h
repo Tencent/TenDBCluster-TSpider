@@ -370,6 +370,19 @@ typedef struct st_dynamic_string
   size_t length,max_length,alloc_increment;
 } DYNAMIC_STRING;
 
+typedef struct st_dynstr_pos_info
+{
+	size_t elem_off;
+	size_t elem_size;
+} dynstr_pos_info;
+
+typedef struct st_dynamic_string_array
+{
+	DYNAMIC_STRING *dynstr;
+	DYNAMIC_ARRAY *pos_info_arr;
+	size_t cur_idx;
+} DYNAMIC_STRING_ARRAY;
+
 struct st_io_cache;
 
 typedef struct st_io_cache_share
@@ -867,6 +880,7 @@ extern my_bool dynstr_append_quoted(DYNAMIC_STRING *str,
 extern my_bool dynstr_set(DYNAMIC_STRING *str, const char *init_str);
 extern my_bool dynstr_realloc(DYNAMIC_STRING *str, size_t additional_size);
 extern my_bool dynstr_trunc(DYNAMIC_STRING *str, size_t n);
+extern my_bool dynstr_clear(DYNAMIC_STRING *str);
 extern void dynstr_free(DYNAMIC_STRING *str);
 extern uint32 copy_and_convert_extended(char *to, uint32 to_length,
                                         CHARSET_INFO *to_cs,
@@ -1009,7 +1023,14 @@ void my_uuid2str(const uchar *guid, char *s);
 void my_uuid_end(void);
 
 const char *my_dlerror(const char *dlpath);
-
+extern my_bool clear_dynamic_array(DYNAMIC_ARRAY *array);
+extern my_bool empty_dynamic_array(DYNAMIC_ARRAY *array);
+extern my_bool init_dynamic_string_array(DYNAMIC_STRING_ARRAY *array, uint init_alloc, uint alloc_increment);
+extern my_bool clear_dynamic_string_array(DYNAMIC_STRING_ARRAY *array);
+extern my_bool free_dynamic_string_array(DYNAMIC_STRING_ARRAY *array);
+extern my_bool append_dynamic_string_array(DYNAMIC_STRING_ARRAY *array, const char *elem, size_t elem_len);
+extern my_bool get_dynamic_string_array(DYNAMIC_STRING_ARRAY *array, char **dst, size_t *dst_len, size_t idx);
+extern my_bool empty_dynamic_string_array(DYNAMIC_STRING_ARRAY *array);
 /* character sets */
 extern void my_charset_loader_init_mysys(MY_CHARSET_LOADER *loader);
 extern uint get_charset_number(const char *cs_name, uint cs_flags);

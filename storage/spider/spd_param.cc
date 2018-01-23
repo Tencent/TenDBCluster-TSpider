@@ -37,7 +37,9 @@
 extern struct st_mysql_plugin spider_i_s_alloc_mem;
 #ifdef MARIADB_BASE_VERSION
 extern struct st_maria_plugin spider_i_s_alloc_mem_maria;
+extern struct st_maria_plugin spider_i_s_conns_maria;
 #endif
+extern struct st_mysql_plugin spider_i_s_conns;
 
 extern volatile ulonglong spider_mon_table_cache_version;
 extern volatile ulonglong spider_mon_table_cache_version_req;
@@ -1284,7 +1286,7 @@ static MYSQL_THDVAR_INT(
   "Wait timeout of receiving data from remote server", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  3600, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -1311,7 +1313,7 @@ static MYSQL_THDVAR_INT(
   "Wait timeout of sending data to remote server", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  3600, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -1580,7 +1582,7 @@ static MYSQL_THDVAR_INT(
   "Interval of cardinality confirmation.(second)", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  3600, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -1745,7 +1747,7 @@ static MYSQL_THDVAR_INT(
   "Interval of table state confirmation.(second)", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  3600, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -2013,7 +2015,7 @@ static MYSQL_THDVAR_BOOL(
     /* comment */
   NULL, /* check */
   NULL, /* update */
-  FALSE /* def */
+  TRUE/* def */
 );
 
 bool spider_param_local_lock_table(
@@ -2060,7 +2062,7 @@ static MYSQL_THDVAR_INT(
   "Execute \"REPLACE\" and \"INSERT IGNORE\" on remote server and avoid duplicate check on local server", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -2487,7 +2489,7 @@ static MYSQL_THDVAR_INT(
   "Mode of BKA for Spider", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -2960,6 +2962,48 @@ my_bool spider_param_general_log()
   DBUG_ENTER("spider_param_general_log");
   DBUG_RETURN(spider_general_log);
 }
+
+static int spider_idle_conn_recycle_interval;
+static MYSQL_SYSVAR_INT(
+	idle_conn_recycle_interval,
+	spider_idle_conn_recycle_interval,
+	PLUGIN_VAR_OPCMDARG,
+	"Max interval in seconds to be judged as idle connection",
+	NULL, /* check */
+	NULL, /* update */
+	3600, /* default */
+	1,    /* min */
+	86400, /* max */
+	0     /* blk */
+);
+
+int spider_param_idle_conn_recycle_interval()
+{
+	DBUG_ENTER("spider_param_idle_conn_recycle_interval");
+	DBUG_RETURN(spider_idle_conn_recycle_interval);
+}
+
+
+static int spider_conn_meta_max_invalid_duration;
+static MYSQL_SYSVAR_INT(
+	conn_meta_max_invalid_duration,
+	spider_conn_meta_max_invalid_duration,
+	PLUGIN_VAR_OPCMDARG,
+	"Max duration for conn-meta record within INVALID status in SPIDER_CONNS information_schema",
+	NULL,
+	NULL,
+	3600,
+	1,
+	86400,
+	0
+);
+
+int spider_param_conn_meta_max_invalid_duration()
+{
+	DBUG_ENTER("spider_param_conn_meta_max_invalid_duration");
+	DBUG_RETURN(spider_conn_meta_max_invalid_duration);
+}
+
 
 /*
   FALSE: no pushdown hints
@@ -3511,6 +3555,8 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(table_sts_thread_count),
   MYSQL_SYSVAR(table_crd_thread_count),
 #endif
+  MYSQL_SYSVAR(idle_conn_recycle_interval),
+  MYSQL_SYSVAR(conn_meta_max_invalid_duration),
   NULL
 };
 
@@ -3532,7 +3578,8 @@ mysql_declare_plugin(spider)
   0,
 #endif
 },
-spider_i_s_alloc_mem
+spider_i_s_alloc_mem,
+spider_i_s_conns
 mysql_declare_plugin_end;
 
 #ifdef MARIADB_BASE_VERSION
@@ -3552,6 +3599,7 @@ maria_declare_plugin(spider)
   SPIDER_DETAIL_VERSION,
   MariaDB_PLUGIN_MATURITY_STABLE
 },
-spider_i_s_alloc_mem_maria
+spider_i_s_alloc_mem_maria,
+spider_i_s_conns_maria
 maria_declare_plugin_end;
 #endif

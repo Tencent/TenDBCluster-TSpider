@@ -430,6 +430,15 @@ begin
       install plugin spider_alloc_mem soname 'ha_spider.dll';
     end if;
   end if;
+  set @have_spider_i_s_conns_plugin := 0;
+  select @have_spider_i_s_conns_plugin := 1 from INFORMATION_SCHEMA.plugins where PLUGIN_NAME = 'SPIDER_CONNS';
+  if @have_spider_i_s_conns_plugin = 0 then 
+    if @win_plugin = 0 then 
+      install plugin spider_conns soname 'ha_spider.so';
+    else
+      install plugin spider_conns soname 'ha_spider.dll';
+    end if;
+  end if;
   set @have_spider_direct_sql_udf := 1;
   select @have_spider_direct_sql_udf := 1 from mysql.func where name = 'spider_direct_sql';
   if @have_spider_direct_sql_udf = 0 then

@@ -189,6 +189,7 @@ int spider_db_connect(
       if ((conn->connect_error_with_message = thd->is_error()))
         strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
     }
+	fprintf(stderr, "failed to connect the hosts: %s, port: %ld .\n", share->tgt_hosts[link_idx], share->tgt_ports[link_idx]);
     DBUG_RETURN(error_num);
   }
   conn->connect_error = 0;

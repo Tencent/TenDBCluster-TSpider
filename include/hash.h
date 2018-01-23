@@ -102,6 +102,20 @@ my_bool my_hash_iterate(HASH *hash, my_hash_walk_action action, void *argument);
 #define my_hash_init_opt(A,B,C,D,E,F,G,H) \
           (!my_hash_inited(A) && my_hash_init(A,B,C,D,E,F,G,H))
 
+/* means all hash_data do something */
+typedef void(*my_hash_delegate_func)(uchar * hash_data, void* maybe_unused_arg);
+void
+my_hash_delegate(HASH * hash, my_hash_delegate_func func, void* func_args);
+
+/* means all hash_data do something */
+typedef void(*my_hash_delegate_func_2args)(void* hash_data, void* maybe_unused_arg1, void *maybe_unsed_arg2);
+void
+my_hash_delegate_2args(HASH * hash, my_hash_delegate_func_2args func, void* func_args1, void* func_args2);
+
+typedef void(*my_hash_delegate_func_nargs)(void *, void*, va_list);
+void 
+my_hash_delegate_nargs(HASH *hash, my_hash_delegate_func_nargs func, ...);
+
 #ifdef	__cplusplus
 }
 #endif

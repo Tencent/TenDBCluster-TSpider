@@ -18,7 +18,13 @@
 #include "hstcpcli.hpp"
 #endif
 
+#define  SPIDER_DISABLE_STANDBY /* disable one spider shard has multi remote db */
+
+#ifndef SPIDER_DISABLE_STANDBY
 #define SPIDER_DBTON_SIZE 15
+#else
+#define SPIDER_DBTON_SIZE 1
+#endif
 
 #define SPIDER_DB_WRAPPER_MYSQL "mysql"
 

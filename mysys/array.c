@@ -394,3 +394,140 @@ int get_index_dynamic(DYNAMIC_ARRAY *array, void* element)
 
 }
 #endif
+
+my_bool clear_dynamic_array(DYNAMIC_ARRAY *array)
+{
+	DBUG_ENTER("clear_dynamic_array");
+	if (array) {
+		array->elements = 0;
+		DBUG_RETURN(FALSE);
+	}
+
+	DBUG_RETURN(TRUE);
+}
+
+my_bool empty_dynamic_array(DYNAMIC_ARRAY *array)
+{
+	DBUG_ENTER("empty_dynamic_array");
+	if (array) {
+		DBUG_RETURN(array->elements == 0);
+	}
+
+	DBUG_RETURN(TRUE);
+}
+
+my_bool init_dynamic_string_array(DYNAMIC_STRING_ARRAY *array,
+	uint init_alloc,
+	uint alloc_increment)
+{
+	DBUG_ENTER("init_dynamic_string_array");
+	if (!array) {
+		DBUG_RETURN(TRUE);
+	}
+
+	if (!(array->pos_info_arr = (DYNAMIC_ARRAY *)my_malloc(sizeof(DYNAMIC_ARRAY), MYF(0)))) {
+		// TODO: print err
+		DBUG_RETURN(TRUE);
+	}
+
+	if (!(array->dynstr = (DYNAMIC_STRING *)my_malloc(sizeof(DYNAMIC_STRING), MYF(0)))) {
+		// TODO: print err
+		DBUG_RETURN(TRUE);
+	}
+
+	init_dynamic_array2(array->pos_info_arr, sizeof(dynstr_pos_info), NULL, init_alloc, alloc_increment, 0);
+	array->cur_idx = 0;
+	DBUG_RETURN(init_dynamic_string(array->dynstr, "", 0, 0) ? TRUE : FALSE);
+}
+
+my_bool clear_dynamic_string_array(DYNAMIC_STRING_ARRAY *array)
+{
+	DBUG_ENTER("clear_dynamic_string_array");
+	if (array) {
+		clear_dynamic_array(array->pos_info_arr);
+		dynstr_clear(array->dynstr);
+		array->cur_idx = 0;
+		DBUG_RETURN(FALSE);
+	}
+
+	DBUG_RETURN(TRUE);
+}
+
+my_bool free_dynamic_string_array(DYNAMIC_STRING_ARRAY *array)
+{
+	DBUG_ENTER("free_dynamic_string_array");
+	if (array) {
+		delete_dynamic(array->pos_info_arr);
+		array->pos_info_arr = NULL;
+
+		dynstr_free(array->dynstr);
+		array->dynstr = NULL;
+
+		my_free(array->pos_info_arr);
+		my_free(array->dynstr);
+		array->pos_info_arr = NULL;
+		array->dynstr = NULL;
+		array->cur_idx = 0;
+		DBUG_RETURN(FALSE);
+	}
+
+	DBUG_RETURN(TRUE);
+}
+
+my_bool append_dynamic_string_array(DYNAMIC_STRING_ARRAY *array,
+	const char *elem,
+	size_t elem_len)
+{
+
+	dynstr_pos_info pos_info;
+	DBUG_ENTER("append_dynamic_string_array");
+	if (array && elem) {
+		if (!elem_len) {
+			DBUG_RETURN(FALSE);
+		}
+
+		pos_info.elem_off = array->dynstr->length;
+		pos_info.elem_size = elem_len;
+		if (dynstr_append_mem(array->dynstr, elem, elem_len) || insert_dynamic(array->pos_info_arr, (uchar *)&pos_info)) {
+			DBUG_RETURN(TRUE);
+		}
+		++array->cur_idx;
+		DBUG_RETURN(FALSE);
+	}
+
+	DBUG_RETURN(TRUE);
+}
+
+my_bool get_dynamic_string_array(DYNAMIC_STRING_ARRAY *array,
+	char **dst,
+	size_t *dst_len,
+	size_t idx)
+{
+	dynstr_pos_info pos_info;
+	DBUG_ENTER("get_dynamic_string_array");
+	if (!array || !dst || idx >= array->pos_info_arr->elements) {
+		DBUG_RETURN(TRUE);
+	}
+
+	get_dynamic(array->pos_info_arr, (uchar *)&pos_info, idx);
+	*dst = array->dynstr->str + pos_info.elem_off;
+	if (!*dst) {
+		DBUG_RETURN(TRUE);
+	}
+
+	if (dst_len) {
+		*dst_len = pos_info.elem_size;
+	}
+
+	DBUG_RETURN(FALSE);
+}
+
+my_bool empty_dynamic_string_array(DYNAMIC_STRING_ARRAY *array)
+{
+	DBUG_ENTER("empty_dynamic_array");
+	if (array) {
+		DBUG_RETURN(array->cur_idx == 0);
+	}
+
+	DBUG_RETURN(TRUE);
+}

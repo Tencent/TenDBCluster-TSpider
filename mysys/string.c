@@ -123,6 +123,13 @@ my_bool dynstr_trunc(DYNAMIC_STRING *str, size_t n)
   return FALSE;
 }
 
+my_bool dynstr_clear(DYNAMIC_STRING *str)
+{
+	str->length = 0;
+	str->str[0] = '\0';
+	return FALSE;
+}
+
 /*
   Concatenates any number of strings, escapes any OS quote in the result then
   surround the whole affair in another set of quotes which is finally appended

@@ -368,3 +368,16 @@ SPIDER_CONN* spider_get_conn_from_idle_connection
  int *error_num
  );
 void spider_free_ipport_conn(void *info);
+void spider_free_conn_meta(void *);
+void spider_free_conn_recycle_thread(void);
+int spider_create_conn_recycle_thread(void);
+
+SPIDER_CONN_META_INFO *spider_create_conn_meta(SPIDER_CONN *);
+my_bool spider_add_conn_meta_info(SPIDER_CONN *);
+void spider_update_conn_meta_info(SPIDER_CONN *, uint);
+
+uchar *spider_conn_meta_get_key(
+	SPIDER_CONN_META_INFO *meta,
+	size_t *length,
+	my_bool not_used __attribute__((unused))
+);

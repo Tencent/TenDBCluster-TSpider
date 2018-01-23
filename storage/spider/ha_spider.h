@@ -34,6 +34,9 @@
       conns[roop_count]->param_name = param_val; \
   }
 
+extern volatile bool      conn_rcyc_init;
+extern pthread_t          conn_rcyc_thread;
+
 class ha_spider;
 struct st_spider_ft_info
 {
