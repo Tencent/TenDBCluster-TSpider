@@ -5215,6 +5215,9 @@ SPIDER_SHARE *spider_get_share(
         my_printf_error(ER_SPIDER_TABLE_OPEN_TIMEOUT_NUM,
           ER_SPIDER_TABLE_OPEN_TIMEOUT_STR, MYF(0),
           table_share->db.str, table_share->table_name.str);
+		pthread_mutex_lock(&spider_tbl_mutex);
+		share->use_count--;
+		pthread_mutex_unlock(&spider_tbl_mutex);
         goto error_but_no_delete;
       }
       my_sleep(10000); // wait 10 ms
