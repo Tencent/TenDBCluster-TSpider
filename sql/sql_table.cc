@@ -3388,6 +3388,7 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
   uint total_uneven_bit_length= 0;
   int select_field_count= C_CREATE_SELECT(create_table_mode);
   bool tmp_table= create_table_mode == C_ALTER_TABLE;
+  my_bool is_support_column_charset = TRUE;
   DBUG_ENTER("mysql_prepare_create_table");
 
   DBUG_EXECUTE_IF("test_pseudo_invisible",{
@@ -3407,7 +3408,42 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
           mysql_add_invisible_index(thd, &alter_info->key_list
                   , &temp, Key::MULTIPLE);
           });
+  is_support_column_charset = file->is_support_column_charset();
   LEX_CSTRING* connect_string = &create_info->connect_string;
+
+  /* check if support column charset */
+  if (!is_support_column_charset)
+  {
+      List_iterator<Create_field> it_field(alter_info->create_list);
+      Create_field *cur_field = NULL;
+      while (!!(cur_field = it_field++))
+      {
+          switch (cur_field->real_field_type())
+          {
+          case MYSQL_TYPE_BLOB:
+          case MYSQL_TYPE_TINY_BLOB:
+          case MYSQL_TYPE_MEDIUM_BLOB:
+          case MYSQL_TYPE_LONG_BLOB:
+          case MYSQL_TYPE_VARCHAR:
+          case MYSQL_TYPE_VAR_STRING:
+          case MYSQL_TYPE_STRING:
+          case MYSQL_TYPE_ENUM:
+          case MYSQL_TYPE_SET:
+              if (cur_field->charset && cur_field->charset->csname)
+              {/* have charset */
+                  if (strcmp(cur_field->charset->csname, "binary") && strcmp(cur_field->charset->csname, create_info->default_table_charset->csname))
+                  { /* ignore binary */
+                      my_error(ER_COLUMN_CAN_NOT_CHARSET_IN_CURRENT_STORAGE, MYF(0), cur_field->field_name);
+                      DBUG_RETURN(1);
+                  }
+              }
+              break;
+          default:
+              break;
+          }
+      }
+  }
+
   if (connect_string->length != 0 &&
       connect_string->length > CONNECT_STRING_MAXLEN &&
       (system_charset_info->cset->charpos(system_charset_info,

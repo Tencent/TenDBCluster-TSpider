@@ -4169,6 +4169,10 @@ public:
    notify_table_changed();
  }
 
+ virtual bool is_support_column_charset()
+ {
+     return true;
+ }
 
 protected:
  /**

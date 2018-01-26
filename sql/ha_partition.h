@@ -1408,6 +1408,7 @@ public:
     virtual const COND *cond_push(const COND *cond);
     virtual void cond_pop();
     virtual void clear_top_table_fields();
+    virtual bool is_support_column_charset();
     virtual int info_push(uint info_type, void *info);
 
     private:

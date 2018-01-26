@@ -11558,6 +11558,20 @@ void ha_partition::clear_top_table_fields()
   DBUG_VOID_RETURN;
 }
 
+bool ha_partition::is_support_column_charset()
+{
+    DBUG_ENTER("ha_partition::is_support_column_charset");
+    handler ** file;
+    bool    is_support_column_charset = TRUE;
+
+    for (file = m_file; *file; file++)
+    {
+        is_support_column_charset = (*file)->is_support_column_charset();
+        if (!is_support_column_charset)
+            DBUG_RETURN(is_support_column_charset);
+    }
+    DBUG_RETURN(is_support_column_charset);
+}
 
 struct st_mysql_storage_engine partition_storage_engine=
 { MYSQL_HANDLERTON_INTERFACE_VERSION };

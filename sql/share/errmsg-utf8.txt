@@ -7919,3 +7919,5 @@ ER_VERS_QUERY_IN_PARTITION
         eng "SYSTEM_TIME partitions in table %`s does not support historical query"
 ER_KEY_DOESNT_SUPPORT
         eng "%s index %`s does not support this operation"
+ER_COLUMN_CAN_NOT_CHARSET_IN_CURRENT_STORAGE
+        eng "Field '%-.192s' can not charset for column in this storage"
