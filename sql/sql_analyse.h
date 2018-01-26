@@ -53,6 +53,7 @@ typedef struct st_tree_info
   Item	 *item;
 } TREE_INFO;
 
+bool append_escaped(String *to_str, String *from_str);
 uint check_ulonglong(const char *str, uint length);
 bool get_ev_num_info(EV_NUM_INFO *ev_info, NUM_INFO *info, const char *num);
 bool test_if_number(NUM_INFO *info, const char *str, uint str_len);

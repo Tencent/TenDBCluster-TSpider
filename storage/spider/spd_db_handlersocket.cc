@@ -2748,7 +2748,8 @@ int spider_db_handlersocket_util::open_item_func(
   const char *alias,
   uint alias_length,
   bool use_fields,
-  spider_fields *fields
+  spider_fields *fields,
+  CHARSET_INFO *field_charset
 ) {
   uint dbton_id = spider_dbton_handlersocket.dbton_id;
   int error_num;
@@ -3821,7 +3822,8 @@ int spider_db_handlersocket_util::open_item_sum_func(
   const char *alias,
   uint alias_length,
   bool use_fields,
-  spider_fields *fields
+  spider_fields *fields,
+  CHARSET_INFO *field_charset
 ) {
   uint dbton_id = spider_dbton_handlersocket.dbton_id;
   uint roop_count, item_count = item_sum->get_arg_count();

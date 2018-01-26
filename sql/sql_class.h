@@ -3527,6 +3527,10 @@ public:
       start_utime= utime_after_lock= microsecond_interval_timer();
     }
   }
+  inline bool is_set_time()
+  {
+      return user_time.val != 0;
+  }
   void set_time_after_lock()
   {
     utime_after_lock= microsecond_interval_timer();

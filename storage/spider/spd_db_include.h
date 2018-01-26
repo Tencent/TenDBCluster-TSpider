@@ -873,7 +873,8 @@ public:
     const char *alias,
     uint alias_length,
     bool use_fields,
-    spider_fields *fields
+    spider_fields *fields,
+    CHARSET_INFO *field_charset
   ) = 0;
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
   virtual int open_item_sum_func(
@@ -883,7 +884,8 @@ public:
     const char *alias,
     uint alias_length,
     bool use_fields,
-    spider_fields *fields
+    spider_fields *fields,
+    CHARSET_INFO *field_charse
   ) = 0;
 #endif
   virtual int append_escaped_util(

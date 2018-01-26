@@ -849,6 +849,30 @@ int spider_db_print_item_type(
   spider_fields *fields
 );
 
+int spider_db_print_item_type(
+	Item *item,
+	ha_spider *spider,
+	spider_string *str,
+	const char *alias,
+	uint alias_length,
+	uint dbton_id,
+	bool use_fields,
+	spider_fields *fields,
+	CHARSET_INFO *field_charset
+);
+
+int spider_db_print_item_type_and_check_charset(
+    Item *item,
+    ha_spider *spider,
+    spider_string *str,
+    const char *alias,
+    uint alias_length,
+    uint dbton_id,
+    bool use_fields,
+    spider_fields *fields,
+    CHARSET_INFO *field_charsett
+);
+
 int spider_db_open_item_cond(
   Item_cond *item_cond,
   ha_spider *spider,
@@ -857,7 +881,8 @@ int spider_db_open_item_cond(
   uint alias_length,
   uint dbton_id,
   bool use_fields,
-  spider_fields *fields
+  spider_fields *fields,
+  CHARSET_INFO *field_charset
 );
 
 int spider_db_open_item_func(
@@ -868,7 +893,8 @@ int spider_db_open_item_func(
   uint alias_length,
   uint dbton_id,
   bool use_fields,
-  spider_fields *fields
+  spider_fields *fields,
+  CHARSET_INFO *field_charset
 );
 
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
@@ -880,7 +906,8 @@ int spider_db_open_item_sum_func(
   uint alias_length,
   uint dbton_id,
   bool use_fields,
-  spider_fields *fields
+  spider_fields *fields,
+  CHARSET_INFO *field_charset
 );
 #endif
 
@@ -936,7 +963,8 @@ int spider_db_open_item_string(
   uint alias_length,
   uint dbton_id,
   bool use_fields,
-  spider_fields *fields
+  spider_fields *fields,
+  CHARSET_INFO *field_charset
 );
 
 int spider_db_open_item_int(
@@ -977,6 +1005,11 @@ int spider_db_append_condition(
   const char *alias,
   uint alias_length,
   bool test_flg
+);
+
+uint spider_db_check_invalid_charset(
+  Item      *item,
+  ha_spider *spider
 );
 
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
@@ -1141,4 +1174,9 @@ void spider_db_hs_request_buf_reset(
 
 bool spider_db_conn_is_network_error(
   int error_num
+);
+
+CHARSET_INFO* spider_get_item_field_charset(
+    Item* item,
+    ha_spider* spider
 );

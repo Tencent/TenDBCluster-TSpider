@@ -3919,6 +3919,30 @@ void Item_string::print(String *str, enum_query_type query_type)
       str_value.print(str, system_charset_info);
     }
   }
+  else if (query_type & QT_TO_SPECIFIED_CHARSET)
+  {
+      DBUG_ASSERT(!print_introducer);
+
+      if (my_charset_same(str_value.charset(), str->charset()))
+          str_value.print(str); // already in str->charset
+      else
+      {
+          THD *thd = current_thd;
+          LEX_STRING lex_str;
+
+          thd->convert_string(&lex_str,
+              str->charset(),
+              str_value.c_ptr_safe(),
+              str_value.length(),
+              str_value.charset());
+
+          String utf8_str(lex_str.str,
+              lex_str.length,
+              str->charset());
+
+          utf8_str.print(str);
+      }
+  }
   else
   {
     // Caller wants a result in the charset of str_value.

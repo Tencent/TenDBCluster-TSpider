@@ -752,6 +752,7 @@ enum enum_query_type
   // it evaluates to. Should be used for error messages, so that they
   // don't reveal values.
   QT_NO_DATA_EXPANSION= (1 << 9),
+  QT_TO_SPECIFIED_CHARSET = ((1 << 10) | QT_WITHOUT_INTRODUCERS),
 };
 
 

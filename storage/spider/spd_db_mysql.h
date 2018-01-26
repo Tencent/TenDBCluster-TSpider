@@ -101,7 +101,8 @@ public:
     const char *alias,
     uint alias_length,
     bool use_fields,
-    spider_fields *fields
+    spider_fields *fields,
+    CHARSET_INFO *field_charset
   );
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
   int open_item_sum_func(
@@ -111,7 +112,8 @@ public:
     const char *alias,
     uint alias_length,
     bool use_fields,
-    spider_fields *fields
+    spider_fields *fields,
+    CHARSET_INFO *field_charse
   );
 #endif
   int append_escaped_util(
