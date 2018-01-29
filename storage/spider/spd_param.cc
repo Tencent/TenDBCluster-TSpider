@@ -3106,7 +3106,7 @@ static MYSQL_SYSVAR_UINT(
   "Log sql at logging result errors",
   NULL,
   NULL,
-  0,
+  3,
   0,
   3,
   0
