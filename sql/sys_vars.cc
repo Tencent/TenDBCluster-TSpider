@@ -6075,3 +6075,7 @@ static Sys_var_enum Sys_secure_timestamp(
        "historical behavior, anyone can modify session timestamp",
        READ_ONLY GLOBAL_VAR(opt_secure_timestamp), CMD_LINE(REQUIRED_ARG),
        secure_timestamp_levels, DEFAULT(SECTIME_NO));
+static Sys_var_mybool Sys_log_sql_use_mutil_partition(
+    "log_sql_use_mutil_partition",
+    "log the sql in spider invoke partition more than 1",
+    GLOBAL_VAR(log_sql_use_mutil_partition), CMD_LINE(OPT_ARG), DEFAULT(FALSE));

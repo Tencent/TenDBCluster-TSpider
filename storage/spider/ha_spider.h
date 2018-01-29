@@ -1192,4 +1192,8 @@ public:
   {
       return false;
   }
+  bool support_more_partiton_log()
+  {/* log sql using multiple partitions */
+      return TRUE;
+  }
 };

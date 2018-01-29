@@ -3442,6 +3442,7 @@ bool prune_partitions(THD *thd, TABLE *table, Item *pprune_cond)
   if (!pprune_cond)
   {
     mark_all_partitions_as_used(part_info);
+    get_num_of_usedparts(thd, table, part_info);
     DBUG_RETURN(FALSE);
   }
   
@@ -3593,6 +3594,7 @@ end:
     table->all_partitions_pruned_away= true;
     retval= TRUE;
   }
+  get_num_of_usedparts(thd, table, part_info);
   DBUG_RETURN(retval);
 }
 
@@ -14892,3 +14894,20 @@ void QUICK_GROUP_MIN_MAX_SELECT::dbug_dump(int indent, bool verbose)
 }
 
 #endif /* !DBUG_OFF */
+
+
+void get_num_of_usedparts(THD *thd, TABLE *table, partition_info *part_info)
+{
+    if (table->file)
+    {
+        int i = 0;
+        int total_parts = part_info->num_parts;
+        for (i = 0; i < total_parts; i++)
+        {
+            if ((bitmap_is_set(&(part_info->read_partitions), i)))
+            {/* get the used partition */
+                thd->sql_use_partition_count++;
+            }
+        }
+    }
+}

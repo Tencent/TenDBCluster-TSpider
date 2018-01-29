@@ -2406,7 +2406,10 @@ public:
   my_hrtime_t user_time;
   // track down slow pthread_create
   ulonglong  prior_thr_create_utime, thr_create_utime;
-  ulonglong  utime_after_query;
+  ulonglong  start_utime, utime_after_lock, utime_after_query;
+ 
+  /* for spider */
+  unsigned long sql_use_partition_count;
 
   // Process indicator
   struct {

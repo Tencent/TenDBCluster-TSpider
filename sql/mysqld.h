@@ -305,6 +305,8 @@ extern const char *encryption_algorithm_names[];
 extern long opt_secure_timestamp;
 
 enum secure_timestamp { SECTIME_NO, SECTIME_SUPER, SECTIME_REPL, SECTIME_YES };
+extern const char *quoted_string;
+extern my_bool log_sql_use_mutil_partition;
 
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP

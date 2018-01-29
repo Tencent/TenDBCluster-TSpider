@@ -11573,6 +11573,22 @@ bool ha_partition::is_support_column_charset()
     DBUG_RETURN(is_support_column_charset);
 }
 
+bool ha_partition::support_more_partiton_log()
+{
+    DBUG_ENTER("ha_partition::support_more_partiton_log");
+    handler ** file;
+    bool is_support_more_partition_log = FALSE;
+
+    for (file = m_file; *file; file++)
+    {
+        is_support_more_partition_log = (*file)->support_more_partiton_log();
+        if (is_support_more_partition_log)
+            DBUG_RETURN(is_support_more_partition_log);
+    }
+    DBUG_RETURN(is_support_more_partition_log);
+}
+
+
 struct st_mysql_storage_engine partition_storage_engine=
 { MYSQL_HANDLERTON_INTERFACE_VERSION };
 

@@ -4174,6 +4174,10 @@ public:
      return true;
  }
 
+ bool support_more_partiton_log()
+ {/* log sql using multiple partitions */
+     return FALSE;
+ }
 protected:
  /**
     Allows the storage engine to update internal structures with concurrent

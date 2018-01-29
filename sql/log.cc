@@ -1327,12 +1327,24 @@ bool LOGGER::slow_log_print(THD *thd, const char *query, size_t query_length,
     }
 
     /* fill in user_host value: the format is "%s[%s] @ %s [%s]" */
-    user_host_len= (uint)(strxnmov(user_host_buff, MAX_USER_HOST_SIZE,
-                             sctx->priv_user, "[",
-                             sctx->user ? sctx->user : (thd->slave_thread ? "SQL_SLAVE" : ""), "] @ ",
-                             sctx->host ? sctx->host : "", " [",
-                             sctx->ip ? sctx->ip : "", "]", NullS) -
-                    user_host_buff);
+    if (thd->sql_use_partition_count >= 2 && log_sql_use_mutil_partition)
+    {
+        user_host_len = (uint)(strxnmov(user_host_buff, MAX_USER_HOST_SIZE,
+            sctx->priv_user, "[",
+            sctx->user ? sctx->user : (thd->slave_thread ? "SQL_SLAVE" : ""), "] @ ",
+            sctx->host ? sctx->host : "", " [",
+            sctx->ip ? sctx->ip : "", "]", "  Query_use_mutil_partition", NullS) -
+            user_host_buff);
+    }
+    else
+    {
+        user_host_len = (uint)(strxnmov(user_host_buff, MAX_USER_HOST_SIZE,
+            sctx->priv_user, "[",
+            sctx->user ? sctx->user : (thd->slave_thread ? "SQL_SLAVE" : ""), "] @ ",
+            sctx->host ? sctx->host : "", " [",
+            sctx->ip ? sctx->ip : "", "]", NullS) -
+            user_host_buff);
+    }
 
     DBUG_ASSERT(thd->start_utime);
     DBUG_ASSERT(thd->start_time);

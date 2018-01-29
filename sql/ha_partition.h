@@ -1409,6 +1409,7 @@ public:
     virtual void cond_pop();
     virtual void clear_top_table_fields();
     virtual bool is_support_column_charset();
+    virtual bool support_more_partiton_log();
     virtual int info_push(uint info_type, void *info);
 
     private:

@@ -2481,8 +2481,10 @@ void log_slow_statement(THD *thd)
   if ((thd->server_status &
        (SERVER_QUERY_NO_INDEX_USED | SERVER_QUERY_NO_GOOD_INDEX_USED)) &&
       !(sql_command_flags[thd->last_sql_command] & CF_STATUS_COMMAND) &&
-      (!thd->variables.log_slow_filter ||
-       (thd->variables.log_slow_filter & QPLAN_NOT_USING_INDEX)))
+      ((!thd->variables.log_slow_filter ||
+       (thd->variables.log_slow_filter & QPLAN_NOT_USING_INDEX)) ||
+       (thd->sql_use_partition_count >= 2 && log_sql_use_mutil_partition))
+      )
   {
     thd->query_plan_flags|= QPLAN_NOT_USING_INDEX;
     /* We are always logging no index queries if enabled in filter */
@@ -7605,6 +7607,9 @@ void THD::reset_for_next_command(bool do_clear_error)
   binlog_unsafe_warning_flags= 0;
 
   save_prep_leaf_list= false;
+
+  /* for spider */
+  thd->sql_use_partition_count = 0;
 
   DBUG_PRINT("debug",
              ("is_current_stmt_binlog_format_row(): %d",
