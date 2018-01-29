@@ -494,6 +494,7 @@ public:
   const char *func_name() const { return "substr"; }
   Item *get_copy(THD *thd)
   { return get_item_copy<Item_func_substr>(thd, this); }
+  bool check_partition_func_processor(uchar *bool_arg) { return FALSE; }
 };
 
 class Item_func_substr_oracle :public Item_func_substr
@@ -1572,6 +1573,39 @@ public:
   longlong val_int();
   Item *get_copy(THD *thd)
   { return get_item_copy<Item_func_crc32>(thd, this); }
+  enum_monotonicity_info get_monotonicity_info() { return NON_MONOTONIC; }
+  bool check_partition_func_processor(void *int_arg) { return FALSE; }
+  bool check_valid_arguments_processor(void *int_arg)
+  {
+      return FALSE;
+  }
+};
+
+class Item_func_crc32_ci :public Item_long_func
+{
+    bool check_arguments() const
+    {
+        return args[0]->check_type_can_return_str(func_name());
+    }
+    String value;
+public:
+    Item_func_crc32_ci(THD *thd, Item *a) : Item_long_func(thd, a)
+    {
+        unsigned_flag = 1;
+    }
+    const char *func_name() const { return "crc32_ci"; }
+    void fix_length_and_dec() { max_length = 10; }
+    longlong val_int();
+    Item *get_copy(THD *thd)
+    {
+        return get_item_copy<Item_func_crc32_ci>(thd, this);
+    }
+    enum_monotonicity_info get_monotonicity_info() { return NON_MONOTONIC; }
+    bool check_partition_func_processor(void *int_arg) { return FALSE; }
+    bool check_valid_arguments_processor(void *int_arg)
+    {
+        return FALSE;
+    }
 };
 
 class Item_func_uncompressed_length : public Item_long_func_length

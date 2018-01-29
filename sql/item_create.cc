@@ -735,6 +735,18 @@ protected:
   virtual ~Create_func_crc32() {}
 };
 
+class Create_func_crc32_ci : public Create_func_arg1
+{
+public:
+    virtual Item *create_1_arg(THD *thd, Item *arg1);
+
+    static Create_func_crc32_ci s_singleton;
+
+protected:
+    Create_func_crc32_ci() {}
+    virtual ~Create_func_crc32_ci() {}
+};;
+
 
 #ifdef HAVE_SPATIAL
 class Create_func_crosses : public Create_func_arg2
@@ -4074,6 +4086,14 @@ Create_func_crc32::create_1_arg(THD *thd, Item *arg1)
   return new (thd->mem_root) Item_func_crc32(thd, arg1);
 }
 
+Create_func_crc32_ci Create_func_crc32_ci::s_singleton;
+
+Item*
+Create_func_crc32_ci::create_1_arg(THD *thd, Item *arg1)
+{
+    return new (thd->mem_root) Item_func_crc32_ci(thd, arg1);
+}
+
 
 #ifdef HAVE_SPATIAL
 Create_func_crosses Create_func_crosses::s_singleton;
@@ -7029,6 +7049,7 @@ static Native_func_registry func_array[] =
   { { STRING_WITH_LEN("COS") }, BUILDER(Create_func_cos)},
   { { STRING_WITH_LEN("COT") }, BUILDER(Create_func_cot)},
   { { STRING_WITH_LEN("CRC32") }, BUILDER(Create_func_crc32)},
+  { { STRING_WITH_LEN("CRC32_CI") }, BUILDER(Create_func_crc32_ci) },
   { { STRING_WITH_LEN("CROSSES") }, GEOM_BUILDER(Create_func_crosses)},
   { { STRING_WITH_LEN("DATEDIFF") }, BUILDER(Create_func_datediff)},
   { { STRING_WITH_LEN("DAYNAME") }, BUILDER(Create_func_dayname)},

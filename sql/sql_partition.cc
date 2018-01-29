@@ -1876,9 +1876,10 @@ bool check_part_func_fields(Field **ptr, bool ok_with_charsets)
     if (field_is_partition_charset(field))
     {
       CHARSET_INFO *cs= field->charset();
-      if (!ok_with_charsets ||
+      if (!ok_with_charsets)
+/****          ||
           cs->mbmaxlen > 1 ||
-          cs->strxfrm_multiply > 1)
+          cs->strxfrm_multiply > 1)   *****/
       {
         DBUG_RETURN(TRUE);
       }

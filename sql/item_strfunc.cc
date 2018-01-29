@@ -4103,6 +4103,31 @@ longlong Item_func_crc32::val_int()
   return (longlong) my_checksum(0L, (uchar*)res->ptr(), res->length());
 }
 
+longlong Item_func_crc32_ci::val_int()
+{
+    DBUG_ASSERT(fixed == 1);
+    String *res = args[0]->val_str(&value);
+    String src;
+    char *dst;
+    uint32 len;
+    CHARSET_INFO *cht;
+
+    if (!res)
+    {
+        null_value = 1;
+        return 0; /* purecov: inspected */
+    }
+    null_value = 0;
+
+    src.copy(*res);
+    dst = (char*)src.ptr();
+    len = src.length();
+    cht = src.charset();
+
+    cht->cset->casedn(cht, (char*)src.ptr(), src.length(), dst, len);
+    return (longlong)crc32(0L, (const uchar*)dst, len);
+}
+
 #ifdef HAVE_COMPRESS
 #include "zlib.h"
 

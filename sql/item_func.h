@@ -925,6 +925,7 @@ public:
   bool need_parentheses_in_default() { return true; }
   Item *get_copy(THD *thd)
   { return get_item_copy<Item_func_signed>(thd, this); }
+  bool check_partition_func_processor(uchar *int_arg) { return FALSE; }
 };
 
 
