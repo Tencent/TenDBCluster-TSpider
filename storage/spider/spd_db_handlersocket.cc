@@ -1657,6 +1657,12 @@ uint spider_db_handlersocket::affected_rows()
   DBUG_RETURN((uint) my_strtoll10(hs_row->begin(), (char**) NULL, &error_num));
 }
 
+uint spider_db_handlersocket::matched_rows()
+{
+    DBUG_ENTER("spider_db_handlersocket::matched_rows");
+    DBUG_RETURN(0);
+}
+
 ulonglong spider_db_handlersocket::last_insert_id()
 {
   DBUG_ENTER("spider_db_handlersocket::last_insert_id");

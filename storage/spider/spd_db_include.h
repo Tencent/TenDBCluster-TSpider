@@ -1077,6 +1077,7 @@ public:
   ) = 0;
   virtual int next_result() = 0;
   virtual uint affected_rows() = 0;
+  virtual uint matched_rows() = 0;
   virtual ulonglong last_insert_id() = 0;
   virtual int set_character_set(
     const char *csname

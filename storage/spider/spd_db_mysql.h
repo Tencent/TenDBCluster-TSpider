@@ -320,6 +320,7 @@ public:
   );
   int next_result();
   uint affected_rows();
+  uint matched_rows();
   ulonglong last_insert_id();
   int set_character_set(
     const char *csname

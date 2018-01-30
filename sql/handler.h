@@ -4408,7 +4408,7 @@ private:
 
   /* Perform initialization for a direct update request */
 public:
-  int ha_direct_update_rows(ha_rows *update_rows);
+  int ha_direct_update_rows(ha_rows *update_rows, ha_rows *found_rows);
   virtual int direct_update_rows_init()
   {
     return HA_ERR_WRONG_COMMAND;
@@ -4418,7 +4418,7 @@ private:
   {
     return HA_ERR_WRONG_COMMAND;
   }
-  virtual int direct_update_rows(ha_rows *update_rows __attribute__((unused)))
+  virtual int direct_update_rows(ha_rows *update_rows __attribute__((unused)), ha_rows *found_rows __attribute__((unused)))
   {
     return HA_ERR_WRONG_COMMAND;
   }

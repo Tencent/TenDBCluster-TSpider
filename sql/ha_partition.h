@@ -622,7 +622,7 @@ public:
   virtual int update_row(const uchar * old_data, const uchar * new_data);
   virtual int direct_update_rows_init();
   virtual int pre_direct_update_rows_init();
-  virtual int direct_update_rows(ha_rows *update_rows);
+  virtual int direct_update_rows(ha_rows *update_rows, ha_rows *found_rows);
   virtual int pre_direct_update_rows();
   virtual bool start_bulk_delete();
   virtual int end_bulk_delete();

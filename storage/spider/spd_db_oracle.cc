@@ -1725,6 +1725,12 @@ uint spider_db_oracle::affected_rows()
   DBUG_RETURN(update_rows);
 }
 
+uint spider_db_oracle::matched_rows()
+{
+    DBUG_ENTER("spider_db_oracle::matched_rows");
+    DBUG_RETURN(0);
+}
+
 ulonglong spider_db_oracle::last_insert_id()
 {
   DBUG_ENTER("spider_db_oracle::last_insert_id");

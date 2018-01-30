@@ -751,13 +751,15 @@ int spider_db_direct_update(
   TABLE *table,
   KEY_MULTI_RANGE *ranges,
   uint range_count,
-  ha_rows *update_rows
+  ha_rows *update_rows,
+  ha_rows *found_rows
 );
 #else
 int spider_db_direct_update(
   ha_spider *spider,
   TABLE *table,
-  ha_rows *update_rows
+  ha_rows *update_rows,
+  ha_rows *found_rows
 );
 #endif
 #endif

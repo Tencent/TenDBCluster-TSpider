@@ -11247,11 +11247,12 @@ int ha_partition::pre_direct_update_rows_init()
     0                         Success
 */
 
-int ha_partition::direct_update_rows(ha_rows *update_rows_result)
+int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found_rows_result)
 {
   int error;
   bool rnd_seq= FALSE;
   ha_rows update_rows= 0;
+  ha_rows found_rows= 0;
   uint32 i;
   DBUG_ENTER("ha_partition::direct_update_rows");
 
@@ -11263,6 +11264,7 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result)
   }
 
   *update_rows_result= 0;
+  *found_rows_result= 0;
   for (i= m_part_spec.start_part; i <= m_part_spec.end_part; i++)
   {
     handler *file= m_file[i];
@@ -11278,7 +11280,7 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result)
       }
       if (unlikely((error= (m_pre_calling ?
                             (file)->pre_direct_update_rows() :
-                            (file)->ha_direct_update_rows(&update_rows)))))
+                            (file)->ha_direct_update_rows(&update_rows, &found_rows)))))
       {
         if (rnd_seq)
         {
@@ -11289,7 +11291,8 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result)
         }
         DBUG_RETURN(error);
       }
-      *update_rows_result+= update_rows;
+      *update_rows_result += update_rows;
+      *found_rows_result += found_rows;
     }
     if (rnd_seq)
     {
@@ -11322,10 +11325,11 @@ int ha_partition::pre_direct_update_rows()
   bool save_m_pre_calling;
   int error;
   ha_rows not_used= 0;
+  ha_rows found_rows= 0;
   DBUG_ENTER("ha_partition::pre_direct_update_rows");
   save_m_pre_calling= m_pre_calling;
   m_pre_calling= TRUE;
-  error= direct_update_rows(&not_used);
+  error= direct_update_rows(&not_used, &found_rows);
   m_pre_calling= save_m_pre_calling;
   DBUG_RETURN(error);
 }

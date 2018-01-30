@@ -1984,24 +1984,42 @@ bool spider_param_get_conn_from_idx(
 	DBUG_RETURN(THDVAR(thd, get_conn_from_idx));
 }
 
+static MYSQL_THDVAR_BOOL(
+    client_found_rows, /* name */
+    PLUGIN_VAR_OPCMDARG, /* opt */
+    "return the matched row when use mysql_affected_rows", /* comment */
+    NULL, /* check */
+    NULL, /* update */
+    FALSE/* def */
+);
+
+bool spider_param_client_found_rows(
+    THD *thd
+) {
+    DBUG_ENTER("spider_param_client_found_rows");
+    DBUG_RETURN(THDVAR(thd, client_found_rows));
+}
+
+
 /*
 TRUE: get sts/crd info
 FALSE: don't get sts/crd info
 */
-static MYSQL_THDVAR_BOOL(
-	get_sts_or_crd, /* name */
-	PLUGIN_VAR_OPCMDARG, /* opt */
-	"control if the spider to get table status and get index status", /* comment */
-	NULL, /* check */
-	NULL, /* update */
-	FALSE/* def */
+static my_bool spider_get_sts_or_crd;
+static MYSQL_SYSVAR_BOOL(
+    get_sts_or_crd,
+    spider_get_sts_or_crd,
+    PLUGIN_VAR_OPCMDARG,
+    "if need to get table status",
+    NULL,
+    NULL,
+    FALSE
 );
 
-bool spider_param_get_sts_or_crd(
-	THD *thd
-) {
+bool spider_param_get_sts_or_crd() 
+{
 	DBUG_ENTER("spider_param_with_sts_crd");
-	DBUG_RETURN(THDVAR(thd, get_sts_or_crd));
+  DBUG_RETURN(spider_get_sts_or_crd);
 }
 
 /*
@@ -3496,6 +3514,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(with_begin_commit),
   MYSQL_SYSVAR(get_conn_from_idx),
   MYSQL_SYSVAR(get_sts_or_crd),
+  MYSQL_SYSVAR(client_found_rows),
   MYSQL_SYSVAR(local_lock_table),
   MYSQL_SYSVAR(use_pushdown_udf),
   MYSQL_SYSVAR(direct_dup_insert),

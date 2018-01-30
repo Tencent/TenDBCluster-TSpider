@@ -1634,6 +1634,7 @@ int spider_db_mysql::connect(
   longlong connect_retry_interval
 ) {
   int error_num;
+  uint real_connect_option = 0;
   my_bool connect_mutex = spider_param_connect_mutex();
   DBUG_ENTER("spider_db_mysql::connect");
   DBUG_PRINT("info",("spider this=%p", this));
@@ -1697,6 +1698,7 @@ int spider_db_mysql::connect(
         conn->tgt_default_group);
     }
 
+    real_connect_option = CLIENT_INTERACTIVE | CLIENT_MULTI_STATEMENTS;
     if (connect_mutex)
       pthread_mutex_lock(&spider_open_conn_mutex);
     /* tgt_db not use */
@@ -1710,7 +1712,7 @@ int spider_db_mysql::connect(
         NULL,
         tgt_port,
         tgt_socket,
-        CLIENT_MULTI_STATEMENTS | CLIENT_INTERACTIVE
+        real_connect_option
       )
     ) {
       if (connect_mutex)
@@ -2139,6 +2141,35 @@ uint spider_db_mysql::affected_rows()
   last_used_con = db_conn;
 #endif
   DBUG_RETURN((uint) last_used_con->affected_rows);
+}
+
+uint spider_db_mysql::matched_rows()
+{
+    MYSQL *last_used_con;
+    DBUG_ENTER("spider_db_mysql::matched_rows");
+    DBUG_PRINT("info", ("spider this=%p", this));
+#if MYSQL_VERSION_ID < 50500
+    last_used_con = db_conn->last_used_con;
+#else
+    last_used_con = db_conn;
+#endif
+    /* Rows matched: 65 Changed: 65 Warnings: 0  */
+    const char * info = last_used_con->info;
+    if (!info)
+        return 0;
+    const char *begin = strstr(info, "Rows matched: ");
+    if (!begin)
+        return 0;
+    begin += strlen("Rows matched: ");
+    const char *end = strstr(begin, " ");
+    if (!end)
+        return 0;
+    if ((end - begin) > 20)
+        return 0;
+    char buf[100] = { 0 };
+    strncpy(&buf[0], begin, (end - begin));
+    buf[end - begin] = 0;
+    DBUG_RETURN(atoi(buf));
 }
 
 ulonglong spider_db_mysql::last_insert_id()

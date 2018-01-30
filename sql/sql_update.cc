@@ -830,11 +830,15 @@ update_begin:
   if (do_direct_update)
   {
     /* Direct updating is supported */
+    ha_rows	update_rows, found_rows;
     DBUG_PRINT("info", ("Using direct update"));
     table->reset_default_fields();
-    if (unlikely(!(error= table->file->ha_direct_update_rows(&updated))))
+    if (unlikely(!(error= table->file->ha_direct_update_rows(&updated, &found_rows))))
       error= -1;
-    found= updated;
+    updated = update_rows;
+    found = found_rows;
+    if (found < updated)
+        found = updated;
     goto update_end;
   }
 

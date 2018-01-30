@@ -5164,7 +5164,7 @@ SPIDER_SHARE *spider_get_share(
       }
 
       if (
-		  spider_param_get_sts_or_crd(thd) &&
+		  spider_param_get_sts_or_crd() &&
         (
           !same_server_link ||
           load_sts_at_startup
@@ -5179,7 +5179,7 @@ SPIDER_SHARE *spider_get_share(
         thd->clear_error();
       }
       if (
-		  spider_param_get_sts_or_crd(thd) &&
+		  spider_param_get_sts_or_crd() &&
         (
           !same_server_link ||
           load_crd_at_startup
@@ -5673,7 +5673,7 @@ SPIDER_SHARE *spider_get_share(
           }
 
           if (
-			  spider_param_get_sts_or_crd(thd) &&
+			  spider_param_get_sts_or_crd() &&
             (
               !same_server_link ||
               load_sts_at_startup
@@ -5688,7 +5688,7 @@ SPIDER_SHARE *spider_get_share(
             thd->clear_error();
           }
           if (
-			  spider_param_get_sts_or_crd(thd) &&
+			  spider_param_get_sts_or_crd() &&
             (
               !same_server_link ||
               load_crd_at_startup
