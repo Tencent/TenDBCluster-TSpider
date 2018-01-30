@@ -971,6 +971,7 @@ typedef struct st_spider_share
   char               **static_link_ids;
   char               **tgt_pk_names;
   char               **tgt_sequence_names;
+  char               **tgt_shard_keys;
   char               **conn_keys;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   char               **hs_read_socks;
@@ -1025,6 +1026,7 @@ typedef struct st_spider_share
   uint               *static_link_ids_lengths;
   uint               *tgt_pk_names_lengths;
   uint               *tgt_sequence_names_lengths;
+  uint               *tgt_shard_keys_lengths;
   uint               *conn_keys_lengths;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   uint               *hs_read_socks_lengths;
@@ -1055,6 +1057,7 @@ typedef struct st_spider_share
   uint               static_link_ids_charlen;
   uint               tgt_pk_names_charlen;
   uint               tgt_sequence_names_charlen;
+  uint               tgt_shard_keys_charlen;
   uint               conn_keys_charlen;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   uint               hs_read_socks_charlen;
@@ -1081,6 +1084,7 @@ typedef struct st_spider_share
   uint               static_link_ids_length;
   uint               tgt_pk_names_length;
   uint               tgt_sequence_names_length;
+  uint               tgt_shard_keys_length;
   uint               conn_keys_length;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   uint               hs_read_socks_length;

@@ -675,6 +675,16 @@ int spider_free_share_alloc(
     }
     spider_free(spider_current_trx, share->tgt_hosts, MYF(0));
   }
+  if (share->tgt_shard_keys)
+  {
+      for (roop_count = 0; roop_count < (int)share->tgt_shard_keys_length;
+          roop_count++)
+      {
+          if (share->tgt_shard_keys[roop_count])
+              spider_free(spider_current_trx, share->tgt_shard_keys[roop_count], MYF(0));
+      }
+      spider_free(spider_current_trx, share->tgt_shard_keys, MYF(0));
+  }
   if (share->tgt_usernames)
   {
     for (roop_count = 0; roop_count < (int) share->tgt_usernames_length;
@@ -945,6 +955,11 @@ void spider_free_tmp_share_alloc(
   {
     spider_free(spider_current_trx, share->tgt_hosts[0], MYF(0));
     share->tgt_hosts[0] = NULL;
+  }
+  if (share->tgt_shard_keys && share->tgt_shard_keys[0])
+  {
+      spider_free(spider_current_trx, share->tgt_shard_keys[0], MYF(0));
+      share->tgt_shard_keys[0] = NULL;
   }
   if (share->tgt_usernames && share->tgt_usernames[0])
   {
@@ -2398,6 +2413,7 @@ int spider_parse_connect_info(
           error_num = connect_string_parse.print_param_error();
           goto error;
         case 9:
+          SPIDER_PARAM_STR_LIST("shard_key", tgt_shard_keys);
           SPIDER_PARAM_INT("max_order", max_order, 0);
           SPIDER_PARAM_INT("bulk_size", bulk_size, 0);
           SPIDER_PARAM_DOUBLE("scan_rate", scan_rate, 0);
@@ -3273,6 +3289,14 @@ int spider_parse_connect_info(
         my_printf_error(error_num, ER_SPIDER_INVALID_CONNECT_INFO_TOO_LONG_STR,
           MYF(0), share->tgt_hosts[roop_count], "host");
         goto error;
+      }
+
+      if (share->tgt_shard_keys_lengths && share->tgt_shard_keys_lengths[roop_count] > SPIDER_CONNECT_INFO_MAX_LEN)
+      {
+          error_num = ER_SPIDER_INVALID_CONNECT_INFO_TOO_LONG_NUM;
+          my_printf_error(error_num, ER_SPIDER_INVALID_CONNECT_INFO_TOO_LONG_STR,
+              MYF(0), share->tgt_shard_keys[roop_count], "shard_key");
+          goto error;
       }
 
       DBUG_PRINT("info",
