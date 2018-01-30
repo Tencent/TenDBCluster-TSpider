@@ -1710,7 +1710,7 @@ int spider_db_mysql::connect(
         NULL,
         tgt_port,
         tgt_socket,
-        CLIENT_MULTI_STATEMENTS
+        CLIENT_MULTI_STATEMENTS | CLIENT_INTERACTIVE
       )
     ) {
       if (connect_mutex)
