@@ -4174,8 +4174,12 @@ public:
      return true;
  }
 
- bool support_more_partiton_log()
+virtual bool support_more_partiton_log()
  {/* log sql using multiple partitions */
+     return FALSE;
+ }
+virtual bool is_spider_storage_engine()
+ {
      return FALSE;
  }
 protected:

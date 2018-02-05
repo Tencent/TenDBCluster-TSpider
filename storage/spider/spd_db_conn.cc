@@ -296,7 +296,7 @@ int spider_db_conn_queue_action(
   SPIDER_CONN *conn
 ) {
   int error_num;
-  char sql_buf[MAX_FIELD_WIDTH * 2];
+  char sql_buf[MAX_FIELD_WIDTH * 2] = "";
   spider_string sql_str(sql_buf, sizeof(sql_buf), system_charset_info);
   DBUG_ENTER("spider_db_conn_queue_action");
   DBUG_PRINT("info", ("spider conn=%p", conn));

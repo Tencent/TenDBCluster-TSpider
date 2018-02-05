@@ -1280,11 +1280,19 @@ private:
     ulonglong nr= (((Field_num*) field)->unsigned_flag ||
                    field->val_int() > 0) ? field->val_int() : 0;
     lock_auto_increment();
-    DBUG_ASSERT(part_share->auto_inc_initialized ||
-                !can_use_for_auto_inc_init());
+    DBUG_ASSERT(part_share->auto_inc_initialized); /* || !can_use_for_auto_inc_init()) * / 
     /* must check when the mutex is taken */
     if (nr >= part_share->next_auto_inc_val)
-      part_share->next_auto_inc_val= nr + 1;
+    {
+        if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+        {
+            part_share->next_auto_inc_val = (nr + opt_spider_auto_increment_step - opt_spider_auto_increment_mode_value) 
+                / opt_spider_auto_increment_step*opt_spider_auto_increment_step
+                + opt_spider_auto_increment_mode_value;
+        }
+        else
+            part_share->next_auto_inc_val = nr + 1;
+    }
     unlock_auto_increment();
   }
 
@@ -1410,6 +1418,7 @@ public:
     virtual void clear_top_table_fields();
     virtual bool is_support_column_charset();
     virtual bool support_more_partiton_log();
+    virtual bool is_spider_storage_engine();
     virtual int info_push(uint info_type, void *info);
 
     private:

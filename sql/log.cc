@@ -1327,7 +1327,7 @@ bool LOGGER::slow_log_print(THD *thd, const char *query, size_t query_length,
     }
 
     /* fill in user_host value: the format is "%s[%s] @ %s [%s]" */
-    if (thd->sql_use_partition_count >= 2 && log_sql_use_mutil_partition)
+    if (thd->sql_use_partition_count >= 2 && opt_log_sql_use_mutil_partition)
     {
         user_host_len = (uint)(strxnmov(user_host_buff, MAX_USER_HOST_SIZE,
             sctx->priv_user, "[",

@@ -4825,8 +4825,17 @@ int ha_partition::end_bulk_insert()
        i= bitmap_get_next_set(&m_bulk_insert_started, i))
   {
     int tmp;
-    if ((tmp= m_file[i]->ha_end_bulk_insert()))
-      error= tmp;
+    if ((tmp = m_file[i]->ha_end_bulk_insert()))
+    {
+        error = tmp;
+        if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+        {/* if error happened, set next_auto_inc_val = 0, then get max next time */
+            lock_auto_increment();
+            part_share->next_auto_inc_val = 0;
+            part_share->auto_inc_initialized = FALSE;
+            unlock_auto_increment();
+        }
+    }
   }
   bitmap_clear_all(&m_bulk_insert_started);
   DBUG_RETURN(error);
@@ -8147,19 +8156,35 @@ int ha_partition::info(uint flag)
         do
         {
           file= *file_array;
-          file->info(HA_STATUS_AUTO | no_lock_flag);
-          set_if_bigger(auto_increment_value,
-                        file->stats.auto_increment_value);
+          /* get the max auto_increment_value from each partition shard */
+          file = *file_array;
+          if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+          {/* spider_auto_increment */
+              if (part_share->next_auto_inc_val == 0)
+              { /* part_share->next_auto_inc_val  would be 0 after flush table/restart mysqld , then get this value from remote db */
+                  file->info(HA_STATUS_AUTO | no_lock_flag);
+                  set_if_bigger(auto_increment_value, file->stats.auto_increment_value);
+              }
+              else
+              {
+                  auto_increment_value = part_share->next_auto_inc_val;
+              }
+          }
+          else
+          {/* not spider auto_increment */
+              file->info(HA_STATUS_AUTO | no_lock_flag);
+              set_if_bigger(auto_increment_value, file->stats.auto_increment_value);
+          }
         } while (*(++file_array));
 
-        DBUG_ASSERT(auto_increment_value);
+       /* DBUG_ASSERT(auto_increment_value);*/
         stats.auto_increment_value= auto_increment_value;
         if (auto_inc_is_first_in_idx)
         {
           set_if_bigger(part_share->next_auto_inc_val,
                         auto_increment_value);
-          if (can_use_for_auto_inc_init())
-            part_share->auto_inc_initialized= true;
+          /*if (can_use_for_auto_inc_init())*/
+          part_share->auto_inc_initialized= true;
           DBUG_PRINT("info", ("initializing next_auto_inc_val to %lu",
                        (ulong) part_share->next_auto_inc_val));
         }
@@ -10445,8 +10470,26 @@ void ha_partition::get_auto_increment(ulonglong offset, ulonglong increment,
     }
 
     /* this gets corrected (for offset/increment) in update_auto_increment */
-    *first_value= part_share->next_auto_inc_val;
-    part_share->next_auto_inc_val+= nb_desired_values * increment;
+    /****************************************
+    特殊处理获取的auto_increment_value值
+    1，如上，只有table_share->ha_part_data->next_auto_inc_val == 0，即重启过mysql或有过flush tables，这个值会被置0，
+    则需要重新从remote db获取最大值;
+    2，如果table_share->ha_part_data->next_auto_inc_val不为0，则auto_increment_value为table_share->ha_part_data->next_auto_inc_val。
+    3，对上述的auto_increment_value值进行处理。需要auto_increment_value的值满足: auto_increment_value%spider_auto_increment_step = spider_auto_increment_mode_value。
+    且auto_increment_value不能出现过。
+    ***************************************/
+    if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+    {/* 打开开头，默认打开的。也是read only。  大于或者等于当前值的符合条件的值。 */
+        part_share->next_auto_inc_val = (part_share->next_auto_inc_val + opt_spider_auto_increment_step - opt_spider_auto_increment_mode_value - 1) / opt_spider_auto_increment_step*opt_spider_auto_increment_step
+            + opt_spider_auto_increment_mode_value;
+    }
+    /* this gets corrected (for offset/increment) in update_auto_increment */
+    *first_value = part_share->next_auto_inc_val;
+    if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+        part_share->next_auto_inc_val += nb_desired_values * opt_spider_auto_increment_step;
+    else
+        part_share->next_auto_inc_val += nb_desired_values * increment;
+
 
     unlock_auto_increment();
     DBUG_PRINT("info", ("*first_value: %lu", (ulong) *first_value));
@@ -11590,6 +11633,21 @@ bool ha_partition::support_more_partiton_log()
             DBUG_RETURN(is_support_more_partition_log);
     }
     DBUG_RETURN(is_support_more_partition_log);
+}
+
+bool ha_partition::is_spider_storage_engine()
+{
+    DBUG_ENTER("ha_partition::is_spider_storage_engine");
+    handler ** file;
+    bool    is_spider = TRUE;
+
+    for (file = m_file; *file; file++)
+    {
+        is_spider = (*file)->is_spider_storage_engine();
+        if (!is_spider)
+            DBUG_RETURN(is_spider);
+    }
+    DBUG_RETURN(is_spider);
 }
 
 

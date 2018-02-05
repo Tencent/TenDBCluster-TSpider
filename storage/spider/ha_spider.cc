@@ -8191,26 +8191,17 @@ int ha_spider::info(
     sql_command == SQLCOM_SHOW_CREATE
   ) {
 */
-    if (flag & HA_STATUS_AUTO)
-    {
-      if (share->lgtm_tblhnd_share->auto_increment_value)
-        stats.auto_increment_value =
-          share->lgtm_tblhnd_share->auto_increment_value;
-      else {
-        stats.auto_increment_value = 1;
+  if (flag & HA_STATUS_AUTO)
+  {
+      stats.auto_increment_value = 0;
 #ifdef HANDLER_HAS_CAN_USE_FOR_AUTO_INC_INIT
-        auto_inc_temporary = TRUE;
+      auto_inc_temporary = TRUE;
 #endif
-      }
-    }
-    if (
-      sql_command == SQLCOM_DROP_TABLE ||
-      sql_command == SQLCOM_ALTER_TABLE
-    )
-      DBUG_RETURN(0);
-/*
   }
-*/
+  if (sql_command == SQLCOM_DROP_TABLE ||
+      sql_command == SQLCOM_ALTER_TABLE ||
+      sql_command == SQLCOM_SHOW_CREATE)
+      DBUG_RETURN(0);
 
   if (flag &
     (HA_STATUS_TIME | HA_STATUS_CONST | HA_STATUS_VARIABLE | HA_STATUS_AUTO))
@@ -8268,21 +8259,7 @@ int ha_spider::info(
 #endif
       }
     }
-    if (flag & HA_STATUS_AUTO)
-    {
-      if (
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-        share->partition_share &&
-#endif
-        tmp_auto_increment_mode == 1 &&
-        !share->lgtm_tblhnd_share->auto_increment_init
-      ) {
-        sts_interval = 0;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-        sts_sync = 0;
-#endif
-      }
-    }
+
     if (spider_param_get_sts_or_crd() && difftime(tmp_time, share->sts_get_time) >= sts_interval)
     {/* to do, forbid sts tmporary */
       if (
@@ -8440,7 +8417,7 @@ int ha_spider::info(
     }
     if (flag & HA_STATUS_CONST)
     {
-      if (0 && (error_num = check_crd()))
+      if (spider_param_get_sts_or_crd() && (error_num = check_crd()))
       {/* to do, forbid crd tmporary */
         if (sql_command == SQLCOM_SHOW_CREATE)
         {

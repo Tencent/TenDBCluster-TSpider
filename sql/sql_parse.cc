@@ -2483,7 +2483,7 @@ void log_slow_statement(THD *thd)
       !(sql_command_flags[thd->last_sql_command] & CF_STATUS_COMMAND) &&
       ((!thd->variables.log_slow_filter ||
        (thd->variables.log_slow_filter & QPLAN_NOT_USING_INDEX)) ||
-       (thd->sql_use_partition_count >= 2 && log_sql_use_mutil_partition))
+       (thd->sql_use_partition_count >= 2 && opt_log_sql_use_mutil_partition))
       )
   {
     thd->query_plan_flags|= QPLAN_NOT_USING_INDEX;

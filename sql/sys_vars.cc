@@ -6078,4 +6078,21 @@ static Sys_var_enum Sys_secure_timestamp(
 static Sys_var_mybool Sys_log_sql_use_mutil_partition(
     "log_sql_use_mutil_partition",
     "log the sql in spider invoke partition more than 1",
-    GLOBAL_VAR(log_sql_use_mutil_partition), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+    GLOBAL_VAR(opt_log_sql_use_mutil_partition), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+
+static Sys_var_mybool Sys_spider_auto_increment_mode_switch(
+    "spider_auto_increment_mode_switch",
+    "the switch use to control if use the spider_auto_increment_mode, default true ",
+    READ_ONLY GLOBAL_VAR(opt_spider_auto_increment_mode_switch), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+
+static Sys_var_uint Sys_spider_auto_increment_step(
+    "spider_auto_increment_step",
+    "the values set spider auto_increment add by spider_auto_increment_step",
+    READ_ONLY GLOBAL_VAR(opt_spider_auto_increment_step), CMD_LINE(REQUIRED_ARG),
+    VALID_RANGE(1, 64), DEFAULT(17), BLOCK_SIZE(1));
+
+static Sys_var_uint Sys_spider_auto_increment_mode_value(
+    "spider_auto_increment_mode_value",
+    "the values, as the auto_increment mode 32. auto_increment add by 32",
+    READ_ONLY GLOBAL_VAR(opt_spider_auto_increment_mode_value), CMD_LINE(REQUIRED_ARG),
+    VALID_RANGE(0, 128), DEFAULT(1), BLOCK_SIZE(1));

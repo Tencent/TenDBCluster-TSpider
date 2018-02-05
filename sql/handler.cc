@@ -3039,11 +3039,16 @@ int handler::read_first_row(uchar * buf, uint primary_key)
   @verbatim 1,5,15,25,35,... @endverbatim
 */
 inline ulonglong
-compute_next_insert_id(ulonglong nr,struct system_variables *variables)
+compute_next_insert_id(handler *hd, ulonglong nr,struct system_variables *variables)
 {
   const ulonglong save_nr= nr;
 
-  if (variables->auto_increment_increment == 1)
+  if (opt_spider_auto_increment_mode_switch && hd->is_spider_storage_engine())
+  { /* compute next satisfied insert_id for spider */
+      nr = (nr + opt_spider_auto_increment_step - opt_spider_auto_increment_mode_value) / opt_spider_auto_increment_step*opt_spider_auto_increment_step
+          + opt_spider_auto_increment_mode_value;
+  }
+  else if (variables->auto_increment_increment == 1)
     nr= nr + 1; // optimization of the formula below
   else
   {
@@ -3069,7 +3074,7 @@ void handler::adjust_next_insert_id_after_explicit_value(ulonglong nr)
     THD::next_insert_id to be greater than the explicit value.
   */
   if ((next_insert_id > 0) && (nr >= next_insert_id))
-    set_next_insert_id(compute_next_insert_id(nr, &table->in_use->variables));
+    set_next_insert_id(compute_next_insert_id(this, nr, &table->in_use->variables));
 }
 
 
@@ -3273,7 +3278,10 @@ int handler::update_auto_increment()
         if it did we cannot do anything about it (calling the engine again
         will not help as we inserted no row).
       */
-      nr= compute_next_insert_id(nr-1, variables);
+      if (!(opt_spider_auto_increment_mode_switch && is_spider_storage_engine()))
+      {/* don't do this in spider */
+          nr = compute_next_insert_id(this, nr - 1, variables);
+      }
     }
 
     if (table->s->next_number_keypart == 0)
@@ -3316,8 +3324,17 @@ int handler::update_auto_increment()
   }
   if (append)
   {
-    auto_inc_interval_for_cur_row.replace(nr, nb_reserved_values,
-                                          variables->auto_increment_increment);
+      if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+      {/* don't need do this in spider */
+          auto_inc_interval_for_cur_row.replace(nr, nb_reserved_values,
+              opt_spider_auto_increment_step);
+      }
+      else
+      {
+          auto_inc_interval_for_cur_row.replace(nr, nb_reserved_values,
+              variables->auto_increment_increment);
+      }
+
     auto_inc_intervals_count++;
     /* Row-based replication does not need to store intervals in binlog */
     if (((WSREP(thd) && wsrep_emulate_bin_log ) || mysql_bin_log.is_open())
@@ -3344,7 +3361,7 @@ int handler::update_auto_increment()
     Set next insert id to point to next auto-increment value to be able to
     handle multi-row statements.
   */
-  set_next_insert_id(compute_next_insert_id(nr, variables));
+  set_next_insert_id(compute_next_insert_id(this, nr, variables));
 
   DBUG_RETURN(0);
 }

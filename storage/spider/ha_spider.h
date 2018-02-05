@@ -1200,4 +1200,8 @@ public:
   {/* log sql using multiple partitions */
       return TRUE;
   }
+  bool is_spider_storage_engine()
+  {
+      return TRUE;
+  }
 };

@@ -1904,11 +1904,11 @@ double spider_param_hs_ping_interval(
  */
 static MYSQL_THDVAR_INT(
   auto_increment_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY, /* opt */
   "Mode of auto increment.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   3, /* max */
   0 /* blk */

@@ -306,7 +306,11 @@ extern long opt_secure_timestamp;
 
 enum secure_timestamp { SECTIME_NO, SECTIME_SUPER, SECTIME_REPL, SECTIME_YES };
 extern const char *quoted_string;
-extern my_bool log_sql_use_mutil_partition;
+/* for spider */
+extern my_bool opt_log_sql_use_mutil_partition;
+extern my_bool opt_spider_auto_increment_mode_switch;
+extern uint opt_spider_auto_increment_mode_value;
+extern uint opt_spider_auto_increment_step;
 
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP

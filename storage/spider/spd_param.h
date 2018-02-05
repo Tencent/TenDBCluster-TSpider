@@ -387,7 +387,6 @@ int spider_param_udf_ds_use_real_table(
 );
 #endif
 my_bool spider_param_general_log();
-my_bool spider_param_log_sql_multil_partition();
 int spider_param_idle_conn_recycle_interval();
 int spider_param_conn_meta_invalid_max_count();
 my_bool spider_param_index_hint_pushdown(
