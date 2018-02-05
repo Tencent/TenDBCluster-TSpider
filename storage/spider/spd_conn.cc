@@ -1793,7 +1793,7 @@ int spider_set_conn_bg_param(
           spider->lock_mode ?
           SPIDER_LINK_STATUS_RECOVERY : SPIDER_LINK_STATUS_OK)
       ) {
-        if ((error_num = spider_create_conn_thread(spider->conns[roop_count])))
+        if ((error_num = spider_create_conn_thread(spider->spider_get_conn_by_idx(roop_count))))
           DBUG_RETURN(error_num);
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
         if ((error_num = spider_create_conn_thread(
