@@ -7134,9 +7134,6 @@ int spider_db_init(
       error_num = HA_ERR_OUT_OF_MEM;
       goto error_conn_meta_mutex_init;
   }
-  if (error_num = spider_create_conn_recycle_thread()) {
-      goto error_conn_recycle_thd_init;
-  }
 #ifndef WITHOUT_SPIDER_BG_SEARCH
 #if MYSQL_VERSION_ID < 50500
   if (pthread_mutex_init(&spider_global_trx_mutex, MY_MUTEX_INIT_FAST))
@@ -7402,7 +7399,9 @@ int spider_db_init(
       spider_udf_table_mon_list_hash[roop_count].array.max_element *
       spider_udf_table_mon_list_hash[roop_count].array.size_of_element);
   }
-
+  if (error_num = spider_create_conn_recycle_thread()) {
+      goto error_conn_recycle_thd_init;
+  }
 #ifndef WITHOUT_SPIDER_BG_SEARCH  
 #ifndef SPIDIER_NOT_USING_BG_THREADS
   if (!(spider_table_sts_threads = (SPIDER_THREAD *)
@@ -7490,6 +7489,8 @@ error_init_table_sts_threads:
   roop_count = spider_param_udf_table_mon_mutex_count() - 1;
 #endif
 #endif
+error_conn_recycle_thd_init:
+  spider_free_conn_recycle_thread();
 error_init_udf_table_mon_list_hash:
   for (; roop_count >= 0; roop_count--)
   {
@@ -7589,8 +7590,6 @@ error_open_conn_mutex_init:
   pthread_mutex_destroy(&spider_global_trx_mutex);
 error_global_trx_mutex_init:
 #endif
-  spider_free_conn_recycle_thread();
-error_conn_recycle_thd_init:
   pthread_mutex_destroy(&spider_conn_meta_mutex);
 error_conn_meta_mutex_init:
   pthread_mutex_destroy(&spider_conn_mutex);
