@@ -2204,7 +2204,7 @@ static void mysqld_exit(int exit_code)
 #ifdef SAFEMALLOC
     sf_report_leaked_memory(0);
 #endif
-    DBUG_SLOW_ASSERT(global_status_var.global_memory_used == 0);
+    DBUG_SLOW_ASSERT(global_status_var.global_memory_used >= 0); /* not need for spider */
   }
   cleanup_tls();
   DBUG_LEAVE;

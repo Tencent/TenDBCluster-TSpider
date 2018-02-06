@@ -425,17 +425,17 @@ my_bool init_dynamic_string_array(DYNAMIC_STRING_ARRAY *array,
 		DBUG_RETURN(TRUE);
 	}
 
-	if (!(array->pos_info_arr = (DYNAMIC_ARRAY *)my_malloc(sizeof(DYNAMIC_ARRAY), MYF(0)))) {
+	if (!(array->pos_info_arr = (DYNAMIC_ARRAY *)my_malloc(sizeof(DYNAMIC_ARRAY), MYF(MY_WME)))) {
 		// TODO: print err
 		DBUG_RETURN(TRUE);
 	}
 
-	if (!(array->dynstr = (DYNAMIC_STRING *)my_malloc(sizeof(DYNAMIC_STRING), MYF(0)))) {
+	if (!(array->dynstr = (DYNAMIC_STRING *)my_malloc(sizeof(DYNAMIC_STRING), MYF(MY_WME)))) {
 		// TODO: print err
 		DBUG_RETURN(TRUE);
 	}
 
-	init_dynamic_array2(array->pos_info_arr, sizeof(dynstr_pos_info), NULL, init_alloc, alloc_increment, 0);
+	init_dynamic_array2(array->pos_info_arr, sizeof(dynstr_pos_info), NULL, init_alloc, alloc_increment, MYF(MY_WME));
 	array->cur_idx = 0;
 	DBUG_RETURN(init_dynamic_string(array->dynstr, "", 0, 0) ? TRUE : FALSE);
 }

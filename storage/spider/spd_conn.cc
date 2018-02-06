@@ -4672,8 +4672,8 @@ static void *spider_conn_recycle_action(void *arg)
 			}
 		}
 
-		// NOTE: In worst case, idle connection would be freed in 1.25 * spider_param_idle_conn_recycle_interval
-		//sleep(spider_param_idle_conn_recycle_interval() >> 2); 
+		/* NOTE: In worst case, idle connection would be freed in 1.25 * spider_param_idle_conn_recycle_interval */
+		/* sleep(spider_param_idle_conn_recycle_interval() >> 2);  */
 		int sleep_sec = (spider_param_idle_conn_recycle_interval() >> 2);
 		while (sleep_sec > 0) {
 			sleep(8);
@@ -4681,6 +4681,8 @@ static void *spider_conn_recycle_action(void *arg)
 			if (sleep_sec > (spider_param_idle_conn_recycle_interval() >> 2)) {
 				sleep_sec = (spider_param_idle_conn_recycle_interval() >> 2);
 			}
+      if(!conn_rcyc_init)
+          break;
 		}
 	}
 
@@ -4717,9 +4719,9 @@ void spider_free_conn_recycle_thread()
 {
 	DBUG_ENTER("spider_free_conn_recycle_thread");
 	if (conn_rcyc_init) {
+		conn_rcyc_init = FALSE;
 		pthread_cancel(conn_rcyc_thread);
 		pthread_join(conn_rcyc_thread, NULL);
-		conn_rcyc_init = FALSE;
 	}
 	DBUG_VOID_RETURN;
 }
