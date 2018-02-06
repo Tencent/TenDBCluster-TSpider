@@ -317,6 +317,25 @@ struct st_mysql_plugin spider_i_s_alloc_mem =
 #endif
 };
 
+struct st_mysql_plugin spider_i_s_conns =
+{
+    MYSQL_INFORMATION_SCHEMA_PLUGIN,
+    &spider_i_s_info,
+    "SPIDER_CONNS",
+    "willhan",
+    "Spider connection pool viewer",
+    PLUGIN_LICENSE_GPL,
+    spider_i_s_conn_pool_init,
+    spider_i_s_conn_pool_deinit,
+    0x0001, /* plugin version */
+    NULL,
+    NULL,
+    NULL,
+#if MYSQL_VERSION_ID >= 50600
+    0,
+#endif
+};
+
 #ifdef MARIADB_BASE_VERSION
 struct st_maria_plugin spider_i_s_alloc_mem_maria =
 {
@@ -352,20 +371,3 @@ struct st_maria_plugin spider_i_s_conns_maria =
 	MariaDB_PLUGIN_MATURITY_GAMMA,
 };
 #endif
-
-struct st_mysql_plugin spider_i_s_conns =
-{
-	MYSQL_INFORMATION_SCHEMA_PLUGIN,
-	&spider_i_s_info,
-	"SPIDER_CONNS",
-	"willhan",
-	"Spider connection pool viewer",
-	PLUGIN_LICENSE_GPL,
-	spider_i_s_conn_pool_init,
-	spider_i_s_conn_pool_deinit,
-	0x0001, /* plugin version */
-	NULL,
-	NULL,
-	NULL,
-	0,
-};

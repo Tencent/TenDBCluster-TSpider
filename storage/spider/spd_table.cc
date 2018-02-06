@@ -7072,19 +7072,6 @@ int spider_db_init(
     goto error_conn_id_mutex_init;
   }
 #if MYSQL_VERSION_ID < 50500
-  if (pthread_mutex_init(&spider_conn_meta_mutex, MY_MUTEX_INIT_FAST))
-#else
-  if (mysql_mutex_init(spd_key_mutex_conn_meta,
-	  &spider_conn_meta_mutex, MY_MUTEX_INIT_FAST))
-#endif
-  {
-	  error_num = HA_ERR_OUT_OF_MEM;
-	  goto error_conn_meta_mutex_init;
-  }
-  if (error_num = spider_create_conn_recycle_thread()) {
-	  goto error_conn_recycle_thd_init;
-  }
-#if MYSQL_VERSION_ID < 50500
   if (pthread_mutex_init(&spider_ipport_conn_mutex, MY_MUTEX_INIT_FAST))
 #else
   if (mysql_mutex_init(spd_key_mutex_ipport_count,
@@ -7137,6 +7124,31 @@ int spider_db_init(
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_conn_mutex_init;
   }
+#if MYSQL_VERSION_ID < 50500
+  if (pthread_mutex_init(&spider_conn_meta_mutex, MY_MUTEX_INIT_FAST))
+#else
+  if (mysql_mutex_init(spd_key_mutex_conn_meta,
+      &spider_conn_meta_mutex, MY_MUTEX_INIT_FAST))
+#endif
+  {
+      error_num = HA_ERR_OUT_OF_MEM;
+      goto error_conn_meta_mutex_init;
+  }
+  if (error_num = spider_create_conn_recycle_thread()) {
+      goto error_conn_recycle_thd_init;
+  }
+#ifndef WITHOUT_SPIDER_BG_SEARCH
+#if MYSQL_VERSION_ID < 50500
+  if (pthread_mutex_init(&spider_global_trx_mutex, MY_MUTEX_INIT_FAST))
+#else
+  if (mysql_mutex_init(spd_key_mutex_global_trx,
+    &spider_global_trx_mutex, MY_MUTEX_INIT_FAST))
+#endif
+  {
+    error_num = HA_ERR_OUT_OF_MEM;
+    goto error_global_trx_mutex_init;
+  }
+#endif
 #if MYSQL_VERSION_ID < 50500
   if (pthread_mutex_init(&spider_open_conn_mutex, MY_MUTEX_INIT_FAST))
 #else

@@ -35,11 +35,11 @@
 #include "spd_trx.h"
 
 extern struct st_mysql_plugin spider_i_s_alloc_mem;
+extern struct st_mysql_plugin spider_i_s_conns;
 #ifdef MARIADB_BASE_VERSION
 extern struct st_maria_plugin spider_i_s_alloc_mem_maria;
 extern struct st_maria_plugin spider_i_s_conns_maria;
 #endif
-extern struct st_mysql_plugin spider_i_s_conns;
 
 extern volatile ulonglong spider_mon_table_cache_version;
 extern volatile ulonglong spider_mon_table_cache_version_req;
