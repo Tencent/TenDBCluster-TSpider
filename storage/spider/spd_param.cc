@@ -2839,7 +2839,7 @@ static MYSQL_THDVAR_INT(
   "Skip parallel search by specific conditions", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  3, /* def */
   -1, /* min */
   3, /* max */
   0 /* blk */

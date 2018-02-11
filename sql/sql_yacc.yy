@@ -6954,7 +6954,8 @@ field_type_lob:
           { $$.set(&type_handler_medium_blob); }
         | JSON_SYM
           {
-            Lex->charset= &my_charset_utf8mb4_bin;
+            Lex->charset= &my_charset_bin;
+            Lex->last_field->set_json_flag();
             $$.set(&type_handler_long_blob);
           }
         ;

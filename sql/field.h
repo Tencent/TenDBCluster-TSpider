@@ -699,6 +699,7 @@ public:
     TIMESTAMP_UN_FIELD=22,      // TIMESTAMP ON UPDATE NOW()
     TIMESTAMP_DNUN_FIELD=23,    // TIMESTAMP DEFAULT NOW() ON UPDATE NOW()
     TMYSQL_COMPRESSED= 24,      // Compatibility with TMySQL
+    TMYSQL_JSON= 66,            // json type flag
     };
   enum geometry_type
   {
@@ -4482,6 +4483,7 @@ public:
     *this= *def;
   }
   bool set_compressed(const char *method);
+  void set_json_flag();
   void set_compression_method(Compression_method *compression_method_arg)
   { compression_method_ptr= compression_method_arg; }
   Compression_method *compression_method() const

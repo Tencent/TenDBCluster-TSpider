@@ -8559,9 +8559,17 @@ void Field_blob::sql_type(String &res) const
   default: str="tiny"; length=4; break;
   case 2:  str="";     length=0; break;
   case 3:  str="medium"; length= 6; break;
-  case 4:  str="long";  length=4; break;
+  case 4:  
+      if (unireg_check == TMYSQL_JSON)
+          str = "json";
+      else
+          str = "long";
+      length = 4;
+      break;
   }
   res.set_ascii(str,length);
+  if (unireg_check == TMYSQL_JSON)
+      return;
   if (charset() == &my_charset_bin)
     res.append(STRING_WITH_LEN("blob"));
   else
@@ -11086,6 +11094,12 @@ bool Column_definition::set_compressed(const char *method)
   else
     my_error(ER_WRONG_FIELD_SPEC, MYF(0), field_name.str);
   return true;
+}
+
+
+void Column_definition::set_json_flag()
+{
+    unireg_check = Field::TMYSQL_JSON;
 }
 
 
