@@ -41,7 +41,7 @@
 */
 #define QRT_TIME_OVERFLOW "TOO LONG"
 
-#define QRT_DEFAULT_BASE 10
+#define QRT_DEFAULT_BASE 2
 
 #define QRT_TIME_STRING_LENGTH				\
   MY_MAX( (QRT_TIME_STRING_POSITIVE_POWER_LENGTH + 1 /* '.' */ + 6 /*QRT_TIME_STRING_NEGATIVE_POWER_LENGTH*/), \
@@ -49,7 +49,7 @@
 
 #define QRT_TOTAL_STRING_LENGTH				\
   MY_MAX( (QRT_TOTAL_STRING_POSITIVE_POWER_LENGTH + 1 /* '.' */ + 6 /*QRT_TOTAL_STRING_NEGATIVE_POWER_LENGTH*/), \
-       (sizeof(QRT_TIME_OVERFLOW) - 1) )
+       (100))
 
 extern ST_SCHEMA_TABLE query_response_time_table;
 
@@ -57,8 +57,8 @@ extern ST_SCHEMA_TABLE query_response_time_table;
 extern void query_response_time_init   ();
 extern void query_response_time_free   ();
 extern int query_response_time_flush  ();
-extern void query_response_time_collect(ulonglong query_time);
-extern int  query_response_time_fill   (THD* thd, TABLE_LIST *tables, COND *cond);
+extern void query_response_time_collect(unsigned long sql_use_partition_count, ulonglong query_time);
+extern int  query_response_time_fill   (MYSQL_THD, TABLE_LIST *tables, COND *cond);
 
 extern ulong   opt_query_response_time_range_base;
 extern my_bool opt_query_response_time_stats;

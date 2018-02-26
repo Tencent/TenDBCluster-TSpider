@@ -888,6 +888,11 @@ extern uint32 copy_and_convert_extended(char *to, uint32 to_length,
                                         CHARSET_INFO *from_cs, uint *errors);
 extern void dynstr_reassociate(DYNAMIC_STRING *str, char **res, size_t *length,
                                size_t *alloc_length);
+extern void my_get_time_str(
+    time_t  tm,
+    char*   buf,
+    size_t  buf_size
+);
 extern uint32 copy_and_convert_extended(char *to, uint32 to_length,
                                         CHARSET_INFO *to_cs,
                                         const char *from, uint32 from_length,

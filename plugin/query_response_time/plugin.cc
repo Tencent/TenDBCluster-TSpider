@@ -45,7 +45,7 @@ static MYSQL_SYSVAR_ULONG(range_base, opt_query_response_time_range_base,
 static MYSQL_SYSVAR_BOOL(stats, opt_query_response_time_stats,
        PLUGIN_VAR_OPCMDARG,
        "Enable or disable query response time statisics collecting",
-       NULL, NULL, FALSE);
+       NULL, NULL, TRUE);
 static MYSQL_SYSVAR_BOOL(flush, opt_query_response_time_flush,
        PLUGIN_VAR_NOCMDOPT,
        "Update of this variable flushes statistics and re-reads "
@@ -73,9 +73,11 @@ static struct st_mysql_sys_var *query_response_time_info_vars[]=
 
 ST_FIELD_INFO query_response_time_fields_info[] =
 {
-  { "TIME",  QRT_TIME_STRING_LENGTH,      MYSQL_TYPE_STRING,  0, 0,               "Time", 0 },
-  { "COUNT", MY_INT32_NUM_DECIMAL_DIGITS, MYSQL_TYPE_LONG,    0, MY_I_S_UNSIGNED, "Count", 0 },
-  { "TOTAL", QRT_TIME_STRING_LENGTH,      MYSQL_TYPE_STRING,  0, 0,               "Total", 0 },
+  { "TIME",  QRT_TIME_STRING_LENGTH,      MYSQL_TYPE_STRING,  0, 0,               "Time",    0 },
+  { "COUNT", MY_INT32_NUM_DECIMAL_DIGITS, MYSQL_TYPE_LONG,    0, MY_I_S_UNSIGNED, "Count",   0 },
+  { "TOTAL", QRT_TOTAL_STRING_LENGTH,      MYSQL_TYPE_STRING,  0, 0,               "Total",   0 },
+  { "P_COUNT", MY_INT32_NUM_DECIMAL_DIGITS, MYSQL_TYPE_LONG,  0, MY_I_S_UNSIGNED, "P_Count", 0 },
+  { "P_TOTAL",  QRT_TOTAL_STRING_LENGTH,    MYSQL_TYPE_STRING,0, 0,               "P_Total", 0 },
   { 0, 0, MYSQL_TYPE_NULL, 0, 0, 0, 0 }
 };
 
@@ -115,11 +117,11 @@ static void query_response_time_audit_notify(MYSQL_THD thd,
   {
 #ifndef DBUG_OFF
     if (THDVAR(thd, exec_time_debug))
-      query_response_time_collect(thd->lex->sql_command != SQLCOM_SET_OPTION ?
+      query_response_time_collect(thd->sql_use_partition_count, thd->lex->sql_command != SQLCOM_SET_OPTION ?
                                   THDVAR(thd, exec_time_debug) : 0);
     else
 #endif
-    query_response_time_collect(thd->utime_after_query - thd->utime_after_lock);
+    query_response_time_collect(thd->sql_use_partition_count, thd->utime_after_query - thd->utime_after_lock);
   }
 }
 
