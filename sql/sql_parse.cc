@@ -1681,6 +1681,7 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
       thd->get_stmt_da()->set_skip_flush();
   }
 
+  thd->sql_use_partition_count = 0;
   switch (command) {
   case COM_INIT_DB:
   {
