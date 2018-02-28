@@ -11196,6 +11196,7 @@ int ha_partition::direct_update_rows_init()
   int error;
   uint i, found;
   handler *file;
+  THD *thd = ha_thd();
   DBUG_ENTER("ha_partition::direct_update_rows_init");
 
   if (bitmap_is_overlapping(&m_part_info->full_part_field_set,
@@ -11236,13 +11237,17 @@ int ha_partition::direct_update_rows_init()
     DBUG_PRINT("info", ("partition select_lex: %p", select_lex));
     if (select_lex && select_lex->explicit_limit)
     {
-      DBUG_PRINT("info", ("partition explicit_limit=TRUE"));
-      DBUG_PRINT("info", ("partition offset_limit: %p",
-                          select_lex->offset_limit));
-      DBUG_PRINT("info", ("partition select_limit: %p",
-                          select_lex->select_limit));
-      DBUG_PRINT("info", ("partition FALSE by select_lex"));
-      DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        if (!thd || select_lex->offset_limit && select_lex->offset_limit->val_int() > 0)
+        {
+            DBUG_PRINT("info", ("partition explicit_limit=TRUE"));
+            DBUG_PRINT("info", ("partition offset_limit: %p",
+                select_lex->offset_limit));
+            DBUG_PRINT("info", ("partition select_limit: %p",
+                select_lex->select_limit));
+            DBUG_PRINT("info", ("partition FALSE by select_lex"));
+            DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        }
+        thd->direct_limit = select_lex->select_limit->val_int();
     }
   }
   DBUG_PRINT("info", ("partition OK"));
@@ -11297,6 +11302,8 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found
   ha_rows update_rows= 0;
   ha_rows found_rows= 0;
   uint32 i;
+  THD  *thd = ha_thd();
+  bool finish_flag = false;
   DBUG_ENTER("ha_partition::direct_update_rows");
 
   /* If first call to direct_update_rows with RND scan */
@@ -11321,21 +11328,30 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found
                               file->ha_rnd_init(TRUE)))))
           DBUG_RETURN(error);
       }
-      if (unlikely((error= (m_pre_calling ?
-                            (file)->pre_direct_update_rows() :
-                            (file)->ha_direct_update_rows(&update_rows, &found_rows)))))
+      if (!finish_flag)
       {
-        if (rnd_seq)
-        {
-          if (m_pre_calling)
-            file->ha_pre_rnd_end();
-          else
-            file->ha_rnd_end();
-        }
-        DBUG_RETURN(error);
+          if (unlikely((error = (m_pre_calling ?
+              (file)->pre_direct_update_rows() :
+              (file)->ha_direct_update_rows(&update_rows, &found_rows)))))
+          {
+              if (rnd_seq)
+              {
+                  if (m_pre_calling)
+                      file->ha_pre_rnd_end();
+                  else
+                      file->ha_rnd_end();
+              }
+              DBUG_RETURN(error);
+          }
+          *update_rows_result += update_rows;
+          *found_rows_result += found_rows;
+          if (thd && thd->direct_limit > 0)
+          {
+              thd->direct_limit -= found_rows;
+              if (thd->direct_limit <= 0)
+                  finish_flag = true;
+          }
       }
-      *update_rows_result += update_rows;
-      *found_rows_result += found_rows;
     }
     if (rnd_seq)
     {
@@ -11393,6 +11409,7 @@ int ha_partition::direct_delete_rows_init()
 {
   int error;
   uint i, found;
+  THD* thd = ha_thd();
   DBUG_ENTER("ha_partition::direct_delete_rows_init");
 
   m_part_spec.start_part= 0;
@@ -11426,13 +11443,17 @@ int ha_partition::direct_delete_rows_init()
     DBUG_PRINT("info", ("partition select_lex: %p", select_lex));
     if (select_lex && select_lex->explicit_limit)
     {
-      DBUG_PRINT("info", ("partition explicit_limit: TRUE"));
-      DBUG_PRINT("info", ("partition offset_limit: %p",
-                          select_lex->offset_limit));
-      DBUG_PRINT("info", ("partition select_limit: %p",
-                          select_lex->select_limit));
-      DBUG_PRINT("info", ("partition FALSE by select_lex"));
-      DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        if (!thd || select_lex->offset_limit && select_lex->offset_limit->val_int() > 0)
+        {
+            DBUG_PRINT("info", ("partition explicit_limit: TRUE"));
+            DBUG_PRINT("info", ("partition offset_limit: %p",
+                select_lex->offset_limit));
+            DBUG_PRINT("info", ("partition select_limit: %p",
+                select_lex->select_limit));
+            DBUG_PRINT("info", ("partition FALSE by select_lex"));
+            DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        }
+        thd->direct_limit = select_lex->select_limit->val_int();
     }
   }
   DBUG_PRINT("exit", ("OK"));
@@ -11487,6 +11508,8 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
   ha_rows delete_rows= 0;
   uint32 i;
   handler *file;
+  THD *thd = ha_thd();
+  bool finish_flag = false;
   DBUG_ENTER("ha_partition::direct_delete_rows");
 
   if ((m_pre_calling ? pre_inited : inited) == RND && m_scan_value == 1)
@@ -11510,17 +11533,26 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
                               file->ha_rnd_init(TRUE)))))
           DBUG_RETURN(error);
       }
-      if ((error= (m_pre_calling ?
-                   file->pre_direct_delete_rows() :
-                   file->ha_direct_delete_rows(&delete_rows))))
+      if (!finish_flag)
       {
-        if (m_pre_calling)
-          file->ha_pre_rnd_end();
-        else
-          file->ha_rnd_end();
-        DBUG_RETURN(error);
+          if ((error = (m_pre_calling ?
+              file->pre_direct_delete_rows() :
+              file->ha_direct_delete_rows(&delete_rows))))
+          {
+              if (m_pre_calling)
+                  file->ha_pre_rnd_end();
+              else
+                  file->ha_rnd_end();
+              DBUG_RETURN(error);
+          }
+          *delete_rows_result += delete_rows;
+          if (thd && thd->direct_limit > 0)
+          {
+              thd->direct_limit -= delete_rows;
+              if (thd->direct_limit <= 0)
+                  finish_flag = true;
+          }
       }
-      delete_rows_result+= delete_rows;
     }
     if (rnd_seq)
     {

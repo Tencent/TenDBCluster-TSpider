@@ -9089,11 +9089,17 @@ ulonglong ha_spider::table_flags() const
     HA_CAN_DIRECT_UPDATE_AND_DELETE |
 #endif
 #ifdef HA_CAN_FORCE_BULK_UPDATE
-    (share && share->force_bulk_update ? HA_CAN_FORCE_BULK_UPDATE : 0) |
+      HA_CAN_FORCE_BULK_UPDATE |
 #endif
 #ifdef HA_CAN_FORCE_BULK_DELETE
-    (share && share->force_bulk_delete ? HA_CAN_FORCE_BULK_DELETE : 0) |
+      HA_CAN_FORCE_BULK_DELETE |
 #endif
+//#ifdef HA_CAN_FORCE_BULK_UPDATE
+//    (share && share->force_bulk_update ? HA_CAN_FORCE_BULK_UPDATE : 0) |
+//#endif
+//#ifdef HA_CAN_FORCE_BULK_DELETE
+//    (share && share->force_bulk_delete ? HA_CAN_FORCE_BULK_DELETE : 0) |
+//#endif
     (share ? share->additional_table_flags : 0)
   ;
   DBUG_RETURN(flags);
@@ -9654,6 +9660,8 @@ int ha_spider::update_row(
   const uchar *new_data
 ) {
   int error_num;
+  uint update_rows = 0;
+  uint found_rows = 0;
   THD *thd = ha_thd();
   backup_error_status();
   DBUG_ENTER("ha_spider::update_row");
@@ -9698,7 +9706,7 @@ int ha_spider::update_row(
   if (table->timestamp_field_type & TIMESTAMP_AUTO_SET_ON_UPDATE)
     table->timestamp_field->set_time();
 #endif
-  if ((error_num = spider_db_update(this, table, old_data)))
+  if ((error_num = spider_db_update(this, table, old_data, &update_rows, &found_rows)))
     DBUG_RETURN(check_error_mode(error_num));
   if (table->found_next_number_field &&
     new_data == table->record[0] &&
@@ -9738,6 +9746,8 @@ int ha_spider::update_row(
     }
     pthread_mutex_unlock(&share->lgtm_tblhnd_share->auto_increment_mutex);
   }
+  //if (update_rows == 0) /* no row affected */
+  //    DBUG_RETURN(HA_ERR_RECORD_IS_THE_SAME);
   DBUG_RETURN(0);
 }
 
@@ -9816,18 +9826,21 @@ int ha_spider::direct_update_rows_init(
     }
     if (select_lex->order_list.elements)
     {
-      ORDER *order;
-      for (order = (ORDER *) select_lex->order_list.first; order;
-        order = order->next)
-      {
-        if (check_item_type_sql((*order->item)))
+        DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        /** with order by, not using direct update/delete
+        ORDER *order;
+        for (order = (ORDER *)select_lex->order_list.first; order;
+            order = order->next)
         {
-          DBUG_PRINT("info",("spider FALSE by order"));
-          do_direct_update = FALSE;
-          DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+            if (check_item_type_sql((*order->item)))
+            {
+                DBUG_PRINT("info", ("spider FALSE by order"));
+                do_direct_update = FALSE;
+                DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+            }
         }
-      }
-      result_list.direct_order_limit = TRUE;
+        result_list.direct_order_limit = TRUE;
+        **/
     }
     trx->direct_update_count++;
     DBUG_PRINT("info",("spider OK"));
@@ -9939,6 +9952,8 @@ int ha_spider::direct_update_rows_init()
     }
     if (select_lex->order_list.elements)
     {
+        DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        /** with order by, not using direct update/delete
       ORDER *order;
       for (order = (ORDER *) select_lex->order_list.first; order;
         order = order->next)
@@ -9951,6 +9966,7 @@ int ha_spider::direct_update_rows_init()
         }
       }
       result_list.direct_order_limit = TRUE;
+      **********/
     }
     trx->direct_update_count++;
     DBUG_PRINT("info",("spider OK"));
@@ -10294,6 +10310,8 @@ int ha_spider::direct_delete_rows_init(
     }
     if (select_lex->order_list.elements)
     {
+        DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        /** with order by, not using direct update/delete
       ORDER *order;
       for (order = (ORDER *) select_lex->order_list.first; order;
         order = order->next)
@@ -10306,6 +10324,7 @@ int ha_spider::direct_delete_rows_init(
         }
       }
       result_list.direct_order_limit = TRUE;
+      ************/
     }
     trx->direct_delete_count++;
     DBUG_PRINT("info",("spider OK"));
@@ -10392,6 +10411,8 @@ int ha_spider::direct_delete_rows_init()
   }
   if (select_lex->order_list.elements)
   {
+      DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+    /** with order by, not using direct update/delete
     ORDER *order;
     for (order = (ORDER *) select_lex->order_list.first; order;
       order = order->next)
@@ -10404,6 +10425,7 @@ int ha_spider::direct_delete_rows_init()
       }
     }
     result_list.direct_order_limit = TRUE;
+    **************/
   }
   trx->direct_delete_count++;
   DBUG_PRINT("info",("spider OK"));

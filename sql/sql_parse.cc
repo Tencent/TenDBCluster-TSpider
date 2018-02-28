@@ -7610,6 +7610,7 @@ void THD::reset_for_next_command(bool do_clear_error)
 
   /* for spider */
   thd->sql_use_partition_count = 0;
+  thd->direct_limit = -1;
 
   DBUG_PRINT("debug",
              ("is_current_stmt_binlog_format_row(): %d",

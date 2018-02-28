@@ -741,7 +741,9 @@ int spider_db_bulk_update(
 int spider_db_update(
   ha_spider *spider,
   TABLE *table,
-  const uchar *old_data
+  const uchar *old_data,
+  uint *update_rows,
+  uint *found_rows
 );
 
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS

@@ -2410,6 +2410,7 @@ public:
  
   /* for spider */
   unsigned long sql_use_partition_count;
+  longlong direct_limit;          //for direct_update/direct_delete
 
   // Process indicator
   struct {

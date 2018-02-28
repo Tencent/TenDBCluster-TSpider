@@ -4517,6 +4517,8 @@ int spider_db_mysql_util::open_item_func(
     case Item_func::TRIG_COND_FUNC:
       DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
     case Item_func::GUSERVAR_FUNC:
+        DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
+        /**
       if (str)
         str->length(str->length() - SPIDER_SQL_OPEN_PAREN_LEN);
       if (item_func->result_type() == STRING_RESULT)
@@ -4525,6 +4527,7 @@ int spider_db_mysql_util::open_item_func(
       else
         DBUG_RETURN(spider_db_open_item_int(item_func, spider, str,
           alias, alias_length, dbton_id, use_fields, fields));
+          ***/
     case Item_func::FT_FUNC:
       if (spider_db_check_ft_idx(item_func, spider) == MAX_KEY)
         DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);

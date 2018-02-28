@@ -6513,7 +6513,9 @@ int spider_db_bulk_update(
 int spider_db_update(
   ha_spider *spider,
   TABLE *table,
-  const uchar *old_data
+  const uchar *old_data,
+  uint *update_rows,
+  uint *found_rows
 ) {
   int error_num, roop_count;
   SPIDER_SHARE *share = spider->share;
@@ -6627,7 +6629,8 @@ int spider_db_update(
       }
       DBUG_RETURN(error_num);
     }
-
+    *update_rows = conn->db_conn->affected_rows();
+    *found_rows = conn->db_conn->matched_rows();
     if (
       !conn->db_conn->affected_rows() &&
       share->link_statuses[roop_count] == SPIDER_LINK_STATUS_RECOVERY &&
@@ -6709,6 +6712,7 @@ int spider_db_direct_update(
   st_select_lex *select_lex;
   longlong select_limit;
   longlong offset_limit;
+  THD *thd = spider->trx->thd;
   DBUG_ENTER("spider_db_direct_update");
 
   spider_set_result_list_param(spider);
@@ -6807,11 +6811,19 @@ int spider_db_direct_update(
     result_list->key_info = NULL;
   else
     result_list->key_info = &table->key_info[spider->active_index];
-  spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
-  result_list->limit_num =
-    result_list->internal_limit >= select_limit ?
-    select_limit : result_list->internal_limit;
-  result_list->internal_offset += offset_limit;
+  if (thd->direct_limit > 0)
+  {
+      result_list->limit_num = thd->direct_limit;
+      result_list->internal_offset = 0;
+  }
+  else
+  {
+      spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
+      result_list->limit_num =
+          result_list->internal_limit >= select_limit ?
+          select_limit : result_list->internal_limit;
+      result_list->internal_offset += offset_limit;
+  }
   if (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL)
   {
     if (
@@ -7043,6 +7055,7 @@ int spider_db_direct_update(
   st_select_lex *select_lex;
   longlong select_limit;
   longlong offset_limit;
+  THD *thd = spider->trx->thd;
   DBUG_ENTER("spider_db_direct_update");
 
   spider_set_result_list_param(spider);
@@ -7092,11 +7105,19 @@ int spider_db_direct_update(
     result_list->key_info = NULL;
   else
     result_list->key_info = &table->key_info[spider->active_index];
-  spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
-  result_list->limit_num =
-    result_list->internal_limit >= select_limit ?
-    select_limit : result_list->internal_limit;
-  result_list->internal_offset += offset_limit;
+  if (thd->direct_limit > 0)
+  {
+      result_list->limit_num = thd->direct_limit;
+      result_list->internal_offset = 0;
+  }
+  else
+  {
+      spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
+      result_list->limit_num =
+          result_list->internal_limit >= select_limit ?
+          select_limit : result_list->internal_limit;
+      result_list->internal_offset += offset_limit;
+  }
   if (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL)
   {
     if (
@@ -7435,6 +7456,7 @@ int spider_db_direct_delete(
   st_select_lex *select_lex;
   longlong select_limit;
   longlong offset_limit;
+  THD* thd = spider->trx->thd;
   DBUG_ENTER("spider_db_direct_delete");
 
   spider_set_result_list_param(spider);
@@ -7445,11 +7467,19 @@ int spider_db_direct_delete(
     result_list->key_info = NULL;
   else
     result_list->key_info = &table->key_info[spider->active_index];
-  spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
-  result_list->limit_num =
-    result_list->internal_limit >= select_limit ?
-    select_limit : result_list->internal_limit;
-  result_list->internal_offset += offset_limit;
+  if (thd->direct_limit > 0)
+  {
+      result_list->limit_num = thd->direct_limit;
+      result_list->internal_offset = 0;
+  }
+  else
+  {
+      spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
+      result_list->limit_num =
+          result_list->internal_limit >= select_limit ?
+          select_limit : result_list->internal_limit;
+      result_list->internal_offset += offset_limit;
+  }
 /*
   result_list->limit_num =
     result_list->internal_limit >= result_list->split_read ?
@@ -7689,6 +7719,7 @@ int spider_db_direct_delete(
   st_select_lex *select_lex;
   longlong select_limit;
   longlong offset_limit;
+  THD* thd = spider->trx->thd;
   DBUG_ENTER("spider_db_direct_delete");
 
   spider_set_result_list_param(spider);
@@ -7699,11 +7730,19 @@ int spider_db_direct_delete(
     result_list->key_info = NULL;
   else
     result_list->key_info = &table->key_info[spider->active_index];
-  spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
-  result_list->limit_num =
-    result_list->internal_limit >= select_limit ?
-    select_limit : result_list->internal_limit;
-  result_list->internal_offset += offset_limit;
+  if (thd->direct_limit > 0)
+  {
+      result_list->limit_num = thd->direct_limit;
+      result_list->internal_offset = 0;
+  }
+  else
+  {
+      spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
+      result_list->limit_num =
+          result_list->internal_limit >= select_limit ?
+          select_limit : result_list->internal_limit;
+      result_list->internal_offset += offset_limit;
+  }
   if (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL)
   {
     if (

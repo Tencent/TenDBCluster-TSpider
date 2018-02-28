@@ -1033,7 +1033,7 @@ static MYSQL_THDVAR_INT(
   "The mode of bulk updating and deleting", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  2, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -1058,7 +1058,7 @@ static MYSQL_THDVAR_INT(
   "Bulk update size", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  16000, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
