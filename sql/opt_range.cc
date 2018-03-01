@@ -12372,8 +12372,28 @@ get_best_group_min_max(PARAM *param, SEL_TREE *tree, double read_time)
   Item_field *item_field;
   bool is_agg_distinct;
   List<Item_field> agg_distinct_flds;
+  handler *file_tmp;
+  TABLE_LIST *all_tables;
+  TABLE_LIST *tbl;
 
   DBUG_ENTER("get_best_group_min_max");
+
+  if (thd && thd->lex && thd->lex->query_tables)
+  {
+      all_tables = thd->lex->query_tables;
+      for (tbl = all_tables; tbl; tbl = tbl->next_global)
+      {
+          if (tbl && tbl->table)
+          {
+              file_tmp = tbl->table->file;
+              if (file_tmp && file_tmp->is_spider_storage_engine())
+              {/* spider encounter error when doing plan "Using index for group-by";
+                  spider don't need to do this plan */
+                  DBUG_RETURN(NULL);
+              }
+          }
+      }
+  }
 
   /* Perform few 'cheap' tests whether this access method is applicable. */
   if (!join)
