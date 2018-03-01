@@ -7333,6 +7333,7 @@ Item_subselect *TABLE_LIST::containing_subselect()
 */
 bool TABLE_LIST::process_index_hints(TABLE *tbl)
 {
+    THD *thd = current_thd;
   /* initialize the result variables */
   tbl->keys_in_use_for_query= tbl->keys_in_use_for_group_by= 
     tbl->keys_in_use_for_order_by= tbl->s->keys_in_use;
@@ -7456,6 +7457,20 @@ bool TABLE_LIST::process_index_hints(TABLE *tbl)
     tbl->keys_in_use_for_query.subtract (index_join[INDEX_HINT_IGNORE]);
     tbl->keys_in_use_for_order_by.subtract (index_order[INDEX_HINT_IGNORE]);
     tbl->keys_in_use_for_group_by.subtract (index_group[INDEX_HINT_IGNORE]);
+  }
+
+  /* single table query in spider do not need using index */
+  if (opt_spider_ignore_single_select_index &&
+      thd && thd->lex &&
+      thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
+      /* !thd->lex->describe &&  // not describe/explain types */
+      thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
+      tbl->file && tbl->file->is_spider_storage_engine()  /* only for spider */
+      )
+  {
+      tbl->keys_in_use_for_query.clear_all();
+      tbl->keys_in_use_for_order_by.clear_all();
+      tbl->keys_in_use_for_group_by.clear_all();
   }
 
   /* make sure covering_keys don't include indexes disabled with a hint */

@@ -6096,3 +6096,8 @@ static Sys_var_uint Sys_spider_auto_increment_mode_value(
     "the values, as the auto_increment mode 32. auto_increment add by 32",
     READ_ONLY GLOBAL_VAR(opt_spider_auto_increment_mode_value), CMD_LINE(REQUIRED_ARG),
     VALID_RANGE(0, 128), DEFAULT(1), BLOCK_SIZE(1));
+
+static Sys_var_mybool Sys_spider_ignore_single_select_index(
+    "spider_ignore_single_select_index",
+    "spider_ignore_single_select_index defaults is TRUE, let single select in spider ignore all index",
+    GLOBAL_VAR(opt_spider_ignore_single_select_index), CMD_LINE(OPT_ARG), DEFAULT(TRUE));

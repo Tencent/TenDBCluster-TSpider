@@ -311,6 +311,7 @@ extern my_bool opt_log_sql_use_mutil_partition;
 extern my_bool opt_spider_auto_increment_mode_switch;
 extern uint opt_spider_auto_increment_mode_value;
 extern uint opt_spider_auto_increment_step;
+extern my_bool opt_spider_ignore_single_select_index;
 
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP
