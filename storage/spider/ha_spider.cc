@@ -9842,6 +9842,28 @@ int ha_spider::direct_update_rows_init(
         result_list.direct_order_limit = TRUE;
         **/
     }
+
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // it can't use direct_update where set timestamp = ** by user.
+    if (thd->is_set_time())
+    {
+        // always one table
+        TABLE* table = select_lex->table_list.first->table;
+        Field *field;
+        Field **field_ptr;
+        //if (table && (table->timestamp_field_type & TIMESTAMP_AUTO_SET_ON_UPDATE))
+        //{
+        //    DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        //}
+        for (field_ptr = table->field; *field_ptr; field_ptr++)
+        {
+            field = *field_ptr;
+            if (field->has_update_default_function())
+            {
+                DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+            }
+        }
+    }
     trx->direct_update_count++;
     DBUG_PRINT("info",("spider OK"));
     DBUG_RETURN(0);
@@ -9967,6 +9989,28 @@ int ha_spider::direct_update_rows_init()
       }
       result_list.direct_order_limit = TRUE;
       **********/
+    }
+
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // it can't use direct_update where set timestamp = ** by user.
+    if (thd->is_set_time())
+    {
+        // always one table
+        TABLE* table = select_lex->table_list.first->table;
+        Field *field;
+        Field **field_ptr;
+        //if (table && (table->timestamp_field_type & TIMESTAMP_AUTO_SET_ON_UPDATE))
+        //{
+        //    DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+        //}
+        for (field_ptr = table->field; *field_ptr; field_ptr++)
+        {
+            field = *field_ptr;
+            if (field->has_update_default_function())
+            {
+                DBUG_RETURN(HA_ERR_WRONG_COMMAND);
+            }
+        }
     }
     trx->direct_update_count++;
     DBUG_PRINT("info",("spider OK"));
