@@ -3822,7 +3822,7 @@ int spider_set_connect_info_default(
   if (share->split_read == -1)
     share->split_read = 9223372036854775807LL;
   if (share->semi_split_read == -1)
-    share->semi_split_read = 2;
+    share->semi_split_read = 1;
   if (share->semi_split_read_limit == -1)
     share->semi_split_read_limit = 9223372036854775807LL;
   if (share->init_sql_alloc_size == -1)

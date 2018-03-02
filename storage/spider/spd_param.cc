@@ -535,7 +535,7 @@ static MYSQL_THDVAR_INT(
   "Use offset and limit parameter in SQL for split_read parameter.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
