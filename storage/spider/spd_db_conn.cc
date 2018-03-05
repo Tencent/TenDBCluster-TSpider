@@ -641,8 +641,10 @@ int spider_db_query(
   int quick_mode,
   int *need_mon
 ) {
-  int error_num;
+  int error_num = 0;
+  THD *thd = current_thd;
   DBUG_ENTER("spider_db_query");
+  thd_proc_info(thd, "spider_db_query start");
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   if (conn->conn_kind == SPIDER_CONN_KIND_MYSQL)
   {
@@ -663,9 +665,9 @@ int spider_db_query(
     DBUG_PRINT("info", ("spider query=%s", query));
     DBUG_PRINT("info", ("spider length=%u", length));
 #endif
-    if ((error_num = conn->db_conn->exec_query(query, length, quick_mode)))
-      DBUG_RETURN(error_num);
-    DBUG_RETURN(0);
+    error_num = conn->db_conn->exec_query(query, length, quick_mode);
+    thd_proc_info(thd, "spider_db_query end");
+    DBUG_RETURN(error_num);
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   } else {
     if (conn->queued_net_timeout)
@@ -3678,7 +3680,9 @@ int spider_db_store_result(
   SPIDER_DB_CONN *db_conn;
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   SPIDER_RESULT *current;
+  THD *thd = current_thd;
   DBUG_ENTER("spider_db_store_result");
+  thd_proc_info(thd, "spider_store_result");
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   if (spider->conn_kind[link_idx] == SPIDER_CONN_KIND_MYSQL)
   {

@@ -2033,8 +2033,10 @@ int spider_bg_all_conn_pre_next(
   int roop_start, roop_end, roop_count, lock_mode, link_ok, error_num;
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   SPIDER_SHARE *share = spider->share;
+  THD *thd = current_thd;
 #endif
   DBUG_ENTER("spider_bg_all_conn_pre_next");
+  thd_proc_info(thd, "pre_next start");
 #ifndef WITHOUT_SPIDER_BG_SEARCH
   if (result_list->bgs_phase > 0)
   {
@@ -2060,12 +2062,16 @@ int spider_bg_all_conn_pre_next(
         spider->conn_link_idx, roop_count, share->link_count,
         SPIDER_LINK_STATUS_RECOVERY)
     ) {
-      if ((error_num = spider_bg_conn_search(spider, roop_count, roop_start,
-        TRUE, TRUE, (roop_count != link_ok))))
-        DBUG_RETURN(error_num);
+        if ((error_num = spider_bg_conn_search(spider, roop_count, roop_start,
+            TRUE, TRUE, (roop_count != link_ok))))
+        {
+            thd_proc_info(thd, "pre_next end");
+            DBUG_RETURN(error_num);
+        }
     }
   }
 #endif
+  thd_proc_info(thd, "pre_next end");
   DBUG_RETURN(0);
 }
 
@@ -2165,6 +2171,7 @@ int spider_bg_conn_search(
   SPIDER_CONN *conn, *first_conn = NULL;
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   bool with_lock = FALSE;
+  THD *thd = current_thd;
   DBUG_ENTER("spider_bg_conn_search");
   DBUG_PRINT("info",("spider spider=%p", spider));
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
@@ -2204,10 +2211,11 @@ int spider_bg_conn_search(
       conn->bg_target = spider;
       conn->link_idx = link_idx;
       conn->bg_discard_result = discard_result;
-      pthread_mutex_lock(&conn->bg_conn_sync_mutex);
+      thd_proc_info(thd, "Waking up bg thread ");
+      pthread_mutex_lock(&conn->bg_conn_sync_mutex); // 必须保证sinal前，后台线程是wait状态
       pthread_cond_signal(&conn->bg_conn_cond);
       pthread_mutex_unlock(&conn->bg_conn_mutex);
-      pthread_cond_wait(&conn->bg_conn_sync_cond, &conn->bg_conn_sync_mutex);
+      pthread_cond_wait(&conn->bg_conn_sync_cond, &conn->bg_conn_sync_mutex); // 如果不wait，也没影响 ？  相当于一次握手 ？
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
       conn->bg_caller_wait = FALSE;
       if (result_list->bgs_error)
@@ -2220,7 +2228,8 @@ int spider_bg_conn_search(
     }
     if (result_list->bgs_working || !result_list->finish_flg)
     {
-      pthread_mutex_lock(&conn->bg_conn_mutex);
+      thd_proc_info(thd, "Waiting bg action");
+      pthread_mutex_lock(&conn->bg_conn_mutex); /* 只有spider_bg_action在pthread_cond_wait时才会加锁成功：1,等query;2，等再次处理结果 */
       if (!result_list->finish_flg)
       {
         DBUG_PRINT("info",("spider bg second search"));
@@ -2308,10 +2317,11 @@ int spider_bg_conn_search(
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
         conn->link_idx_chain = spider->link_idx_chain;
 #endif
+        thd_proc_info(thd, "Starting bg action");
         pthread_mutex_lock(&conn->bg_conn_sync_mutex);
-        pthread_cond_signal(&conn->bg_conn_cond);
+        pthread_cond_signal(&conn->bg_conn_cond);  // 发信号，后台线程执行sql
         pthread_mutex_unlock(&conn->bg_conn_mutex);
-        pthread_cond_wait(&conn->bg_conn_sync_cond, &conn->bg_conn_sync_mutex);
+        pthread_cond_wait(&conn->bg_conn_sync_cond, &conn->bg_conn_sync_mutex); // 确定后台线程已执行sql，不是尚处于wait状态
         pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
         conn->bg_caller_sync_wait = FALSE;
       } else {
@@ -2359,6 +2369,7 @@ int spider_bg_conn_search(
     {
       /* wait */
       DBUG_PRINT("info",("spider bg working wait"));
+      thd_proc_info(thd, "Waiting bg action done");
       pthread_mutex_lock(&conn->bg_conn_mutex);
       pthread_mutex_unlock(&conn->bg_conn_mutex);
     }
@@ -2442,6 +2453,7 @@ int spider_bg_conn_search(
         if (with_lock)
           conn->bg_conn_chain_mutex_ptr = &first_conn->bg_conn_chain_mutex;
         conn->bg_caller_sync_wait = TRUE;
+        thd_proc_info(thd, "Waiting bg store result");
         pthread_mutex_lock(&conn->bg_conn_sync_mutex);
         pthread_cond_signal(&conn->bg_conn_cond);
         pthread_mutex_unlock(&conn->bg_conn_mutex);

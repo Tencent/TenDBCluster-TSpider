@@ -7187,7 +7187,7 @@ int ha_partition::handle_pre_scan(bool reverse_order, bool use_parallel)
   DBUG_PRINT("enter",
              ("m_part_spec.start_part: %u  m_part_spec.end_part: %u",
               (uint) m_part_spec.start_part, (uint) m_part_spec.end_part));
-
+  thd_proc_info(0, "spider pre_scan start");
   for (i= m_part_spec.start_part; i <= m_part_spec.end_part; i++)
   {
     if (!(bitmap_is_set(&(m_part_info->read_partitions), i)))
