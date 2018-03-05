@@ -120,10 +120,20 @@
 #define ER_SPIDER_ORACLE_STR "Error from Oracle %d %d %s"
 #define ER_SPIDER_ORACLE_NUM 12712
 #define ER_SPIDER_ORACLE_ERR "Oracle error"
-#define ER_SPIDER_CON_COUNT_ERROR 12713
-#define ER_SPIDER_CON_COUNT_ERROR_STR "Too many connections between spider and remote"
 #define ER_SPIDER_TABLE_OPEN_TIMEOUT_NUM 12714
 #define ER_SPIDER_TABLE_OPEN_TIMEOUT_STR "Table %s.%s open timeout"
+#define ER_SPIDER_CON_COUNT_ERROR 12723
+#define ER_SPIDER_CON_COUNT_ERROR_STR "Too many connections between spider and remote"
+#define ER_SPIDER_CON_COUNT_ERROR_LEN (sizeof(ER_SPIDER_CON_COUNT_ERROR_STR) - 1)
+#define ER_SPIDER_GET_SHARE_ERROR 12724
+#define ER_SPIDER_GET_SHARE_ERROR_STR "failed get spider share"
+#define ER_SPIDER_GET_SHARE_ERROR_LEN (sizeof(ER_SPIDER_GET_SHARE_ERROR_STR) - 1)
+#define ER_SPIDER_CONN_BE_FREE_NUM 12725
+#define ER_SPIDER_CONN_BE_FREE_STR "conn may be free"
+#define ER_SPIDER_CONN_BE_FREE_LEN (sizeof(ER_SPIDER_CONN_BE_FREE_STR) - 1)
+#define ER_SPIDER_COND_INVALID_NUM 12726
+#define ER_SPIDER_COND_INVALID_STR "where condition may be invalid"
+#define ER_SPIDER_COND_INVALID_LEN (sizeof(ER_SPIDER_COND_INVALID_STR) - 1)
 #define ER_SPIDER_COND_SKIP_NUM 12801
 
 #define ER_SPIDER_UNKNOWN_NUM 12500

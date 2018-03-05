@@ -11194,6 +11194,11 @@ int spider_mysql_handler::show_table_status(
   DBUG_ENTER("spider_mysql_handler::show_table_status");
   DBUG_PRINT("info",("spider sts_mode=%d", sts_mode));
 
+  if (!conn)
+  {
+      error_num = ER_SPIDER_CON_COUNT_ERROR;
+      DBUG_RETURN(error_num);
+  }
   if (sts_mode == 1)
   {
     pthread_mutex_lock(&conn->mta_conn_mutex);
@@ -11511,6 +11516,11 @@ int spider_mysql_handler::show_index(
   uint pos = (2 * spider->conn_link_idx[link_idx]);
   DBUG_ENTER("spider_mysql_handler::show_index");
   DBUG_PRINT("info",("spider crd_mode=%d", crd_mode));
+  if (!conn)
+  {
+      error_num = ER_SPIDER_CON_COUNT_ERROR;
+      DBUG_RETURN(error_num);
+  }
   if (crd_mode == 1)
   {
     pthread_mutex_lock(&conn->mta_conn_mutex);
@@ -11793,6 +11803,11 @@ int spider_mysql_handler::show_records(
   DBUG_ENTER("spider_mysql_handler::show_records");
   pthread_mutex_lock(&conn->mta_conn_mutex);
   SPIDER_SET_FILE_POS(&conn->mta_conn_mutex_file_pos);
+  if (!conn)
+  {
+      error_num = ER_SPIDER_CON_COUNT_ERROR;
+      DBUG_RETURN(error_num);
+  }
   conn->need_mon = &spider->need_mons[link_idx];
   conn->mta_conn_mutex_lock_already = TRUE;
   conn->mta_conn_mutex_unlock_later = TRUE;
@@ -11899,10 +11914,16 @@ int spider_mysql_handler::show_last_insert_id(
   int link_idx,
   ulonglong &last_insert_id
 ) {
-  SPIDER_CONN *conn = spider->spider_get_conn_by_idx(link_idx);
-  DBUG_ENTER("spider_mysql_handler::show_last_insert_id");
-  last_insert_id = conn->db_conn->last_insert_id();
-  DBUG_RETURN(0);
+    int error_num;
+    SPIDER_CONN *conn = spider->spider_get_conn_by_idx(link_idx);
+    DBUG_ENTER("spider_mysql_handler::show_last_insert_id");
+    if (!conn)
+    {
+        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        DBUG_RETURN(error_num);
+    }
+    last_insert_id = conn->db_conn->last_insert_id();
+    DBUG_RETURN(0);
 }
 
 ha_rows spider_mysql_handler::explain_select(
@@ -11916,8 +11937,13 @@ ha_rows spider_mysql_handler::explain_select(
   spider_string *str = &result_list->sqls[link_idx];
   SPIDER_DB_RESULT *res;
   ha_rows rows;
-  spider_db_handler *dbton_hdl = spider->dbton_handler[conn->dbton_id];
   DBUG_ENTER("spider_mysql_handler::explain_select");
+  if (!conn)
+  {
+      error_num = ER_SPIDER_CON_COUNT_ERROR;
+      DBUG_RETURN(error_num);
+  }
+  spider_db_handler *dbton_hdl = spider->dbton_handler[conn->dbton_id];
   if ((error_num = dbton_hdl->append_explain_select_part(
     start_key, end_key, SPIDER_SQL_TYPE_OTHER_SQL, link_idx)))
   {
@@ -12049,6 +12075,11 @@ int spider_mysql_handler::lock_tables(
   spider_string *str = &sql;
   DBUG_ENTER("spider_mysql_handler::lock_tables");
   str->length(0);
+  if (!conn)
+  {
+      error_num = ER_SPIDER_CON_COUNT_ERROR;
+      DBUG_RETURN(error_num);
+  }
   if ((error_num = conn->db_conn->append_lock_tables(str)))
   {
     DBUG_RETURN(error_num);
@@ -12100,6 +12131,11 @@ int spider_mysql_handler::unlock_tables(
   int error_num;
   SPIDER_CONN *conn = spider->spider_get_conn_by_idx(link_idx);
   DBUG_ENTER("spider_mysql_handler::unlock_tables");
+  if (!conn)
+  {
+      error_num = ER_SPIDER_CON_COUNT_ERROR;
+      DBUG_RETURN(error_num);
+  }
   if (conn->table_locked)
   {
     spider_string *str = &sql;

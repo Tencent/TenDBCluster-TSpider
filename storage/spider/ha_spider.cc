@@ -1160,6 +1160,11 @@ THR_LOCK_DATA **ha_spider::store_lock(
         ) {
           SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
           int appended = 0;
+          if (!conn)
+          {
+              store_error_num = ER_SPIDER_CON_COUNT_ERROR;
+              DBUG_RETURN(to);
+          }
           if ((error_num = dbton_handler[conn->dbton_id]->
             append_lock_tables_list(conn, roop_count, &appended)))
           {
@@ -2014,6 +2019,11 @@ int ha_spider::index_read_map_internal(
       {
 #endif
         conn = spider_get_conn_by_idx(roop_count);
+        if (!conn)
+        {
+            error_num = ER_SPIDER_CON_COUNT_ERROR;
+            DBUG_RETURN(error_num);
+        }
         if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
         {
           sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -2266,6 +2276,11 @@ int ha_spider::index_read_map(
           {
 #endif
             conn = spider_get_conn_by_idx(roop_count);
+            if (!conn)
+            {
+                error_num = ER_SPIDER_CON_COUNT_ERROR;
+                DBUG_RETURN(error_num);
+            }
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
           } else {
             if (conn_kind[roop_count] == SPIDER_CONN_KIND_HS_READ)
@@ -2510,6 +2525,11 @@ int ha_spider::index_read_last_map_internal(
       {
 #endif
         conn = spider_get_conn_by_idx(roop_count);
+        if (!conn)
+        {
+            error_num = ER_SPIDER_CON_COUNT_ERROR;
+            DBUG_RETURN(error_num);
+        }
         if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
         {
           sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -2980,6 +3000,11 @@ int ha_spider::index_first_internal(
         {
 #endif
           conn = spider_get_conn_by_idx(roop_count);
+          if (!conn)
+          {
+              error_num = ER_SPIDER_CON_COUNT_ERROR;
+              DBUG_RETURN(error_num);
+          }
           if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
           {
             sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -3368,6 +3393,11 @@ int ha_spider::index_last_internal(
         {
 #endif
           conn = spider_get_conn_by_idx(roop_count);
+          if (!conn)
+          {
+              error_num = ER_SPIDER_CON_COUNT_ERROR;
+              DBUG_RETURN(error_num);
+          }
           if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
           {
             sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -3816,6 +3846,11 @@ int ha_spider::read_range_first_internal(
       {
 #endif
         conn = spider_get_conn_by_idx(roop_count);
+        if (!conn)
+        {
+            error_num = ER_SPIDER_CON_COUNT_ERROR;
+            DBUG_RETURN(error_num);
+        }
         if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
         {
           sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -4446,6 +4481,11 @@ int ha_spider::read_multi_range_first_internal(
           {
 #endif
             conn = spider_get_conn_by_idx(roop_count);
+            if (!conn)
+            {
+                error_num = ER_SPIDER_CON_COUNT_ERROR;
+                DBUG_RETURN(error_num);
+            }
             if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
             {
               sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -5243,6 +5283,11 @@ int ha_spider::read_multi_range_first_internal(
           {
 #endif
             conn = spider_get_conn_by_idx(roop_count);
+            if (!conn)
+            {
+                error_num = ER_SPIDER_CON_COUNT_ERROR;
+                DBUG_RETURN(error_num);
+            }
             if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
             {
               sql_type = SPIDER_SQL_TYPE_SELECT_SQL | SPIDER_SQL_TYPE_TMP_SQL;
@@ -5895,6 +5940,11 @@ int ha_spider::read_multi_range_next(
           {
 #endif
             conn = spider_get_conn_by_idx(roop_count);
+            if (!conn)
+            {
+                error_num = ER_SPIDER_CON_COUNT_ERROR;
+                DBUG_RETURN(error_num);
+            }
             if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
             {
               sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -6696,6 +6746,11 @@ int ha_spider::read_multi_range_next(
           {
 #endif
             conn = spider_get_conn_by_idx(roop_count);
+            if (!conn)
+            {
+                error_num = ER_SPIDER_CON_COUNT_ERROR;
+                DBUG_RETURN(error_num);
+            }
             if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
             {
               sql_type = SPIDER_SQL_TYPE_SELECT_SQL | SPIDER_SQL_TYPE_TMP_SQL;
@@ -7072,7 +7127,12 @@ int ha_spider::rnd_init(
             conn_link_idx, roop_count, share->link_count,
             SPIDER_LINK_STATUS_RECOVERY)
         ) {
-			conn = spider_get_conn_by_idx(roop_count);
+            conn = spider_get_conn_by_idx(roop_count);
+            if (!conn)
+            {
+                error_num = ER_SPIDER_CON_COUNT_ERROR;
+                DBUG_RETURN(error_num);
+            }
 #ifndef WITHOUT_SPIDER_BG_SEARCH
           if (conn && result_list.bgs_working)
             spider_bg_conn_break(conn, this);
@@ -7363,7 +7423,12 @@ int ha_spider::rnd_next_internal(
         }
       } else {
 #endif
-		  SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+          SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+          if (!conn)
+          {
+              error_num = ER_SPIDER_CON_COUNT_ERROR;
+              DBUG_RETURN(error_num);
+          }
         ulong sql_type;
         if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL)
         {
@@ -7988,6 +8053,11 @@ int ha_spider::ft_read_internal(
         uint dbton_id = share->use_sql_dbton_ids[roop_count];
         spider_db_handler *dbton_hdl = dbton_handler[dbton_id];
         SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+        if (!conn)
+        {
+            error_num = ER_SPIDER_CON_COUNT_ERROR;
+            DBUG_RETURN(error_num);
+        }
         if (dbton_hdl->need_lock_before_set_sql_for_exec(
           SPIDER_SQL_TYPE_SELECT_SQL))
         {
@@ -10864,6 +10934,18 @@ bool ha_spider::get_error_message(
       buf->q_append(ER_SPIDER_REMOTE_SERVER_GONE_AWAY_STR,
         ER_SPIDER_REMOTE_SERVER_GONE_AWAY_LEN);
       break;
+    case ER_SPIDER_CON_COUNT_ERROR:
+        if (buf->reserve(ER_SPIDER_CON_COUNT_ERROR_LEN))
+            DBUG_RETURN(TRUE);
+        buf->q_append(ER_SPIDER_CON_COUNT_ERROR_STR,
+            ER_SPIDER_CON_COUNT_ERROR_LEN);
+        break;
+    case ER_SPIDER_COND_INVALID_NUM:
+        if (buf->reserve(ER_SPIDER_COND_INVALID_LEN))
+            DBUG_RETURN(TRUE);
+        buf->q_append(ER_SPIDER_COND_INVALID_STR,
+            ER_SPIDER_COND_INVALID_LEN);
+        break;
     default:
       if (buf->reserve(ER_SPIDER_UNKNOWN_LEN))
         DBUG_RETURN(TRUE);
@@ -12588,6 +12670,11 @@ int ha_spider::drop_tmp_tables()
         uint dbton_id = share->use_sql_dbton_ids[roop_count];
         spider_db_handler *dbton_hdl = dbton_handler[dbton_id];
         SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+        if (!conn)
+        {
+            error_num = ER_SPIDER_CON_COUNT_ERROR;
+            DBUG_RETURN(error_num);
+        }
         if (dbton_hdl->need_lock_before_set_sql_for_exec(
           SPIDER_SQL_TYPE_TMP_SQL))
         {
@@ -12769,6 +12856,11 @@ int ha_spider::close_opened_handler(
   if (spider_bit_is_set(m_handler_opened, link_idx))
   {
     conn = spider_get_conn_by_idx(link_idx);
+    if (!conn)
+    {
+        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        DBUG_RETURN(error_num);
+    }
     if ((error_num2 = spider_db_close_handler(this,
       conn, link_idx, SPIDER_CONN_KIND_MYSQL))
     ) {
@@ -12806,6 +12898,11 @@ int ha_spider::close_opened_handler(
   if (spider_bit_is_set(r_handler_opened, link_idx))
   { 
 	  conn = spider_get_conn_by_idx(link_idx);
+    if (!conn)
+    {
+        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        DBUG_RETURN(error_num);
+    }
     if ((error_num2 = spider_db_close_handler(this,
       hs_r_conns[link_idx], link_idx, SPIDER_CONN_KIND_HS_READ))
     ) {
@@ -12922,7 +13019,12 @@ int ha_spider::index_handler_init()
         conn_link_idx, roop_count, share->link_count,
         SPIDER_LINK_STATUS_RECOVERY)
     ) {
-		SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+        SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+        if (!conn)
+        {
+            error_num = ER_SPIDER_CON_COUNT_ERROR;
+            DBUG_RETURN(error_num);
+        }
       if (
         spider_conn_use_handler(this, lock_mode, roop_count) &&
         spider_conn_need_open_handler(this, active_index, roop_count)
@@ -13045,7 +13147,12 @@ int ha_spider::rnd_handler_init()
         conn_link_idx, roop_count, share->link_count,
         SPIDER_LINK_STATUS_RECOVERY)
     ) {
-		SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+        SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
+        if (!conn)
+        {
+            error_num = ER_SPIDER_CON_COUNT_ERROR;
+            DBUG_RETURN(error_num);
+        }
       if (
         spider_conn_use_handler(this, lock_mode, roop_count) &&
         spider_conn_need_open_handler(this, MAX_KEY, roop_count)

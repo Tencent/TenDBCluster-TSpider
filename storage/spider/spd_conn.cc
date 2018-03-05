@@ -1281,6 +1281,11 @@ int spider_check_and_get_casual_read_conn(
   if (spider->result_list.casual_read[link_idx])
   {
     SPIDER_CONN *conn = spider->spider_get_conn_by_idx(link_idx);
+    if (!conn)
+    {
+        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        DBUG_RETURN(error_num);
+    }
     if (conn->casual_read_query_id != thd->query_id)
     {
       conn->casual_read_query_id = thd->query_id;
@@ -1324,6 +1329,7 @@ int spider_check_and_init_casual_read(
   int error_num;
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   SPIDER_SHARE *share = spider->share;
+  SPIDER_CONN *conn;
   DBUG_ENTER("spider_check_and_init_casual_read");
   if (
     spider_param_sync_autocommit(thd) &&
@@ -1345,7 +1351,12 @@ int spider_check_and_init_casual_read(
     {
       DBUG_RETURN(error_num);
     }
-    SPIDER_CONN *conn = spider->spider_get_conn_by_idx(link_idx);
+    conn = spider->spider_get_conn_by_idx(link_idx);
+    if (!conn)
+    {
+        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        DBUG_RETURN(error_num);
+    }
     if (
       conn->casual_read_base_conn &&
       (error_num = spider_create_conn_thread(conn))
@@ -1816,6 +1827,10 @@ int spider_create_conn_thread(
 ) {
   int error_num;
   DBUG_ENTER("spider_create_conn_thread");
+  if (!conn)
+  {
+      DBUG_RETURN(ER_SPIDER_CON_COUNT_ERROR);
+  }
   if (conn && !conn->bg_init)
   {
 #if MYSQL_VERSION_ID < 50500
@@ -2001,7 +2016,7 @@ void spider_bg_all_conn_wait(
       spider->conn_link_idx, roop_count, share->link_count,
       SPIDER_LINK_STATUS_RECOVERY)
   ) {
-    conn = spider->spider_get_conn_by_idx(roop_count);
+      conn = spider->conns[roop_count]; 
 #ifndef WITHOUT_SPIDER_BG_SEARCH
     if (conn && result_list->bgs_working)
       spider_bg_conn_wait(conn);
@@ -2157,8 +2172,18 @@ int spider_bg_conn_search(
   {
 #endif
     conn = spider->spider_get_conn_by_idx(link_idx);
+    if (!conn)
+    {
+        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        DBUG_RETURN(error_num);
+    }
     with_lock = (spider_conn_lock_mode(spider) != SPIDER_LOCK_MODE_NO_LOCK);
     first_conn = spider->spider_get_conn_by_idx(first_link_idx);
+    if (!first_conn)
+    {
+        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        DBUG_RETURN(error_num);
+    }
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   } else if (spider->conn_kind[link_idx] == SPIDER_CONN_KIND_HS_READ)
     conn = spider->hs_r_conns[link_idx];
@@ -4563,6 +4588,7 @@ SPIDER_IP_PORT_CONN* spider_create_ipport_conn(SPIDER_CONN *conn)
     ret->remote_port = conn->tgt_port;
     ret->conn_id = conn->conn_id;
     ret->ip_port_count = 1; // init
+    ret->waiting_count = 0;
 
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
     ret->key_hash_value = conn->conn_key_hash_value;
