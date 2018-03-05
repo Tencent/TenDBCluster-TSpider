@@ -781,7 +781,7 @@ static MYSQL_THDVAR_INT(
   "Table lock during execute a sql", /* comment */
   &spider_param_semi_table_lock_check, /* check */
   NULL, /* update */
-  1, /* def */
+  0, /* def */
   0, /* min */
   1, /* max */
   0 /* blk */
@@ -792,7 +792,8 @@ int spider_param_semi_table_lock(
   int semi_table_lock
 ) {
   DBUG_ENTER("spider_param_semi_table_lock");
-  DBUG_RETURN((semi_table_lock & THDVAR(thd, semi_table_lock)));
+  DBUG_RETURN(0);
+ // DBUG_RETURN((semi_table_lock & THDVAR(thd, semi_table_lock)));
 }
 
 static int spider_param_semi_table_lock_connection_check(
@@ -3083,6 +3084,25 @@ uint spider_param_conn_wait_timeout()
   DBUG_RETURN(spider_conn_wait_timeout);
 }
 
+
+/* 临时加该参数控制，出现问题可以快速回退  */
+static my_bool spider_fetch_minimum_columns;
+static MYSQL_SYSVAR_BOOL(
+    fetch_minimum_columns,
+    spider_fetch_minimum_columns,
+    PLUGIN_VAR_OPCMDARG,
+    "spider_fetch_minimum_columns",
+    NULL,
+    NULL,
+    TRUE
+);
+
+my_bool spider_param_fetch_minimum_columns()
+{
+    DBUG_ENTER("spider_param_general_log");
+    DBUG_RETURN(spider_fetch_minimum_columns);
+}
+
 static uint spider_log_result_errors;
 /*
   0: no log
@@ -3561,6 +3581,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(index_hint_pushdown),
   MYSQL_SYSVAR(max_connections),
   MYSQL_SYSVAR(conn_wait_timeout),
+  MYSQL_SYSVAR(fetch_minimum_columns),
   MYSQL_SYSVAR(log_result_errors),
   MYSQL_SYSVAR(log_result_error_with_sql),
   MYSQL_SYSVAR(version),

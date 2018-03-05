@@ -3280,10 +3280,16 @@ int spider_db_fetch_minimum_columns(
       bitmap_is_set(table->write_set, (*field)->field_index)));
     if (dbton_hdl->minimum_select_bit_is_set((*field)->field_index))
     {
-      if ((
-        bitmap_is_set(table->read_set, (*field)->field_index) |
-        bitmap_is_set(table->write_set, (*field)->field_index)
-      )) {
+        /*
+         与spider_mysql_handler::append_minimum_select对应，否则某些列为空，
+         非direct_upate导致spider_mysql_handler::append_update_where得不到正确结果
+         先加参数spider_param_fetch_minimum_columns控制，默认为TRUE，若有异常则动态设置为false还原
+         过往的测例在当前版本无异常，仍然加个该参数
+        */
+      if ((spider_param_fetch_minimum_columns() ||
+          ( bitmap_is_set(table->read_set, (*field)->field_index) |
+            bitmap_is_set(table->write_set, (*field)->field_index) )
+          )) {
 #ifndef DBUG_OFF
         my_bitmap_map *tmp_map =
           dbug_tmp_use_all_columns(table, table->write_set);

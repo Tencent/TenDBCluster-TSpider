@@ -2585,12 +2585,14 @@ int SQL_SELECT::test_quick_select(THD *thd, key_map keys_to_use,
       TRP_ROR_INTERSECT *rori_trp;
       TRP_INDEX_INTERSECT *intersect_trp;
       bool can_build_covering= FALSE;
+      bool can_index_range = FALSE;
       
       remove_nonrange_trees(&param, tree);
 
       /* Get best 'range' plan and prepare data for making other plans */
       if (optimizer_flag(thd, OPTIMIZER_SWITCH_INDEX_RANGE))
       {
+          can_index_range = TRUE;
           if ((range_trp = get_key_scans_params(&param, tree, FALSE, TRUE,
               best_read_time)))
           {
@@ -2605,7 +2607,8 @@ int SQL_SELECT::test_quick_select(THD *thd, key_map keys_to_use,
         table deletes.
       */
       if ((thd->lex->sql_command != SQLCOM_DELETE) && 
-           optimizer_flag(thd, OPTIMIZER_SWITCH_INDEX_MERGE))
+           optimizer_flag(thd, OPTIMIZER_SWITCH_INDEX_MERGE) &&
+           can_index_range)
       {
         /*
           Get best non-covering ROR-intersection plan and prepare data for
