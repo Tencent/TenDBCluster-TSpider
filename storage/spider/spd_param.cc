@@ -3104,6 +3104,23 @@ my_bool spider_param_fetch_minimum_columns()
     DBUG_RETURN(spider_fetch_minimum_columns);
 }
 
+static my_bool spider_ignore_autocommit;
+static MYSQL_SYSVAR_BOOL(
+    ignore_autocommit,
+    spider_ignore_autocommit,
+    PLUGIN_VAR_OPCMDARG,
+    "spider_ignore_autocommit",
+    NULL,
+    NULL,
+    FALSE 
+);
+
+my_bool spider_param_ignore_autocommit()
+{
+    DBUG_ENTER("spider_param_general_log");
+    DBUG_RETURN(spider_ignore_autocommit);
+}
+
 static uint spider_log_result_errors;
 /*
   0: no log
@@ -3582,6 +3599,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(index_hint_pushdown),
   MYSQL_SYSVAR(max_connections),
   MYSQL_SYSVAR(conn_wait_timeout),
+  MYSQL_SYSVAR(ignore_autocommit),
   MYSQL_SYSVAR(fetch_minimum_columns),
   MYSQL_SYSVAR(log_result_errors),
   MYSQL_SYSVAR(log_result_error_with_sql),

@@ -297,6 +297,7 @@ int spider_db_conn_queue_action(
 ) {
   int error_num;
   char sql_buf[MAX_FIELD_WIDTH * 2] = "";
+  bool spider_ignore_autocommit = spider_param_ignore_autocommit();
   spider_string sql_str(sql_buf, sizeof(sql_buf), system_charset_info);
   DBUG_ENTER("spider_db_conn_queue_action");
   DBUG_PRINT("info", ("spider conn=%p", conn));
@@ -355,14 +356,15 @@ int spider_db_conn_queue_action(
           append_trx_isolation(&sql_str, conn->queued_semi_trx_isolation_val))
       ) ||
       (
-        conn->queued_autocommit &&
-        (
-          (conn->queued_autocommit_val && conn->autocommit != 1) ||
-          (!conn->queued_autocommit_val && conn->autocommit != 0)
-        ) &&
+          conn->queued_autocommit &&
+          (
+              (!spider_ignore_autocommit && ((conn->queued_autocommit_val && conn->autocommit != 1) ||
+                                          (!conn->queued_autocommit_val && conn->autocommit != 0))) ||
+              (spider_ignore_autocommit && !conn->autocommit) 
+           ) &&
         conn->db_conn->set_autocommit_in_bulk_sql() &&
         (error_num = spider_dbton[conn->dbton_id].db_util->
-          append_autocommit(&sql_str, conn->queued_autocommit_val))
+          append_autocommit(&sql_str, conn->queued_autocommit_val || spider_ignore_autocommit))
       ) ||
       (
         conn->queued_sql_log_off &&
@@ -422,13 +424,15 @@ int spider_db_conn_queue_action(
         DBUG_RETURN(error_num);
     }
 
+    /* oracle/handler socket才会走的逻辑 */
+    /***********************************************
     if (
       conn->queued_autocommit &&
       (
         (conn->queued_autocommit_val && conn->autocommit != 1) ||
         (!conn->queued_autocommit_val && conn->autocommit != 0)
       ) &&
-      !conn->db_conn->set_autocommit_in_bulk_sql() &&
+      !conn->db_conn->set_autocommit_in_bulk_sql() && // mysql is true
       (error_num = spider_dbton[conn->dbton_id].db_util->
         append_autocommit(&sql_str, conn->queued_autocommit_val))
     ) {
@@ -440,7 +444,7 @@ int spider_db_conn_queue_action(
         (conn->queued_sql_log_off_val && conn->sql_log_off != 1) ||
         (!conn->queued_sql_log_off_val && conn->sql_log_off != 0)
       ) &&
-      !conn->db_conn->set_sql_log_off_in_bulk_sql() &&
+      !conn->db_conn->set_sql_log_off_in_bulk_sql() && // mysql is true
       (error_num = spider_dbton[conn->dbton_id].db_util->
         append_sql_log_off(&sql_str, conn->queued_sql_log_off_val))
     ) {
@@ -449,7 +453,7 @@ int spider_db_conn_queue_action(
     if (
       conn->queued_time_zone &&
       conn->queued_time_zone_val != conn->time_zone &&
-      !conn->db_conn->set_time_zone_in_bulk_sql() &&
+      !conn->db_conn->set_time_zone_in_bulk_sql() && // mysql is true
       (error_num = spider_dbton[conn->dbton_id].db_util->
         append_time_zone(&sql_str, conn->queued_time_zone_val))
     ) {
@@ -459,7 +463,7 @@ int spider_db_conn_queue_action(
       conn->queued_trx_isolation &&
       !conn->queued_semi_trx_isolation &&
       conn->queued_trx_isolation_val != conn->trx_isolation &&
-      !conn->db_conn->set_trx_isolation_in_bulk_sql() &&
+      !conn->db_conn->set_trx_isolation_in_bulk_sql() && // mysql is true
       (error_num = conn->db_conn->set_trx_isolation(
         conn->queued_trx_isolation_val, (int *) conn->need_mon))
     ) {
@@ -468,7 +472,7 @@ int spider_db_conn_queue_action(
     if (
       conn->queued_semi_trx_isolation &&
       conn->queued_semi_trx_isolation_val != conn->trx_isolation &&
-      !conn->db_conn->set_trx_isolation_in_bulk_sql() &&
+      !conn->db_conn->set_trx_isolation_in_bulk_sql() && // mysql is true
       (error_num = conn->db_conn->set_trx_isolation(
         conn->queued_semi_trx_isolation_val, (int *) conn->need_mon))
     ) {
@@ -476,7 +480,7 @@ int spider_db_conn_queue_action(
     }
     if (
       conn->queued_trx_start &&
-      !conn->db_conn->trx_start_in_bulk_sql() &&
+      !conn->db_conn->trx_start_in_bulk_sql() && // mysql is true
       (error_num = conn->db_conn->
         start_transaction((int *) conn->need_mon))
     ) {
@@ -484,12 +488,13 @@ int spider_db_conn_queue_action(
     }
     if (
       conn->queued_xa_start &&
-      !conn->db_conn->xa_start_in_bulk_sql() &&
+      !conn->db_conn->xa_start_in_bulk_sql() && // mysql is true
       (error_num = conn->db_conn->
         xa_start(conn->queued_xa_start_xid, (int *) conn->need_mon))
     ) {
       DBUG_RETURN(error_num);
     }
+*****************************************************************/
 
     if (
       conn->queued_trx_isolation &&
@@ -515,15 +520,17 @@ int spider_db_conn_queue_action(
 
     if (conn->queued_autocommit)
     {
-      if (conn->queued_autocommit_val && conn->autocommit != 1)
-      {
-        conn->autocommit = 1;
-      } else if (!conn->queued_autocommit_val && conn->autocommit != 0)
-      {
-        conn->autocommit = 0;
-      }
-      DBUG_PRINT("info", ("spider conn->autocommit=%d",
-        conn->autocommit));
+        conn->autocommit = conn->queued_autocommit_val || spider_ignore_autocommit;
+       /* if (conn->queued_autocommit_val && conn->autocommit != 1)
+        {
+            conn->autocommit = 1;
+        }
+        else if (!conn->queued_autocommit_val && conn->autocommit != 0)
+        {
+            conn->autocommit = 0;
+        }*/
+        DBUG_PRINT("info", ("spider conn->autocommit=%d",
+            conn->autocommit));
     }
 
     if (conn->queued_sql_log_off)
