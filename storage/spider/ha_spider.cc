@@ -15746,9 +15746,11 @@ int ha_spider::spider_set_trx_status_info()
 			conn_link_idx, roop_count, share->link_count,
 			SPIDER_LINK_STATUS_RECOVERY)
 		) {
+     /*****
 		if (sql_command == SQLCOM_TRUNCATE)
 			DBUG_RETURN(0);
-		else if (sql_command != SQLCOM_UNLOCK_TABLES)
+		else ***/ 
+    if (sql_command != SQLCOM_UNLOCK_TABLES)
 		{
 			DBUG_PRINT("info", ("spider conns[%d]->join_trx=%u",
 				roop_count, conns[roop_count]->join_trx));
