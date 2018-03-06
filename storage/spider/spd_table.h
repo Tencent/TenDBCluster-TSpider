@@ -611,6 +611,9 @@ void spider_get_select_limit_from_select_lex(
   longlong *offset_limit
 );
 
+bool is_spider_select_limit_x_y(ha_spider *spider);
+bool is_spider_select_mul_table(ha_spider *spider);
+
 void spider_get_select_limit(
   ha_spider *spider,
   st_select_lex **select_lex,

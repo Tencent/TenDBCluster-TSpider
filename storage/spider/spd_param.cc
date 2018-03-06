@@ -1363,6 +1363,7 @@ int spider_param_quick_mode(
 /*
  -1 :use table parameter
   0-:number of records
+  1000, default.   一次多取些记录，减少取多次
  */
 static MYSQL_THDVAR_LONGLONG(
   quick_page_size, /* name */
@@ -1370,7 +1371,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Number of records in a page when acquisition one by one", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1000, /* def */  
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -1452,7 +1453,7 @@ static MYSQL_THDVAR_INT(
   "Mode of background search", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   3, /* max */
   0 /* blk */
@@ -3072,7 +3073,7 @@ static MYSQL_SYSVAR_UINT(
   "the values, as the max waiting time when spider get a remote conn",
   NULL,
   NULL,
-  10, /* def */
+  20, /* def */
   0, /* min */
   1000, /* max */
   0 /* blk */

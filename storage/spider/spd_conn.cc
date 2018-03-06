@@ -1742,6 +1742,10 @@ int spider_set_conn_bg_param(
   DBUG_PRINT("info",("spider spider=%p", spider));
   bgs_mode =
     spider_param_bgs_mode(thd, share->bgs_mode);
+
+  /* 如果不使用pre call, 则没必要让子线程来执行，增加线程切换代价，让bgs_mode=0 */
+  if (!spider->use_pre_call)
+      bgs_mode = 0;
   if (bgs_mode == 0)
     result_list->bgs_phase = 0;
   else if (
@@ -2558,7 +2562,7 @@ void *spider_bg_conn_action(
       conn->bg_conn_chain_mutex_ptr = NULL;
     }
     thd->clear_error();
-    pthread_cond_wait(&conn->bg_conn_cond, &conn->bg_conn_mutex);
+    pthread_cond_wait(&conn->bg_conn_cond, &conn->bg_conn_mutex); /* 等待主线程query语句。 或者query执行完了，等主线和处理结果 */
     DBUG_PRINT("info",("spider bg roop start"));
 #ifndef DBUG_OFF
     DBUG_PRINT("info",("spider conn->thd=%p", conn->thd));
@@ -2568,14 +2572,14 @@ void *spider_bg_conn_action(
     }
 #endif
     if (conn->bg_caller_sync_wait)
-    {
+    { /* bg_serch发过signal信号后，告诉主线程子线程开始工作 */
       pthread_mutex_lock(&conn->bg_conn_sync_mutex);
       if (conn->bg_direct_sql)
         conn->bg_get_job_stack_off = TRUE;
-      pthread_cond_signal(&conn->bg_conn_sync_cond);
+      pthread_cond_signal(&conn->bg_conn_sync_cond); /* 发出线程已响应query的信号 */
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
       if (conn->bg_conn_chain_mutex_ptr)
-      {
+      {/* 通常为0. 另外，tspider中，同一分片只有一个conn */
         pthread_mutex_lock(conn->bg_conn_chain_mutex_ptr);
         if ((&conn->bg_conn_chain_mutex) != conn->bg_conn_chain_mutex_ptr)
         {
@@ -2585,7 +2589,7 @@ void *spider_bg_conn_action(
       }
     }
     if (conn->bg_kill)
-    {
+    {/* 释放conn时条件为真 */
       DBUG_PRINT("info",("spider bg kill start"));
       if (conn->bg_conn_chain_mutex_ptr)
       {
@@ -2606,7 +2610,7 @@ void *spider_bg_conn_action(
       DBUG_RETURN(NULL);
     }
     if (conn->bg_get_job_stack)
-    {
+    {/* udf才走的逻辑 */
       conn->bg_get_job_stack = FALSE;
       if (!spider_bg_conn_get_job(conn))
       {
@@ -2770,7 +2774,7 @@ void *spider_bg_conn_action(
           SPIDER_CLEAR_FILE_POS(&conn->mta_conn_mutex_file_pos);
           pthread_mutex_unlock(&conn->mta_conn_mutex);
         }
-      } else {
+      } else {/* 一次没取完结果，继续fetch走此逻辑 */
         spider->connection_ids[conn->link_idx] = conn->connection_id;
         conn->mta_conn_mutex_unlock_later = TRUE;
         result_list->bgs_error =
@@ -2790,7 +2794,7 @@ void *spider_bg_conn_action(
       continue;
     }
     if (conn->bg_direct_sql)
-    {
+    {// udf，不走
       bool is_error = FALSE;
       DBUG_PRINT("info",("spider bg direct sql start"));
       do {
@@ -2837,7 +2841,7 @@ void *spider_bg_conn_action(
       continue;
     }
     if (conn->bg_exec_sql)
-    {
+    {// udf，不走
       DBUG_PRINT("info",("spider bg exec sql start"));
       spider = (ha_spider*) conn->bg_target;
       *conn->bg_error_num = spider_db_query_with_set_names(
@@ -2850,7 +2854,7 @@ void *spider_bg_conn_action(
       continue;
     }
     if (conn->bg_simple_action)
-    {
+    {// oracle下走
       switch (conn->bg_simple_action)
       {
         case SPIDER_BG_SIMPLE_CONNECT:
@@ -4440,7 +4444,7 @@ SPIDER_CONN* spider_get_conn_from_idle_connection(
   struct timespec abstime;
   ulonglong start, inter_val = 0;
   longlong last_ntime = 0;
-  ulonglong wait_time = (ulonglong)spider_param_conn_wait_timeout()*1000*1000*1000; // default 10s
+  ulonglong wait_time = (ulonglong)spider_param_conn_wait_timeout()*1000*1000*1000; // default 20s
 
   unsigned long ip_port_count = 0; // init 0
 

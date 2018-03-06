@@ -13373,6 +13373,15 @@ void ha_spider::check_pre_call(
       use_pre_call = TRUE;
     }
   }
+
+  if (thd->sql_use_partition_count < 2 ||
+      is_spider_select_limit_x_y(this) ||
+      is_spider_select_mul_table(this))
+  {/* 不需要pre_call，从而不需要bg_action，避免线程切换代价 */
+      use_pre_call = FALSE;
+      DBUG_VOID_RETURN;
+  }
+
   DBUG_VOID_RETURN;
 }
 

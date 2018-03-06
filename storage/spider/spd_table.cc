@@ -8606,6 +8606,33 @@ void spider_get_select_limit_from_select_lex(
   DBUG_VOID_RETURN;
 }
 
+bool is_spider_select_limit_x_y(ha_spider *spider)
+{
+    st_select_lex *select_lex;
+    select_lex = spider_get_select_lex(spider);
+    longlong select_limit;
+    longlong offset_limit;
+    spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
+    DBUG_ENTER("is_spider_select_limit_x_y");
+    if (select_lex && select_lex->select_limit && select_lex->explicit_limit && select_lex->offset_limit && select_limit && offset_limit)
+    {
+        DBUG_RETURN(true);
+    }
+    DBUG_RETURN(false);
+}
+
+bool is_spider_select_mul_table(ha_spider *spider)
+{
+    st_select_lex *select_lex;
+    select_lex = spider_get_select_lex(spider);
+    DBUG_ENTER("is_spider_select_mul_table");
+    if (select_lex && select_lex->table_list.elements >= 2)
+    {
+        DBUG_RETURN(true);
+    }
+    DBUG_RETURN(false);
+}
+
 void spider_get_select_limit(
   ha_spider *spider,
   st_select_lex **select_lex,
