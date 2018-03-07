@@ -1310,6 +1310,7 @@ public:
   virtual void print(String *str, enum_query_type query_type);
   Item *get_copy(THD *thd)
   { return get_item_copy<Item_func_timestamp_diff>(thd, this); }
+  const char* print_type();
 };
 
 

@@ -3093,6 +3093,41 @@ void Item_func_timestamp_diff::print(String *str, enum_query_type query_type)
   str->append(')');
 }
 
+const char* Item_func_timestamp_diff::print_type()
+{
+    switch (int_type) {
+    case INTERVAL_YEAR:
+        return "YEAR";
+        break;
+    case INTERVAL_QUARTER:
+        return "QUARTER";
+        break;
+    case INTERVAL_MONTH:
+        return "MONTH";
+        break;
+    case INTERVAL_WEEK:
+        return "WEEK";
+        break;
+    case INTERVAL_DAY:
+        return "DAY";
+        break;
+    case INTERVAL_HOUR:
+        return "HOUR";
+        break;
+    case INTERVAL_MINUTE:
+        return "MINUTE";
+        break;
+    case INTERVAL_SECOND:
+        return "SECOND";
+        break;
+    case INTERVAL_MICROSECOND:
+        return "SECOND_FRAC";
+        break;
+    default:
+        return "";
+        break;
+    }
+}
 
 String *Item_func_get_format::val_str_ascii(String *str)
 {

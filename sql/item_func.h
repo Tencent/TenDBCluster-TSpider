@@ -168,6 +168,7 @@ public:
   void split_sum_func(THD *thd, Ref_ptr_array ref_pointer_array,
                       List<Item> &fields, uint flags);
   virtual void print(String *str, enum_query_type query_type);
+  virtual const char* print_type() { return ""; };
   void print_op(String *str, enum_query_type query_type);
   void print_args(String *str, uint from, enum_query_type query_type);
   inline bool get_arg0_date(MYSQL_TIME *ltime, ulonglong fuzzy_date)

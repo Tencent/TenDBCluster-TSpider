@@ -4038,7 +4038,22 @@ int spider_db_mysql_util::open_item_func(
           }
           DBUG_RETURN(0);
 #else
-          DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
+            if (str)
+            {
+                if (str->reserve(func_name_length + SPIDER_SQL_OPEN_PAREN_LEN))
+                    DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+                str->q_append(func_name, func_name_length);
+                str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
+                str->q_append(item_func->print_type(), strlen(item_func->print_type()));
+                str->q_append(SPIDER_SQL_COMMA_STR, SPIDER_SQL_COMMA_LEN);
+            }
+            func_name = SPIDER_SQL_COMMA_STR;
+            func_name_length = SPIDER_SQL_COMMA_LEN;
+            separete_str = SPIDER_SQL_COMMA_STR;
+            separete_str_length = SPIDER_SQL_COMMA_LEN;
+            last_str = SPIDER_SQL_CLOSE_PAREN_STR;
+            last_str_length = SPIDER_SQL_CLOSE_PAREN_LEN;
+            break;
 #endif
         }
       } else if (func_name_length == 14)
