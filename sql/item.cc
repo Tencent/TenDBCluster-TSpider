@@ -9900,8 +9900,8 @@ void Item_cache::print(String *str, enum_query_type query_type)
     return;
   }
 
-  if (value_cached)
-  {
+  if (value_cached && !(query_type & (QT_TO_SPECIFIED_CHARSET|QT_ORDINARY)))
+  {/* from spider, query type is (QT_TO_SPECIFIED_CHARSET|QT_ORDINARY) */
     print_value(str);
     return;
   }
