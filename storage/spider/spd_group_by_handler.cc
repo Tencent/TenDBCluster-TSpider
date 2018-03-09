@@ -1372,8 +1372,7 @@ int spider_group_by_handler::init_scan()
       if (dbton_hdl->need_lock_before_set_sql_for_exec(
         SPIDER_SQL_TYPE_SELECT_SQL))
       {
-        pthread_mutex_lock(&conn->mta_conn_mutex);
-        SPIDER_SET_FILE_POS(&conn->mta_conn_mutex_file_pos);
+        spider_mta_conn_mutex_lock(conn);
       }
       if ((error_num =
         dbton_hdl->set_sql_for_exec(SPIDER_SQL_TYPE_SELECT_SQL, link_idx,
@@ -1384,8 +1383,7 @@ int spider_group_by_handler::init_scan()
       if (!dbton_hdl->need_lock_before_set_sql_for_exec(
         SPIDER_SQL_TYPE_SELECT_SQL))
       {
-        pthread_mutex_lock(&conn->mta_conn_mutex);
-        SPIDER_SET_FILE_POS(&conn->mta_conn_mutex_file_pos);
+        spider_mta_conn_mutex_lock(conn);
       }
       conn->need_mon = &spider->need_mons[link_idx];
       conn->mta_conn_mutex_lock_already = TRUE;
@@ -1395,8 +1393,7 @@ int spider_group_by_handler::init_scan()
       {
         conn->mta_conn_mutex_lock_already = FALSE;
         conn->mta_conn_mutex_unlock_later = FALSE;
-        SPIDER_CLEAR_FILE_POS(&conn->mta_conn_mutex_file_pos);
-        pthread_mutex_unlock(&conn->mta_conn_mutex);
+        spider_mta_conn_mutex_unlock(conn);
         if (
           spider->need_mons[link_idx]
         ) {
@@ -1456,8 +1453,7 @@ int spider_group_by_handler::init_scan()
         spider->result_link_idx_chain = link_idx_chain;
       } else {
         spider_db_discard_result(spider, link_idx, conn);
-        SPIDER_CLEAR_FILE_POS(&conn->mta_conn_mutex_file_pos);
-        pthread_mutex_unlock(&conn->mta_conn_mutex);
+        spider_mta_conn_mutex_unlock(conn);
       }
 #ifndef WITHOUT_SPIDER_BG_SEARCH
     }

@@ -226,6 +226,17 @@
 #define SPIDER_CLEAR_FILE_POS(A) \
   {DBUG_PRINT("info", ("spider thd=%p func_name=%s file_name=%s line_no=%lu", (A)->thd, (A)->func_name ? (A)->func_name : "NULL", (A)->file_name ? (A)->file_name : "NULL", (A)->line_no)); (A)->thd = NULL; (A)->func_name = NULL; (A)->file_name = NULL; (A)->line_no = 0;}
 
+#define spider_mta_conn_mutex_lock(conn) \
+{\
+  SPIDER_SET_FILE_POS(&conn->mta_conn_mutex_file_pos);\
+}
+
+#define spider_mta_conn_mutex_unlock(conn) \
+{\
+  SPIDER_CLEAR_FILE_POS(&conn->mta_conn_mutex_file_pos);\
+}
+
+
 class ha_spider;
 typedef struct st_spider_share SPIDER_SHARE;
 typedef struct st_spider_table_mon_list SPIDER_TABLE_MON_LIST;

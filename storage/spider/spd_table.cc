@@ -6390,8 +6390,7 @@ int spider_open_all_tables(
     }
     conn->error_mode &= spider_param_error_read_mode(thd, 0);
     conn->error_mode &= spider_param_error_write_mode(thd, 0);
-    pthread_mutex_lock(&conn->mta_conn_mutex);
-    SPIDER_SET_FILE_POS(&conn->mta_conn_mutex_file_pos);
+    spider_mta_conn_mutex_lock(conn);
     conn->need_mon = &mon_val;
     conn->mta_conn_mutex_lock_already = TRUE;
     conn->mta_conn_mutex_unlock_later = TRUE;
@@ -6399,8 +6398,7 @@ int spider_open_all_tables(
     {
       conn->mta_conn_mutex_lock_already = FALSE;
       conn->mta_conn_mutex_unlock_later = FALSE;
-      SPIDER_CLEAR_FILE_POS(&conn->mta_conn_mutex_file_pos);
-      pthread_mutex_unlock(&conn->mta_conn_mutex);
+      spider_mta_conn_mutex_unlock(conn);
       spider_sys_index_end(table_tables);
       spider_close_sys_table(thd, table_tables,
         &open_tables_backup, TRUE);
@@ -6411,8 +6409,7 @@ int spider_open_all_tables(
     }
     conn->mta_conn_mutex_lock_already = FALSE;
     conn->mta_conn_mutex_unlock_later = FALSE;
-    SPIDER_CLEAR_FILE_POS(&conn->mta_conn_mutex_file_pos);
-    pthread_mutex_unlock(&conn->mta_conn_mutex);
+    spider_mta_conn_mutex_unlock(conn);
 
     if (lock && spider_param_use_snapshot_with_flush_tables(thd) == 2)
     {
