@@ -282,7 +282,7 @@ void spider_free_conn_from_trx(
       if (
         !trx_free &&
         !conn->server_lost &&
-        !conn->queued_connect &&
+        /* !conn->queued_connect &&*/ /* 连接未成功建立，也不释放 */
         spider_param_conn_recycle_mode(trx->thd) == 1
       ) {
         /* conn_recycle_mode == 1 */
