@@ -4009,6 +4009,11 @@ static Sys_var_bit Sys_log_off(
        NO_SET_STMT SESSION_VAR(option_bits), NO_CMD_LINE, OPTION_LOG_OFF,
        DEFAULT(FALSE), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(check_has_super));
 
+
+static Sys_var_mybool Sys_slow_log_off(
+    "sql_slow_log_off", "sql_slow_log_off",
+    SESSION_VAR(sql_slow_log_off), NO_CMD_LINE, DEFAULT(TRUE));
+
 /**
   This function sets the session variable thd->variables.sql_log_bin 
   to reflect changes to @@session.sql_log_bin.

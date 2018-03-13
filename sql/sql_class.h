@@ -662,6 +662,7 @@ typedef struct system_variables
   my_bool query_cache_strip_comments;
   my_bool sql_log_slow;
   my_bool sql_log_bin;
+  my_bool sql_slow_log_off;
   /*
     A flag to help detect whether binary logging was temporarily disabled
     (see tmp_disable_binlog(A) macro).

@@ -2479,7 +2479,8 @@ void log_slow_statement(THD *thd)
   if (!thd->enable_slow_log || !global_system_variables.sql_log_slow)
     goto end;
 
-  if ((thd->server_status &
+  if (thd->variables.sql_slow_log_off &&
+      (thd->server_status &
        (SERVER_QUERY_NO_INDEX_USED | SERVER_QUERY_NO_GOOD_INDEX_USED)) &&
       !(sql_command_flags[thd->last_sql_command] & CF_STATUS_COMMAND) &&
       ((!thd->variables.log_slow_filter ||
