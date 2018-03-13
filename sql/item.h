@@ -4661,6 +4661,7 @@ public:
   bool const_item() const { return const_item_cache; }
   table_map used_tables() const { return used_tables_cache; }
   Item* build_clone(THD *thd);
+  bool check_partition_func_processor(void *int_arg) { return FALSE; }
 };
 
 class sp_head;
