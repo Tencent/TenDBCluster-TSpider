@@ -679,6 +679,7 @@ void LEX::start(THD *thd_arg)
   with_persistent_for_clause= FALSE;
   column_list= NULL;
   index_list= NULL;
+  spider_rone_shard_flag = FALSE;
   prepared_stmt_params.empty();
   auxiliary_table_list.empty();
   unit.next= unit.master= unit.link_next= unit.return_to= 0;

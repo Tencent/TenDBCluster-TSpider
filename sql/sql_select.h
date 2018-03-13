@@ -2339,7 +2339,7 @@ Item_equal *find_item_equal(COND_EQUAL *cond_equal, Field *field,
 extern bool test_if_ref(Item *, 
                  Item_field *left_item,Item *right_item);
 
-inline bool optimizer_flag(THD *thd, uint flag)
+inline bool optimizer_flag(THD *thd, ulonglong flag)
 { 
   return (thd->variables.optimizer_switch & flag);
 }

@@ -699,6 +699,7 @@ static COMMANDS commands[] = {
   { "SOUNDS", 0, 0, 0, ""},
   { "SPATIAL", 0, 0, 0, ""},
   { "SPECIFIC", 0, 0, 0, ""},
+  { "SPIDER_ROND_SHARD", 0, 0, 0, "" },
   { "SQL", 0, 0, 0, ""},
   { "SQLEXCEPTION", 0, 0, 0, ""},
   { "SQLSTATE", 0, 0, 0, ""},

@@ -6108,3 +6108,8 @@ static Sys_var_mybool Sys_spider_ignore_single_select_index(
     "spider_ignore_single_select_index",
     "spider_ignore_single_select_index defaults is TRUE, let single select in spider ignore all index",
     GLOBAL_VAR(opt_spider_ignore_single_select_index), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
+
+static Sys_var_mybool Sys_spider_rone_shard_switch(
+    "spider_rone_shard_switch",
+    "enable the SPIDER_RONE_SHARD option effective",
+    GLOBAL_VAR(opt_spider_rone_shard_switch), CMD_LINE(OPT_ARG), DEFAULT(TRUE));

@@ -3448,6 +3448,7 @@ bool prune_partitions(THD *thd, TABLE *table, Item *pprune_cond)
   if (!pprune_cond)
   {
     mark_all_partitions_as_used(part_info);
+    set_rone_shard_part(thd, table, part_info);
     get_num_of_usedparts(thd, table, part_info);
     DBUG_RETURN(FALSE);
   }
@@ -3600,8 +3601,37 @@ end:
     table->all_partitions_pruned_away= true;
     retval= TRUE;
   }
+  set_rone_shard_part(thd, table, part_info);
   get_num_of_usedparts(thd, table, part_info);
   DBUG_RETURN(retval);
+}
+
+void set_rone_shard_part(THD *thd, TABLE *table, partition_info *part_info)
+{
+    if (opt_spider_rone_shard_switch && thd->lex->spider_rone_shard_flag
+        && table->file && table->file->is_spider_storage_engine() )
+    {/*
+     1. set opt_spider_rone_shard_switch = true;
+     2. using option spider_rone_shard
+     3. spider engine
+     */
+        int i = 0, j = 0;
+        int rand_part = 0;
+        int total_parts = part_info->num_parts;
+        int used_count_array[MAX_PARTITIONS] = { 0 };
+
+        for (i = 0; i < total_parts; i++)
+        {
+            if ((bitmap_is_set(&(part_info->read_partitions), i)))
+            {/* get the used partition */
+                used_count_array[j++] = i;
+            }
+        }
+        srand(time(0));
+        rand_part = rand() % j;
+        bitmap_clear_all(&part_info->read_partitions);
+        bitmap_set_bit(&(part_info->read_partitions), used_count_array[rand_part]);
+    }
 }
 
 

@@ -2956,6 +2956,7 @@ public:
     this command.
   */
   bool parse_vcol_expr;
+  bool spider_rone_shard_flag;
 
   enum SSL_type ssl_type;                       // defined in violite.h
   enum enum_duplicates duplicates;

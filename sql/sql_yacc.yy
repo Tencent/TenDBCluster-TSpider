@@ -1143,6 +1143,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  SMALLINT                      /* SQL-2003-R */
 %token  SPATIAL_SYM
 %token  SPECIFIC_SYM                  /* SQL-2003-R */
+%token  SPIDER_RONE_SHARD_SYM
 %token  SQLEXCEPTION_SYM              /* SQL-2003-R */
 %token  SQLSTATE_SYM                  /* SQL-2003-R */
 %token  SQLWARNING_SYM                /* SQL-2003-R */
@@ -9329,6 +9330,22 @@ select_option:
             Lex->select_lex.options|= OPTION_TO_QUERY_CACHE;
             Lex->select_lex.sql_cache= SELECT_LEX::SQL_CACHE;
           }
+          | SPIDER_RONE_SHARD_SYM
+         {
+         /*
+            only effective in spider engine, which leading to rand one shard to fetch result 
+          */
+          
+          if (Lex->current_select != &Lex->select_lex)
+          {
+             my_error(ER_CANT_USE_OPTION_HERE, MYF(0), "SPIDER_RONE_SHARD");
+             MYSQL_YYABORT;
+          }
+          else
+          {
+             Lex->spider_rone_shard_flag = TRUE;
+          }
+         }
         ;
 
 opt_select_lock_type:
