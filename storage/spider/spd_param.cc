@@ -3263,7 +3263,7 @@ static MYSQL_THDVAR_INT(
   "The type of delete_all_rows", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
