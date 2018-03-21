@@ -396,6 +396,7 @@ uint spider_param_max_connections();
 uint spider_param_conn_wait_timeout();
 my_bool spider_param_fetch_minimum_columns();
 my_bool spider_param_ignore_autocommit();
+my_bool spider_param_quick_mode_only_select();
 uint spider_param_log_result_errors();
 uint spider_param_log_result_error_with_sql();
 uint spider_param_internal_xa_id_type(

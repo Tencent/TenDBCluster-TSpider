@@ -8024,8 +8024,17 @@ void spider_set_result_list_param(
   }
   result_list->max_order =
     spider_param_max_order(thd, share->max_order);
-  result_list->quick_mode =
-    spider_param_quick_mode(thd, share->quick_mode);
+  if (spider_param_quick_mode_only_select() && thd && thd->lex && thd->lex->sql_command != SQLCOM_SELECT)
+  {/*
+   set quick_mode = 0;
+   if quick_mode=1, "delete from t1 where c1 in select c1 from t2" would cause error result
+   */
+      result_list->quick_mode = 0;
+  }
+  else
+  {
+      result_list->quick_mode = spider_param_quick_mode(thd, share->quick_mode);
+  }
   result_list->quick_page_size =
     spider_param_quick_page_size(thd, share->quick_page_size);
   result_list->low_mem_read =
