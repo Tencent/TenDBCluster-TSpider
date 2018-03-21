@@ -149,14 +149,8 @@ SPIDER_TABLE_MON_LIST *spider_get_ping_table_mon_list(
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
     table_mon_list->key_hash_value = hash_value;
 #endif
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    if (my_hash_insert_with_hash_value(
-      &spider_udf_table_mon_list_hash[mutex_hash],
-      hash_value, (uchar*) table_mon_list))
-#else
     if (my_hash_insert(&spider_udf_table_mon_list_hash[mutex_hash],
       (uchar*) table_mon_list))
-#endif
     {
       spider_ping_table_free_mon_list(table_mon_list);
       *error_num = HA_ERR_OUT_OF_MEM;
@@ -205,13 +199,8 @@ void spider_release_ping_table_mon_list_loop(
   SPIDER_TABLE_MON_LIST *table_mon_list
 ) {
   DBUG_ENTER("spider_release_ping_table_mon_list_loop");
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-  my_hash_delete_with_hash_value(&spider_udf_table_mon_list_hash[mutex_hash],
-    table_mon_list->key_hash_value, (uchar*) table_mon_list);
-#else
   my_hash_delete(&spider_udf_table_mon_list_hash[mutex_hash],
     (uchar*) table_mon_list);
-#endif
   while (TRUE)
   {
     if (table_mon_list->use_count)

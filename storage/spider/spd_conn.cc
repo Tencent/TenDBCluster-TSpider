@@ -251,12 +251,7 @@ void spider_free_conn_from_trx(
       if (another)
       {
         ha_spider *next_spider;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        my_hash_delete_with_hash_value(&trx->trx_another_conn_hash,
-          conn->conn_key_hash_value, (uchar*) conn);
-#else
         my_hash_delete(&trx->trx_another_conn_hash, (uchar*) conn);
-#endif
         spider = (ha_spider*) conn->another_ha_first;
         while (spider)
         {
@@ -271,12 +266,7 @@ void spider_free_conn_from_trx(
         conn->another_ha_first = NULL;
         conn->another_ha_last = NULL;
       } else {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        my_hash_delete_with_hash_value(&trx->trx_conn_hash,
-          conn->conn_key_hash_value, (uchar*) conn);
-#else
         my_hash_delete(&trx->trx_conn_hash, (uchar*) conn);
-#endif
       }
 
       if (
@@ -296,12 +286,7 @@ void spider_free_conn_from_trx(
         } else {
           pthread_mutex_lock(&spider_conn_mutex);
           uint old_elements = spider_open_connections.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-          if (my_hash_insert_with_hash_value(&spider_open_connections,
-            conn->conn_key_hash_value, (uchar*) conn))
-#else
           if (my_hash_insert(&spider_open_connections, (uchar*) conn))
-#endif
           {
             pthread_mutex_unlock(&spider_conn_mutex);
             spider_free_conn(conn);
@@ -353,12 +338,7 @@ void spider_free_conn_from_trx(
       )
     ) {
       conn->thd = NULL;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      my_hash_delete_with_hash_value(&trx->trx_hs_r_conn_hash,
-        conn->conn_key_hash_value, (uchar*) conn);
-#else
       my_hash_delete(&trx->trx_hs_r_conn_hash, (uchar*) conn);
-#endif
 
       DBUG_ASSERT(conn->opened_handlers ==
         conn->db_conn->get_opened_handler_count());
@@ -377,12 +357,7 @@ void spider_free_conn_from_trx(
         *conn->conn_key = '0';
         pthread_mutex_lock(&spider_hs_r_conn_mutex);
         uint old_elements = spider_hs_r_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        if (my_hash_insert_with_hash_value(&spider_hs_r_conn_hash,
-          conn->conn_key_hash_value, (uchar*) conn))
-#else
         if (my_hash_insert(&spider_hs_r_conn_hash, (uchar*) conn))
-#endif
         {
           pthread_mutex_unlock(&spider_hs_r_conn_mutex);
           spider_free_conn(conn);
@@ -415,12 +390,7 @@ void spider_free_conn_from_trx(
       )
     ) {
       conn->thd = NULL;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      my_hash_delete_with_hash_value(&trx->trx_hs_w_conn_hash,
-        conn->conn_key_hash_value, (uchar*) conn);
-#else
       my_hash_delete(&trx->trx_hs_w_conn_hash, (uchar*) conn);
-#endif
 
       DBUG_ASSERT(conn->opened_handlers ==
         conn->db_conn->get_opened_handler_count());
@@ -439,12 +409,7 @@ void spider_free_conn_from_trx(
         *conn->conn_key = '0';
         pthread_mutex_lock(&spider_hs_w_conn_mutex);
         uint old_elements = spider_hs_w_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        if (my_hash_insert_with_hash_value(&spider_hs_w_conn_hash,
-          conn->conn_key_hash_value, (uchar*) conn))
-#else
         if (my_hash_insert(&spider_hs_w_conn_hash, (uchar*) conn))
-#endif
         {
           pthread_mutex_unlock(&spider_hs_w_conn_mutex);
           spider_free_conn(conn);
@@ -989,12 +954,7 @@ SPIDER_CONN *spider_get_conn(
             }
           }
         } else {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-          my_hash_delete_with_hash_value(&spider_open_connections,
-            conn->conn_key_hash_value, (uchar*) conn);
-#else
           my_hash_delete(&spider_open_connections, (uchar*) conn);
-#endif
           pthread_mutex_unlock(&spider_conn_mutex);
           DBUG_PRINT("info",("spider get global conn"));
           if (spider)
@@ -1033,12 +993,7 @@ SPIDER_CONN *spider_get_conn(
               conn->use_for_active_standby = TRUE;
           }
         } else {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-          my_hash_delete_with_hash_value(&spider_hs_r_conn_hash,
-            conn->conn_key_hash_value, (uchar*) conn);
-#else
           my_hash_delete(&spider_hs_r_conn_hash, (uchar*) conn);
-#endif
           pthread_mutex_unlock(&spider_hs_r_conn_mutex);
           DBUG_PRINT("info",("spider get global hs r conn"));
           if (spider)
@@ -1075,12 +1030,7 @@ SPIDER_CONN *spider_get_conn(
               conn->use_for_active_standby = TRUE;
           }
         } else {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-          my_hash_delete_with_hash_value(&spider_hs_w_conn_hash,
-            conn->conn_key_hash_value, (uchar*) conn);
-#else
           my_hash_delete(&spider_hs_w_conn_hash, (uchar*) conn);
-#endif
           pthread_mutex_unlock(&spider_hs_w_conn_mutex);
           DBUG_PRINT("info",("spider get global hs w conn"));
           if (spider)
@@ -1128,13 +1078,7 @@ SPIDER_CONN *spider_get_conn(
       if (another)
       {
         uint old_elements = trx->trx_another_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        if (my_hash_insert_with_hash_value(&trx->trx_another_conn_hash,
-          share->conn_keys_hash_value[link_idx],
-          (uchar*) conn))
-#else
         if (my_hash_insert(&trx->trx_another_conn_hash, (uchar*) conn))
-#endif
         {
           spider_free_conn(conn);
           *error_num = HA_ERR_OUT_OF_MEM;
@@ -1149,13 +1093,7 @@ SPIDER_CONN *spider_get_conn(
         }
       } else {
         uint old_elements = trx->trx_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        if (my_hash_insert_with_hash_value(&trx->trx_conn_hash,
-          share->conn_keys_hash_value[link_idx],
-          (uchar*) conn))
-#else
         if (my_hash_insert(&trx->trx_conn_hash, (uchar*) conn))
-#endif
         {
           spider_free_conn(conn);
           *error_num = HA_ERR_OUT_OF_MEM;
@@ -1173,13 +1111,7 @@ SPIDER_CONN *spider_get_conn(
     } else if (conn_kind == SPIDER_CONN_KIND_HS_READ)
     {
       uint old_elements = trx->trx_hs_r_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      if (my_hash_insert_with_hash_value(&trx->trx_hs_r_conn_hash,
-        share->hs_read_conn_keys_hash_value[link_idx],
-        (uchar*) conn))
-#else
       if (my_hash_insert(&trx->trx_hs_r_conn_hash, (uchar*) conn))
-#endif
       {
         spider_free_conn(conn);
         *error_num = HA_ERR_OUT_OF_MEM;
@@ -1194,13 +1126,7 @@ SPIDER_CONN *spider_get_conn(
       }
     } else {
       uint old_elements = trx->trx_hs_w_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      if (my_hash_insert_with_hash_value(&trx->trx_hs_w_conn_hash,
-        share->hs_write_conn_keys_hash_value[link_idx],
-        (uchar*) conn))
-#else
       if (my_hash_insert(&trx->trx_hs_w_conn_hash, (uchar*) conn))
-#endif
       {
         spider_free_conn(conn);
         *error_num = HA_ERR_OUT_OF_MEM;
@@ -4506,12 +4432,7 @@ SPIDER_CONN* spider_get_conn_from_idle_connection(
 #endif
       {
         /* get conn from spider_open_connections, then delete conn in spider_open_connections */
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        my_hash_delete_with_hash_value(&spider_open_connections,
-          conn->conn_key_hash_value, (uchar*) conn);
-#else
         my_hash_delete(&spider_open_connections, (uchar*) conn);  
-#endif
         pthread_mutex_unlock(&spider_conn_mutex);
         DBUG_PRINT("info",("spider get global conn"));
         if (spider)

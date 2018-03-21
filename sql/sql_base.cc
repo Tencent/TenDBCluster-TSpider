@@ -191,19 +191,22 @@ static bool auto_repair_table(THD *thd, TABLE_LIST *table_list);
   @return Length of key.
 */
 
-uint get_table_def_key(const TABLE_LIST *table_list, const char **key)
+uint get_table_def_key(TABLE_LIST *table_list, const char **key, long long version)
 {
   /*
     This call relies on the fact that TABLE_LIST::mdl_request::key object
     is properly initialized, so table definition cache can be produced
     from key used by MDL subsystem.
   */
-  DBUG_ASSERT(!strcmp(table_list->get_db_name(),
-                      table_list->mdl_request.key.db_name()));
-  DBUG_ASSERT(!strcmp(table_list->get_table_name(),
-                      table_list->mdl_request.key.name()));
-
+  /* long version;*/
+  //DBUG_ASSERT(!strcmp(table_list->get_db_name(),
+  //                    table_list->mdl_request.key.db_name()) &&
+  //            !strcmp(table_list->get_table_name(),
+  //                    table_list->mdl_request.key.name()));
+   /* table_list->mdl_request.key.update_table_share_key(version);*/
+  table_list->mdl_request.key.update_table_share_key(version);
   *key= (const char*)table_list->mdl_request.key.ptr() + 1;
+
   return table_list->mdl_request.key.length() - 1;
 }
 
@@ -359,6 +362,10 @@ bool close_cached_tables(THD *thd, TABLE_LIST *tables,
   DBUG_ASSERT(thd || (!wait_for_refresh && !tables));
 
   refresh_version= tdc_increment_refresh_version();
+  if (thd && thd->lex && (thd->lex->type & REFRESH_NO_BLOCK))
+  {
+      tdc_increment_table_share_version();
+  }
 
   if (!tables)
   {
@@ -444,21 +451,27 @@ bool close_cached_tables(THD *thd, TABLE_LIST *tables,
 
   if (!tables)
   {
-    int r= 0;
-    close_cached_tables_arg argument;
-    argument.refresh_version= refresh_version;
-    set_timespec(abstime, timeout);
+      int r = 0;
+      close_cached_tables_arg argument;
+      argument.refresh_version = refresh_version;
+      set_timespec(abstime, timeout);
 
-    while (!thd->killed &&
-           (r= tdc_iterate(thd,
-                           (my_hash_walk_action) close_cached_tables_callback,
-                           &argument)) == 1 &&
-           !argument.element->share->wait_for_old_version(thd, &abstime,
-                                    MDL_wait_for_subgraph::DEADLOCK_WEIGHT_DDL))
-      /* no-op */;
+      while (!thd->killed &&
+          (r = tdc_iterate(thd,
+          (my_hash_walk_action)close_cached_tables_callback,
+              &argument)) == 1 &&
+          !thd_is_flush_no_block(thd) &&
+          !argument.element->share->wait_for_old_version(thd, &abstime,
+              MDL_wait_for_subgraph::DEADLOCK_WEIGHT_DDL))
+          /* no-op */;
 
-    if (r)
-      result= TRUE;
+      if (r)
+      {
+          if (!thd_is_flush_no_block(thd))
+              result = TRUE;
+          else
+              mysql_mutex_unlock(&(argument.element->LOCK_table_share));
+      }
   }
   else
   {
@@ -1570,7 +1583,7 @@ bool open_table(THD *thd, TABLE_LIST *table_list, Open_table_context *ot_ctx)
     DBUG_RETURN(true);
   }
 
-  key_length= get_table_def_key(table_list, &key);
+  key_length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
 
   /*
     If we're in pre-locked or LOCK TABLES mode, let's try to find the
@@ -2025,8 +2038,9 @@ err_lock:
 
 TABLE *find_locked_table(TABLE *list, const char *db, const char *table_name)
 {
+    THD *thd = current_thd;
   char	key[MAX_DBKEY_LENGTH];
-  uint key_length= tdc_create_key(key, db, table_name);
+  uint key_length= tdc_create_key(key, db, table_name, thd->flush_no_block_version);
 
   for (TABLE *table= list; table ; table=table->next)
   {

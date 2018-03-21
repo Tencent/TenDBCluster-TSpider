@@ -333,7 +333,7 @@ public:
   void mdl_key_init(enum_mdl_namespace mdl_namespace_arg,
                     const char *db, const char *name_arg)
   {
-    m_ptr[0]= (char) mdl_namespace_arg;
+      m_ptr[0] = (char)mdl_namespace_arg;
     /*
       It is responsibility of caller to ensure that db and object names
       are not longer than NAME_LEN. Still we play safe and try to avoid
@@ -346,9 +346,26 @@ public:
     m_length= static_cast<uint16>(strmake(m_ptr + m_db_name_length + 2,
                                           name_arg,
                                           NAME_LEN) - m_ptr + 1);
+    m_with_version = FALSE;
+    m_current_version = 0;
     m_hash_value= my_hash_sort(&my_charset_bin, (uchar*) m_ptr + 1,
                                m_length - 1);
     DBUG_SLOW_ASSERT(mdl_namespace_arg == USER_LOCK || ok_for_lower_case_names(db));
+  }
+  void update_table_share_key(long long table_version)
+  {
+      char ts_version[40];
+      if (table_version && !m_with_version)
+      {/* 初始table_version为0，不在key中加版本号
+       table_version>0，表明执行过flush table with no block操作，对所有的table_share key增加版本号.
+       新请求访问新版本table_share对象
+       */
+          ullstr(table_version, ts_version);
+          m_length = (uint16)(strmov(m_ptr + m_length, ts_version) - m_ptr);
+          m_hash_value = my_hash_sort(&my_charset_bin, (uchar*)m_ptr + 1, m_length - 1);
+          m_with_version = TRUE;
+          m_current_version = table_version;
+      }
   }
   void mdl_key_init(const MDL_key *rhs)
   {
@@ -356,9 +373,16 @@ public:
     m_length= rhs->m_length;
     m_db_name_length= rhs->m_db_name_length;
     m_hash_value= rhs->m_hash_value;
+    m_current_version = rhs->m_current_version;
+    m_with_version = rhs->m_with_version;
   }
-  bool is_equal(const MDL_key *rhs) const
+  bool is_equal(const MDL_key *rhs)
   {
+      long long version = rhs->m_current_version;
+      if (rhs->m_with_version && !m_with_version)
+      {
+          update_table_share_key(version);
+      }
     return (m_length == rhs->m_length &&
             memcmp(m_ptr, rhs->m_ptr, m_length) == 0);
   }
@@ -406,6 +430,8 @@ public:
 private:
   uint16 m_length;
   uint16 m_db_name_length;
+  long long m_current_version;
+  bool m_with_version;
   my_hash_value_type m_hash_value;
   char m_ptr[MAX_MDLKEY_LENGTH];
   static PSI_stage_info m_namespace_to_wait_state_name[NAMESPACE_END];

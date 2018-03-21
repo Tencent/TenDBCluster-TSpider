@@ -5624,7 +5624,7 @@ end_with_restore_list:
     if (!reload_acl_and_cache(thd, lex->type, first_table, &write_to_binlog))
     {
 #ifdef WITH_WSREP
-      if ((lex->type & REFRESH_TABLES) && !(lex->type & (REFRESH_FOR_EXPORT|REFRESH_READ_LOCK)))
+      if ((lex->type & (REFRESH_TABLES | REFRESH_NO_BLOCK)) && !(lex->type & (REFRESH_FOR_EXPORT|REFRESH_READ_LOCK)))
       {
         /*
           This is done after reload_acl_and_cache is because
@@ -7613,6 +7613,9 @@ void THD::reset_for_next_command(bool do_clear_error)
   /* for spider */
   thd->sql_use_partition_count = 0;
   thd->direct_limit = -1;
+  thd->flush_no_block_version = tdc_table_share_version();
+  if (thd && thd->lex)
+      thd->lex->type &= ~REFRESH_NO_BLOCK;
 
   DBUG_PRINT("debug",
              ("is_current_stmt_binlog_format_row(): %d",

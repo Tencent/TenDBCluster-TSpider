@@ -745,12 +745,7 @@ SPIDER_CONN *spider_udf_direct_sql_get_conn(
             error_num)))
             goto error;
         } else {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-          my_hash_delete_with_hash_value(&spider_open_connections,
-            conn->conn_key_hash_value, (uchar*) conn);
-#else
           my_hash_delete(&spider_open_connections, (uchar*) conn);
-#endif
           pthread_mutex_unlock(&spider_conn_mutex);
           DBUG_PRINT("info",("spider get global conn"));
         }
@@ -771,12 +766,7 @@ SPIDER_CONN *spider_udf_direct_sql_get_conn(
     {
 #endif
       uint old_elements = trx->trx_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      if (my_hash_insert_with_hash_value(&trx->trx_conn_hash,
-        direct_sql->conn_key_hash_value, (uchar*) conn))
-#else
       if (my_hash_insert(&trx->trx_conn_hash, (uchar*) conn))
-#endif
       {
         spider_free_conn(conn);
         *error_num = HA_ERR_OUT_OF_MEM;
@@ -793,12 +783,7 @@ SPIDER_CONN *spider_udf_direct_sql_get_conn(
     } else if (direct_sql->access_mode == 1)
     {
       uint old_elements = trx->trx_direct_hs_r_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      if (my_hash_insert_with_hash_value(&trx->trx_direct_hs_r_conn_hash,
-        direct_sql->conn_key_hash_value, (uchar*) conn))
-#else
       if (my_hash_insert(&trx->trx_direct_hs_r_conn_hash, (uchar*) conn))
-#endif
       {
         spider_free_conn(conn);
         *error_num = HA_ERR_OUT_OF_MEM;
@@ -813,12 +798,7 @@ SPIDER_CONN *spider_udf_direct_sql_get_conn(
       }
     } else {
       uint old_elements = trx->trx_direct_hs_w_conn_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      if (my_hash_insert_with_hash_value(&trx->trx_direct_hs_w_conn_hash,
-        direct_sql->conn_key_hash_value, (uchar*) conn))
-#else
       if (my_hash_insert(&trx->trx_direct_hs_w_conn_hash, (uchar*) conn))
-#endif
       {
         spider_free_conn(conn);
         *error_num = HA_ERR_OUT_OF_MEM;

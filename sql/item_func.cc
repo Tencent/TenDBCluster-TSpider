@@ -6760,10 +6760,11 @@ longlong Item_func_nextval::val_int()
   longlong value;
   int error;
   const char *key;
-  uint length= get_table_def_key(table_list, &key);
-  THD *thd;
+  TABLE *table= table_list->table;
+  THD *thd= table->in_use;
   SEQUENCE_LAST_VALUE *entry;
   char buff[80];
+  uint length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
   String key_buff(buff,sizeof(buff), &my_charset_bin);
   DBUG_ENTER("Item_func_nextval::val_int");
   update_table();
@@ -6867,13 +6868,12 @@ longlong Item_func_lastval::val_int()
 {
   const char *key;
   SEQUENCE_LAST_VALUE *entry;
-  uint length= get_table_def_key(table_list, &key);
-  THD *thd;
+  THD *thd= table->in_use;
   char buff[80];
   String key_buff(buff,sizeof(buff), &my_charset_bin);
+  uint length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
   DBUG_ENTER("Item_func_lastval::val_int");
   update_table();
-  thd= table->in_use;
 
   if (table->s->tmp_table != NO_TMP_TABLE)
   {

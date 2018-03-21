@@ -386,6 +386,7 @@ void spider_free_lgtm_tblhnd_share_alloc(
 
 SPIDER_SHARE *spider_create_share(
   const char *table_name,
+  const char *table_name_with_version,
   TABLE_SHARE *table_share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   partition_info *part_info,

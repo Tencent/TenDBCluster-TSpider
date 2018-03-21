@@ -433,13 +433,8 @@ int ha_spider::open(
     } else
       partition_handler_share->handlers = NULL;
     uint old_elements = partition_share->pt_handler_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    if (my_hash_insert_with_hash_value(&partition_share->pt_handler_hash,
-      hash_value, (uchar*) partition_handler_share))
-#else
     if (my_hash_insert(&partition_share->pt_handler_hash,
       (uchar*) partition_handler_share))
-#endif
     {
       error_num = HA_ERR_OUT_OF_MEM;
       goto error_hash_insert;
@@ -616,14 +611,8 @@ error_init_result_list:
     if (partition_share->partition_handler_share == partition_handler_share)
       partition_share->partition_handler_share = NULL;
 */
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&partition_share->pt_handler_hash,
-      partition_handler_share->table_hash_value,
-      (uchar*) partition_handler_share);
-#else
     my_hash_delete(&partition_share->pt_handler_hash,
       (uchar*) partition_handler_share);
-#endif
     pthread_mutex_unlock(&partition_share->pt_handler_mutex);
     pt_handler_mutex = FALSE;
   }
@@ -758,14 +747,8 @@ int ha_spider::close()
     if (partition_share->partition_handler_share == partition_handler_share)
       partition_share->partition_handler_share = NULL;
 */
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&partition_share->pt_handler_hash,
-      partition_handler_share->table_hash_value,
-      (uchar*) partition_handler_share);
-#else
     my_hash_delete(&partition_share->pt_handler_hash,
       (uchar*) partition_handler_share);
-#endif
     pthread_mutex_unlock(&partition_share->pt_handler_mutex);
   }
   partition_handler_share = NULL;

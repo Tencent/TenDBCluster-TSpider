@@ -26,6 +26,7 @@
 #include <mysql/psi/mysql_stage.h>
 #include "wsrep_mysqld.h"
 #include "wsrep_thd.h"
+#include "table_cache.h"
 
 #ifdef HAVE_PSI_INTERFACE
 static PSI_mutex_key key_MDL_wait_LOCK_wait_status;
@@ -744,7 +745,7 @@ MDL_lock* MDL_map::find_or_insert(LF_PINS *pins, const MDL_key *mdl_key)
       It works since these namespaces contain only one element so keys
       for them look like '<namespace-id>\0\0'.
     */
-    DBUG_ASSERT(mdl_key->length() == 3);
+    //DBUG_ASSERT(mdl_key->length() == 3);
 
     lock= (mdl_key->mdl_namespace() == MDL_key::GLOBAL) ? m_global_lock :
                                                           m_commit_lock;
@@ -1064,6 +1065,8 @@ MDL_wait::timed_wait(MDL_context_owner *owner, struct timespec *abs_timeout,
   PSI_stage_info old_stage;
   enum_wait_status result;
   int wait_result= 0;
+  THD *thd = current_thd;
+  ulong is_flush_no_block = thd_is_flush_no_block(thd);
   DBUG_ENTER("MDL_wait::timed_wait");
 
   mysql_mutex_lock(&m_LOCK_wait_status);
@@ -1072,7 +1075,8 @@ MDL_wait::timed_wait(MDL_context_owner *owner, struct timespec *abs_timeout,
                     wait_state_name, & old_stage);
   thd_wait_begin(NULL, THD_WAIT_META_DATA_LOCK);
   while (!m_wait_status && !owner->is_killed() &&
-         wait_result != ETIMEDOUT && wait_result != ETIME)
+         wait_result != ETIMEDOUT && wait_result != ETIME &&
+         !is_flush_no_block)
   {
 #ifdef ENABLED_DEBUG_SYNC
     // Allow tests to block the applier thread using the DBUG facilities
@@ -1095,7 +1099,7 @@ MDL_wait::timed_wait(MDL_context_owner *owner, struct timespec *abs_timeout,
   }
   thd_wait_end(NULL);
 
-  if (m_wait_status == EMPTY)
+  if (m_wait_status == EMPTY && !is_flush_no_block)
   {
     /*
       Wait has ended not due to a status being set from another
@@ -1114,7 +1118,10 @@ MDL_wait::timed_wait(MDL_context_owner *owner, struct timespec *abs_timeout,
     else if (set_status_on_timeout)
       m_wait_status= TIMEOUT;
   }
-  result= m_wait_status;
+  if (m_wait_status == EMPTY && is_flush_no_block)
+      result = GRANTED;
+  else
+      result = m_wait_status;
 
   owner->EXIT_COND(& old_stage);
 

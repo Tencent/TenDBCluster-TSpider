@@ -423,6 +423,14 @@ void **thd_ha_data(const THD *thd, const struct handlerton *hton)
 }
 
 extern "C"
+unsigned long thd_is_flush_no_block(THD *thd)
+{
+    if (!thd || !thd->lex)
+        return 0;
+    return (thd->lex->type & REFRESH_NO_BLOCK);
+}
+
+extern "C"
 void thd_storage_lock_wait(THD *thd, long long value)
 {
   thd->utime_after_lock+= value;
@@ -815,6 +823,8 @@ THD::THD(my_thread_id id, bool is_wsrep_applier, bool skip_global_sys_var_lock)
   slave_thread = 0;
   connection_name.str= 0;
   connection_name.length= 0;
+
+  flush_no_block_version = 0;
 
   file_id = 0;
   query_id= 0;

@@ -646,6 +646,7 @@ int thd_tablespace_op(const MYSQL_THD thd);
 long long thd_test_options(const MYSQL_THD thd, long long test_options);
 int thd_sql_command(const MYSQL_THD thd);
 void **thd_ha_data(const MYSQL_THD thd, const struct handlerton *hton);
+unsigned long thd_is_flush_no_block(MYSQL_THD thd);
 void thd_storage_lock_wait(MYSQL_THD thd, long long value);
 int thd_tx_isolation(const MYSQL_THD thd);
 int thd_tx_is_read_only(const MYSQL_THD thd);

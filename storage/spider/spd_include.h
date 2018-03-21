@@ -753,6 +753,8 @@ typedef struct st_spider_share
 {
   char               *table_name;
   uint               table_name_length;
+  char               *table_name_with_version;
+  uint               table_name_with_version_length;
   uint               use_count;
   uint               link_count;
   uint               all_link_count;

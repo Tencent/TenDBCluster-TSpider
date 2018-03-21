@@ -211,7 +211,7 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
     query_cache.pack(thd);              // FLUSH QUERY CACHE
     options &= ~REFRESH_QUERY_CACHE;    // Don't flush cache, just free memory
   }
-  if (options & (REFRESH_TABLES | REFRESH_QUERY_CACHE))
+  if (options & (REFRESH_TABLES | REFRESH_NO_BLOCK | REFRESH_QUERY_CACHE))
   {
     query_cache.flush();			// RESET QUERY CACHE
   }
@@ -227,8 +227,14 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
     Note that if REFRESH_READ_LOCK bit is set then REFRESH_TABLES is set too
     (see sql_yacc.yy)
   */
-  if (options & (REFRESH_TABLES | REFRESH_READ_LOCK)) 
+  if (options & (REFRESH_TABLES | REFRESH_NO_BLOCK | REFRESH_READ_LOCK))
   {
+      if ((options & REFRESH_NO_BLOCK) && thd && tables)
+      {
+          my_printf_error(ER_PARSE_ERROR, "illegal use flush table with no block", MYF(0));
+          return 1;
+      }
+
     if ((options & REFRESH_READ_LOCK) && thd)
     {
       /*

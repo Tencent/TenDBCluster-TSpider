@@ -413,8 +413,8 @@ uchar *spider_tbl_get_key(
   my_bool not_used __attribute__ ((unused))
 ) {
   DBUG_ENTER("spider_tbl_get_key");
-  *length = share->table_name_length;
-  DBUG_RETURN((uchar*) share->table_name);
+  *length = share->table_name_with_version_length;
+  DBUG_RETURN((uchar*)share->table_name_with_version);
 }
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
@@ -4392,6 +4392,7 @@ int spider_create_conn_keys(
 
 SPIDER_SHARE *spider_create_share(
   const char *table_name,
+  const char *table_name_with_version,
   TABLE_SHARE *table_share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   partition_info *part_info,
@@ -4402,21 +4403,24 @@ SPIDER_SHARE *spider_create_share(
   int *error_num
 ) {
   int bitmap_size, roop_count;
-  uint length;
+  uint length, length_with_version;
   int use_table_charset;
   SPIDER_SHARE *share;
   char *tmp_name;
+  char *tmp_name_with_version;
   longlong *tmp_cardinality, *tmp_static_key_cardinality;
   uchar *tmp_cardinality_upd, *tmp_table_mon_mutex_bitmap;
   char buf[MAX_FIELD_WIDTH], *buf_pos;
   char link_idx_str[SPIDER_SQL_INT_LEN];
   DBUG_ENTER("spider_create_share");
   length = (uint) strlen(table_name);
+  length_with_version = (uint)strlen(table_name_with_version);
   bitmap_size = spider_bitmap_size(table_share->fields);
   if (!(share = (SPIDER_SHARE *)
     spider_bulk_malloc(spider_current_trx, 46, MYF(MY_WME | MY_ZEROFILL),
       &share, sizeof(*share),
       &tmp_name, length + 1,
+      &tmp_name_with_version, length_with_version + 1,
       &tmp_static_key_cardinality, sizeof(*tmp_static_key_cardinality) * table_share->keys,
       &tmp_cardinality, sizeof(*tmp_cardinality) * table_share->fields,
       &tmp_cardinality_upd, sizeof(*tmp_cardinality_upd) * bitmap_size,
@@ -4437,6 +4441,9 @@ SPIDER_SHARE *spider_create_share(
   share->table_name_length = length;
   share->table_name = tmp_name;
   strmov(share->table_name, table_name);
+  share->table_name_with_version_length = length_with_version;
+  share->table_name_with_version = tmp_name_with_version;
+  strmov(share->table_name_with_version, table_name_with_version);
   share->static_key_cardinality = tmp_static_key_cardinality;
   share->cardinality = tmp_cardinality;
   share->cardinality_upd = tmp_cardinality_upd;
@@ -4444,7 +4451,7 @@ SPIDER_SHARE *spider_create_share(
   share->bitmap_size = bitmap_size;
   share->table_share = table_share;
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
-  share->table_name_hash_value = hash_value;
+  share->table_name_hash_value = my_calc_hash(&spider_open_tables, (uchar*)share->table_name, share->table_name_length);
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   share->table_path_hash_value = my_calc_hash(&spider_open_tables,
     (uchar*) table_share->path.str, table_share->path.length);
@@ -4650,24 +4657,36 @@ SPIDER_SHARE *spider_get_share(
   bool same_server_link;
   int load_sts_at_startup;
   int load_crd_at_startup;
+  char table_name_with_version[FN_REFLEN];
+  char ts_version[40];
+  long long table_share_version_tmp = thd->flush_no_block_version;
   DBUG_ENTER("spider_get_share");
 
-  length = (uint) strlen(table_name);
+  if (table_share_version_tmp == 0)
+  {
+      strmov(table_name_with_version, table_name);
+  }
+  else
+  {
+      ullstr(table_share_version_tmp, ts_version);
+      strmov(strmov(strmov(table_name_with_version, table_name), "#"), ts_version);
+  }
+  length = (uint)strlen(table_name_with_version);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   my_hash_value_type hash_value = my_calc_hash(&spider_open_tables,
-    (uchar*) table_name, length);
+    (uchar*)table_name_with_version, length);
 #endif
   pthread_mutex_lock(&spider_tbl_mutex);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if (!(share = (SPIDER_SHARE*) my_hash_search_using_hash_value(
-    &spider_open_tables, hash_value, (uchar*) table_name, length)))
+    &spider_open_tables, hash_value, (uchar*)table_name_with_version, length)))
 #else
   if (!(share = (SPIDER_SHARE*) my_hash_search(&spider_open_tables,
-    (uchar*) table_name, length)))
+    (uchar*)table_name_with_version, length)))
 #endif
   {
     if (!(share = spider_create_share(
-      table_name, table_share,
+      table_name, table_name_with_version, table_share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
       table->part_info,
 #endif
@@ -4680,12 +4699,7 @@ SPIDER_SHARE *spider_get_share(
     }
 
     uint old_elements = spider_open_tables.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    if (my_hash_insert_with_hash_value(&spider_open_tables, hash_value,
-      (uchar*) share))
-#else
     if (my_hash_insert(&spider_open_tables, (uchar*) share))
-#endif
     {
       *error_num = HA_ERR_OUT_OF_MEM;
       goto error_hash_insert;
@@ -4832,14 +4846,9 @@ SPIDER_SHARE *spider_get_share(
           spider_free_share(share);
           goto error_sts_spider_init;
         }
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        share->sts_thread = &spider_table_sts_threads[
-          hash_value % spider_param_table_sts_thread_count()];
-#else
         share->sts_thread = &spider_table_sts_threads[
           my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
           spider_param_table_sts_thread_count()];
-#endif
         share->sts_spider_init = TRUE;
       }
       pthread_mutex_unlock(&share->mutex);
@@ -4860,14 +4869,9 @@ SPIDER_SHARE *spider_get_share(
           spider_free_share(share);
           goto error_crd_spider_init;
         }
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        share->crd_thread = &spider_table_crd_threads[
-          hash_value % spider_param_table_crd_thread_count()];
-#else
         share->crd_thread = &spider_table_crd_threads[
           my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
           spider_param_table_crd_thread_count()];
-#endif
         share->crd_spider_init = TRUE;
       }
       pthread_mutex_unlock(&share->mutex);
@@ -5364,14 +5368,9 @@ SPIDER_SHARE *spider_get_share(
           spider_free_share(share);
           goto error_sts_spider_init;
         }
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        share->sts_thread = &spider_table_sts_threads[
-          hash_value % spider_param_table_sts_thread_count()];
-#else
         share->sts_thread = &spider_table_sts_threads[
           my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
           spider_param_table_sts_thread_count()];
-#endif
         share->sts_spider_init = TRUE;
       }
       pthread_mutex_unlock(&share->mutex);
@@ -5389,14 +5388,9 @@ SPIDER_SHARE *spider_get_share(
           spider_free_share(share);
           goto error_crd_spider_init;
         }
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-        share->crd_thread = &spider_table_crd_threads[
-          hash_value % spider_param_table_crd_thread_count()];
-#else
         share->crd_thread = &spider_table_crd_threads[
           my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
           spider_param_table_crd_thread_count()];
-#endif
         share->crd_spider_init = TRUE;
       }
       pthread_mutex_unlock(&share->mutex);
@@ -5848,12 +5842,7 @@ int spider_free_share(
       );
     }
     spider_free_share_alloc(share);
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&spider_open_tables,
-      share->table_name_hash_value, (uchar*) share);
-#else
     my_hash_delete(&spider_open_tables, (uchar*) share);
-#endif
     thr_lock_delete(&share->lock);
     pthread_mutex_destroy(&share->crd_mutex);
     pthread_mutex_destroy(&share->sts_mutex);
@@ -5971,13 +5960,8 @@ SPIDER_LGTM_TBLHND_SHARE *spider_get_lgtm_tblhnd_share(
     }
 
     uint old_elements = spider_lgtm_tblhnd_share_hash.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    if (my_hash_insert_with_hash_value(&spider_lgtm_tblhnd_share_hash,
-      hash_value, (uchar*) lgtm_tblhnd_share))
-#else
     if (my_hash_insert(&spider_lgtm_tblhnd_share_hash,
       (uchar*) lgtm_tblhnd_share))
-#endif
     {
       *error_num = HA_ERR_OUT_OF_MEM;
       goto error_hash_insert;
@@ -6013,12 +5997,7 @@ void spider_free_lgtm_tblhnd_share_alloc(
   DBUG_ENTER("spider_free_lgtm_tblhnd_share");
   if (!locked)
     pthread_mutex_lock(&spider_lgtm_tblhnd_share_mutex);
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-  my_hash_delete_with_hash_value(&spider_lgtm_tblhnd_share_hash,
-    lgtm_tblhnd_share->table_path_hash_value, (uchar*) lgtm_tblhnd_share);
-#else
   my_hash_delete(&spider_lgtm_tblhnd_share_hash, (uchar*) lgtm_tblhnd_share);
-#endif
   pthread_mutex_destroy(&lgtm_tblhnd_share->auto_increment_mutex);
   spider_free(spider_current_trx, lgtm_tblhnd_share, MYF(0));
   if (!locked)
@@ -6122,13 +6101,7 @@ SPIDER_PARTITION_SHARE *spider_get_pt_share(
       partition_share->pt_handler_hash.array.size_of_element);
 
     uint old_elements = spider_open_pt_share.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    if (my_hash_insert_with_hash_value(&spider_open_pt_share,
-      share->table_path_hash_value,
-      (uchar*) partition_share))
-#else
     if (my_hash_insert(&spider_open_pt_share, (uchar*) partition_share))
-#endif
     {
       *error_num = HA_ERR_OUT_OF_MEM;
       goto error_hash_insert;
@@ -6173,12 +6146,7 @@ int spider_free_pt_share(
   pthread_mutex_lock(&spider_pt_share_mutex);
   if (!--partition_share->use_count)
   {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&spider_open_pt_share,
-      partition_share->table_path_hash_value, (uchar*) partition_share);
-#else
     my_hash_delete(&spider_open_pt_share, (uchar*) partition_share);
-#endif
     spider_free_mem_calc(spider_current_trx,
       partition_share->pt_handler_hash_id,
       partition_share->pt_handler_hash.array.max_element *
@@ -6689,14 +6657,8 @@ int spider_db_done(
     while ((table_mon_list = (SPIDER_TABLE_MON_LIST *) my_hash_element(
       &spider_udf_table_mon_list_hash[roop_count], 0)))
     {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-      my_hash_delete_with_hash_value(
-        &spider_udf_table_mon_list_hash[roop_count],
-        table_mon_list->key_hash_value, (uchar*) table_mon_list);
-#else
       my_hash_delete(&spider_udf_table_mon_list_hash[roop_count],
         (uchar*) table_mon_list);
-#endif
       spider_ping_table_free_mon_list(table_mon_list);
     }
     spider_free_mem_calc(spider_current_trx,
@@ -6733,24 +6695,14 @@ int spider_db_done(
   pthread_mutex_lock(&spider_hs_w_conn_mutex);
   while ((conn = (SPIDER_CONN*) my_hash_element(&spider_hs_w_conn_hash, 0)))
   {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&spider_hs_w_conn_hash,
-      conn->conn_key_hash_value, (uchar*) conn);
-#else
     my_hash_delete(&spider_hs_w_conn_hash, (uchar*) conn);
-#endif
     spider_free_conn(conn);
   }
   pthread_mutex_unlock(&spider_hs_w_conn_mutex);
   pthread_mutex_lock(&spider_hs_r_conn_mutex);
   while ((conn = (SPIDER_CONN*) my_hash_element(&spider_hs_r_conn_hash, 0)))
   {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&spider_hs_r_conn_hash,
-      conn->conn_key_hash_value, (uchar*) conn);
-#else
     my_hash_delete(&spider_hs_r_conn_hash, (uchar*) conn);
-#endif
     spider_free_conn(conn);
   }
   pthread_mutex_unlock(&spider_hs_r_conn_mutex);
@@ -6758,12 +6710,7 @@ int spider_db_done(
   pthread_mutex_lock(&spider_conn_mutex);
   while ((conn = (SPIDER_CONN*) my_hash_element(&spider_open_connections, 0)))
   {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&spider_open_connections,
-      conn->conn_key_hash_value, (uchar*) conn);
-#else
     my_hash_delete(&spider_open_connections, (uchar*) conn);
-#endif
     spider_free_conn(conn);
   }
   pthread_mutex_unlock(&spider_conn_mutex);
@@ -6818,14 +6765,8 @@ int spider_db_done(
   while ((spider_init_error_table = (SPIDER_INIT_ERROR_TABLE*)
     my_hash_element(&spider_init_error_tables, 0)))
   {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&spider_init_error_tables,
-      spider_init_error_table->table_name_hash_value,
-      (uchar*) spider_init_error_table);
-#else
     my_hash_delete(&spider_init_error_tables,
       (uchar*) spider_init_error_table);
-#endif
     spider_free(NULL, spider_init_error_table, MYF(0));
   }
   pthread_mutex_unlock(&spider_init_error_tbl_mutex);
@@ -7221,7 +7162,7 @@ int spider_db_init(
     spider_open_tables.array.size_of_element);
   if(
     my_hash_init(&spider_init_error_tables, spd_charset_utf8_bin, 32, 0, 0,
-                   (my_hash_get_key) spider_tbl_get_key, 0, 0)
+                   (my_hash_get_key)spider_pt_share_get_key, 0, 0)
   ) {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_init_error_tables_hash_init;
@@ -8134,13 +8075,8 @@ SPIDER_INIT_ERROR_TABLE *spider_get_init_error_table(
       share->table_name_hash_value;
 #endif
     uint old_elements = spider_init_error_tables.array.max_element;
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    if (my_hash_insert_with_hash_value(&spider_init_error_tables,
-      share->table_name_hash_value, (uchar*) spider_init_error_table))
-#else
     if (my_hash_insert(&spider_init_error_tables,
       (uchar*) spider_init_error_table))
-#endif
     {
       spider_free(trx, spider_init_error_table, MYF(0));
       pthread_mutex_unlock(&spider_init_error_tbl_mutex);
@@ -8178,14 +8114,8 @@ void spider_delete_init_error_table(
     &spider_init_error_tables, (uchar*) name, length)))
 #endif
   {
-#ifdef HASH_UPDATE_WITH_HASH_VALUE
-    my_hash_delete_with_hash_value(&spider_init_error_tables,
-      spider_init_error_table->table_name_hash_value,
-      (uchar*) spider_init_error_table);
-#else
     my_hash_delete(&spider_init_error_tables,
       (uchar*) spider_init_error_table);
-#endif
     spider_free(spider_current_trx, spider_init_error_table, MYF(0));
   }
   pthread_mutex_unlock(&spider_init_error_tbl_mutex);
@@ -9352,6 +9282,10 @@ int spider_discover_table_structure(
   uint str_len;
   char buf[MAX_FIELD_WIDTH];
   spider_string str(buf, sizeof(buf), system_charset_info);
+  char tmp_name_with_version[FN_LEN];
+  char ts_version[40];
+  long long table_share_version_tmp = thd->flush_no_block_version;
+  ullstr(table_share_version_tmp, ts_version);
   DBUG_ENTER("spider_discover_table_structure");
   str.init_calc_mem(229);
   str.length(0);
@@ -9388,7 +9322,15 @@ int spider_discover_table_structure(
   if (!part_info)
   {
 #endif
-    if (!(spider_share = spider_create_share(table_name, share,
+      if (table_share_version_tmp == 0)
+      {
+          strmov(tmp_name_with_version, table_name);
+      }
+      else
+      {
+          strmov(strmov(strmov(tmp_name_with_version, table_name), "#"), ts_version);
+      }
+    if (!(spider_share = spider_create_share(table_name, tmp_name_with_version, share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
       NULL,
 #endif
@@ -9451,7 +9393,15 @@ int spider_discover_table_structure(
             DBUG_RETURN(HA_ERR_OUT_OF_MEM);
           }
           DBUG_PRINT("info",("spider tmp_name=%s", tmp_name));
-          if (!(spider_share = spider_create_share(tmp_name, share,
+          if (table_share_version_tmp == 0)
+          {
+              strmov(tmp_name_with_version, table_name);
+          }
+          else
+          {
+              strmov(strmov(strmov(tmp_name_with_version, table_name), "#"), ts_version);
+          }
+          if (!(spider_share = spider_create_share(tmp_name, tmp_name_with_version, share,
             part_info,
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
             hash_value,
@@ -9479,7 +9429,15 @@ int spider_discover_table_structure(
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
         }
         DBUG_PRINT("info",("spider tmp_name=%s", tmp_name));
-        if (!(spider_share = spider_create_share(tmp_name, share,
+        if (table_share_version_tmp == 0)
+        {
+            strmov(tmp_name_with_version, table_name);
+        }
+        else
+        {
+            strmov(strmov(strmov(tmp_name_with_version, table_name), "#"), ts_version);
+        }
+        if (!(spider_share = spider_create_share(tmp_name, tmp_name_with_version, share,
           part_info,
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
           hash_value,
@@ -9522,7 +9480,15 @@ int spider_discover_table_structure(
               DBUG_RETURN(HA_ERR_OUT_OF_MEM);
             }
             DBUG_PRINT("info",("spider tmp_name=%s", tmp_name));
-            if (!(spider_share = spider_create_share(tmp_name, share,
+            if (table_share_version_tmp == 0)
+            {
+                strmov(tmp_name_with_version, table_name);
+            }
+            else
+            {
+                strmov(strmov(strmov(tmp_name_with_version, table_name), "#"), ts_version);
+            }
+            if (!(spider_share = spider_create_share(tmp_name, tmp_name_with_version, share,
               part_info,
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
               hash_value,
@@ -9560,7 +9526,15 @@ int spider_discover_table_structure(
             DBUG_RETURN(HA_ERR_OUT_OF_MEM);
           }
           DBUG_PRINT("info",("spider tmp_name=%s", tmp_name));
-          if (!(spider_share = spider_create_share(tmp_name, share,
+          if (table_share_version_tmp == 0)
+          {
+              strmov(tmp_name_with_version, table_name);
+          }
+          else
+          {
+              strmov(strmov(strmov(tmp_name_with_version, table_name), "#"), ts_version);
+          }
+          if (!(spider_share = spider_create_share(tmp_name, tmp_name_with_version, share,
             part_info,
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
             hash_value,

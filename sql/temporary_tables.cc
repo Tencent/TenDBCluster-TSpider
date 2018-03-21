@@ -893,7 +893,7 @@ uint THD::create_tmp_table_def_key(char *key, const char *db,
 
   uint key_length;
 
-  key_length= tdc_create_key(key, db, table_name);
+  key_length= tdc_create_key(key, db, table_name, this->flush_no_block_version);
   int4store(key + key_length, variables.server_id);
   int4store(key + key_length + 4, variables.pseudo_thread_id);
   key_length += TMP_TABLE_KEY_EXTRA;

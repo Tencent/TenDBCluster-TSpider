@@ -2215,6 +2215,7 @@ public:
   rpl_group_info* rgi_fake;
   /* Slave applier execution context */
   rpl_group_info* rgi_slave;
+  long long flush_no_block_version;
 
   union {
     rpl_io_thread_info *rpl_io_info;

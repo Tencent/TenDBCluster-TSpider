@@ -69,6 +69,7 @@ I_P_List <TDC_element,
           I_P_List_fast_push_back<TDC_element> > unused_shares;
 
 static tdc_version_t tdc_version;  /* Increments on each reload */
+static tdc_version_t table_share_version;  /* Increments on each reload */
 static bool tdc_inited;
 
 
@@ -624,8 +625,9 @@ bool tdc_init(void)
   mysql_mutex_init(key_LOCK_unused_shares, &LOCK_unused_shares,
                    MY_MUTEX_INIT_FAST);
   tdc_version= 1L;  /* Increments on each reload */
+  table_share_version = 0L;	/* Increments on each reload */
   lf_hash_init(&tdc_hash, sizeof(TDC_element) +
-                          sizeof(Share_free_tables) * (tc_instances - 1),
+                         sizeof(Share_free_tables) * (tc_instances - 1),
                LF_HASH_UNIQUE, 0, 0,
                (my_hash_get_key) tdc_hash_key,
                &my_charset_bin);
@@ -752,7 +754,7 @@ TDC_element *tdc_lock_share(THD *thd, const char *db, const char *table_name)
 
   element= (TDC_element *) lf_hash_search(&tdc_hash, thd->tdc_hash_pins,
                                           (uchar*) key,
-                                          tdc_create_key(key, db, table_name));
+                                          tdc_create_key(key, db, table_name, thd->flush_no_block_version));
   if (element)
   {
     mysql_mutex_lock(&element->LOCK_table_share);
@@ -804,7 +806,7 @@ TABLE_SHARE *tdc_acquire_share(THD *thd, TABLE_LIST *tl, uint flags,
   TABLE_SHARE *share;
   TDC_element *element;
   const char *key;
-  uint key_length= get_table_def_key(tl, &key);
+  uint key_length= get_table_def_key(tl, &key, thd->flush_no_block_version);
   my_hash_value_type hash_value= tl->mdl_request.key.tc_hash_value();
   bool was_unused;
   DBUG_ENTER("tdc_acquire_share");
@@ -1230,6 +1232,19 @@ tdc_version_t tdc_increment_refresh_version(void)
   tdc_version_t v= (tdc_version_t)my_atomic_add64_explicit(&tdc_version, 1, MY_MEMORY_ORDER_RELAXED);
   DBUG_PRINT("tcache", ("incremented global refresh_version to: %lld", v));
   return v + 1;
+}
+
+tdc_version_t tdc_table_share_version(void)
+{
+    return (tdc_version_t)my_atomic_load64_explicit(&table_share_version, MY_MEMORY_ORDER_RELAXED);
+}
+
+
+tdc_version_t tdc_increment_table_share_version(void)
+{
+    tdc_version_t v = (tdc_version_t)my_atomic_add64_explicit(&table_share_version, 1, MY_MEMORY_ORDER_RELAXED);
+    DBUG_PRINT("tcache", ("incremented global table_share_version to: %lld", v));
+    return v + 1;
 }
 
 

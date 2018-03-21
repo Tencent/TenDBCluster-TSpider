@@ -3291,7 +3291,7 @@ void Query_cache::invalidate_table(THD *thd, TABLE_LIST *table_list)
   {
     const char *key;
     uint key_length;
-    key_length= get_table_def_key(table_list, &key);
+    key_length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
 
     // We don't store temporary tables => no key_length+=4 ...
     invalidate_table(thd, (uchar *)key, key_length);
@@ -3409,7 +3409,7 @@ Query_cache::register_tables_from_list(THD *thd, TABLE_LIST *tables_used,
       DBUG_PRINT("qcache", ("view: %s  db: %s",
                             tables_used->view_name.str,
                             tables_used->view_db.str));
-      key_length= get_table_def_key(tables_used, &key);
+      key_length= get_table_def_key(tables_used, &key, thd->flush_no_block_version);
       /*
         There are not callback function for for VIEWs
       */

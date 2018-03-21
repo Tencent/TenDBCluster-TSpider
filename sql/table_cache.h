@@ -95,6 +95,8 @@ extern int tdc_wait_for_old_version(THD *thd, const char *db,
                                     tdc_version_t refresh_version= TDC_VERSION_MAX);
 extern tdc_version_t tdc_refresh_version(void);
 extern tdc_version_t tdc_increment_refresh_version(void);
+extern tdc_version_t tdc_table_share_version(void);
+extern tdc_version_t tdc_increment_table_share_version(void);
 extern int tdc_iterate(THD *thd, my_hash_walk_action action, void *argument,
                        bool no_dups= false);
 
@@ -113,14 +115,27 @@ extern void tc_release_table(TABLE *table);
   @return Length of key.
 */
 
-inline uint tdc_create_key(char *key, const char *db, const char *table_name)
+inline uint tdc_create_key(char *key, const char *db, const char *table_name, long long version)
 {
   /*
     In theory caller should ensure that both db and table_name are
     not longer than NAME_LEN bytes. In practice we play safe to avoid
     buffer overruns.
   */
-  return (uint) (strmake(strmake(key, db, NAME_LEN) + 1, table_name,
-                         NAME_LEN) - key + 1);
+    char ts_version[40];
+    uint key_length;
+    if (version)
+    {
+        ullstr(version, ts_version);
+        key_length = (uint)(strmake(strmake(strmake(key, db, NAME_LEN) + 1, table_name,
+            NAME_LEN)+1, ts_version, NAME_LEN) - key + 1);
+
+    }
+    else
+    {
+        key_length = (uint)(strmake(strmake(key, db, NAME_LEN) + 1, table_name,
+            NAME_LEN) - key + 1);
+    }
+    return key_length;
 }
 #endif /* TABLE_CACHE_H_INCLUDED */

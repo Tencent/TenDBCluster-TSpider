@@ -3603,7 +3603,7 @@ pthread_handler_t signal_hand(void *arg __attribute__((unused)))
         int not_used;
 	mysql_print_status();		// Print some debug info
 	reload_acl_and_cache((THD*) 0,
-			     (REFRESH_LOG | REFRESH_TABLES | REFRESH_FAST |
+			     (REFRESH_LOG | REFRESH_TABLES | REFRESH_NO_BLOCK | REFRESH_FAST |
 			      REFRESH_GRANT |
 			      REFRESH_THREADS | REFRESH_HOSTS),
 			     (TABLE_LIST*) 0, &not_used); // Flush logs

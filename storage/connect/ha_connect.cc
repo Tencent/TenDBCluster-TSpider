@@ -5043,6 +5043,7 @@ int ha_connect::delete_or_rename_table(const char *name, const char *to)
   bool ok= false;
   THD *thd= current_thd;
   int  sqlcom= thd_sql_command(thd);
+  long long version = thd->flush_no_block_version;
 
   if (trace(1)) {
     if (to)
@@ -5082,7 +5083,7 @@ int ha_connect::delete_or_rename_table(const char *name, const char *to)
 //  if ((p= strstr(tabname, "#P#")))   won't work, see above
 //    *p= 0;             // Get the main the table name
 
-    key_length= tdc_create_key(key, db, tabname);
+    key_length= tdc_create_key(key, db, tabname, version);
 
     // share contains the option struct that we need
     if (!(share= alloc_table_share(db, tabname, key, key_length)))
