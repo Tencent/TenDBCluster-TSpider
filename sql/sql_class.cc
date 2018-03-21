@@ -824,7 +824,12 @@ THD::THD(my_thread_id id, bool is_wsrep_applier, bool skip_global_sys_var_lock)
   connection_name.str= 0;
   connection_name.length= 0;
 
+  /* for spider */
   flush_no_block_version = 0;
+  sql_use_partition_count = 0;
+  direct_limit = -1;
+  is_spider_query = FALSE;
+  spider_slow_query_num = 0;
 
   file_id = 0;
   query_id= 0;

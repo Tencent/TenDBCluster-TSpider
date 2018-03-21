@@ -313,6 +313,7 @@ extern uint opt_spider_auto_increment_mode_value;
 extern uint opt_spider_auto_increment_step;
 extern my_bool opt_spider_ignore_single_select_index;
 extern my_bool opt_spider_rone_shard_switch;
+extern my_bool opt_spider_slow_log;
 
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP

@@ -2215,7 +2215,6 @@ public:
   rpl_group_info* rgi_fake;
   /* Slave applier execution context */
   rpl_group_info* rgi_slave;
-  long long flush_no_block_version;
 
   union {
     rpl_io_thread_info *rpl_io_info;
@@ -2413,6 +2412,10 @@ public:
   /* for spider */
   unsigned long sql_use_partition_count;
   longlong direct_limit;          //for direct_update/direct_delete
+  long long flush_no_block_version;
+  String spider_remote_query;
+  bool is_spider_query;
+  int32 spider_slow_query_num;
 
   // Process indicator
   struct {

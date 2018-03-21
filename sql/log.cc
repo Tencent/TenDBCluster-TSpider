@@ -864,6 +864,7 @@ bool Log_to_csv_event_handler::
   Open_tables_backup open_tables_backup;
   CHARSET_INFO *client_cs= thd->variables.character_set_client;
   bool save_time_zone_used;
+  String spider_slow_query;
   long query_time= (long) MY_MIN(query_utime/1000000, TIME_MAX_VALUE_SECONDS);
   long lock_time=  (long) MY_MIN(lock_utime/1000000, TIME_MAX_VALUE_SECONDS);
   long query_time_micro= (long) (query_utime % 1000000);
@@ -973,8 +974,19 @@ bool Log_to_csv_event_handler::
     A positive return value in store() means truncation.
     Still logging a message in the log in this case.
   */
-  if (table->field[10]->store(sql_text, sql_text_len, client_cs) < 0)
-    goto err;
+  if (opt_spider_slow_log && thd->is_spider_query)
+  {
+      spider_slow_query.append(sql_text, sql_text_len);
+      spider_slow_query.append(";\n", 2);
+      spider_slow_query.append(thd->spider_remote_query.ptr(), thd->spider_remote_query.length());
+      if (table->field[10]->store(spider_slow_query.ptr(), spider_slow_query.length(), client_cs) < 0)
+          goto err;
+  }
+  else
+  {
+      if (table->field[10]->store(sql_text, sql_text_len, client_cs) < 0)
+          goto err;
+  }
 
   if (table->field[11]->store((longlong) thd->thread_id, TRUE))
     goto err;
@@ -3138,6 +3150,7 @@ bool MYSQL_QUERY_LOG::write(THD *thd, time_t current_time,
     }
     if (my_b_write(&log_file, (uchar*) sql_text, sql_text_len) ||
         my_b_write(&log_file, (uchar*) ";\n",2) ||
+        (opt_spider_slow_log && thd->is_spider_query && my_b_write(&log_file, (uchar*)thd->spider_remote_query.ptr(), thd->spider_remote_query.length())) ||
         flush_io_cache(&log_file))
       goto err;
 

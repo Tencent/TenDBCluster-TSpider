@@ -1824,6 +1824,25 @@ int spider_db_mysql::exec_query(
     general_log_write(current_thd, COM_QUERY, tmp_query_str.ptr(),
       tmp_query_str.length());
   }
+
+  /****************
+  if (opt_spider_slow_log)
+  {
+      thd->is_spider_query = TRUE;
+      thd->spider_slow_query_num++;
+      if (thd->spider_slow_query_num <= SPIDER_MAX_LOG_SLOW_QUERY)
+      {// recording 3 queries as most
+          thd->spider_remote_query.append(query, length);
+          thd->spider_remote_query.append(";\n", 2);
+      }
+      else if (thd->spider_slow_query_num == SPIDER_MAX_LOG_SLOW_QUERY + 1)
+      {// more query do not be recorded 
+          char spider_last_slow_query[128] = "other query spider distributed do not be recorded ... ;\n";
+          thd->spider_remote_query.append(spider_last_slow_query, strlen(spider_last_slow_query));
+      }
+  }
+  *******************************/
+
   if (!spider_param_dry_access())
   {
     error_num = mysql_real_query(db_conn, query, length);
