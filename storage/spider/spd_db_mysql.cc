@@ -6807,7 +6807,8 @@ int spider_mysql_handler::append_insert(
       spider->write_can_replace ||
       /* for direct_dup_insert without patch for partition */
       spider->sql_command == SQLCOM_REPLACE ||
-      spider->sql_command == SQLCOM_REPLACE_SELECT
+      spider->sql_command == SQLCOM_REPLACE_SELECT ||
+      (spider->sql_command == SQLCOM_LOAD && spider->lex_duplicates == DUP_REPLACE)
     ) &&
     spider->direct_dup_insert
   ) {
@@ -6839,7 +6840,8 @@ int spider_mysql_handler::append_insert(
     !spider->write_can_replace &&
     /* for direct_dup_insert without patch for partition */
     spider->sql_command != SQLCOM_REPLACE &&
-    spider->sql_command != SQLCOM_REPLACE_SELECT
+    spider->sql_command != SQLCOM_REPLACE_SELECT &&
+    !(spider->sql_command == SQLCOM_LOAD && spider->lex_duplicates == DUP_REPLACE)
   ) {
     if (str->reserve(SPIDER_SQL_HIGH_PRIORITY_LEN))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
@@ -6856,7 +6858,8 @@ int spider_mysql_handler::append_insert(
 #endif
     /* for direct_dup_insert without patch for partition */
     spider->sql_command != SQLCOM_REPLACE &&
-    spider->sql_command != SQLCOM_REPLACE_SELECT
+    spider->sql_command != SQLCOM_REPLACE_SELECT &&
+    !(spider->sql_command == SQLCOM_LOAD && spider->lex_duplicates == DUP_REPLACE)
   ) {
     if (str->reserve(SPIDER_SQL_SQL_IGNORE_LEN))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);

@@ -178,6 +178,7 @@ public:
   enum thr_lock_type lock_type;
   int                lock_mode;
   uint               sql_command;
+  int                lex_duplicates;
   int                selupd_lock_mode;
   bool               bulk_insert;
 #ifdef HANDLER_HAS_NEED_INFO_FOR_AUTO_INC

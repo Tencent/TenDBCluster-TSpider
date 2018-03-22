@@ -829,6 +829,7 @@ int ha_spider::check_access_kind(
   DBUG_ENTER("ha_spider::check_access_kind");
   DBUG_PRINT("info",("spider this=%p", this));
   sql_command = thd_sql_command(thd);
+  lex_duplicates = thd_lex_duplicates(thd);
   conn_kinds = 0;
   switch (sql_command)
   {

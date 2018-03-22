@@ -490,6 +490,12 @@ int thd_sql_command(const THD *thd)
 }
 
 extern "C"
+int thd_lex_duplicates(const THD *thd)
+{
+    return (int)thd->lex->duplicates;
+}
+
+extern "C"
 int thd_tx_isolation(const THD *thd)
 {
   return (int) thd->tx_isolation;
