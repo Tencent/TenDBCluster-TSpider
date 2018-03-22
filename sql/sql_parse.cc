@@ -7111,6 +7111,11 @@ check_table_access(THD *thd, ulong requirements,TABLE_LIST *tables,
     else
       sctx= backup_ctx;
 
+    if (tables->db && !strcmp(tables->db, "mysql") &&
+        tables->table_name && !strcmp(tables->table_name, "servers"))
+    {
+        want_access |= SUPER_ACL;
+    }
     /*
        Register access for view underlying table.
        Remove SHOW_VIEW_ACL, because it will be checked during making view
