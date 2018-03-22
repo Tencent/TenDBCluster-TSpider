@@ -2207,7 +2207,7 @@ static int add_keyword_int(String *str, const char *keyword, longlong num)
 static int add_partition_options(String *str, partition_element *p_elem)
 {
   int err= 0;
-
+  THD *thd = current_thd;
   if (p_elem->tablespace_name)
     err+= add_keyword_string(str,"TABLESPACE", false, p_elem->tablespace_name);
   if (p_elem->nodegroup_id != UNDEF_NODEGROUP)
@@ -2223,8 +2223,14 @@ static int add_partition_options(String *str, partition_element *p_elem)
     if (p_elem->index_file_name)
       err+= add_keyword_path(str, "INDEX DIRECTORY", p_elem->index_file_name);
   }
-  if (p_elem->part_comment)
-    err+= add_keyword_string(str, "COMMENT", true, p_elem->part_comment);
+
+  if (p_elem->part_comment &&
+      !(opt_spider_ignore_create_like &&
+          thd && thd->lex && thd->lex->sql_command == SQLCOM_CREATE_TABLE  &&
+          thd->lex->create_info.like())
+      )
+      err += add_keyword_string(str, "COMMENT", true, p_elem->part_comment);
+
   if (p_elem->connect_string.length)
     err+= add_keyword_string(str, "CONNECTION", true,
                              p_elem->connect_string.str);

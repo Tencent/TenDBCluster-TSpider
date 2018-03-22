@@ -6128,3 +6128,8 @@ static Sys_var_mybool Sys_spider_transaction_one_shard(
     "spider_transaction_one_shard",
     "limit tspider  query must use the same shard in transaction",
     GLOBAL_VAR(opt_spider_transaction_one_shard), CMD_LINE(OPT_ARG), DEFAULT(false));
+
+static Sys_var_mybool Sys_spider_ignore_create_like(
+    "spider_ignore_create_like",
+    "spider_ignore_create_like defaults is TRUE, create table like ignore comment for SPIDER table ",
+    GLOBAL_VAR(opt_spider_ignore_create_like), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
