@@ -419,6 +419,8 @@ uint opt_spider_auto_increment_mode_value;
 my_bool opt_spider_ignore_single_select_index;
 my_bool opt_spider_rone_shard_switch;
 my_bool opt_spider_slow_log;
+my_bool opt_spider_query_one_shard;
+my_bool opt_spider_transaction_one_shard;
 
 /*
   True if the bootstrap thread is running. Protected by LOCK_start_thread.

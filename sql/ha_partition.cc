@@ -11682,6 +11682,21 @@ bool ha_partition::is_spider_storage_engine()
     DBUG_RETURN(is_spider);
 }
 
+bool ha_partition::is_spider_config_table()
+{
+    DBUG_ENTER("ha_partition::is_spider_config_table");
+    handler ** file;
+    bool    is_config_table = TRUE;
+
+    for (file = m_file; *file; file++)
+    {
+        is_config_table = (*file)->is_spider_config_table();
+        if (!is_config_table)
+            DBUG_RETURN(is_config_table);
+    }
+    DBUG_RETURN(is_config_table);
+}
+
 
 struct st_mysql_storage_engine partition_storage_engine=
 { MYSQL_HANDLERTON_INTERFACE_VERSION };

@@ -6118,3 +6118,13 @@ static Sys_var_mybool Sys_spider_slow_log(
     "spider_slow_log",
     "enable spider_slow_log, print each remote execute sql when print slow log",
     GLOBAL_VAR(opt_spider_slow_log), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+
+static Sys_var_mybool Sys_spider_query_one_shard(
+    "spider_query_one_shard",
+    "limit tspider select/update/delete query must specify shard_key",
+    GLOBAL_VAR(opt_spider_query_one_shard), CMD_LINE(OPT_ARG), DEFAULT(false));
+
+static Sys_var_mybool Sys_spider_transaction_one_shard(
+    "spider_transaction_one_shard",
+    "limit tspider  query must use the same shard in transaction",
+    GLOBAL_VAR(opt_spider_transaction_one_shard), CMD_LINE(OPT_ARG), DEFAULT(false));

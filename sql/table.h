@@ -1355,6 +1355,8 @@ public:
   */
   SplM_opt_info *spl_opt_info;
   key_map keys_usable_for_splitting;
+  uint sql_use_partition_count;
+  List<Field> splitting_fields;
 
   void init(THD *thd, TABLE_LIST *tl);
   bool fill_item_list(List<Item> *item_list) const;

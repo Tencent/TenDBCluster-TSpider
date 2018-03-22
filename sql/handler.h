@@ -4182,6 +4182,10 @@ virtual bool is_spider_storage_engine()
  {
      return FALSE;
  }
+virtual bool is_spider_config_table()
+{
+    return false;
+}
 protected:
  /**
     Allows the storage engine to update internal structures with concurrent

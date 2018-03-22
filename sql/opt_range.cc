@@ -3442,6 +3442,7 @@ bool prune_partitions(THD *thd, TABLE *table, Item *pprune_cond)
   partition_info *part_info = table->part_info;
   DBUG_ENTER("prune_partitions");
 
+  table->sql_use_partition_count = 0;
   if (!part_info)
     DBUG_RETURN(FALSE); /* not a partitioned table */
   
@@ -14951,18 +14952,29 @@ void QUICK_GROUP_MIN_MAX_SELECT::dbug_dump(int indent, bool verbose)
 
 #endif /* !DBUG_OFF */
 
+bool is_config_table(TABLE *table)
+{
+    if (table && table->file && table->file->is_spider_storage_engine())
+    {
+        return table->file->is_spider_config_table();
+    }
+    return false;
+}
 
 void get_num_of_usedparts(THD *thd, TABLE *table, partition_info *part_info)
 {
-    if (table->file)
-    {
+    if (table->file && table->file->is_spider_storage_engine())
+    {/*  spider engine */
         int i = 0;
         int total_parts = part_info->num_parts;
+
         for (i = 0; i < total_parts; i++)
         {
             if ((bitmap_is_set(&(part_info->read_partitions), i)))
             {/* get the used partition */
                 thd->sql_use_partition_count++;
+                table->sql_use_partition_count++;
+                thd->spider_current_partition_num = i + 1;
             }
         }
     }

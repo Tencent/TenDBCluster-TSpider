@@ -2416,6 +2416,8 @@ public:
   String spider_remote_query;
   bool is_spider_query;
   int32 spider_slow_query_num;
+  int32 spider_current_partition_num;
+  int32 spider_last_partition_num;
 
   // Process indicator
   struct {

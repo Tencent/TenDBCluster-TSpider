@@ -1751,7 +1751,12 @@ JOIN::optimize_inner()
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   {
-    TABLE_LIST *tbl;
+    TABLE_LIST *tbl, *last_tb1;
+    uint spider_use_mul_partition_count = 0;
+    uint table_num = 0;
+    uint current_used_shard = 0;
+    uint last_used_shard = 0;
+    bool is_same_shard = TRUE;
     List_iterator_fast<TABLE_LIST> li(select_lex->leaf_tables);
     while ((tbl= li++))
     {
@@ -1768,6 +1773,63 @@ JOIN::optimize_inner()
                                                                  tbl->table,
 	                                                         prune_cond);
        }
+      if ((!is_config_table(tbl->table) || thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+          && tbl->table->sql_use_partition_count > 1)
+      {/* 事务中不能有对config_table的特殊处理 */
+          spider_use_mul_partition_count++;
+      }
+      last_tb1 = tbl;
+      if (table_num == 0)
+      {
+          current_used_shard = thd->spider_current_partition_num;
+          last_used_shard = current_used_shard;
+      }
+      else
+      {
+          current_used_shard = thd->spider_current_partition_num;
+          if (current_used_shard != last_used_shard)
+          {
+              is_same_shard = FALSE;
+          }
+      }
+      table_num++;
+    }
+
+    if (!(thd->security_ctx->master_access & SUPER_ACL))
+    {/* only support one shard, for not super_acl */
+        if (opt_spider_transaction_one_shard && thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+        {/* transaction */
+            if (table_num == 1)
+            {/* only one table */
+                if (spider_use_mul_partition_count > 0 ||
+                    (thd->spider_last_partition_num != 0 && (thd->spider_current_partition_num != thd->spider_last_partition_num))
+                    )
+                {
+                    my_error(ER_ACCESS_DENIED_MULPARTITION_IN_TRANSACTION,
+                        MYF(0), thd->security_ctx->priv_user, thd->security_ctx->host_or_ip);
+                    DBUG_RETURN(TRUE);
+                }
+            }
+            else if (table_num > 1 &&
+                (spider_use_mul_partition_count > 0 || !is_same_shard)
+                )
+            {/* more than one table*/
+                my_error(ER_ACCESS_DENIED_MULPARTITION_IN_TRANSACTION,
+                    MYF(0), thd->security_ctx->priv_user, thd->security_ctx->host_or_ip);
+                DBUG_RETURN(TRUE);
+            }
+        }
+        else if (opt_spider_query_one_shard)
+        { /* query */
+            if ((table_num == 1 && spider_use_mul_partition_count > 0) || (table_num > 1 && spider_use_mul_partition_count > 1))
+            {
+                /* 1. table_num == 1, use_mul_partition_tables>1 mean multiple partition
+                2. table_name > 1, must be only one table can multiple partition */
+                my_error(ER_ACCESS_DENIED_MULPARTITION_IN_QUERY, MYF(0),
+                    "Select", thd->security_ctx->priv_user, thd->security_ctx->host_or_ip, last_tb1->alias);
+                DBUG_RETURN(TRUE);
+            }
+        }
     }
   }
 #endif

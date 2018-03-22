@@ -985,6 +985,7 @@ typedef struct st_spider_share
   char               **tgt_pk_names;
   char               **tgt_sequence_names;
   char               **tgt_shard_keys;
+  char               **tgt_config_table;		        /* 值为true时表示为配置表 */
   char               **conn_keys;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   char               **hs_read_socks;
@@ -1040,6 +1041,7 @@ typedef struct st_spider_share
   uint               *tgt_pk_names_lengths;
   uint               *tgt_sequence_names_lengths;
   uint               *tgt_shard_keys_lengths;
+  uint	             *tgt_config_table_lengths;
   uint               *conn_keys_lengths;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   uint               *hs_read_socks_lengths;
@@ -1071,6 +1073,7 @@ typedef struct st_spider_share
   uint               tgt_pk_names_charlen;
   uint               tgt_sequence_names_charlen;
   uint               tgt_shard_keys_charlen;
+  uint	             tgt_config_table_charlen;
   uint               conn_keys_charlen;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   uint               hs_read_socks_charlen;
@@ -1098,6 +1101,7 @@ typedef struct st_spider_share
   uint               tgt_pk_names_length;
   uint               tgt_sequence_names_length;
   uint               tgt_shard_keys_length;
+  uint	             tgt_config_table_length;
   uint               conn_keys_length;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   uint               hs_read_socks_length;

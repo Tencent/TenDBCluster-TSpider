@@ -685,6 +685,16 @@ int spider_free_share_alloc(
       }
       spider_free(spider_current_trx, share->tgt_shard_keys, MYF(0));
   }
+  if (share->tgt_config_table)
+  {
+      for (roop_count = 0; roop_count < (int)share->tgt_config_table_length;
+          roop_count++)
+      {
+          if (share->tgt_config_table[roop_count])
+              spider_free(spider_current_trx, share->tgt_config_table[roop_count], MYF(0));
+      }
+      spider_free(spider_current_trx, share->tgt_config_table, MYF(0));
+  }
   if (share->tgt_usernames)
   {
     for (roop_count = 0; roop_count < (int) share->tgt_usernames_length;
@@ -960,6 +970,11 @@ void spider_free_tmp_share_alloc(
   {
       spider_free(spider_current_trx, share->tgt_shard_keys[0], MYF(0));
       share->tgt_shard_keys[0] = NULL;
+  }
+  if (share->tgt_config_table && share->tgt_config_table[0])
+  {
+      spider_free(spider_current_trx, share->tgt_config_table[0], MYF(0));
+      share->tgt_config_table[0] = NULL;
   }
   if (share->tgt_usernames && share->tgt_usernames[0])
   {
@@ -2449,6 +2464,7 @@ int spider_parse_connect_info(
           SPIDER_PARAM_DOUBLE("crd_interval", crd_interval, 0);
           SPIDER_PARAM_INT_WITH_MAX("low_mem_read", low_mem_read, 0, 1);
           SPIDER_PARAM_STR_LIST("default_file", tgt_default_files);
+          SPIDER_PARAM_STR_LIST("config_table", tgt_config_table);
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
           SPIDER_PARAM_LONG_LIST_WITH_MAX(
             "use_hs_write", use_hs_writes, 0, 1);
@@ -2784,6 +2800,13 @@ int spider_parse_connect_info(
     &share->tgt_sockets_charlen,
     share->all_link_count)))
     goto error;
+  if ((error_num = spider_increase_string_list(
+      &share->tgt_config_table,
+      &share->tgt_config_table_lengths,
+      &share->tgt_config_table_length,
+      &share->tgt_config_table_charlen,
+      share->all_link_count)))
+      goto error;
   if ((error_num = spider_increase_string_list(
     &share->tgt_wrappers,
     &share->tgt_wrappers_lengths,
@@ -3296,6 +3319,14 @@ int spider_parse_connect_info(
           error_num = ER_SPIDER_INVALID_CONNECT_INFO_TOO_LONG_NUM;
           my_printf_error(error_num, ER_SPIDER_INVALID_CONNECT_INFO_TOO_LONG_STR,
               MYF(0), share->tgt_shard_keys[roop_count], "shard_key");
+          goto error;
+      }
+
+      if (share->tgt_config_table_lengths && share->tgt_config_table_lengths[roop_count] > SPIDER_CONNECT_INFO_MAX_LEN)
+      {
+          error_num = ER_SPIDER_INVALID_CONNECT_INFO_TOO_LONG_NUM;
+          my_printf_error(error_num, ER_SPIDER_INVALID_CONNECT_INFO_TOO_LONG_STR,
+              MYF(0), share->tgt_config_table[roop_count], "config_table");
           goto error;
       }
 

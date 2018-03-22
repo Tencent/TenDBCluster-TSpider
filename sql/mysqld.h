@@ -314,6 +314,8 @@ extern uint opt_spider_auto_increment_step;
 extern my_bool opt_spider_ignore_single_select_index;
 extern my_bool opt_spider_rone_shard_switch;
 extern my_bool opt_spider_slow_log;
+extern my_bool opt_spider_query_one_shard;
+extern my_bool opt_spider_transaction_one_shard;
 
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP

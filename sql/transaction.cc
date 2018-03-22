@@ -167,6 +167,8 @@ bool trans_begin(THD *thd, uint flags)
 #endif //EMBEDDED_LIBRARY
   DBUG_ENTER("trans_begin");
 
+  thd->spider_current_partition_num = 0;
+  thd->spider_last_partition_num = 0;
   if (trans_check(thd))
     DBUG_RETURN(TRUE);
 
@@ -296,6 +298,8 @@ bool trans_commit(THD *thd)
   int res;
   DBUG_ENTER("trans_commit");
 
+  thd->spider_current_partition_num = 0;
+  thd->spider_last_partition_num = 0;
   if (trans_check(thd))
     DBUG_RETURN(TRUE);
 
@@ -355,6 +359,8 @@ bool trans_commit_implicit(THD *thd)
   bool res= FALSE;
   DBUG_ENTER("trans_commit_implicit");
 
+  thd->spider_current_partition_num = 0;
+  thd->spider_last_partition_num = 0;
   if (trans_check(thd))
     DBUG_RETURN(TRUE);
 
@@ -412,6 +418,8 @@ bool trans_rollback(THD *thd)
 #ifdef WITH_WSREP
   thd->wsrep_PA_safe= true;
 #endif /* WITH_WSREP */
+  thd->spider_current_partition_num = 0;
+  thd->spider_last_partition_num = 0;
   if (trans_check(thd))
     DBUG_RETURN(TRUE);
 
@@ -511,6 +519,7 @@ bool trans_commit_stmt(THD *thd)
   */
   DBUG_ASSERT(! thd->in_sub_stmt);
 
+  thd->spider_last_partition_num = thd->spider_current_partition_num;
   thd->merge_unsafe_rollback_flags();
 
   if (thd->transaction.stmt.ha_list)
@@ -574,6 +583,7 @@ bool trans_rollback_stmt(THD *thd)
   */
   DBUG_ASSERT(! thd->in_sub_stmt);
 
+  thd->spider_current_partition_num = 0;
   thd->merge_unsafe_rollback_flags();
 
   if (thd->transaction.stmt.ha_list)

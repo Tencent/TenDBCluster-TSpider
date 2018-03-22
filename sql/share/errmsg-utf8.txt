@@ -7921,3 +7921,7 @@ ER_KEY_DOESNT_SUPPORT
         eng "%s index %`s does not support this operation"
 ER_COLUMN_CAN_NOT_CHARSET_IN_CURRENT_STORAGE
         eng "Field '%-.192s' can not charset for column in this storage"
+ER_ACCESS_DENIED_MULPARTITION_IN_TRANSACTION
+        eng "Transaction across different partitions denied to user '%-.48s'@'%-.64s'"
+ER_ACCESS_DENIED_MULPARTITION_IN_QUERY
+        eng "%-.16s across multiple partitions denied to user '%-.48s'@'%-.64s' for table '%-.192s' "

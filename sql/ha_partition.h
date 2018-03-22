@@ -1419,6 +1419,7 @@ public:
     virtual bool is_support_column_charset();
     virtual bool support_more_partiton_log();
     virtual bool is_spider_storage_engine();
+    virtual bool is_spider_config_table();
     virtual int info_push(uint info_type, void *info);
 
     private:

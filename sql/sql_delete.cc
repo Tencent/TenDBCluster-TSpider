@@ -485,6 +485,31 @@ bool mysql_delete(THD *thd, TABLE_LIST *table_list, COND *conds,
     DBUG_RETURN(0);
   }
 #endif
+
+  if (!(thd->security_ctx->master_access & SUPER_ACL))
+  {
+      if (opt_spider_transaction_one_shard && thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+      {/* transaction */
+          if (table->sql_use_partition_count > 1 ||
+              (thd->spider_last_partition_num != 0 && (thd->spider_current_partition_num != thd->spider_last_partition_num))
+              )
+          {
+              my_error(ER_ACCESS_DENIED_MULPARTITION_IN_TRANSACTION,
+                  MYF(0), thd->security_ctx->priv_user, thd->security_ctx->host_or_ip);
+              DBUG_RETURN(TRUE);
+          }
+      }
+      else if (opt_spider_query_one_shard)
+      {/* query */
+          if (table->sql_use_partition_count > 1 && !is_config_table(table))
+          {
+              my_error(ER_ACCESS_DENIED_MULPARTITION_IN_QUERY, MYF(0),
+                  "Delete", thd->security_ctx->priv_user, thd->security_ctx->host_or_ip, table_list->alias);
+              DBUG_RETURN(TRUE);
+          }
+      }
+  }
+
   /* Update the table->file->stats.records number */
   table->file->info(HA_STATUS_VARIABLE | HA_STATUS_NO_LOCK);
   set_statistics_for_table(thd, table);
