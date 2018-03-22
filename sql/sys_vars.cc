@@ -6133,3 +6133,8 @@ static Sys_var_mybool Sys_spider_ignore_create_like(
     "spider_ignore_create_like",
     "spider_ignore_create_like defaults is TRUE, create table like ignore comment for SPIDER table ",
     GLOBAL_VAR(opt_spider_ignore_create_like), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
+
+static Sys_var_mybool Sys_spider_direct_limit_in_group(
+    "spider_direct_limit_in_group",
+    "limit with group would not direct send limit to remote when FALSE",
+    GLOBAL_VAR(opt_spider_direct_limit_in_group), CMD_LINE(OPT_ARG), DEFAULT(FALSE));

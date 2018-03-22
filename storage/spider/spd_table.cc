@@ -9026,6 +9026,7 @@ bool spider_check_direct_order_limit(
           )
         ) ||
         select_lex->having ||
+        (!opt_spider_direct_limit_in_group && select_lex->group_list.elements) ||  /* 有group时, limit 不能下放到后端  */
         !select_lex->order_list.elements ||
         select_limit > direct_order_limit - offset_limit
       ) {

@@ -317,6 +317,7 @@ extern my_bool opt_spider_slow_log;
 extern my_bool opt_spider_query_one_shard;
 extern my_bool opt_spider_transaction_one_shard;
 extern my_bool opt_spider_ignore_create_like;
+extern my_bool opt_spider_direct_limit_in_group;
 
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP
