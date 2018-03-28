@@ -6138,3 +6138,15 @@ static Sys_var_mybool Sys_spider_direct_limit_in_group(
     "spider_direct_limit_in_group",
     "limit with group would not direct send limit to remote when FALSE",
     GLOBAL_VAR(opt_spider_direct_limit_in_group), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+
+static Sys_var_uint Sys_spider_modify_status_interval(
+    "spider_modify_status_interval",
+    "the values means the interval update spider_table_status",
+    GLOBAL_VAR(opt_spider_modify_status_interval), CMD_LINE(REQUIRED_ARG),
+    VALID_RANGE(3600, 86400), DEFAULT(28800), BLOCK_SIZE(1));
+
+static Sys_var_uint Sys_spider_status_least(
+    "spider_status_least",
+    "the values means the least interval to update spider_table_status(pre_modify_time interval)",
+    GLOBAL_VAR(opt_spider_status_least), CMD_LINE(REQUIRED_ARG),
+    VALID_RANGE(60, 86400), DEFAULT(3600), BLOCK_SIZE(1));

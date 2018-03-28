@@ -139,27 +139,31 @@ create table if not exists mysql.spider_table_position_for_recovery(
   gtid text,
   primary key (db_name, table_name, failed_link_id, source_link_id)
 ) engine=MyISAM default charset=utf8 collate=utf8_bin;
-create table if not exists mysql.spider_table_sts(
-  db_name char(64) not null default '',
-  table_name char(199) not null default '',
-  data_file_length bigint unsigned not null default 0,
-  max_data_file_length bigint unsigned not null default 0,
-  index_file_length bigint unsigned not null default 0,
-  records bigint unsigned not null default 0,
-  mean_rec_length bigint unsigned not null default 0,
-  check_time datetime not null default '0000-00-00 00:00:00',
-  create_time datetime not null default '0000-00-00 00:00:00',
-  update_time datetime not null default '0000-00-00 00:00:00',
-  primary key (db_name, table_name)
-) engine=MyISAM default charset=utf8 collate=utf8_bin;
 create table if not exists mysql.spider_table_crd(
   db_name char(64) not null default '',
   table_name char(199) not null default '',
+  tgt_db_name char(64) not null DEFAULT '',
+  tgt_table_name char(64) not null DEFAULT '',
   key_seq int unsigned not null default 0,
   cardinality bigint not null default 0,
   primary key (db_name, table_name, key_seq)
 ) engine=MyISAM default charset=utf8 collate=utf8_bin;
-
+CREATE TABLE if not exists mysql.spider_table_status (
+  `db_name` char(64) NOT NULL DEFAULT '',
+  `table_name` char(250) NOT NULL DEFAULT '',
+  `tgt_db_name` char(64) NOT NULL DEFAULT '',
+  `tgt_table_name` char(64) NOT NULL DEFAULT '',
+  `data_file_length` bigint(21) unsigned DEFAULT 0,
+  `max_data_file_length` bigint(21) unsigned DEFAULT 0,
+  `index_file_length` bigint(21) unsigned DEFAULT 0,
+  `records` bigint(21) unsigned DEFAULT 0,
+  `mean_rec_length` bigint(21) unsigned DEFAULT 0,
+  `check_time` datetime DEFAULT NULL,
+  `update_time` datetime DEFAULT NULL,
+  `create_time` datetime DEFAULT NULL,
+  `modify_time` datetime DEFAULT NULL,
+  PRIMARY KEY (`db_name`,`table_name`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 -- If tables already exist and their definition differ from the latest ones,
 --   we fix them here.
 drop procedure if exists mysql.spider_fix_one_table;

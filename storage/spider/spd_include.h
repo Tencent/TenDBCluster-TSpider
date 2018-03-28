@@ -782,6 +782,7 @@ typedef struct st_spider_share
   uchar              *table_mon_mutex_bitmap;
   volatile bool      sts_init;
   volatile time_t    sts_get_time;
+  volatile time_t    sts_read_time;
 #ifndef WITHOUT_SPIDER_BG_SEARCH
   volatile time_t    bg_sts_try_time;
   volatile double    bg_sts_interval;
@@ -859,6 +860,9 @@ typedef struct st_spider_share
   time_t             check_time;
   time_t             create_time;
   time_t             update_time;
+
+  time_t             modify_time;
+  time_t             pre_modify_time;
 
   longlong           static_records_for_status;
   longlong           static_mean_rec_length;
@@ -1437,6 +1441,12 @@ typedef struct st_spider_ip_port_conn {
   pthread_cond_t     cond;
   ulonglong          conn_id; /* each conn has it's own conn_id */
 } SPIDER_IP_PORT_CONN;
+
+typedef struct st_spider_sts_for_conn {
+    char *key;
+    size_t key_len;
+    char *conn;
+} SPIDER_FOR_STS_CONN;
 
 #define SPIDER_CONN_IS_INIT(a) ((a->status) & 0x0001)
 #define SPIDER_CONN_IS_INIT2(a) ((a->status) & 0x0010)

@@ -31,6 +31,8 @@
 #define SPIDER_SYS_TABLE_STS_TABLE_NAME_LEN (sizeof(SPIDER_SYS_TABLE_STS_TABLE_NAME_STR) - 1)
 #define SPIDER_SYS_TABLE_CRD_TABLE_NAME_STR "spider_table_crd"
 #define SPIDER_SYS_TABLE_CRD_TABLE_NAME_LEN (sizeof(SPIDER_SYS_TABLE_CRD_TABLE_NAME_STR) - 1)
+#define SPIDER_SYS_TABLE_STATUS_NAME_STR "spider_table_status"
+#define SPIDER_SYS_TABLE_STATUS_NAME_LEN (sizeof(SPIDER_SYS_TABLE_STATUS_NAME_STR) - 1)
 
 #define SPIDER_SYS_XA_PREPARED_STR "PREPARED"
 #define SPIDER_SYS_XA_NOT_YET_STR "NOT YET"
@@ -52,6 +54,8 @@
 #define SPIDER_SYS_TABLE_STS_PK_COL_CNT 2
 #define SPIDER_SYS_TABLE_CRD_COL_CNT 4
 #define SPIDER_SYS_TABLE_CRD_PK_COL_CNT 3
+#define SPIDER_SYS_TABLE_STATUS_COL_CNT 13
+#define SPIDER_SYS_TABLE_STATUS_PK_COL_CNT 2
 
 #define SPIDER_SYS_LINK_MON_TABLE_DB_NAME_SIZE 64
 #define SPIDER_SYS_LINK_MON_TABLE_TABLE_NAME_SIZE 64
@@ -646,4 +650,81 @@ void spider_rm_sys_tmp_table_for_result(
   THD *thd,
   TABLE *tmp_table,
   TMP_TABLE_PARAM *tmp_tbl_prm
+);
+
+int spider_insert_table_status(
+    TABLE *table,
+    char *table_name,
+    uint table_name_length,
+    char *tgt_table_names,
+    char *tgt_dbs,
+    ulonglong data_file_length,
+    ulonglong max_data_file_length,
+    ulonglong index_file_length,
+    ha_rows records,
+    ulong   mean_rec_length,
+    time_t  check_time,
+    time_t  create_time,
+    time_t  update_time
+);
+
+int spider_get_table_status_record(
+    TABLE *table,
+    char *table_name,
+    uint table_name_length
+);
+
+int spider_get_table_status_for_share(
+    SPIDER_SHARE *share
+);
+
+int spider_replace_table_status
+(
+    TABLE *table,
+    char *table_name,
+    uint table_name_length,
+    char *tgt_table_names,
+    char *tgt_dbs,
+    ulonglong data_file_length,
+    ulonglong max_data_file_length,
+    ulonglong index_file_length,
+    ha_rows records,
+    ulong   mean_rec_length,
+    time_t  check_time,
+    time_t  create_time,
+    time_t  update_time
+);
+
+int spider_store_table_status
+(
+    TABLE *table,
+    char *table_name,
+    uint table_name_length,
+    char *tgt_table_names,
+    char *tgt_dbs,
+    ulonglong data_file_length,
+    ulonglong max_data_file_length,
+    ulonglong index_file_length,
+    ha_rows records,
+    ulong   mean_rec_length,
+    time_t  check_time,
+    time_t  create_time,
+    time_t  update_time
+);
+
+int spider_update_table_status
+(
+    TABLE *table,
+    char *table_name,
+    uint table_name_length,
+    char *tgt_table_names,
+    char *tgt_dbs,
+    ulonglong data_file_length,
+    ulonglong max_data_file_length,
+    ulonglong index_file_length,
+    ha_rows records,
+    ulong   mean_rec_length,
+    time_t  check_time,
+    time_t  create_time,
+    time_t  update_time
 );

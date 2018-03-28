@@ -744,3 +744,17 @@ void spider_current_time(void *tm);
 void spider_make_mysql_time(MYSQL_TIME *, time_t *);
 int spider_db_init_for_conn_mutexs_conds();
 void spider_gettime_str(char *dst, size_t len);
+int spider_replace_table_status_up(
+    char *table_name,
+    uint table_name_length,
+    char *tgt_table_names,
+    char *tgt_dbs,
+    ulonglong data_file_length,
+    ulonglong max_data_file_length,
+    ulonglong index_file_length,
+    ha_rows records,
+    ulong   mean_rec_length,
+    time_t  check_time,
+    time_t  create_time,
+    time_t  update_time
+);

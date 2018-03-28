@@ -34,12 +34,13 @@
 #include "ha_spider.h"
 #include "spd_db_conn.h"
 #include "spd_trx.h"
-#include "spd_conn.h"
 #include "spd_table.h"
 #include "spd_direct_sql.h"
 #include "spd_ping_table.h"
 #include "spd_malloc.h"
 #include "spd_err.h"
+#include "spd_conn.h"
+#include <mysql.h>
 
 #ifdef SPIDER_HAS_NEXT_THREAD_ID
 #define SPIDER_set_next_thread_id(A)
@@ -86,11 +87,18 @@ extern PSI_thread_key spd_key_thd_bg_crd;
 extern PSI_thread_key spd_key_thd_bg_mon;
 #endif
 #endif
+
+extern pthread_mutex_t spider_tbl_mutex;
+extern pthread_mutex_t spider_global_trx_mutex;
+extern SPIDER_TRX *spider_global_trx;
 #endif
 
+extern HASH spider_open_tables;
 HASH spider_open_connections;
 uint spider_open_connections_id;
 HASH spider_ipport_conns;
+HASH spider_for_sts_conns;
+HASH spider_for_sts_share;
 long spider_conn_mutex_id = 0;
 
 const char *spider_open_connections_func_name;
@@ -117,6 +125,11 @@ pthread_mutex_t spider_hs_w_conn_mutex;
 extern PSI_thread_key spd_key_thd_conn_rcyc;
 volatile bool      conn_rcyc_init = FALSE;
 pthread_t          conn_rcyc_thread;
+
+
+extern PSI_thread_key spd_key_thd_get_status;
+volatile bool      get_status_init = FALSE;
+pthread_t          get_status_thread;
 
 typedef struct {
 	HASH *hash_info;
@@ -147,6 +160,17 @@ uchar *spider_ipport_conn_get_key(
   DBUG_ENTER("spider_ipport_conn_get_key");
   *length = ip_port->key_len;
   DBUG_RETURN((uchar*) ip_port->key);
+}
+
+uchar *spider_for_sts_conn_get_key(
+    SPIDER_FOR_STS_CONN *sts_conn,
+    size_t *length,
+    my_bool not_used __attribute__((unused))
+)
+{
+    DBUG_ENTER("spider_for_sts_conn_get_key");
+    *length = sts_conn->key_len;
+    DBUG_RETURN((uchar*)sts_conn->key);
 }
 
 uchar *spider_conn_meta_get_key(
@@ -4855,4 +4879,357 @@ spider_update_conn_meta_info(SPIDER_CONN *conn, uint new_status)
 	}
 
 	DBUG_VOID_RETURN;
+}
+
+MYSQL* spider_mysql_connect(
+    char *tgt_host,
+    char *tgt_username,
+    char *tgt_password,
+    long tgt_port,
+    char *tgt_socket
+)
+{
+    MYSQL* db_conn = NULL;
+    uint real_connect_option = 0;
+    DBUG_ENTER("spider_mysql_connect");
+
+    if (!db_conn)
+    {
+        if (!(db_conn = mysql_init(NULL)))
+            DBUG_RETURN(NULL);
+    }
+
+    real_connect_option = CLIENT_INTERACTIVE | CLIENT_MULTI_STATEMENTS | CLIENT_FOUND_ROWS;
+
+
+    /* tgt_db not use */
+    if (!mysql_real_connect(
+        db_conn,
+        tgt_host,
+        tgt_username,
+        tgt_password,
+        NULL,
+        tgt_port,
+        tgt_socket,
+        real_connect_option
+    ))
+    {
+        if (db_conn)
+        {
+            mysql_close(db_conn);
+            db_conn = NULL;
+        }
+    }
+    DBUG_RETURN(db_conn);
+}
+
+
+static void *spider_get_status_action(void *arg)
+{
+    DBUG_ENTER("spider_get_status_action");
+
+    SPIDER_SHARE *share;
+    MYSQL *conn;
+    THD *thd;
+    my_thread_init();
+    if (!(thd = SPIDER_new_THD(next_thread_id())))
+    {
+        my_thread_end();
+        DBUG_RETURN(NULL);
+    }
+    SPIDER_set_next_thread_id(thd);
+    thd->thread_stack = (char*)&thd;
+    thd->store_globals();
+
+
+    while (get_status_init)
+    {
+        double modify_interval = opt_spider_modify_status_interval;
+        double interval_least = opt_spider_status_least;
+        time_t pre_modify_time;
+        time_t cur_time;
+        ulong share_records;
+        ulong sleep_time = 60;
+        char host[65] = { 0 };
+        char username[65] = { 0 };
+        char password[65] = { 0 };
+        long port;
+        char socket[256] = { 0 };
+        char db_tb[256] = { 0 };
+        uint db_tb_len;
+        char tgt_db[65] = { 0 };
+        char tgt_tb[65] = { 0 };
+        time_t modify_time;
+        char query_head[] = "show table status from ";
+        char query[256] = { 0 };
+        char key[256] = { 0 };
+        ulong key_len;
+
+        /* result */
+        MYSQL_RES *res;
+        MYSQL_ROW mysql_row;
+        ha_rows records;
+        ulong mean_rec_length;
+        ulonglong data_file_length;
+        ulonglong max_data_file_length;
+        ulonglong index_file_length;
+        ulonglong auto_increment_value;
+        time_t create_time;
+        time_t update_time;
+        time_t check_time;
+        MYSQL_TIME mysql_time;
+        MYSQL_TIME_STATUS time_status;
+        uint not_used_my_bool;
+        long not_used_long;
+        SPIDER_FOR_STS_CONN *sts_conn = NULL;
+        time_t to_tm_time = (time_t)time((time_t*)0);
+        struct tm lt;
+        struct tm *l_time = localtime_r(&to_tm_time, &lt);
+
+
+        pthread_mutex_lock(&spider_tbl_mutex);
+        share_records = spider_open_tables.records;
+        pthread_mutex_unlock(&spider_tbl_mutex);
+
+        for (ulong i = 0; i < share_records; i++)
+        {/* foreach share */
+
+            if (!spider_param_get_sts_or_crd())
+            {
+                break;
+            }
+            pthread_mutex_lock(&spider_tbl_mutex);
+            share = (SPIDER_SHARE*)my_hash_element(&spider_open_tables, i);
+            if (!share)
+            {
+                pthread_mutex_unlock(&spider_tbl_mutex);
+                continue;
+            }
+
+            if (!share->tgt_hosts[0] || !share->tgt_usernames[0] || !share->tgt_passwords[0] ||
+                !share->table_name || !share->tgt_dbs[0] || !share->tgt_table_names[0])
+            {
+                pthread_mutex_unlock(&spider_tbl_mutex);
+                continue;
+            }
+            cur_time = (time_t)time((time_t*)0);
+            memcpy(host, share->tgt_hosts[0], strlen(share->tgt_hosts[0]) + 1);
+            memcpy(username, share->tgt_usernames[0], strlen(share->tgt_usernames[0]) + 1);
+            memcpy(password, share->tgt_passwords[0], strlen(share->tgt_passwords[0]) + 1);
+            if (share->tgt_sockets[0])
+                memcpy(socket, share->tgt_sockets[0], strlen(share->tgt_sockets[0]) + 1);
+            memcpy(db_tb, share->table_name, strlen(share->table_name) + 1);
+            memcpy(tgt_db, share->tgt_dbs[0], strlen(share->tgt_dbs[0]) + 1);
+            memcpy(tgt_tb, share->tgt_table_names[0], strlen(share->tgt_table_names[0]) + 1);
+            port = share->tgt_ports[0];
+            pre_modify_time = share->pre_modify_time;
+            share->pre_modify_time = cur_time;
+            db_tb_len = share->table_name_length;
+            modify_time = share->modify_time;
+            pthread_mutex_unlock(&spider_tbl_mutex);
+
+            sts_conn = NULL;
+            if (difftime(cur_time, modify_time) >= modify_interval && difftime(cur_time, pre_modify_time) > interval_least)
+            {/* 1. need to modify table status
+             2. modify table status at least per 60s
+             */
+                key_len = spider_create_sts_conn_key(key, host, port, username, password);
+                sts_conn = (SPIDER_FOR_STS_CONN*)my_hash_search(&spider_for_sts_conns, (uchar*)key, key_len);
+                if (!sts_conn)
+                {/* not exits, then new and add into hash */
+                    conn = spider_mysql_connect(host, username, password, port, socket);
+                    if (conn)
+                    {
+                        sts_conn = spider_create_sts_conn(key, key_len, (char*)conn);
+                        my_hash_insert(&spider_for_sts_conns, (uchar *)sts_conn);
+                    }
+                    else
+                    {/* ignore this conn */
+                        continue;
+                    }
+                }
+                else
+                {/* can get from hash */
+                    conn = (MYSQL*)sts_conn->conn;
+                }
+
+                if (conn)
+                {
+                    snprintf(query, 256, "%s %s like '%s'", query_head, tgt_db, tgt_tb);
+                    if (!mysql_real_query(conn, query, strlen(query)))
+                    {
+                        res = mysql_store_result(conn);
+                        if (res)
+                        {
+                            int error_num;
+                            mysql_row = mysql_fetch_row(res);
+                            if (mysql_row)
+                            {
+                                if (mysql_row[4])
+                                    records = (ha_rows)my_strtoll10(mysql_row[4], (char**)NULL, &error_num);
+                                else
+                                    records = (ha_rows)0;
+                                if (mysql_row[5])
+                                    mean_rec_length = (ulong)my_strtoll10(mysql_row[5], (char**)NULL, &error_num);
+                                else
+                                    mean_rec_length = 0;
+                                if (mysql_row[6])
+                                    data_file_length = (ulonglong)my_strtoll10(mysql_row[6], (char**)NULL, &error_num);
+                                else
+                                    data_file_length = 0;
+                                if (mysql_row[7])
+                                    max_data_file_length = (ulonglong)my_strtoll10(mysql_row[7], (char**)NULL, &error_num);
+                                else
+                                    max_data_file_length = 0;
+                                if (mysql_row[8])
+                                    index_file_length = (ulonglong)my_strtoll10(mysql_row[8], (char**)NULL, &error_num);
+                                else
+                                    index_file_length = 0;
+                                if (mysql_row[10])
+                                    auto_increment_value = (ulonglong)my_strtoll10(mysql_row[10], (char**)NULL, &error_num);
+                                else
+                                    auto_increment_value = 1;
+                                if (mysql_row[11])
+                                {
+                                    str_to_datetime(mysql_row[11], strlen(mysql_row[11]), &mysql_time, 0, &time_status);
+                                    create_time = (time_t)my_system_gmt_sec(&mysql_time, &not_used_long, &not_used_my_bool);
+                                }
+                                else
+                                    create_time = (time_t)0;
+                                if (mysql_row[12])
+                                {
+                                    str_to_datetime(mysql_row[12], strlen(mysql_row[12]), &mysql_time, 0, &time_status);
+                                    update_time = (time_t)my_system_gmt_sec(&mysql_time, &not_used_long, &not_used_my_bool);
+                                }
+                                else
+                                    update_time = (time_t)0;
+                                if (mysql_row[13])
+                                {
+                                    str_to_datetime(mysql_row[13], strlen(mysql_row[13]), &mysql_time, 0, &time_status);
+                                    check_time = (time_t)my_system_gmt_sec(&mysql_time, &not_used_long, &not_used_my_bool);
+                                }
+                                else
+                                    check_time = (time_t)0;
+                                spider_replace_table_status_up(
+                                    db_tb, db_tb_len, tgt_tb, tgt_db,
+                                    data_file_length, max_data_file_length, index_file_length,
+                                    records, mean_rec_length, check_time, create_time, update_time);
+
+                            }
+                            else
+                            {
+                                fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+                                    "record = %u, i = %u, tb_name = %s,  failed to fetch row\n",
+                                    l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+                                    share_records, i, db_tb);
+                            }
+                            mysql_free_result(res);
+                        }
+                    }
+                    else
+                    {
+                        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+                            "record = %u, i = %u, tb_name = %s,  failed to do real query\n",
+                            l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+                            share_records, i, db_tb);
+                        my_hash_delete(&spider_for_sts_conns, (uchar*)sts_conn);
+                    }
+                }
+                else
+                {
+                    fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+                        "record = %u, i = %u,  tb_name = %s, failed to get conn\n",
+                        l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+                        share_records, i, db_tb);
+                    if (sts_conn)
+                        my_hash_delete(&spider_for_sts_conns, (uchar*)sts_conn);
+                }
+            }
+        } /* end foreach */
+        sleep(sleep_time); /* 60s */
+    }/* end while */
+    DBUG_RETURN(NULL);
+}
+
+
+int spider_create_get_status_thread()
+{
+    int error_num;
+    DBUG_ENTER("spider_create_get_status_thread");
+    if (get_status_init) {
+        DBUG_RETURN(0);
+    }
+
+#if MYSQL_VERSION_ID < 50500
+    if (pthread_create(&get_status_thread, NULL, spider_get_status_action, NULL))
+#else
+    if (mysql_thread_create(spd_key_thd_get_status, &get_status_thread, NULL, spider_get_status_action, NULL))
+#endif
+    {
+        error_num = HA_ERR_OUT_OF_MEM;
+        goto error_thread_create;
+    }
+    get_status_init = TRUE;
+    DBUG_RETURN(0);
+
+error_thread_create:
+    DBUG_RETURN(error_num);
+}
+
+void spider_free_get_status_thread()
+{
+    DBUG_ENTER("spider_free_get_status_thread");
+    if (get_status_init) {
+        pthread_cancel(get_status_thread);
+        pthread_join(get_status_thread, NULL);
+        get_status_init = FALSE;
+    }
+
+    DBUG_VOID_RETURN;
+}
+
+void
+spider_free_for_sts_conn(void *info)
+{
+    DBUG_ENTER("spider_free_for_sts_conn");
+    if (info) {
+        SPIDER_FOR_STS_CONN *p = (SPIDER_FOR_STS_CONN *)info;
+        my_free(p->key);
+        my_free(p);
+    }
+    DBUG_VOID_RETURN;
+}
+
+uint spider_create_sts_conn_key(char *key, char *host, ulong port, char *user, char *passwd)
+{
+    char port_str[10];
+    uint key_length;
+
+    ullstr(port, port_str);
+    key_length = (uint)(strmov(strmov(strmov(strmov(key, host) + 1, port_str) + 1, user) + 1, passwd) - key) + 1;
+
+    return key_length;
+
+}
+
+
+SPIDER_FOR_STS_CONN *
+spider_create_sts_conn(char *key, ulong key_len, char *conn)
+{
+    SPIDER_FOR_STS_CONN *sts_conn = NULL;
+    DBUG_ENTER("spider_create_sts_conn");
+    sts_conn = (SPIDER_FOR_STS_CONN *)my_malloc(sizeof(*sts_conn), MY_ZEROFILL | MY_WME);
+    if (!sts_conn)
+    {
+        DBUG_RETURN(NULL);
+    }
+    sts_conn->key_len = key_len;
+    sts_conn->key = (char *)my_malloc(key_len, MY_ZEROFILL | MY_WME);
+    if (!sts_conn->key)
+    {
+        DBUG_RETURN(NULL);
+    }
+    memcpy(sts_conn->key, key, key_len);
+    sts_conn->conn = conn;
+    DBUG_RETURN(sts_conn);
 }

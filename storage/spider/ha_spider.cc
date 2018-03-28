@@ -8165,16 +8165,8 @@ int ha_spider::ft_read(
 int ha_spider::info(
   uint flag
 ) {
-  int error_num;
   THD *thd = ha_thd();
   double sts_interval = spider_param_sts_interval(thd, share->sts_interval);
-  int sts_mode = spider_param_sts_mode(thd, share->sts_mode);
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-  int sts_sync = spider_param_sts_sync(thd, share->sts_sync);
-#endif
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-  int sts_bg_mode = spider_param_sts_bg_mode(thd, share->sts_bg_mode);
-#endif
   SPIDER_INIT_ERROR_TABLE *spider_init_error_table = NULL;
   set_error_mode();
   backup_error_status();
@@ -8221,216 +8213,14 @@ int ha_spider::info(
       info_auto_called = TRUE;
 #endif
     }
-    if (!share->sts_init)
-    {
-      pthread_mutex_lock(&share->sts_mutex);
-      if (share->sts_init)
-        pthread_mutex_unlock(&share->sts_mutex);
-      else {
-        if ((spider_init_error_table =
-          spider_get_init_error_table(trx, share, FALSE)))
-        {
-          DBUG_PRINT("info",("spider diff=%f",
-            difftime(tmp_time, spider_init_error_table->init_error_time)));
-          if (difftime(tmp_time,
-            spider_init_error_table->init_error_time) <
-            spider_param_table_init_error_interval())
-          {
-            pthread_mutex_unlock(&share->sts_mutex);
-            if (sql_command == SQLCOM_SHOW_CREATE)
-            {
-              if (thd->is_error())
-              {
-                DBUG_PRINT("info", ("spider clear_error"));
-                thd->clear_error();
-              }
-              DBUG_RETURN(0);
-            }
-            if (spider_init_error_table->init_error_with_message)
-              my_message(spider_init_error_table->init_error,
-                spider_init_error_table->init_error_msg, MYF(0));
-            DBUG_RETURN(check_error_mode(spider_init_error_table->init_error));
-          }
-        }
-        pthread_mutex_unlock(&share->sts_mutex);
-        sts_interval = 0;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-        if (tmp_auto_increment_mode == 1)
-          sts_sync = 0;
-#endif
-      }
-    }
 
-    if (spider_param_get_sts_or_crd() && difftime(tmp_time, share->sts_get_time) >= sts_interval)
-    {/* to do, forbid sts tmporary */
-      if (
-        sts_interval == 0 ||
-        !pthread_mutex_trylock(&share->sts_mutex)
-      ) {
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-        if (sts_interval == 0 || sts_bg_mode == 0)
-        {
-#endif
-          if (sts_interval == 0)
-            pthread_mutex_lock(&share->sts_mutex);
-          if (difftime(tmp_time, share->sts_get_time) >= sts_interval)
-          {
-            if ((error_num = spider_check_trx_and_get_conn(ha_thd(), this,
-              FALSE)))
-            {
-              pthread_mutex_unlock(&share->sts_mutex);
-              if (!share->sts_init)
-              {
-                if (
-                  spider_init_error_table ||
-                  (spider_init_error_table =
-                    spider_get_init_error_table(trx, share, TRUE))
-                ) {
-                  spider_init_error_table->init_error = error_num;
-                  if ((spider_init_error_table->init_error_with_message =
-                    thd->is_error()))
-                    strmov(spider_init_error_table->init_error_msg,
-                      spider_stmt_da_message(thd));
-                  spider_init_error_table->init_error_time =
-                    (time_t) time((time_t*) 0);
-                }
-                share->init_error = TRUE;
-                share->init = TRUE;
-              }
-              if (sql_command == SQLCOM_SHOW_CREATE)
-              {
-                if (thd->is_error())
-                {
-                  DBUG_PRINT("info", ("spider clear_error"));
-                  thd->clear_error();
-                }
-                DBUG_RETURN(0);
-              }
-              DBUG_RETURN(check_error_mode(error_num));
-            }
-            if ((error_num = spider_get_sts(share, search_link_idx, tmp_time,
-                this, sts_interval, sts_mode,
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-                sts_sync,
-#endif
-                share->sts_init ? 2 : 1,
-                flag | (share->sts_init ? 0 : HA_STATUS_AUTO)))
-            ) {
-              pthread_mutex_unlock(&share->sts_mutex);
-              if (
-                share->monitoring_kind[search_link_idx] &&
-                need_mons[search_link_idx]
-              ) {
-                error_num = spider_ping_table_mon_from_table(
-                    trx,
-                    trx->thd,
-                    share,
-                    search_link_idx,
-                    (uint32) share->monitoring_sid[search_link_idx],
-                    share->table_name,
-                    share->table_name_length,
-                    conn_link_idx[search_link_idx],
-                    NULL,
-                    0,
-                    share->monitoring_kind[search_link_idx],
-                    share->monitoring_limit[search_link_idx],
-                    share->monitoring_flag[search_link_idx],
-                    TRUE
-                  );
-              }
-              if (!share->sts_init)
-              {
-                if (
-                  spider_init_error_table ||
-                  (spider_init_error_table =
-                    spider_get_init_error_table(trx, share, TRUE))
-                ) {
-                  spider_init_error_table->init_error = error_num;
-/*
-                  if (!thd->is_error())
-                    my_error(error_num, MYF(0), "");
-*/
-                  if ((spider_init_error_table->init_error_with_message =
-                    thd->is_error()))
-                    strmov(spider_init_error_table->init_error_msg,
-                      spider_stmt_da_message(thd));
-                  spider_init_error_table->init_error_time =
-                    (time_t) time((time_t*) 0);
-                }
-                share->init_error = TRUE;
-                share->init = TRUE;
-              }
-              if (sql_command == SQLCOM_SHOW_CREATE)
-              {
-                if (thd->is_error())
-                {
-                  DBUG_PRINT("info", ("spider clear_error"));
-                  thd->clear_error();
-                }
-                DBUG_RETURN(0);
-              }
-              DBUG_RETURN(check_error_mode(error_num));
-            }
-          }
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-        } else if (sts_bg_mode == 1) {
-          /* background */
-          if (!share->bg_sts_init || share->bg_sts_thd_wait)
-          {
-            share->bg_sts_thd_wait = FALSE;
-            share->bg_sts_try_time = tmp_time;
-            share->bg_sts_interval = sts_interval;
-            share->bg_sts_mode = sts_mode;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-            share->bg_sts_sync = sts_sync;
-#endif
-            if (!share->bg_sts_init)
-            {
-              if ((error_num = spider_create_sts_thread(share)))
-              {
-                pthread_mutex_unlock(&share->sts_mutex);
-                if (sql_command == SQLCOM_SHOW_CREATE)
-                {
-                  if (thd->is_error())
-                  {
-                    DBUG_PRINT("info", ("spider clear_error"));
-                    thd->clear_error();
-                  }
-                  DBUG_RETURN(0);
-                }
-                DBUG_RETURN(error_num);
-              }
-            } else
-              pthread_cond_signal(&share->bg_sts_cond);
-          }
-        } else {
-          share->bg_sts_try_time = tmp_time;
-          share->bg_sts_interval = sts_interval;
-          share->bg_sts_mode = sts_mode;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-          share->bg_sts_sync = sts_sync;
-#endif
-          spider_table_add_share_to_sts_thread(share);
-        }
-#endif
-        pthread_mutex_unlock(&share->sts_mutex);
-      }
+    /* 从tb_spider_table_status中获取统计信息,若已存在记录则share->modify_time > 0 */
+    if (spider_param_get_sts_or_crd())
+    {
+        spider_get_table_status_for_share(share);
     }
     if (flag & HA_STATUS_CONST)
     {
-      if (spider_param_get_sts_or_crd() && (error_num = check_crd()))
-      {/* to do, forbid crd tmporary */
-        if (sql_command == SQLCOM_SHOW_CREATE)
-        {
-          if (thd->is_error())
-          {
-            DBUG_PRINT("info", ("spider clear_error"));
-            thd->clear_error();
-          }
-          DBUG_RETURN(0);
-        }
-        DBUG_RETURN(error_num);
-      }
       spider_db_set_cardinarity(this, table);
     }
 
@@ -8656,16 +8446,6 @@ ha_rows ha_spider::records_in_range(
 #ifdef WITH_PARTITION_STORAGE_ENGINE
             share->bg_crd_sync = crd_sync;
 #endif
-            if (!share->bg_crd_init)
-            {
-              if ((error_num = spider_create_crd_thread(share)))
-              {
-                pthread_mutex_unlock(&share->crd_mutex);
-                my_errno = error_num;
-                DBUG_RETURN(HA_POS_ERROR);
-              }
-            } else
-              pthread_cond_signal(&share->bg_crd_cond);
           }
         } else {
           share->bg_crd_try_time = tmp_time;
@@ -8950,15 +8730,6 @@ int ha_spider::check_crd()
 #ifdef WITH_PARTITION_STORAGE_ENGINE
           share->bg_crd_sync = crd_sync;
 #endif
-          if (!share->bg_crd_init)
-          {
-            if ((error_num = spider_create_crd_thread(share)))
-            {
-              pthread_mutex_unlock(&share->crd_mutex);
-              DBUG_RETURN(error_num);
-            }
-          } else
-            pthread_cond_signal(&share->bg_crd_cond);
         }
       } else {
         share->bg_crd_try_time = tmp_time;

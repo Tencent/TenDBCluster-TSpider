@@ -423,6 +423,8 @@ my_bool opt_spider_query_one_shard;
 my_bool opt_spider_transaction_one_shard;
 my_bool opt_spider_ignore_create_like;
 my_bool opt_spider_direct_limit_in_group;
+uint opt_spider_modify_status_interval;
+uint opt_spider_status_least;
 
 /*
   True if the bootstrap thread is running. Protected by LOCK_start_thread.
