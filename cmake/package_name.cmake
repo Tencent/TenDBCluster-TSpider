@@ -130,7 +130,7 @@ IF(NOT VERSION)
     SET(PRODUCT_TAG)
   ENDIF()
 
-  SET(package_name "mariadb${PRODUCT_TAG}-${VERSION}-${SYSTEM_NAME_AND_PROCESSOR}")
+  SET(package_name "mariadb-${VERSION}-${SYSTEM_NAME_AND_PROCESSOR}${PRODUCT_TAG}-gcs")
 
   MESSAGE(STATUS "Packaging as: ${package_name}")
 

@@ -374,7 +374,7 @@ ENDIF()
 
 SET (MYSQLD_STATIC_PLUGIN_LIBS "" CACHE INTERNAL "")
 
-INCLUDE(submodules)
+#INCLUDE(submodules)
 INCLUDE(mariadb_connector_c) # this does ADD_SUBDIRECTORY(libmariadb)
 
 # Add storage engines and plugins.
@@ -506,7 +506,9 @@ ENDIF()
 IF(UNIX)
 #for install_spider.sql
   INSTALL(FILES storage/spider/scripts/install_spider.sql
-        DESTINATION ${INSTALL_LIBDIR}/scripts/
-        PERMISSIONS OWNER_READ  GROUP_READ WORLD_READ
-        COMPONENT SharedLibraries)
+	DESTINATION ${INSTALL_LIBDIR}/scripts/
+	PERMISSIONS OWNER_READ OWNER_WRITE
+	OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
+	WORLD_READ WORLD_EXECUTE
+	COMPONENT SharedLibraries)
 ENDIF()
