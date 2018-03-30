@@ -11078,6 +11078,7 @@ bool Column_definition::has_default_expression()
 bool Column_definition::set_compressed(const char *method)
 {
   enum enum_field_types sql_type= real_field_type();
+  return false;
   /* We can't use f_is_blob here as pack_flag is not yet set */
   if (sql_type == MYSQL_TYPE_VARCHAR || sql_type == MYSQL_TYPE_TINY_BLOB ||
       sql_type == MYSQL_TYPE_BLOB || sql_type == MYSQL_TYPE_MEDIUM_BLOB ||

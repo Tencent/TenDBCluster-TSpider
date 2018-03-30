@@ -257,6 +257,8 @@ static SYMBOL symbols[] = {
   { "FULL",		SYM(FULL)},
   { "FULLTEXT",		SYM(FULLTEXT_SYM)},
   { "FUNCTION",		SYM(FUNCTION_SYM)},
+  { "GCS",          SYM(GCS_SYM) },      /* add for gcs row_format */
+  { "GCS_DYNAMIC",  SYM(GCS_DYNAMIC_SYM) },      /* add for gcs_dynamic row_format */
   { "GENERAL",          SYM(GENERAL)},
   { "GENERATED",        SYM(GENERATED_SYM)},
   { "GEOMETRY",		SYM(GEOMETRY_SYM)},

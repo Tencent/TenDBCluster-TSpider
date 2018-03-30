@@ -1004,6 +1004,12 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  FOR_SYSTEM_TIME_SYM           /* INTERNAL */
 %token  FROM
 %token  FULLTEXT_SYM
+<<<<<<< HEAD
+=======
+%token  FUNCTION_SYM                  /* SQL-2003-R */
+%token  GCS_SYM
+%token  GCS_DYNAMIC_SYM
+>>>>>>> support gcs/gcs_dynamic
 %token  GE
 %token  GRANT                         /* SQL-2003-R */
 %token  GROUP_SYM                     /* SQL-2003-R */
@@ -6401,6 +6407,8 @@ row_types:
         | REDUNDANT_SYM  { $$= ROW_TYPE_REDUNDANT; }
         | COMPACT_SYM    { $$= ROW_TYPE_COMPACT; }
         | PAGE_SYM       { $$= ROW_TYPE_PAGE; }
+        | GCS_SYM        { $$= ROW_TYPE_COMPACT; }		/* add gcs row format*/
+        | GCS_DYNAMIC_SYM{ $$= ROW_TYPE_DYNAMIC; }		/* add gcs row format*/
         ;
 
 merge_insert_types:
@@ -15486,6 +15494,8 @@ keyword_sp_not_data_type:
         | COMPACT_SYM
         | COMPLETION_SYM
         | COMPRESSED_SYM
+        | GCS_SYM 
+        | GCS_DYNAMIC_SYM 
         | CONCURRENT
         | CONNECTION_SYM
         | CONSISTENT_SYM
