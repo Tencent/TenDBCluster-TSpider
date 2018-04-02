@@ -7468,9 +7468,23 @@ bool TABLE_LIST::process_index_hints(TABLE *tbl)
       tbl->file && tbl->file->is_spider_storage_engine()  /* only for spider */
       )
   {
-      tbl->keys_in_use_for_query.clear_all();
-      tbl->keys_in_use_for_order_by.clear_all();
-      tbl->keys_in_use_for_group_by.clear_all();
+      uint idx;
+      bool with_fulltext = FALSE;
+      KEY *key_info = tbl->key_info;
+      for (idx = 0; idx < tbl->s->keys; idx++, key_info++)
+      {
+          if (key_info->flags & HA_FULLTEXT)
+          {
+              with_fulltext = TRUE;
+              break;
+          }
+      }
+      if (!with_fulltext)
+      {
+          tbl->keys_in_use_for_query.clear_all();
+          tbl->keys_in_use_for_order_by.clear_all();
+          tbl->keys_in_use_for_group_by.clear_all();
+      }
   }
 
   /* make sure covering_keys don't include indexes disabled with a hint */

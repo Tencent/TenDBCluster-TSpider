@@ -5639,10 +5639,10 @@ int spider_free_share(
   if (!--share->use_count)
   {
 #ifndef WITHOUT_SPIDER_BG_SEARCH
-    spider_free_sts_thread(share);
-    spider_free_crd_thread(share);
+  /*  spider_free_sts_thread(share);
+    spider_free_crd_thread(share);*/
     spider_free_mon_threads(share);
-    if (share->sts_spider_init)
+    /*if (share->sts_spider_init)
     {
       spider_table_remove_share_from_sts_thread(share);
       spider_free_spider_object_for_share(&share->sts_spider);
@@ -5651,9 +5651,9 @@ int spider_free_share(
     {
       spider_table_remove_share_from_crd_thread(share);
       spider_free_spider_object_for_share(&share->crd_spider);
-    }
+    }*/
 #endif
-    if (
+   /* if (
       share->sts_init &&
       spider_param_store_last_sts(share->store_last_sts)
     ) {
@@ -5679,8 +5679,8 @@ int spider_free_share(
         &share->update_time,
         FALSE
       );
-    }
-    if (
+    }*/
+   /* if (
       share->crd_init &&
       spider_param_store_last_crd(share->store_last_crd)
     ) {
@@ -5700,12 +5700,12 @@ int spider_free_share(
         share->table_share->fields,
         FALSE
       );
-    }
+    }*/
     spider_free_share_alloc(share);
     my_hash_delete(&spider_open_tables, (uchar*) share);
     thr_lock_delete(&share->lock);
-    pthread_mutex_destroy(&share->crd_mutex);
-    pthread_mutex_destroy(&share->sts_mutex);
+    /*pthread_mutex_destroy(&share->crd_mutex);
+    pthread_mutex_destroy(&share->sts_mutex);*/
     pthread_mutex_destroy(&share->mutex);
     free_root(&share->mem_root, MYF(0));
     spider_free(spider_current_trx, share, MYF(0));
