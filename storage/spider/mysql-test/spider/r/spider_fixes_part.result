@@ -141,6 +141,8 @@ LAST_INSERT_ID()
 SELECT MAX(id) FROM t1;
 MAX(id)
 777
+Warnings:
+Warning	1292	Truncated incorrect INTEGER value: ''
 INSERT INTO t1 () VALUES ();
 SELECT LAST_INSERT_ID();
 LAST_INSERT_ID()
