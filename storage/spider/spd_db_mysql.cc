@@ -3648,6 +3648,7 @@ int spider_db_mysql_util::open_item_func(
     last_str_length = SPIDER_SQL_NULL_CHAR_LEN;
   int use_pushdown_udf;
   bool merge_func = FALSE;
+  CHARSET_INFO* tmp_ics;
   DBUG_ENTER("spider_db_mysql_util::open_item_func");
   if (str)
   {
@@ -4651,10 +4652,29 @@ int spider_db_mysql_util::open_item_func(
         str->q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
       }
     }
+    if (item_func->argument_count() == 2)
+    {
+        switch (item_func->functype())
+        {
+        case Item_func::EQ_FUNC:
+        case Item_func::EQUAL_FUNC:
+        case Item_func::NE_FUNC:
+        case Item_func::LT_FUNC:
+        case Item_func::LE_FUNC:
+        case Item_func::GE_FUNC:
+        case Item_func::GT_FUNC:
+        case Item_func::LIKE_FUNC:
+            tmp_ics = field_charset;
+            field_charset = spider_get_item_field_charset(item, spider);
+        default:
+            break;
+        }
+    }
     item = item_list[roop_count];
     if ((error_num = spider_db_print_item_type_and_check_charset(item, spider, str,
       alias, alias_length, dbton_id, use_fields, fields, field_charset)))
       DBUG_RETURN(error_num);
+    field_charset = tmp_ics;
   }
   if (item_func->functype() == Item_func::FT_FUNC)
   {

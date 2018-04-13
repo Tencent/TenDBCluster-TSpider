@@ -9133,7 +9133,7 @@ int spider_db_open_item_string(
           {
               item->print(str->get_str(), (enum_query_type)QT_ORDINARY);
           }
-          else if (!field_charset && /* opt_spider_not_convert_binary && */
+          else if (!field_charset &&  opt_spider_not_convert_binary && 
               item->type() == Item::STRING_ITEM && item->val_str()->ptr() && item->val_str()->charset() &&
               my_charset_same(item->val_str()->charset(), &my_charset_bin))
           {/*  binary as a where condition */

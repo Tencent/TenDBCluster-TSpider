@@ -320,6 +320,7 @@ extern my_bool opt_spider_ignore_create_like;
 extern my_bool opt_spider_direct_limit_in_group;
 extern uint opt_spider_modify_status_interval;
 extern uint opt_spider_status_least;
+extern my_bool opt_spider_not_convert_binary;
 
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP

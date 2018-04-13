@@ -6150,3 +6150,8 @@ static Sys_var_uint Sys_spider_status_least(
     "the values means the least interval to update spider_table_status(pre_modify_time interval)",
     GLOBAL_VAR(opt_spider_status_least), CMD_LINE(REQUIRED_ARG),
     VALID_RANGE(60, 86400), DEFAULT(3600), BLOCK_SIZE(1));
+
+static Sys_var_mybool Sys_spider_not_convert_binary(
+    "spider_not_convert_binary",
+    "spider_not_convert_binary defaults is false, set spider to use binary to express binary",
+    GLOBAL_VAR(opt_spider_not_convert_binary), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
