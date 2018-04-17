@@ -1393,6 +1393,7 @@ public:
                      LOWEST_PRECEDENCE);
   }
   virtual void print(String *str, enum_query_type query_type);
+  virtual inline void print_for_x(String *str, enum_query_type query_type);
   void print_item_w_name(String *str, enum_query_type query_type);
   void print_value(String *str);
 
@@ -4253,6 +4254,7 @@ public:
     return &type_handler_longlong;
   }
   void print(String *str, enum_query_type query_type);
+  void print_for_x(String *str, enum_query_type query_type);
   Item *get_copy(THD *thd)
   { return get_item_copy<Item_hex_hybrid>(thd, this); }
 };

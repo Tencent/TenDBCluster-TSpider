@@ -580,6 +580,11 @@ void Item::print(String *str, enum_query_type query_type)
 }
 
 
+void Item::print_for_x(String *str, enum_query_type query_type)
+{
+    str->append(full_name());
+}
+
 void Item::print_item_w_name(String *str, enum_query_type query_type)
 {
   print(str, query_type);
@@ -7302,6 +7307,22 @@ void Item_hex_hybrid::print(String *str, enum_query_type query_type)
   str->append_hex(ptr, len);
 }
 
+
+void Item_hex_hybrid::print_for_x(String *str, enum_query_type query_type)
+{
+    uint32 len = str_value.length();
+    const char *ptr = str_value.ptr();
+    if (len == 0)
+    {
+        str->append('\'');
+        str->append('\'');
+    }
+    else
+    {
+        str->append("0x");
+        str->append_hex(ptr, len);
+    }
+}
 
 uint Item_hex_hybrid::decimal_precision() const
 {

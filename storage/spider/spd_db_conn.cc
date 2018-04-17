@@ -8663,9 +8663,9 @@ int spider_db_print_item_type(
     case Item::DECIMAL_ITEM:
       DBUG_RETURN(spider_db_open_item_int(item, spider, str,
         alias, alias_length, dbton_id, use_fields, fields));
-      /*    case Item::VARBIN_ITEM:
-              DBUG_RETURN(spider_db_open_item_hex_string(item, spider, str,
-                  alias, alias_length, dbton_id, field_charset))*/;
+    case Item::VARBIN_ITEM:
+        DBUG_RETURN(spider_db_open_item_hex_string(item, spider, str,
+            alias, alias_length, dbton_id, use_fields, fields));
     case Item::CACHE_ITEM:
       DBUG_RETURN(spider_db_open_item_cache((Item_cache *)item, spider, str,
         alias, alias_length, dbton_id, use_fields, fields));
@@ -9189,6 +9189,25 @@ int spider_db_open_item_int(
 #endif
   }
   DBUG_RETURN(0);
+}
+
+int spider_db_open_item_hex_string(
+    Item *item,
+    ha_spider *spider,
+    spider_string *str,
+    const char *alias,
+    uint alias_length,
+    uint dbton_id,
+    bool use_fields,
+    spider_fields *fields
+) {
+    DBUG_ENTER("spider_db_open_item_hex_string");
+    if (str)
+    {
+        item->print_for_x(str->get_str(), (enum_query_type)QT_ORDINARY);
+        str->mem_calc();
+    }
+    DBUG_RETURN(0);
 }
 
 int spider_db_open_item_cache(

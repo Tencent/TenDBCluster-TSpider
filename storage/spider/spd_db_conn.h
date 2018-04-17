@@ -982,6 +982,17 @@ int spider_db_open_item_int(
   spider_fields *fields
 );
 
+int spider_db_open_item_hex_string(
+    Item *item,
+    ha_spider *spider,
+    spider_string *str,
+    const char *alias,
+    uint alias_length,
+    uint dbton_id,
+    bool use_fields,
+    spider_fields *fieldss
+);
+
 int spider_db_open_item_cache(
   Item_cache *item_cache,
   ha_spider *spider,
