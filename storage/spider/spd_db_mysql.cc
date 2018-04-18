@@ -3648,7 +3648,7 @@ int spider_db_mysql_util::open_item_func(
     last_str_length = SPIDER_SQL_NULL_CHAR_LEN;
   int use_pushdown_udf;
   bool merge_func = FALSE;
-  CHARSET_INFO* tmp_ics;
+  CHARSET_INFO* tmp_ics = field_charset;
   DBUG_ENTER("spider_db_mysql_util::open_item_func");
   if (str)
   {

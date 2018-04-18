@@ -1393,7 +1393,7 @@ public:
                      LOWEST_PRECEDENCE);
   }
   virtual void print(String *str, enum_query_type query_type);
-  virtual inline void print_for_x(String *str, enum_query_type query_type);
+  virtual void print_for_x(String *str, enum_query_type query_type);
   void print_item_w_name(String *str, enum_query_type query_type);
   void print_value(String *str);
 

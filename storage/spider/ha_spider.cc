@@ -8303,7 +8303,6 @@ ha_rows ha_spider::records_in_range(
   key_range *start_key,
   key_range *end_key
 ) {
-  int error_num;
   THD *thd = ha_thd();
   double crd_interval = spider_param_crd_interval(thd, share->crd_interval);
   int crd_mode = spider_param_crd_mode(thd, share->crd_mode);
@@ -8362,105 +8361,6 @@ ha_rows ha_spider::records_in_range(
       ("spider difftime=%f", difftime(tmp_time, share->crd_get_time)));
     DBUG_PRINT("info",
       ("spider crd_interval=%f", crd_interval));
-    if (
-      share->static_key_cardinality[inx] == -1 &&
-      difftime(tmp_time, share->crd_get_time) >= crd_interval
-    ) {
-      if (
-        crd_interval == 0 ||
-        !pthread_mutex_trylock(&share->crd_mutex)
-      ) {
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-        if (crd_interval == 0 || crd_bg_mode == 0)
-        {
-#endif
-          if (crd_interval == 0)
-            pthread_mutex_lock(&share->crd_mutex);
-          if (difftime(tmp_time, share->crd_get_time) >= crd_interval)
-          {
-            if ((error_num = spider_get_crd(share, search_link_idx, tmp_time,
-              this, table, crd_interval, crd_mode,
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-              crd_sync,
-#endif
-              share->crd_init ? 2 : 1)))
-            {
-              pthread_mutex_unlock(&share->crd_mutex);
-              if (
-                share->monitoring_kind[search_link_idx] &&
-                need_mons[search_link_idx]
-              ) {
-                error_num = spider_ping_table_mon_from_table(
-                    trx,
-                    trx->thd,
-                    share,
-                    search_link_idx,
-                    (uint32) share->monitoring_sid[search_link_idx],
-                    share->table_name,
-                    share->table_name_length,
-                    conn_link_idx[search_link_idx],
-                    NULL,
-                    0,
-                    share->monitoring_kind[search_link_idx],
-                    share->monitoring_limit[search_link_idx],
-                    share->monitoring_flag[search_link_idx],
-                    TRUE
-                  );
-              }
-              if (!share->crd_init)
-              {
-                if (
-                  spider_init_error_table ||
-                  (spider_init_error_table =
-                    spider_get_init_error_table(trx, share, TRUE))
-                ) {
-                  spider_init_error_table->init_error = error_num;
-/*
-                  if (!thd->is_error())
-                    my_error(error_num, MYF(0), "");
-*/
-                  if ((spider_init_error_table->init_error_with_message =
-                    thd->is_error()))
-                    strmov(spider_init_error_table->init_error_msg,
-                      spider_stmt_da_message(thd));
-                  spider_init_error_table->init_error_time =
-                    (time_t) time((time_t*) 0);
-                }
-                share->init_error = TRUE;
-                share->init = TRUE;
-              }
-              if (check_error_mode(error_num))
-                my_errno = error_num;
-              DBUG_RETURN(HA_POS_ERROR);
-            }
-          }
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-        } else if (crd_bg_mode == 1) {
-          /* background */
-          if (!share->bg_crd_init || share->bg_crd_thd_wait)
-          {
-            share->bg_crd_thd_wait = FALSE;
-            share->bg_crd_try_time = tmp_time;
-            share->bg_crd_interval = crd_interval;
-            share->bg_crd_mode = crd_mode;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-            share->bg_crd_sync = crd_sync;
-#endif
-          }
-        } else {
-          share->bg_crd_try_time = tmp_time;
-          share->bg_crd_interval = crd_interval;
-          share->bg_crd_mode = crd_mode;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-          share->bg_crd_sync = crd_sync;
-#endif
-          spider_table_add_share_to_crd_thread(share);
-        }
-#endif
-        pthread_mutex_unlock(&share->crd_mutex);
-      }
-    }
-
     KEY *key_info = &table->key_info[inx];
     key_part_map full_key_part_map =
       make_prev_keypart_map(spider_user_defined_key_parts(key_info));

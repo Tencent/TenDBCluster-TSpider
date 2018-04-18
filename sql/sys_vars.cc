@@ -2484,7 +2484,6 @@ export const char *optimizer_switch_names[]=
   "condition_pushdown_for_derived",
   "split_materialized",
   "split_grouping_derived",
-  "index_range",
   "default", 
   NullS
 };
