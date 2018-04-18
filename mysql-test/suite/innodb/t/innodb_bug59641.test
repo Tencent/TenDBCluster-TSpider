@@ -17,7 +17,7 @@ XA END '123';
 XA PREPARE '123';
 
 CONNECT (con1,localhost,root,,);
-
+--source include/have_innodb.inc
 XA START '456';
 INSERT INTO t VALUES(3,47),(5,67);
 UPDATE t SET b=2*b WHERE a BETWEEN 5 AND 8;
@@ -25,6 +25,7 @@ XA END '456';
 XA PREPARE '456';
 
 CONNECT (con2,localhost,root,,);
+--source include/have_innodb.inc
 
 XA START '789';
 UPDATE t SET b=4*a WHERE a=32;
@@ -32,6 +33,7 @@ XA END '789';
 XA PREPARE '789';
 
 CONNECT (con3,localhost,root,,);
+--source include/have_innodb.inc
 
 --let $shutdown_timeout=0
 --source include/restart_mysqld.inc

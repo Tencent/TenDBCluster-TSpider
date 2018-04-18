@@ -13,6 +13,8 @@
 # Change: Syntax changed
 ################################################################################
 
+--source ../../include/set_optimizer_switch.inc
+
 # Table t1 is used below to test:
 #  - Join type of ALL (sequential scan of the entire table)
 #  - Join type of Index

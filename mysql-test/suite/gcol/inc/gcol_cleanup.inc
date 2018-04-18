@@ -22,3 +22,7 @@ DROP TRIGGER IF EXISTS trg1;
 DROP TRIGGER IF EXISTS trg2;
 set sql_warnings = 0;
 --enable_warnings
+
+-- disable_query_log
+eval set optimizer_switch='index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=on,index_condition_pushdown=on';
+-- enable_query_log

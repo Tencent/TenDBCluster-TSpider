@@ -272,6 +272,11 @@ def	information_schema	PROCESSLIST	TID	18	0	NO	bigint	NULL	NULL	19	0	NULL	NULL	N
 def	information_schema	PROCESSLIST	TIME	6	0	NO	int	NULL	NULL	10	0	NULL	NULL	NULL	int(7)			select		NEVER	NULL
 def	information_schema	PROCESSLIST	TIME_MS	9	0.000	NO	decimal	NULL	NULL	22	3	NULL	NULL	NULL	decimal(22,3)			select		NEVER	NULL
 def	information_schema	PROCESSLIST	USER	2	''	NO	varchar	128	384	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(128)			select		NEVER	NULL
+def	information_schema	QUERY_RESPONSE_TIME	COUNT	2	0	NO	int	NULL	NULL	10	0	NULL	NULL	NULL	int(11) unsigned			select		NEVER	NULL
+def	information_schema	QUERY_RESPONSE_TIME	P_COUNT	4	0	NO	int	NULL	NULL	10	0	NULL	NULL	NULL	int(11) unsigned			select		NEVER	NULL
+def	information_schema	QUERY_RESPONSE_TIME	P_TOTAL	5	''	NO	varchar	100	300	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(100)			select		NEVER	NULL
+def	information_schema	QUERY_RESPONSE_TIME	TIME	1	''	NO	varchar	14	42	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(14)			select		NEVER	NULL
+def	information_schema	QUERY_RESPONSE_TIME	TOTAL	3	''	NO	varchar	100	300	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(100)			select		NEVER	NULL
 def	information_schema	REFERENTIAL_CONSTRAINTS	CONSTRAINT_CATALOG	1	''	NO	varchar	512	1536	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(512)			select		NEVER	NULL
 def	information_schema	REFERENTIAL_CONSTRAINTS	CONSTRAINT_NAME	3	''	NO	varchar	64	192	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(64)			select		NEVER	NULL
 def	information_schema	REFERENTIAL_CONSTRAINTS	CONSTRAINT_SCHEMA	2	''	NO	varchar	64	192	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(64)			select		NEVER	NULL
@@ -805,6 +810,11 @@ NULL	information_schema	PROCESSLIST	EXAMINED_ROWS	int	NULL	NULL	NULL	NULL	int(7)
 NULL	information_schema	PROCESSLIST	QUERY_ID	bigint	NULL	NULL	NULL	NULL	bigint(4)
 1.0000	information_schema	PROCESSLIST	INFO_BINARY	blob	65535	65535	NULL	NULL	blob
 NULL	information_schema	PROCESSLIST	TID	bigint	NULL	NULL	NULL	NULL	bigint(4)
+3.0000	information_schema	QUERY_RESPONSE_TIME	TIME	varchar	14	42	utf8	utf8_general_ci	varchar(14)
+NULL	information_schema	QUERY_RESPONSE_TIME	COUNT	int	NULL	NULL	NULL	NULL	int(11) unsigned
+3.0000	information_schema	QUERY_RESPONSE_TIME	TOTAL	varchar	100	300	utf8	utf8_general_ci	varchar(100)
+NULL	information_schema	QUERY_RESPONSE_TIME	P_COUNT	int	NULL	NULL	NULL	NULL	int(11) unsigned
+3.0000	information_schema	QUERY_RESPONSE_TIME	P_TOTAL	varchar	100	300	utf8	utf8_general_ci	varchar(100)
 3.0000	information_schema	REFERENTIAL_CONSTRAINTS	CONSTRAINT_CATALOG	varchar	512	1536	utf8	utf8_general_ci	varchar(512)
 3.0000	information_schema	REFERENTIAL_CONSTRAINTS	CONSTRAINT_SCHEMA	varchar	64	192	utf8	utf8_general_ci	varchar(64)
 3.0000	information_schema	REFERENTIAL_CONSTRAINTS	CONSTRAINT_NAME	varchar	64	192	utf8	utf8_general_ci	varchar(64)

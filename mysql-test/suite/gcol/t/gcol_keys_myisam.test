@@ -33,6 +33,10 @@ eval SET @@session.default_storage_engine = 'MyISAM';
 ##### Workarounds for known open engine specific bugs
 #     none
 
+-- disable_query_log
+eval set @@session.optimizer_switch='index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=on,index_condition_pushdown=on';
+-- enable_query_log
+
 #------------------------------------------------------------------------------#
 # Execute the tests to be applied to all storage engines
 let $support_virtual_index= 1;

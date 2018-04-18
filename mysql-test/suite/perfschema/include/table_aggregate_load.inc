@@ -52,9 +52,11 @@ execute dump_objects_summary;
 #
 
 connect (con1, localhost, user1, , );
+--source include/set_optimizer_switch.inc
 select concat(current_user(), " is connected") as status;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 2 ==================";
 call dump_thread();
@@ -69,6 +71,7 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 --connection con1
+--source include/set_optimizer_switch.inc
 
 insert into test.t1 set a=101, b=1, c=1;
 insert into test.t2 set a=102, b=2, c=2;
@@ -93,6 +96,7 @@ select * from test.t2 where b=5;
 select * from test.t3 where b=5;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 3 ==================";
 call dump_thread();
@@ -111,9 +115,11 @@ execute dump_objects_summary;
 # select PROCESSLIST_USER, PROCESSLIST_HOST, INSTRUMENTED from performance_schema.threads;
 
 connect (con2, localhost, user2, , );
+--source include/set_optimizer_switch.inc
 select concat(current_user(), " is connected") as status;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 4 ==================";
 call dump_thread();
@@ -128,6 +134,7 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 --connection con2
+--source include/set_optimizer_switch.inc
 
 insert into test.t1 set a=201, b=1, c=1;
 insert into test.t2 set a=202, b=2, c=2;
@@ -152,6 +159,7 @@ select * from test.t2 where b=5;
 select * from test.t3 where b=5;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 5 ==================";
 call dump_thread();
@@ -166,9 +174,11 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 connect (con3, localhost, user3, , );
+--source include/set_optimizer_switch.inc
 select concat(current_user(), " is connected") as status;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 6 ==================";
 call dump_thread();
@@ -183,6 +193,7 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 --connection con3
+--source include/set_optimizer_switch.inc
 
 insert into test.t1 set a=301, b=1, c=1;
 insert into test.t2 set a=302, b=2, c=2;
@@ -207,6 +218,7 @@ select * from test.t2 where b=5;
 select * from test.t3 where b=5;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 7 ==================";
 call dump_thread();
@@ -221,9 +233,11 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 connect (con4, localhost, user4, , );
+--source include/set_optimizer_switch.inc
 select concat(current_user(), " is connected") as status;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 8 ==================";
 call dump_thread();
@@ -238,6 +252,7 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 --connection con4
+--source include/set_optimizer_switch.inc
 
 insert into test.t1 set a=401, b=1, c=1;
 insert into test.t2 set a=402, b=2, c=2;
@@ -262,6 +277,7 @@ select * from test.t2 where b=5;
 select * from test.t3 where b=5;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 9 ==================";
 call dump_thread();
@@ -276,6 +292,7 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 --connection con1
+--source include/set_optimizer_switch.inc
 
 lock tables test.t1 read, test.t2 read, test.t3 read;
 unlock tables;
@@ -283,6 +300,7 @@ lock tables test.t1 write, test.t2 write, test.t3 write;
 unlock tables;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 echo "================== Step 10 ==================";
 call dump_thread();
@@ -297,6 +315,7 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 flush tables;
 
@@ -412,6 +431,7 @@ execute dump_waits_table_lock;
 execute dump_objects_summary;
 
 --connection default
+--source include/set_optimizer_switch.inc
 
 truncate performance_schema.events_waits_summary_by_thread_by_event_name;
 

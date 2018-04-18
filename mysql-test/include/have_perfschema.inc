@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
-
+--source include/set_optimizer_switch.inc
 if (!`SELECT count(*) FROM information_schema.engines WHERE
       (support = 'YES' OR support = 'DEFAULT') AND
       engine = 'PERFORMANCE_SCHEMA'`){

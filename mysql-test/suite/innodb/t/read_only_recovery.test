@@ -3,6 +3,7 @@
 --source include/not_embedded.inc
 
 --connect(con1, localhost, root)
+--source include/have_innodb.inc
 CREATE TABLE t(a INT PRIMARY KEY) ENGINE=InnoDB;
 INSERT INTO t VALUES(1);
 BEGIN;
@@ -11,6 +12,7 @@ INSERT INTO t VALUES(2);
 # Generate update_undo log.
 DELETE FROM t WHERE a=2;
 --connection default
+--source include/have_innodb.inc
 --echo # Normal MariaDB shutdown would roll back the above transaction.
 --echo # We want the transaction to remain open, so we will kill the server
 --echo # after ensuring that any non-transactional files are clean.
@@ -25,6 +27,7 @@ ROLLBACK;
 --source include/restart_mysqld.inc
 --let $shutdown_timeout= 30
 --disconnect con1
+--source include/have_innodb.inc
 SELECT * FROM t;
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 SELECT * FROM t;

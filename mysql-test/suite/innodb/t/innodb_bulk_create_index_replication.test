@@ -20,6 +20,7 @@
 
 -- connection master
 # Create Insert Procedure
+-- source include/have_innodb.inc
 DELIMITER |;
 CREATE PROCEDURE populate_t1(load_even INT)
 BEGIN

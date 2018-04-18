@@ -131,9 +131,7 @@ drop table t1;
 # Restrictions when partitioned
 #
 
---error ER_WRONG_EXPR_IN_PARTITION_FUNC_ERROR
-create table t1 (a int, b datetime as (now())) partition by hash(b+1) partitions 3;
---error ER_WRONG_EXPR_IN_PARTITION_FUNC_ERROR
+--error ER_PARTITION_FUNC_NOT_ALLOWED_ERROR
 create table t1 (a int, b varchar(100) as (user())) partition by hash(b+1) partitions 3;
---error ER_WRONG_EXPR_IN_PARTITION_FUNC_ERROR
+--error ER_PARTITION_FUNC_NOT_ALLOWED_ERROR
 create table t1 (a int, b double as (rand())) partition by hash(b+1) partitions 3;

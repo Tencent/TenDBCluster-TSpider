@@ -80,18 +80,22 @@ insert into t1 values (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7);
 create table t2 like t1;
 
 --connection con1
+--source include/have_innodb.inc
 begin;
 update t1 set v=id*2 where id=1;
 
 --connection default
+--source include/have_innodb.inc
 begin;
 update t1 set v=id*2 where id=2;
 
 --connection con1
+--source include/have_innodb.inc
 --error 1205
 update t1 set v=id*2 where id=2;
 
 --connection default
+--source include/have_innodb.inc
 --error 1205
 insert ignore into t2 select * from t1 where id=1; 
 rollback;
@@ -167,6 +171,7 @@ select 1 from t1 natural join (select 2 as a, 1 as b union all
                                select 2 as a, 2 as b) as t2 for update;
 connect (con1,localhost,root,,);
 connection con1;
+--source include/have_innodb.inc
 --echo # We should be able to delete all records from t1 except (2, null),
 --echo # since they were not locked.
 begin;

@@ -3,3 +3,5 @@ if (!`SELECT count(*) FROM information_schema.engines WHERE
       engine = 'aria'`){
   skip Need Aria engine;
 }
+
+--source include/set_optimizer_switch.inc

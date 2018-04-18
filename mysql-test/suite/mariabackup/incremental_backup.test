@@ -1,4 +1,5 @@
 --source include/innodb_page_size.inc
+--source include/set_optimizer_switch.inc
 
 call mtr.add_suppression("InnoDB: New log files created");
 
@@ -9,6 +10,7 @@ CREATE TABLE t(i INT PRIMARY KEY) ENGINE INNODB;
 BEGIN;
 INSERT INTO t VALUES(2);
 connect (con1,localhost,root,,);
+--source include/set_optimizer_switch.inc
 SET GLOBAL innodb_flush_log_at_trx_commit = 1;
 INSERT INTO t VALUES(1);
 
@@ -20,6 +22,7 @@ BEGIN;
 INSERT INTO t VALUES(0);
 DELETE FROM t WHERE i=0;
 connection default;
+--source include/set_optimizer_switch.inc
 COMMIT;
 SELECT * FROM t;
 exec $XTRABACKUP --defaults-file=$MYSQLTEST_VARDIR/my.cnf  --backup --ftwrl-wait-timeout=5 --ftwrl-wait-threshold=300 --ftwrl-wait-query-type=all --target-dir=$incremental_dir --incremental-basedir=$basedir;

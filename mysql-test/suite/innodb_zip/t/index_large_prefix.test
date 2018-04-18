@@ -75,6 +75,9 @@ update worklog5743 set a1 = 1000;
 
 # Do a select from another connection that would use the secondary index
 --connection con1
+-- disable_query_log
+eval set optimizer_switch='index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=on,index_condition_pushdown=on';
+-- enable_query_log
 select @@session.tx_isolation;
 explain select a1, a2 = repeat("a", 10000) from worklog5743 where a1 = 9;
 select a1, a2 = repeat("a", 10000) from worklog5743 where a1 = 9;
@@ -106,6 +109,9 @@ update worklog5743 set a1 = 1000;
 # Do a select from another connection that would use the secondary index
 --connection con1
 select @@session.tx_isolation;
+-- disable_query_log
+eval set optimizer_switch='index_merge=on,index_merge_union=on,index_merge_sort_union=on,index_merge_intersection=on,index_merge_sort_intersection=on,index_condition_pushdown=on';
+-- enable_query_log
 explain select a1, a2 = repeat("a", 10000) from worklog5743 where a1 = 9;
 select a1, a2 = repeat("a", 10000) from worklog5743 where a1 = 9;
 

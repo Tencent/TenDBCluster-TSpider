@@ -8,3 +8,4 @@
 
 --source include/shutdown_mysqld.inc
 --source include/start_mysqld.inc
+--source include/have_innodb.inc

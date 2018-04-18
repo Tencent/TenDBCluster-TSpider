@@ -1,6 +1,8 @@
 #
 # MDEV-11518 Assertion `!table || (!table->read_set || bitmap_is_set(table->read_set, field_index))' failed in Field_long::val_int()
 #
+#
+--source ../../include/set_optimizer_switch.inc
 create table t1 (pk int, i int, v int as (i*2) virtual, primary key (pk), key (v)) engine=myisam;
 insert into t1 (pk,i) values (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8);
 create table t2 (a int, b int) engine=myisam;
