@@ -6689,6 +6689,9 @@ DBUG_ASSERT(0);
   spider_free_conn_recycle_thread();
   my_hash_free(&spider_conn_meta_info);
   pthread_mutex_destroy(&spider_conn_meta_mutex);
+
+  spider_free_get_status_thread();
+
   DBUG_RETURN(0);
 }
 
