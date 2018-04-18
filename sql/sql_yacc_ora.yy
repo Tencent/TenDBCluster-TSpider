@@ -398,6 +398,9 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  FOR_SYSTEM_TIME_SYM           /* INTERNAL */
 %token  FROM
 %token  FULLTEXT_SYM
+%token  FUNCTION_SYM                  /* SQL-2003-R */
+%token  GCS_SYM
+%token  GCS_DYNAMIC_SYM
 %token  GE
 %token  GRANT                         /* SQL-2003-R */
 %token  GROUP_SYM                     /* SQL-2003-R */
@@ -537,6 +540,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  SMALLINT                      /* SQL-2003-R */
 %token  SPATIAL_SYM
 %token  SPECIFIC_SYM                  /* SQL-2003-R */
+%token  SPIDER_RONE_SHARD_SYM
 %token  SQLEXCEPTION_SYM              /* SQL-2003-R */
 %token  SQLSTATE_SYM                  /* SQL-2003-R */
 %token  SQLWARNING_SYM                /* SQL-2003-R */
@@ -6360,6 +6364,8 @@ row_types:
         | REDUNDANT_SYM  { $$= ROW_TYPE_REDUNDANT; }
         | COMPACT_SYM    { $$= ROW_TYPE_COMPACT; }
         | PAGE_SYM       { $$= ROW_TYPE_PAGE; }
+        | GCS_SYM        { $$= ROW_TYPE_COMPACT; }		/* add gcs row format*/
+        | GCS_DYNAMIC_SYM{ $$= ROW_TYPE_DYNAMIC; }		/* add gcs row format*/
         ;
 
 merge_insert_types:
@@ -15665,7 +15671,12 @@ keyword_sp_verb_clause:
   These keywords are generally allowed as identifiers,
   but not allowed as non-delimited SP variable names in sql_mode=ORACLE.
 */
+<<<<<<< HEAD
 keyword_sp_data_type:
+=======
+<<<<<<< HEAD
+keyword_data_type:
+>>>>>>> ae842f61784... 修复sql_mode为oracle时语法报错的bug
           BIT_SYM
         | BOOLEAN_SYM
         | BOOL_SYM
@@ -15746,6 +15757,91 @@ keyword_sp_not_data_type:
         | CURRENT_POS_SYM
         | CPU_SYM
         | CUBE_SYM
+=======
+keyword_sp_data_type:
+          BIT_SYM                  {}
+        | BOOLEAN_SYM              {} /* PLSQL-R */
+        | BOOL_SYM                 {}
+        | CLOB                     {}
+        | DATE_SYM                 {} /* Oracle-R, PLSQL-R */
+        | DATETIME                 {}
+        | ENUM                     {}
+        | FIXED_SYM                {}
+        | GEOMETRYCOLLECTION       {}
+        | GEOMETRY_SYM             {}
+        | JSON_SYM                 {}
+        | LINESTRING               {}
+        | MEDIUM_SYM               {}
+        | MULTILINESTRING          {}
+        | MULTIPOINT               {}
+        | MULTIPOLYGON             {}
+        | NATIONAL_SYM             {}
+        | NCHAR_SYM                {}
+        | NUMBER_SYM               {} /* Oracle-R, PLSQL-R */
+        | NVARCHAR_SYM             {}
+        | POINT_SYM                {}
+        | POLYGON                  {}
+        | RAW                      {} /* Oracle-R */
+        | ROW_SYM                  {}
+        | SERIAL_SYM               {}
+        | TEXT_SYM                 {}
+        | TIMESTAMP                {}
+        | TIME_SYM                 {} /* Oracle-R */
+        | VARCHAR2                 {} /* Oracle-R, PLSQL-R */
+        | YEAR_SYM                 {}
+        ;
+
+
+keyword_sp_not_data_type:
+          ACTION                   {}
+        | ADDDATE_SYM              {}
+        | ADMIN_SYM                {}
+        | AFTER_SYM                {}
+        | AGAINST                  {}
+        | AGGREGATE_SYM            {}
+        | ALGORITHM_SYM            {}
+        | ALWAYS_SYM               {}
+        | ANY_SYM                  {}
+        | AT_SYM                   {}
+        | ATOMIC_SYM               {}
+        | AUTHORS_SYM              {}
+        | AUTO_INC                 {}
+        | AUTOEXTEND_SIZE_SYM      {}
+        | AUTO_SYM                 {}
+        | AVG_ROW_LENGTH           {}
+        | AVG_SYM                  {}
+        | BLOCK_SYM                {}
+        | BTREE_SYM                {}
+        | CASCADED                 {}
+        | CATALOG_NAME_SYM         {}
+        | CHAIN_SYM                {}
+        | CHANGED                  {}
+        | CIPHER_SYM               {}
+        | CLIENT_SYM               {}
+        | CLASS_ORIGIN_SYM         {}
+        | COALESCE                 {}
+        | CODE_SYM                 {}
+        | COLLATION_SYM            {}
+        | COLUMN_NAME_SYM          {}
+        | COLUMNS                  {}
+        | COMMITTED_SYM            {}
+        | COMPACT_SYM              {}
+        | COMPLETION_SYM           {}
+        | COMPRESSED_SYM           {}
+        | GCS_SYM                  {}
+        | GCS_DYNAMIC_SYM          {}
+        | CONCURRENT               {}
+        | CONNECTION_SYM           {}
+        | CONSISTENT_SYM           {}
+        | CONSTRAINT_CATALOG_SYM   {}
+        | CONSTRAINT_SCHEMA_SYM    {}
+        | CONSTRAINT_NAME_SYM      {}
+        | CONTEXT_SYM              {}
+        | CONTRIBUTORS_SYM         {}
+        | CURRENT_POS_SYM          {}
+        | CPU_SYM                  {}
+        | CUBE_SYM                 {}
+>>>>>>> 修复sql_mode为oracle时语法报错的bug
         /*
           Although a reserved keyword in SQL:2003 (and :2008),
           not reserved in MySQL per WL#2111 specification.
