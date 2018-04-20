@@ -2,6 +2,7 @@ set @save_storage_engine= @@storage_engine;
 set storage_engine=Maria;
 set @maria_icp_tmp=@@optimizer_switch;
 set optimizer_switch='mrr=on,mrr_sort_keys=on,index_condition_pushdown=on';
+set optimizer_switch='index_merge=off,index_merge_union=off,index_merge_sort_union=off,index_merge_intersection=off,index_merge_sort_intersection=off';
 #
 # Bug#36981 - "innodb crash when selecting for update"
 #
