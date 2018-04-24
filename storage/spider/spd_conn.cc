@@ -4659,8 +4659,8 @@ static void *spider_conn_recycle_action(void *arg)
 		/* sleep(spider_param_idle_conn_recycle_interval() >> 2);  */
 		int sleep_sec = (spider_param_idle_conn_recycle_interval() >> 2);
 		while (sleep_sec > 0) {
-			sleep(8);
-			sleep_sec -= 8;
+			sleep(2);
+			sleep_sec -= 2;
 			if (sleep_sec > (spider_param_idle_conn_recycle_interval() >> 2)) {
 				sleep_sec = (spider_param_idle_conn_recycle_interval() >> 2);
 			}
@@ -4930,17 +4930,6 @@ static void *spider_get_status_action(void *arg)
 
     SPIDER_SHARE *share;
     MYSQL *conn;
-    THD *thd;
-    my_thread_init();
-    if (!(thd = SPIDER_new_THD(next_thread_id())))
-    {
-        my_thread_end();
-        DBUG_RETURN(NULL);
-    }
-    SPIDER_set_next_thread_id(thd);
-    thd->thread_stack = (char*)&thd;
-    thd->store_globals();
-
 
     while (get_status_init)
     {
@@ -5119,7 +5108,7 @@ static void *spider_get_status_action(void *arg)
                             else
                             {
                                 fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
-                                    "record = %u, i = %u, tb_name = %s,  failed to fetch row\n",
+                                    "record = %lu, i = %lu, tb_name = %s,  failed to fetch row\n",
                                     l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
                                     share_records, i, db_tb);
                             }
@@ -5129,7 +5118,7 @@ static void *spider_get_status_action(void *arg)
                     else
                     {
                         fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
-                            "record = %u, i = %u, tb_name = %s,  failed to do real query\n",
+                            "record = %lu, i = %lu, tb_name = %s,  failed to do real query\n",
                             l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
                             share_records, i, db_tb);
                         my_hash_delete(&spider_for_sts_conns, (uchar*)sts_conn);
@@ -5138,7 +5127,7 @@ static void *spider_get_status_action(void *arg)
                 else
                 {
                     fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
-                        "record = %u, i = %u,  tb_name = %s, failed to get conn\n",
+                        "record = %lu, i = %lu,  tb_name = %s, failed to get conn\n",
                         l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
                         share_records, i, db_tb);
                     if (sts_conn)
@@ -5146,7 +5135,11 @@ static void *spider_get_status_action(void *arg)
                 }
             }
         } /* end foreach */
-        sleep(sleep_time); /* 60s */
+         /* 60s */
+        for (ulong i = 0; (i < sleep_time) && get_status_init; i++)
+        { 
+            sleep(1);
+        }
     }/* end while */
     DBUG_RETURN(NULL);
 }
@@ -5180,11 +5173,10 @@ void spider_free_get_status_thread()
 {
     DBUG_ENTER("spider_free_get_status_thread");
     if (get_status_init) {
+        get_status_init = FALSE;
         pthread_cancel(get_status_thread);
         pthread_join(get_status_thread, NULL);
-        get_status_init = FALSE;
     }
-
     DBUG_VOID_RETURN;
 }
 
