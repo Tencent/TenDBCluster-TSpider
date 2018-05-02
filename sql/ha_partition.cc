@@ -10327,7 +10327,9 @@ bool ha_partition::need_info_for_auto_inc()
     if ((*file)->need_info_for_auto_inc())
     {
       /* We have to get new auto_increment values from handler */
-      part_share->auto_inc_initialized= FALSE;
+        /* 如何获取自增值逻辑不需要此处判断， 只有第一次获取自增值时，initialized才为false。
+           让各session分别获取auto_inc, 会产生冲突，crash */
+      /*part_share->auto_inc_initialized= FALSE;*/
       DBUG_RETURN(TRUE);
     }
   } while (*(++file));
