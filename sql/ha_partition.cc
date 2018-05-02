@@ -8128,7 +8128,7 @@ int ha_partition::info(uint flag)
     DBUG_PRINT("info", ("HA_STATUS_AUTO"));
     if (!table->found_next_number_field)
       stats.auto_increment_value= 0;
-    else if (part_share->auto_inc_initialized)
+    else if (!m_need_info_for_auto_inc && part_share->auto_inc_initialized)
     {
       lock_auto_increment();
       stats.auto_increment_value= part_share->next_auto_inc_val;
@@ -8138,7 +8138,7 @@ int ha_partition::info(uint flag)
     {
       lock_auto_increment();
       /* to avoid two concurrent initializations, check again when locked */
-      if (part_share->auto_inc_initialized)
+      if (!m_need_info_for_auto_inc && part_share->auto_inc_initialized)
         stats.auto_increment_value= part_share->next_auto_inc_val;
       else
       {
@@ -8191,6 +8191,7 @@ int ha_partition::info(uint flag)
       }
       unlock_auto_increment();
     }
+    m_need_info_for_auto_inc = FALSE;
   }
   if (flag & HA_STATUS_VARIABLE)
   {
@@ -10330,9 +10331,11 @@ bool ha_partition::need_info_for_auto_inc()
         /* 如何获取自增值逻辑不需要此处判断， 只有第一次获取自增值时，initialized才为false。
            让各session分别获取auto_inc, 会产生冲突，crash */
       /*part_share->auto_inc_initialized= FALSE;*/
+        m_need_info_for_auto_inc = TRUE;
       DBUG_RETURN(TRUE);
     }
   } while (*(++file));
+  m_need_info_for_auto_inc = FALSE;
   DBUG_RETURN(FALSE);
 }
 
