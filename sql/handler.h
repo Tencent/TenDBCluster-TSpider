@@ -4182,6 +4182,10 @@ virtual bool is_spider_storage_engine()
  {
      return FALSE;
  }
+virtual int get_share_version_err(int64 cur_version, int64 newest_version, int error)
+{
+    return error;
+}
 virtual bool is_spider_config_table()
 {
     return false;

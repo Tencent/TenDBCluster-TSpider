@@ -1212,4 +1212,10 @@ public:
           return true;
       return false;
   }
+  int  get_share_version_err(int64 cur_version, int64 newest_version, int error)
+  {
+      if (cur_version == newest_version)
+          return error;
+      return ER_SPIDER_SHARE_INVALID_NUM;
+  }
 };

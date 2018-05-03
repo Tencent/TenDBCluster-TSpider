@@ -10512,6 +10512,12 @@ void ha_spider::print_error(
       case ER_SPIDER_CON_COUNT_ERROR:
         my_message(error, ER_SPIDER_CON_COUNT_ERROR_STR, MYF(0));
         break;
+      case ER_SPIDER_REMOTE_SERVER_GONE_AWAY_NUM:
+          my_message(error, ER_SPIDER_REMOTE_SERVER_GONE_AWAY_STR, MYF(0));
+          break;
+      case ER_SPIDER_SHARE_INVALID_NUM:
+          my_message(error, ER_SPIDER_SHARE_INVALID_STR, MYF(0));
+          break;
       default:
         handler::print_error(error, errflag);
         break;

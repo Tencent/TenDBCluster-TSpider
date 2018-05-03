@@ -50,6 +50,7 @@
 #include "sql_priv.h"
 #include "sql_parse.h"                          // append_file_to_dir
 #include "create_options.h"
+#include "table_cache.h"
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
 #include "ha_partition.h"
@@ -4267,8 +4268,9 @@ int ha_partition::write_row(uchar * buf)
       it is highly likely that we will not be able to insert it into
       the correct partition. We must check and fail if neccessary.
     */
+    error = get_share_version_err(thd->flush_no_block_version, tdc_table_share_version(), error);
     if (unlikely(error))
-      goto exit;
+        goto exit;
 
     /*
       Don't allow generation of auto_increment value the partitions handler.
@@ -11685,6 +11687,14 @@ bool ha_partition::is_spider_storage_engine()
             DBUG_RETURN(is_spider);
     }
     DBUG_RETURN(is_spider);
+}
+
+int  ha_partition::get_share_version_err(int64 cur_version, int64 newest_version, int error)
+{
+    DBUG_ENTER("ha_partition::get_share_version_err");
+    int err = error;
+    err = (*m_file)->get_share_version_err(cur_version, newest_version, error);
+    DBUG_RETURN(err);
 }
 
 bool ha_partition::is_spider_config_table()
