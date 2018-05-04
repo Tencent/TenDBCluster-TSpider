@@ -122,14 +122,13 @@ inline uint tdc_create_key(char *key, const char *db, const char *table_name, lo
     not longer than NAME_LEN bytes. In practice we play safe to avoid
     buffer overruns.
   */
-    char ts_version[40];
+    char ts_version[SERVER_VERSION_LENGTH];
     uint key_length;
     if (version)
     {
         ullstr(version, ts_version);
         key_length = (uint)(strmake(strmake(strmake(key, db, NAME_LEN) + 1, table_name,
-            NAME_LEN)+1, ts_version, NAME_LEN) - key + 1);
-
+            NAME_LEN)+1, ts_version, SERVER_VERSION_LENGTH) - key + 1);
     }
     else
     {

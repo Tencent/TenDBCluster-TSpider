@@ -746,15 +746,25 @@ void tdc_purge(bool all)
 TDC_element *tdc_lock_share(THD *thd, const char *db, const char *table_name)
 {
   TDC_element *element;
-  char key[MAX_DBKEY_LENGTH];
+  char key[MAX_MDLKEY_LENGTH] = {0};
+  uint key_length;
+  my_hash_value_type hash_value;
 
   DBUG_ENTER("tdc_lock_share");
   if (unlikely(fix_thd_pins(thd)))
     DBUG_RETURN((TDC_element*) MY_ERRPTR);
 
-  element= (TDC_element *) lf_hash_search(&tdc_hash, thd->tdc_hash_pins,
-                                          (uchar*) key,
-                                          tdc_create_key(key, db, table_name, thd->flush_no_block_version));
+
+
+  key_length = tdc_create_key(key, db, table_name, thd->flush_no_block_version) ;
+  hash_value = my_hash_sort(&my_charset_bin, (uchar*)key, key_length);
+  element = (TDC_element *)lf_hash_search_using_hash_value(&tdc_hash, thd->tdc_hash_pins, hash_value,
+      (uchar*)key, key_length);
+
+
+  //element= (TDC_element *) lf_hash_search(&tdc_hash, thd->tdc_hash_pins,
+  //                                        (uchar*) key,
+  //                                        tdc_create_key(key, db, table_name, thd->flush_no_block_version));
   if (element)
   {
     mysql_mutex_lock(&element->LOCK_table_share);

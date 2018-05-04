@@ -354,14 +354,16 @@ public:
   }
   void update_table_share_key(long long table_version)
   {
-      char ts_version[40];
+      char ts_version[SERVER_VERSION_LENGTH];
       if (table_version && !m_with_version)
       {/* 初始table_version为0，不在key中加版本号
        table_version>0，表明执行过flush table with no block操作，对所有的table_share key增加版本号.
        新请求访问新版本table_share对象
        */
           ullstr(table_version, ts_version);
-          m_length = (uint16)(strmov(m_ptr + m_length, ts_version) - m_ptr);
+//          m_length = (uint16)(strmov(m_ptr + m_length, ts_version) - m_ptr)+1;
+          m_length = (uint16)(strmake(m_ptr + m_length, ts_version, SERVER_VERSION_LENGTH) - m_ptr + 1);
+
           m_hash_value = my_hash_sort(&my_charset_bin, (uchar*)m_ptr + 1, m_length - 1);
           m_with_version = TRUE;
           m_current_version = table_version;
