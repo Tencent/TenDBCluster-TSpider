@@ -4930,6 +4930,16 @@ static void *spider_get_status_action(void *arg)
 
     SPIDER_SHARE *share;
     MYSQL *conn;
+    THD *thd;
+    my_thread_init();
+    if (!(thd = SPIDER_new_THD(next_thread_id())))
+    {
+        my_thread_end();
+        DBUG_RETURN(NULL);
+    }
+    SPIDER_set_next_thread_id(thd);
+    thd->thread_stack = (char*)&thd;
+    thd->store_globals();
 
     while (get_status_init)
     {
@@ -5141,6 +5151,7 @@ static void *spider_get_status_action(void *arg)
             sleep(1);
         }
     }/* end while */
+    my_thread_end();
     DBUG_RETURN(NULL);
 }
 
