@@ -4990,7 +4990,7 @@ static void *spider_get_status_action(void *arg)
         share_records = spider_open_tables.records;
         pthread_mutex_unlock(&spider_tbl_mutex);
 
-        for (ulong i = 0; i < share_records; i++)
+        for (ulong i = 0; (i < share_records) && get_status_init; i++)
         {/* foreach share */
 
             if (!spider_param_get_sts_or_crd())
@@ -5151,6 +5151,7 @@ static void *spider_get_status_action(void *arg)
             sleep(1);
         }
     }/* end while */
+    delete thd;
     my_thread_end();
     DBUG_RETURN(NULL);
 }
@@ -5185,7 +5186,7 @@ void spider_free_get_status_thread()
     DBUG_ENTER("spider_free_get_status_thread");
     if (get_status_init) {
         get_status_init = FALSE;
-        pthread_cancel(get_status_thread);
+ //       pthread_cancel(get_status_thread);
         pthread_join(get_status_thread, NULL);
     }
     DBUG_VOID_RETURN;

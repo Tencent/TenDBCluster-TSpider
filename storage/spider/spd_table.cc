@@ -6487,6 +6487,7 @@ int spider_db_done(
     do_delete_thd = TRUE;
   }
 
+  spider_free_get_status_thread();
   for (roop_count = SPIDER_DBTON_SIZE - 1; roop_count >= 0; roop_count--)
   {
     if (spider_dbton[roop_count].deinit)
@@ -6689,9 +6690,6 @@ DBUG_ASSERT(0);
   spider_free_conn_recycle_thread();
   my_hash_free(&spider_conn_meta_info);
   pthread_mutex_destroy(&spider_conn_meta_mutex);
-
-  spider_free_get_status_thread();
-
   DBUG_RETURN(0);
 }
 

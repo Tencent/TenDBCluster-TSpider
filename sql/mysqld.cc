@@ -1797,8 +1797,8 @@ static void close_connections(void)
   */
   DBUG_PRINT("info", ("thread_count: %d", thread_count));
 
-  for (int i= 0; *(volatile int32*) &thread_count && i < 1000; i++)
-    my_sleep(20000);
+  if (thread_count)
+      sleep(2);					// Give threads time to die
 
   /*
     Force remaining threads to die by closing the connection to the client
@@ -1861,7 +1861,7 @@ static void close_connections(void)
   /* All threads has now been aborted */
   DBUG_PRINT("quit",("Waiting for threads to die (count=%u)",thread_count));
   mysql_mutex_lock(&LOCK_thread_count);
-  while (thread_count || service_thread_count)
+  while (thread_count > 1 || service_thread_count)
   {
     mysql_cond_wait(&COND_thread_count, &LOCK_thread_count);
     DBUG_PRINT("quit",("One thread died (count=%u)",thread_count));
