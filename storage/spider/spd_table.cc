@@ -5270,47 +5270,47 @@ SPIDER_SHARE *spider_get_share(
     }
     spider->set_error_mode();
 
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-    if (!share->sts_spider_init)
-    {
-      pthread_mutex_lock(&share->mutex);
-      if (!share->sts_spider_init)
-      {
-        if ((*error_num = spider_create_spider_object_for_share(
-          spider->trx, share, &share->sts_spider)))
-        {
-          pthread_mutex_unlock(&share->mutex);
-          spider_free_share(share);
-          goto error_sts_spider_init;
-        }
-        share->sts_thread = &spider_table_sts_threads[
-          my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
-          spider_param_table_sts_thread_count()];
-        share->sts_spider_init = TRUE;
-      }
-      pthread_mutex_unlock(&share->mutex);
-    }
-
-    if (!share->crd_spider_init)
-    {
-      pthread_mutex_lock(&share->mutex);
-      if (!share->crd_spider_init)
-      {
-        if ((*error_num = spider_create_spider_object_for_share(
-          spider->trx, share, &share->crd_spider)))
-        {
-          pthread_mutex_unlock(&share->mutex);
-          spider_free_share(share);
-          goto error_crd_spider_init;
-        }
-        share->crd_thread = &spider_table_crd_threads[
-          my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
-          spider_param_table_crd_thread_count()];
-        share->crd_spider_init = TRUE;
-      }
-      pthread_mutex_unlock(&share->mutex);
-    }
-#endif
+//#ifndef WITHOUT_SPIDER_BG_SEARCH
+//    if (!share->sts_spider_init)
+//    {
+//      pthread_mutex_lock(&share->mutex);
+//      if (!share->sts_spider_init)
+//      {
+//        if ((*error_num = spider_create_spider_object_for_share(
+//          spider->trx, share, &share->sts_spider)))
+//        {
+//          pthread_mutex_unlock(&share->mutex);
+//          spider_free_share(share);
+//          goto error_sts_spider_init;
+//        }
+//        share->sts_thread = &spider_table_sts_threads[
+//          my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
+//          spider_param_table_sts_thread_count()];
+//        share->sts_spider_init = TRUE;
+//      }
+//      pthread_mutex_unlock(&share->mutex);
+//    }
+//
+//    if (!share->crd_spider_init)
+//    {
+//      pthread_mutex_lock(&share->mutex);
+//      if (!share->crd_spider_init)
+//      {
+//        if ((*error_num = spider_create_spider_object_for_share(
+//          spider->trx, share, &share->crd_spider)))
+//        {
+//          pthread_mutex_unlock(&share->mutex);
+//          spider_free_share(share);
+//          goto error_crd_spider_init;
+//        }
+//        share->crd_thread = &spider_table_crd_threads[
+//          my_calc_hash(&spider_open_tables, (uchar*) table_name, length) %
+//          spider_param_table_crd_thread_count()];
+//        share->crd_spider_init = TRUE;
+//      }
+//      pthread_mutex_unlock(&share->mutex);
+//    }
+//#endif
 
 #ifndef WITHOUT_SPIDER_BG_SEARCH
     if (
@@ -5603,10 +5603,10 @@ error_get_link_statuses:
     table_tables = NULL;
   }
 error_open_sys_table:
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-error_crd_spider_init:
-error_sts_spider_init:
-#endif
+//#ifndef WITHOUT_SPIDER_BG_SEARCH
+//error_crd_spider_init:
+//error_sts_spider_init:
+//#endif
   if (init_mem_root)
   {
     free_root(&mem_root, MYF(0));
