@@ -398,7 +398,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  FOR_SYSTEM_TIME_SYM           /* INTERNAL */
 %token  FROM
 %token  FULLTEXT_SYM
-%token  FUNCTION_SYM                  /* SQL-2003-R */
 %token  GCS_SYM
 %token  GCS_DYNAMIC_SYM
 %token  GE
@@ -15671,15 +15670,7 @@ keyword_sp_verb_clause:
   These keywords are generally allowed as identifiers,
   but not allowed as non-delimited SP variable names in sql_mode=ORACLE.
 */
-<<<<<<< HEAD
-<<<<<<< HEAD
 keyword_sp_data_type:
-=======
-<<<<<<< HEAD
-=======
->>>>>>> a09b2d81c5a... fix compile bug after rebase 10.3
-keyword_data_type:
->>>>>>> ae842f61784... 修复sql_mode为oracle时语法报错的bug
           BIT_SYM
         | BOOLEAN_SYM
         | BOOL_SYM
