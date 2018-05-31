@@ -1004,12 +1004,8 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  FOR_SYSTEM_TIME_SYM           /* INTERNAL */
 %token  FROM
 %token  FULLTEXT_SYM
-<<<<<<< HEAD
-=======
-%token  FUNCTION_SYM                  /* SQL-2003-R */
 %token  GCS_SYM
 %token  GCS_DYNAMIC_SYM
->>>>>>> support gcs/gcs_dynamic
 %token  GE
 %token  GRANT                         /* SQL-2003-R */
 %token  GROUP_SYM                     /* SQL-2003-R */

@@ -377,14 +377,8 @@ Diagnostics_area::set_eof_status(THD *thd)
     In production, refuse to overwrite an error or a custom response
     with an EOF packet.
   */
-<<<<<<< HEAD
   if (unlikely(is_error() || is_disabled()))
     return;
-=======
-  if (is_error() || is_disabled())
-	  DBUG_VOID_RETURN;
->>>>>>> 解决一些编译及运行BUG
-
   /*
     If inside a stored procedure, do not return the total
     number of warnings, since they are not available to the client

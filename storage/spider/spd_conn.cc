@@ -89,7 +89,6 @@ extern PSI_thread_key spd_key_thd_bg_mon;
 #endif
 
 extern pthread_mutex_t spider_tbl_mutex;
-extern pthread_mutex_t spider_global_trx_mutex;
 extern SPIDER_TRX *spider_global_trx;
 #endif
 

@@ -858,7 +858,7 @@ update_begin:
     ha_rows	update_rows, found_rows;
     DBUG_PRINT("info", ("Using direct update"));
     table->reset_default_fields();
-    if (unlikely(!(error= table->file->ha_direct_update_rows(&updated, &found_rows))))
+    if (unlikely(!(error= table->file->ha_direct_update_rows(&update_rows, &found_rows))))
       error= -1;
     updated = update_rows;
     found = found_rows;

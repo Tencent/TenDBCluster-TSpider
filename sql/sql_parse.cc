@@ -7111,8 +7111,8 @@ check_table_access(THD *thd, ulong requirements,TABLE_LIST *tables,
     else
       sctx= backup_ctx;
 
-    if (tables->db && !strcmp(tables->db, "mysql") &&
-        tables->table_name && !strcmp(tables->table_name, "servers"))
+    if (tables->db.str && !strcmp(tables->db.str, "mysql") &&
+        tables->table_name.str && !strcmp(tables->table_name.str, "servers"))
     {
         want_access |= SUPER_ACL;
     }
@@ -7537,6 +7537,7 @@ bool my_yyoverflow(short **yyss, YYSTYPE **yyvs, size_t *yystacksize)
 
 void THD::reset_for_next_command(bool do_clear_error)
 {
+  THD *thd = this;
   DBUG_ENTER("THD::reset_for_next_command");
   DBUG_ASSERT(!spcont); /* not for substatements of routines */
   DBUG_ASSERT(!in_sub_stmt);

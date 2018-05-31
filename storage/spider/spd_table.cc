@@ -5659,7 +5659,7 @@ int spider_free_share(
     ) {
       if (!thd)
       {
-        /* Create a thread for Spider system table update */
+        // Create a thread for Spider system table update 
         thd = spider_create_thd();
         if (!thd)
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
@@ -5679,14 +5679,14 @@ int spider_free_share(
         &share->update_time,
         FALSE
       );
-    }*/
+    } */
    /* if (
       share->crd_init &&
       spider_param_store_last_crd(share->store_last_crd)
     ) {
       if (!thd)
       {
-        /* Create a thread for Spider system table update */
+      //   Create a thread for Spider system table update 
         thd = spider_create_thd();
         if (!thd)
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
@@ -6934,18 +6934,6 @@ int spider_db_init(
       error_num = HA_ERR_OUT_OF_MEM;
       goto error_conn_meta_mutex_init;
   }
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-#if MYSQL_VERSION_ID < 50500
-  if (pthread_mutex_init(&spider_global_trx_mutex, MY_MUTEX_INIT_FAST))
-#else
-  if (mysql_mutex_init(spd_key_mutex_global_trx,
-    &spider_global_trx_mutex, MY_MUTEX_INIT_FAST))
-#endif
-  {
-    error_num = HA_ERR_OUT_OF_MEM;
-    goto error_global_trx_mutex_init;
-  }
-#endif
 #if MYSQL_VERSION_ID < 50500
   if (pthread_mutex_init(&spider_open_conn_mutex, MY_MUTEX_INIT_FAST))
 #else
@@ -7401,10 +7389,6 @@ error_hs_r_conn_mutex_init:
 #endif
   pthread_mutex_destroy(&spider_open_conn_mutex);
 error_open_conn_mutex_init:
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-  pthread_mutex_destroy(&spider_global_trx_mutex);
-error_global_trx_mutex_init:
-#endif
   pthread_mutex_destroy(&spider_conn_meta_mutex);
 error_conn_meta_mutex_init:
   pthread_mutex_destroy(&spider_conn_mutex);

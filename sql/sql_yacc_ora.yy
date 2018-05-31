@@ -15672,9 +15672,12 @@ keyword_sp_verb_clause:
   but not allowed as non-delimited SP variable names in sql_mode=ORACLE.
 */
 <<<<<<< HEAD
+<<<<<<< HEAD
 keyword_sp_data_type:
 =======
 <<<<<<< HEAD
+=======
+>>>>>>> a09b2d81c5a... fix compile bug after rebase 10.3
 keyword_data_type:
 >>>>>>> ae842f61784... 修复sql_mode为oracle时语法报错的bug
           BIT_SYM
@@ -15746,6 +15749,8 @@ keyword_sp_not_data_type:
         | COMPACT_SYM
         | COMPLETION_SYM
         | COMPRESSED_SYM
+        | GCS_SYM   
+        | GCS_DYNAMIC_SYM 
         | CONCURRENT
         | CONNECTION_SYM
         | CONSISTENT_SYM
@@ -15757,91 +15762,6 @@ keyword_sp_not_data_type:
         | CURRENT_POS_SYM
         | CPU_SYM
         | CUBE_SYM
-=======
-keyword_sp_data_type:
-          BIT_SYM                  {}
-        | BOOLEAN_SYM              {} /* PLSQL-R */
-        | BOOL_SYM                 {}
-        | CLOB                     {}
-        | DATE_SYM                 {} /* Oracle-R, PLSQL-R */
-        | DATETIME                 {}
-        | ENUM                     {}
-        | FIXED_SYM                {}
-        | GEOMETRYCOLLECTION       {}
-        | GEOMETRY_SYM             {}
-        | JSON_SYM                 {}
-        | LINESTRING               {}
-        | MEDIUM_SYM               {}
-        | MULTILINESTRING          {}
-        | MULTIPOINT               {}
-        | MULTIPOLYGON             {}
-        | NATIONAL_SYM             {}
-        | NCHAR_SYM                {}
-        | NUMBER_SYM               {} /* Oracle-R, PLSQL-R */
-        | NVARCHAR_SYM             {}
-        | POINT_SYM                {}
-        | POLYGON                  {}
-        | RAW                      {} /* Oracle-R */
-        | ROW_SYM                  {}
-        | SERIAL_SYM               {}
-        | TEXT_SYM                 {}
-        | TIMESTAMP                {}
-        | TIME_SYM                 {} /* Oracle-R */
-        | VARCHAR2                 {} /* Oracle-R, PLSQL-R */
-        | YEAR_SYM                 {}
-        ;
-
-
-keyword_sp_not_data_type:
-          ACTION                   {}
-        | ADDDATE_SYM              {}
-        | ADMIN_SYM                {}
-        | AFTER_SYM                {}
-        | AGAINST                  {}
-        | AGGREGATE_SYM            {}
-        | ALGORITHM_SYM            {}
-        | ALWAYS_SYM               {}
-        | ANY_SYM                  {}
-        | AT_SYM                   {}
-        | ATOMIC_SYM               {}
-        | AUTHORS_SYM              {}
-        | AUTO_INC                 {}
-        | AUTOEXTEND_SIZE_SYM      {}
-        | AUTO_SYM                 {}
-        | AVG_ROW_LENGTH           {}
-        | AVG_SYM                  {}
-        | BLOCK_SYM                {}
-        | BTREE_SYM                {}
-        | CASCADED                 {}
-        | CATALOG_NAME_SYM         {}
-        | CHAIN_SYM                {}
-        | CHANGED                  {}
-        | CIPHER_SYM               {}
-        | CLIENT_SYM               {}
-        | CLASS_ORIGIN_SYM         {}
-        | COALESCE                 {}
-        | CODE_SYM                 {}
-        | COLLATION_SYM            {}
-        | COLUMN_NAME_SYM          {}
-        | COLUMNS                  {}
-        | COMMITTED_SYM            {}
-        | COMPACT_SYM              {}
-        | COMPLETION_SYM           {}
-        | COMPRESSED_SYM           {}
-        | GCS_SYM                  {}
-        | GCS_DYNAMIC_SYM          {}
-        | CONCURRENT               {}
-        | CONNECTION_SYM           {}
-        | CONSISTENT_SYM           {}
-        | CONSTRAINT_CATALOG_SYM   {}
-        | CONSTRAINT_SCHEMA_SYM    {}
-        | CONSTRAINT_NAME_SYM      {}
-        | CONTEXT_SYM              {}
-        | CONTRIBUTORS_SYM         {}
-        | CURRENT_POS_SYM          {}
-        | CPU_SYM                  {}
-        | CUBE_SYM                 {}
->>>>>>> 修复sql_mode为oracle时语法报错的bug
         /*
           Although a reserved keyword in SQL:2003 (and :2008),
           not reserved in MySQL per WL#2111 specification.
