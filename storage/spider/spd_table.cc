@@ -7201,6 +7201,9 @@ int spider_db_init(
   if (error_num = spider_create_get_status_thread()) {
       goto error_conn_get_status_thd_init;
   }
+
+/**************************
+
 #ifndef WITHOUT_SPIDER_BG_SEARCH  
 #ifndef SPIDIER_NOT_USING_BG_THREADS
   if (!(spider_table_sts_threads = (SPIDER_THREAD *)
@@ -7213,7 +7216,7 @@ int spider_db_init(
   )
     goto error_alloc_mon_mutxes;
 
- /* for (roop_count = 0;
+  for (roop_count = 0;
     roop_count < (int) spider_param_table_sts_thread_count();
     roop_count++)
   {
@@ -7230,9 +7233,10 @@ int spider_db_init(
     {
       goto error_init_table_crd_threads;
     }
-  }*/
+  }
 #endif
 #endif
+********************/
 
   spider_dbton_mysql.dbton_id = dbton_id;
   spider_dbton[dbton_id] = spider_dbton_mysql;

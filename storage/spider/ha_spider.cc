@@ -12976,7 +12976,9 @@ void ha_spider::check_pre_call(
     }
   }
 
-  if (thd->sql_use_partition_count < 2 ||
+
+  if ((thd_test_options(thd, OPTION_NOT_AUTOCOMMIT) || thd_test_options(thd, OPTION_BEGIN)) || /* 事务里面，不使用后台线程 */
+      thd->sql_use_partition_count < 2 ||
       is_spider_select_limit_x_y(this) ||
       is_spider_select_mul_table(this) ||
       thd->lex->spider_rone_shard_flag)     /* use option spider_rone_shard,  choose only one remote shard by random */
