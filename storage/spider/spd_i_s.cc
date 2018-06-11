@@ -46,6 +46,8 @@ extern pthread_mutex_t spider_conn_meta_mutex;
 extern void spider_free_conn_meta(void *);
 extern int spider_param_conn_meta_max_invalid_duration();
 
+extern Time_zone *spd_tz_system;
+
 
 static struct st_mysql_storage_engine spider_i_s_info =
 { MYSQL_INFORMATION_SCHEMA_INTERFACE_VERSION };

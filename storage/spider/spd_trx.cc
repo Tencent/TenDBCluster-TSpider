@@ -1947,7 +1947,7 @@ int spider_internal_start_trx(
     conn->semi_trx = TRUE;
   } else if (
     !trx->trx_consistent_snapshot &&
-    thd_test_options(thd, OPTION_BEGIN)
+    thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN)
   ) {
     DBUG_PRINT("info",("spider start transaction"));
     spider_conn_queue_start_transaction(conn);

@@ -10420,7 +10420,10 @@ spider_current_time(void *tm)
 void
 spider_make_mysql_time(MYSQL_TIME *ts, time_t *tm)
 {
-	struct tm a_tm_struct;
+  spd_tz_system->gmt_sec_to_TIME(ts, (my_time_t)*tm);
+
+	/*
+  struct tm a_tm_struct;
 	localtime_r(tm, &a_tm_struct);
 	ts->year = a_tm_struct.tm_year + 1900;
 	ts->month = a_tm_struct.tm_mon + 1;
@@ -10428,6 +10431,7 @@ spider_make_mysql_time(MYSQL_TIME *ts, time_t *tm)
 	ts->hour = a_tm_struct.tm_hour;
 	ts->minute = a_tm_struct.tm_min;
 	ts->second = a_tm_struct.tm_sec; 
+  */
 }
 
 int spider_replace_table_status_up(
