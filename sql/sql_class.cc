@@ -425,9 +425,9 @@ void **thd_ha_data(const THD *thd, const struct handlerton *hton)
 extern "C"
 unsigned long thd_is_flush_no_block(THD *thd)
 {
-    if (!thd || !thd->lex)
+    if (!thd)
         return 0;
-    return (thd->lex->type & REFRESH_NO_BLOCK);
+    return (thd->spider_features_type & REFRESH_NO_BLOCK);
 }
 
 extern "C"
@@ -837,6 +837,7 @@ THD::THD(my_thread_id id, bool is_wsrep_applier, bool skip_global_sys_var_lock)
   is_spider_query = FALSE;
   spider_slow_query_num = 0;
   spider_current_partition_num = 0;
+  spider_features_type = 0;
 
   file_id = 0;
   query_id= 0;

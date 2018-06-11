@@ -2418,6 +2418,7 @@ public:
   int32 spider_slow_query_num;
   int32 spider_current_partition_num;
   int32 spider_last_partition_num;
+  ulong spider_features_type;
 
   // Process indicator
   struct {

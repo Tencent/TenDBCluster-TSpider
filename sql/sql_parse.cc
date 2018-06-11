@@ -7627,6 +7627,7 @@ void THD::reset_for_next_command(bool do_clear_error)
   thd->spider_remote_query.free();
   thd->spider_slow_query_num = 0;
   thd->spider_current_partition_num = 0;
+  thd->spider_features_type = 0;
 
   DBUG_PRINT("debug",
              ("is_current_stmt_binlog_format_row(): %d",

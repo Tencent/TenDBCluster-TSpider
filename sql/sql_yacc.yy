@@ -14246,6 +14246,7 @@ flush_lock:
         | WITH NO_SYM BLOCK_SYM
          {
            Lex->type|= REFRESH_NO_BLOCK;
+           thd->spider_features_type |= REFRESH_NO_BLOCK;
          }
         | FOR_SYM
           {

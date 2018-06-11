@@ -365,6 +365,7 @@ bool close_cached_tables(THD *thd, TABLE_LIST *tables,
   if (thd && thd->lex && (thd->lex->type & REFRESH_NO_BLOCK))
   {
       tdc_increment_table_share_version();
+      sql_print_information("Do FLUSH TABLE WITH NO BLOCK, table_share_version is %lu", tdc_table_share_version());
   }
 
   if (!tables)
