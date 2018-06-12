@@ -6152,5 +6152,5 @@ static Sys_var_uint Sys_spider_status_least(
 
 static Sys_var_mybool Sys_spider_not_convert_binary(
     "spider_not_convert_binary",
-    "spider_not_convert_binary defaults is false, set spider to use binary to express binary",
+    "spider_not_convert_binary defaults is true, set spider to use binary to express binary",
     GLOBAL_VAR(opt_spider_not_convert_binary), CMD_LINE(OPT_ARG), DEFAULT(TRUE));

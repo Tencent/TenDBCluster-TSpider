@@ -6760,16 +6760,16 @@ longlong Item_func_nextval::val_int()
   longlong value;
   int error;
   const char *key;
-  TABLE *table= table_list->table;
-  THD *thd= table->in_use;
+  THD *thd;
   SEQUENCE_LAST_VALUE *entry;
   char buff[80];
-  uint length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
+  uint length;
   String key_buff(buff,sizeof(buff), &my_charset_bin);
   DBUG_ENTER("Item_func_nextval::val_int");
   update_table();
   DBUG_ASSERT(table && table->s->sequence);
   thd= table->in_use;
+  length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
 
   if (thd->count_cuted_fields == CHECK_FIELD_EXPRESSION)
   {
@@ -6868,12 +6868,15 @@ longlong Item_func_lastval::val_int()
 {
   const char *key;
   SEQUENCE_LAST_VALUE *entry;
-  THD *thd= table->in_use;
+  THD *thd;
   char buff[80];
   String key_buff(buff,sizeof(buff), &my_charset_bin);
-  uint length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
+  uint length;
   DBUG_ENTER("Item_func_lastval::val_int");
   update_table();
+  thd = table->in_use;
+  length= get_table_def_key(table_list, &key, thd->flush_no_block_version);
+
 
   if (table->s->tmp_table != NO_TMP_TABLE)
   {
