@@ -451,7 +451,7 @@ set_malloc_lib() {
     # This list is kept intentionally simple.  Simply set --malloc-lib
     # to a full path if another location is desired.
     for libdir in /usr/lib /usr/lib64 "$pkglibdir" "$pkglibdir/mysql"; do
-       tmp=`echo "$libdir/lib$malloc_lib.so".[0-9]`
+       tmp=`echo "$libdir/lib$malloc_lib.so"`
        where="$where $libdir"
        # log_notice "DEBUG: Checking for malloc lib '$tmp'"
        [ -r "$tmp" ] || continue
@@ -895,6 +895,7 @@ fi
 #  ulimit -n 256 > /dev/null 2>&1		# Fix for BSD and FreeBSD systems
 #fi
 
+set_malloc_lib "jemalloc"
 cmd="`mysqld_ld_preload_text`$NOHUP_NICENESS"
 [ $dry_run -eq 1 ] && cmd=''
 
