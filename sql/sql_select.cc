@@ -25006,8 +25006,10 @@ bool JOIN_TAB::save_explain_data(Explain_table_access *eta,
   jbuf_tracker= &eta->jbuf_tracker;
 
   /* Enable the table access time tracker only for "ANALYZE stmt" */
+/****  may cause crash
   if (thd->lex->analyze_stmt)
     table->file->set_time_tracker(&eta->op_tracker);
+****/
 
   /* No need to save id and select_type here, they are kept in Explain_select */
 

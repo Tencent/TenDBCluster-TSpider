@@ -120,8 +120,10 @@ bool Update_plan::save_explain_data_intern(MEM_ROOT *mem_root,
     return 0;
   }
   
+/****  may cause crash
   if (is_analyze)
     table->file->set_time_tracker(&explain->table_tracker);
+*****/
 
   select_lex->set_explain_type(TRUE);
   explain->select_type= select_lex->type;

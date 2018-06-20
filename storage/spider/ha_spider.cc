@@ -171,6 +171,7 @@ ha_spider::ha_spider(
   result_list.casual_read = NULL;
   result_list.use_both_key = FALSE;
   result_list.in_cmp_ref = FALSE;
+  mem_calc_id = 0;
   DBUG_VOID_RETURN;
 }
 
@@ -284,6 +285,7 @@ ha_spider::ha_spider(
   result_list.use_both_key = FALSE;
   result_list.in_cmp_ref = FALSE;
   ref_length = sizeof(SPIDER_POSITION);
+  mem_calc_id = 0;  /* may cause crash */
   DBUG_VOID_RETURN;
 }
 

@@ -8901,6 +8901,8 @@ int spider_set_direct_limit_offset(
   if (spider->result_list.direct_limit_offset)
     DBUG_RETURN(TRUE);
 
+/******
+ may cause crash
   if (
     spider->pt_handler_share_creator &&
     spider->pt_handler_share_creator != spider
@@ -8913,6 +8915,7 @@ int spider_set_direct_limit_offset(
       DBUG_RETURN(FALSE);
     }
   }
+***********/
 
   if (
     spider->sql_command != SQLCOM_SELECT ||
