@@ -108,8 +108,7 @@ extern uint test_flags;
 extern ulong bytes_sent, bytes_received, net_big_packet_count;
 #ifdef HAVE_QUERY_CACHE
 #define USE_QUERY_CACHE
-extern void query_cache_insert(void *thd, const char *packet, size_t length,
-                               unsigned pkt_nr);
+extern void query_cache_insert(const char *packet, size_t length, unsigned pkt_nr);
 #endif // HAVE_QUERY_CACHE
 #define update_statistics(A) A
 extern my_bool thd_net_is_killed(THD *thd);
@@ -617,7 +616,7 @@ net_real_write(NET *net,const uchar *packet, size_t len)
   DBUG_ENTER("net_real_write");
 
 #if defined(MYSQL_SERVER) && defined(USE_QUERY_CACHE)
-  query_cache_insert(net->thd, (char*) packet, len, net->pkt_nr);
+  query_cache_insert((char*) packet, len, net->pkt_nr);
 #endif
 
   if (unlikely(net->error == 2))
@@ -721,7 +720,7 @@ net_real_write(NET *net,const uchar *packet, size_t len)
       break;
     }
     pos+=length;
-    update_statistics(thd_increment_bytes_sent(net->thd, length));
+    update_statistics(thd_increment_bytes_sent(length));
   }
 #ifndef __WIN__
  end:
@@ -794,7 +793,7 @@ static my_bool my_net_skip_rest(NET *net, uint32 remain, thr_alarm_t *alarmed,
   DBUG_PRINT("enter",("bytes_to_skip: %u", (uint) remain));
 
   /* The following is good for debugging */
-  update_statistics(thd_increment_net_big_packet_count(net->thd, 1));
+  update_statistics(thd_increment_net_big_packet_count(1));
 
   if (!thr_alarm_in_use(alarmed))
   {
@@ -810,7 +809,7 @@ static my_bool my_net_skip_rest(NET *net, uint32 remain, thr_alarm_t *alarmed,
       size_t length= MY_MIN(remain, net->max_packet);
       if (net_safe_read(net, net->buff, length, alarmed))
 	DBUG_RETURN(1);
-      update_statistics(thd_increment_bytes_received(net->thd, length));
+      update_statistics(thd_increment_bytes_received(length));
       remain -= (uint32) length;
       limit-= length;
       if (limit < 0)
@@ -960,7 +959,7 @@ retry:
 	  DBUG_PRINT("info",("vio_read returned %ld  errno: %d",
 			     (long) length, vio_errno(net->vio)));
 
-          if (i== 0 && unlikely(thd_net_is_killed((THD*) net->thd)))
+          if (i== 0 && unlikely(thd_net_is_killed(current_thd)))
           {
             DBUG_PRINT("info", ("thd is killed"));
             len= packet_error;
@@ -1030,7 +1029,7 @@ retry:
 	}
 	remain -= (uint32) length;
 	pos+= length;
-	update_statistics(thd_increment_bytes_received(net->thd, length));
+	update_statistics(thd_increment_bytes_received(length));
       }
 
 #ifdef DEBUG_DATA_PACKETS

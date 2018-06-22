@@ -4311,8 +4311,9 @@ void TMP_TABLE_PARAM::init()
 }
 
 
-void thd_increment_bytes_sent(void *thd, size_t length)
+void thd_increment_bytes_sent(size_t length)
 {
+  THD *thd = current_thd;
   /* thd == 0 when close_connection() calls net_send_error() */
   if (likely(thd != 0))
   {
@@ -4326,8 +4327,9 @@ my_bool thd_net_is_killed(THD *thd)
 }
 
 
-void thd_increment_bytes_received(void *thd, size_t length)
+void thd_increment_bytes_received(size_t length)
 {
+  THD *thd = current_thd;
   if (thd != NULL) // MDEV-13073 Ack collector having NULL
     ((THD*) thd)->status_var.bytes_received+= length;
 }
