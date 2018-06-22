@@ -371,6 +371,8 @@ void ha_partition::init_handler_variables()
   m_part_ids_sorted_by_num_of_records= NULL;
   m_partitions_to_open= NULL;
 
+  m_need_info_for_auto_inc = TRUE;
+
   m_range_info= NULL;
   m_mrr_full_buffer_size= 0;
   m_mrr_new_full_buffer_size= 0;
