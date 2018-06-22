@@ -769,6 +769,7 @@ public:
 
 
   HANDLER_BUFFER *m_mrr_buffer;
+  bool m_need_info_for_auto_inc;
   uint *m_mrr_buffer_size;
   uchar *m_mrr_full_buffer;
   uint m_mrr_full_buffer_size;
@@ -1240,7 +1241,6 @@ public:
     auto_increment_column_changed
      -------------------------------------------------------------------------
   */
-  bool m_need_info_for_auto_inc;
   virtual bool need_info_for_auto_inc();
   virtual bool can_use_for_auto_inc_init();
   virtual void get_auto_increment(ulonglong offset, ulonglong increment,

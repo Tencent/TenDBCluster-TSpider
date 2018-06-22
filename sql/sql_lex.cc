@@ -3115,6 +3115,7 @@ LEX::LEX()
                       gtid_domain_static_buffer,
                       initial_gtid_domain_buffer_size,
                       initial_gtid_domain_buffer_size, 0);
+  spider_rone_shard_flag = FALSE;
 }
 
 
