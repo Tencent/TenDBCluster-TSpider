@@ -4939,6 +4939,7 @@ static void *spider_get_status_action(void *arg)
     SPIDER_set_next_thread_id(thd);
     thd->thread_stack = (char*)&thd;
     thd->store_globals();
+    thread_safe_decrement32(&thread_count);  /* for shutdonw, don't wait this thread */
 
     while (get_status_init)
     {
