@@ -4160,6 +4160,7 @@ public:
                                     bool commit);
 
 
+ virtual const char* get_row_type_str() const;
  /**
     Public function wrapping the actual handler call.
     @see notify_table_changed()

@@ -7265,9 +7265,8 @@ int spider_db_init(
   DBUG_RETURN(0);
 
 #ifndef WITHOUT_SPIDER_BG_SEARCH 
-error : 
-  roop_count = SPIDER_DBTON_SIZE;
 error_init_dbton:
+   roop_count = SPIDER_DBTON_SIZE;
 #ifndef SPIDIER_NOT_USING_BG_THREADS
   for (roop_count--; roop_count >= 0; roop_count--)
   {

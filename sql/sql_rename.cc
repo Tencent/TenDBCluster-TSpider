@@ -50,7 +50,7 @@ bool mysql_rename_tables(THD *thd, TABLE_LIST *table_list, bool silent)
   bool binlog_error= 0;
   TABLE_LIST *ren_table= 0;
   int to_table;
-  const char *rename_log_table[2]= {NULL, NULL};
+  const char *rename_log_table[3]= {NULL, NULL, NULL};
   DBUG_ENTER("mysql_rename_tables");
 
   /*
@@ -68,7 +68,8 @@ bool mysql_rename_tables(THD *thd, TABLE_LIST *table_list, bool silent)
   mysql_ha_rm_tables(thd, table_list);
 
   if (logger.is_log_table_enabled(QUERY_LOG_GENERAL) ||
-      logger.is_log_table_enabled(QUERY_LOG_SLOW))
+      logger.is_log_table_enabled(QUERY_LOG_SLOW) ||
+      logger.is_log_table_enabled(QUERY_LOG_ALTER))
   {
 
     /*
@@ -89,7 +90,7 @@ bool mysql_rename_tables(THD *thd, TABLE_LIST *table_list, bool silent)
       {
         /*
           as we use log_table_rename as an array index, we need it to start
-          with 0, while QUERY_LOG_SLOW == 1 and QUERY_LOG_GENERAL == 2.
+          with 0, while QUERY_LOG_SLOW == 1 and QUERY_LOG_GENERAL == 2  and QUERY_LOG_ALTER == 3
           So, we shift the value to start with 0;
         */
         log_table_rename--;
@@ -130,14 +131,18 @@ bool mysql_rename_tables(THD *thd, TABLE_LIST *table_list, bool silent)
         }
       }
     }
-    if (rename_log_table[0] || rename_log_table[1])
+    if (rename_log_table[0] || rename_log_table[1] || rename_log_table[2])
     {
       if (rename_log_table[0])
         my_error(ER_CANT_RENAME_LOG_TABLE, MYF(0), rename_log_table[0],
                  rename_log_table[0]);
+      else if (rename_log_table[1])
+          my_error(ER_CANT_RENAME_LOG_TABLE, MYF(0), rename_log_table[1],
+              rename_log_table[1]);
       else
-        my_error(ER_CANT_RENAME_LOG_TABLE, MYF(0), rename_log_table[1],
-                 rename_log_table[1]);
+          my_error(ER_CANT_RENAME_LOG_TABLE, MYF(0), rename_log_table[2],
+              rename_log_table[2]);
+
       goto err;
     }
   }

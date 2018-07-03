@@ -9030,7 +9030,16 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
                        Alter_info *alter_info,
                        uint order_num, ORDER *order, bool ignore)
 {
-  DBUG_ENTER("mysql_alter_table");
+    ulonglong data_len = 0;
+    ulonglong free_len = 0;
+    ulonglong index_len = 0;
+    ulonglong n_records = 0;
+    bool write_to_alter_log = false;
+    const char *engine_str = "";
+    const char *row_format_str = "";
+    int is_partitioned = 0;
+
+    DBUG_ENTER("mysql_alter_table");
 
   /*
     Check if we attempt to alter mysql.slow_log or
@@ -9882,6 +9891,35 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
 
   DEBUG_SYNC(thd, "alter_table_before_rename_result_table");
 
+
+  if (opt_alter_log)
+  {
+      write_to_alter_log = true;
+      if (table->file)
+      {
+          /* fast info */
+ //         table->file->info(HA_STATUS_VARIABLE | HA_STATUS_NO_LOCK);
+
+          data_len = table->file->stats.data_file_length;
+          free_len = table->file->stats.delete_length;
+          index_len = table->file->stats.index_file_length;
+          n_records = (ulonglong)table->file->stats.records;
+
+          row_format_str = table->file->get_row_type_str();
+      }
+      handlerton *tmp_db_type = table->s->db_type();
+
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+      if (tmp_db_type == partition_hton &&
+          table->s->partition_info_str_len)
+      {
+          tmp_db_type = plugin_hton(table->s->default_part_plugin);
+          is_partitioned = TRUE;
+      }
+#endif
+      engine_str = (char *)ha_resolve_storage_engine_name(tmp_db_type);
+  }
+
   /*
     Data is copied. Now we:
     1) Wait until all other threads will stop using old version of table
@@ -10012,6 +10050,12 @@ end_inplace:
   }
 
 end_temporary:
+  if (write_to_alter_log)
+  {
+      /* 记录在线加字段的信息，同时忽略其返回值,可能产生告警 */
+      alter_log_print(thd, thd->query(), thd->query_length(), thd->current_utime(), alter_ctx.new_db.str, strlen(alter_ctx.new_db.str),
+           alter_ctx.new_alias.str, strlen(alter_ctx.new_alias.str), engine_str, row_format_str, is_partitioned, copied + deleted, data_len, index_len, free_len, n_records);
+  }
   my_snprintf(alter_ctx.tmp_buff, sizeof(alter_ctx.tmp_buff),
               ER_THD(thd, ER_INSERT_INFO),
 	      (ulong) (copied + deleted), (ulong) deleted,

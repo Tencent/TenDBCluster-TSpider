@@ -985,6 +985,17 @@ public:
                            const char *command_type, size_t command_type_len,
                            const char *sql_text, size_t sql_text_len,
                            CHARSET_INFO *client_cs);
+  virtual bool log_alter(THD *thd, my_hrtime_t start_time, time_t query_start_arg,
+      const char *user_host, uint user_host_len,
+      ulonglong query_utime, ulonglong lock_utime,
+      const char *sql_text, uint sql_text_len,
+      ulonglong affected_rows,
+      const char *db_name, uint db_name_len,
+      const char *table_name, uint table_name_len,
+      const char *engine, uint engine_len,
+      const char *row_format, uint row_format_len,
+      int is_partitoned,
+      ulonglong data_len, ulonglong index_len, ulonglong free_len, ulonglong n_records);
 
   int activate_log(THD *thd, uint log_type);
 };
@@ -993,6 +1004,7 @@ public:
 /* type of the log table */
 #define QUERY_LOG_SLOW 1
 #define QUERY_LOG_GENERAL 2
+#define QUERY_LOG_ALTER 3
 
 class Log_to_file_event_handler: public Log_event_handler
 {
@@ -1069,6 +1081,13 @@ public:
                       va_list args);
   bool slow_log_print(THD *thd, const char *query, size_t query_length,
                       ulonglong current_utime);
+  bool alter_log_print(THD *thd, const char *query, uint query_length,
+      ulonglong current_utime,
+      const char* db, uint db_len,
+      const char* table, uint table_len,
+      const char* engine, const char* row_format, int is_partitoned,
+      ulonglong affected_rows,
+      ulonglong data_len, ulonglong index_len, ulonglong free_len, ulonglong n_records);
   bool general_log_print(THD *thd,enum enum_server_command command,
                          const char *format, va_list args);
   bool general_log_write(THD *thd, enum enum_server_command command,
@@ -1120,6 +1139,11 @@ int error_log_print(enum loglevel level, const char *format,
 
 bool slow_log_print(THD *thd, const char *query, uint query_length,
                     ulonglong current_utime);
+
+bool alter_log_print(THD *thd, const char *query, uint query_length,
+    ulonglong current_utime, const char *db, uint db_len, const char *table, uint table_len,
+    const char *engine, const char *row_format, int is_partitioned, ulonglong affected_rows,
+    ulonglong data_len, ulonglong index_len, ulonglong free_len, ulonglong n_records);
 
 bool general_log_print(THD *thd, enum enum_server_command command,
                        const char *format,...);

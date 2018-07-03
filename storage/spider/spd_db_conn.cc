@@ -180,17 +180,23 @@ int spider_db_connect(
     share->server_names[link_idx],
     connect_retry_count, connect_retry_interval)))
   {
-    if (conn->thd)
-    {
-      conn->connect_error_thd = conn->thd;
-      conn->connect_error_query_id = conn->thd->query_id;
-      conn->connect_error_time = (time_t) time((time_t*) 0);
-      conn->connect_error = error_num;
-      if ((conn->connect_error_with_message = thd->is_error()))
-        strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
-    }
-	fprintf(stderr, "failed to connect the hosts: %s, port: %ld .\n", share->tgt_hosts[link_idx], share->tgt_ports[link_idx]);
-    DBUG_RETURN(error_num);
+      time_t cur_time = (time_t)time((time_t*)0);
+      struct tm lt;
+      struct tm *l_time = localtime_r(&cur_time, &lt);
+      if (conn->thd)
+      {
+          conn->connect_error_thd = conn->thd;
+          conn->connect_error_query_id = conn->thd->query_id;
+          conn->connect_error_time = (time_t)time((time_t*)0);
+          conn->connect_error = error_num;
+          if ((conn->connect_error_with_message = thd->is_error()))
+              strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
+      }
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+          "failed to connect the hosts: %s, port: %ld, error_num:%d\n",
+          l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+          l_time->tm_hour, l_time->tm_min, l_time->tm_sec, share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
+      DBUG_RETURN(error_num);
   }
   conn->connect_error = 0;
   conn->opened_handlers = 0;

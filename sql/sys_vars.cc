@@ -4666,6 +4666,13 @@ static Sys_var_mybool Sys_slow_query_log(
        DEFAULT(FALSE), NO_MUTEX_GUARD, NOT_IN_BINLOG,
        ON_CHECK(0), ON_UPDATE(fix_log_state));
 
+static Sys_var_mybool Sys_alter_query_log(
+    "alter_query_log",
+    "Log alter queries to a table mysql.alter_log. ",
+    GLOBAL_VAR(opt_alter_log), CMD_LINE(OPT_ARG),
+    DEFAULT(FALSE), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0),
+    ON_UPDATE(fix_log_state));
+
 static bool fix_log_state(sys_var *self, THD *thd, enum_var_type type)
 {
   bool res;
@@ -4680,6 +4687,12 @@ static bool fix_log_state(sys_var *self, THD *thd, enum_var_type type)
     newvalptr= &opt_log;
     oldval=    logger.get_log_file_handler()->is_open();
     log_type=  QUERY_LOG_GENERAL;
+  }
+  else if (self == &Sys_alter_query_log)
+  {
+      newvalptr = &opt_alter_log;
+      oldval = !(*newvalptr);         /* how to get oldval? but it's ok! */
+      log_type = QUERY_LOG_ALTER;
   }
   else
   {
