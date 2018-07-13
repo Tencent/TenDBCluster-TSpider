@@ -669,6 +669,22 @@ enum Log_event_type
   /* New MySQL/Sun events are to be added right above this comment */
   MYSQL_EVENTS_END,
 
+  /*
+  Compressed binlog event.
+
+  Note that the order between WRITE/UPDATE/DELETE events is significant;
+  this is so that we can convert from the compressed to the uncompressed
+  event type with (type-WRITE_ROWS_COMPRESSED_EVENT + WRITE_ROWS_EVENT)
+  and similar for _V1.
+  */
+  QUERY_COMPRESSED_EVENT = 50,
+  WRITE_ROWS_COMPRESSED_EVENT_V1 = 51,
+  UPDATE_ROWS_COMPRESSED_EVENT_V1 = 52,
+  DELETE_ROWS_COMPRESSED_EVENT_V1 = 53,
+  WRITE_ROWS_COMPRESSED_EVENT = 54,
+  UPDATE_ROWS_COMPRESSED_EVENT = 55,
+  DELETE_ROWS_COMPRESSED_EVENT = 56,
+
   MARIA_EVENTS_BEGIN= 160,
   /* New Maria event numbers start from here */
   ANNOTATE_ROWS_EVENT= 160,
@@ -694,22 +710,6 @@ enum Log_event_type
   GTID_LIST_EVENT= 163,
 
   START_ENCRYPTION_EVENT= 164,
-
-  /*
-    Compressed binlog event.
-
-    Note that the order between WRITE/UPDATE/DELETE events is significant;
-    this is so that we can convert from the compressed to the uncompressed
-    event type with (type-WRITE_ROWS_COMPRESSED_EVENT + WRITE_ROWS_EVENT)
-    and similar for _V1.
-  */
-  QUERY_COMPRESSED_EVENT = 165,
-  WRITE_ROWS_COMPRESSED_EVENT_V1 = 166,
-  UPDATE_ROWS_COMPRESSED_EVENT_V1 = 167,
-  DELETE_ROWS_COMPRESSED_EVENT_V1 = 168,
-  WRITE_ROWS_COMPRESSED_EVENT = 169,
-  UPDATE_ROWS_COMPRESSED_EVENT = 170,
-  DELETE_ROWS_COMPRESSED_EVENT = 171,
 
   /* Add new MariaDB events here - right above this comment!  */
 
