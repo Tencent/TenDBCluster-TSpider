@@ -427,6 +427,8 @@ my_bool opt_spider_direct_limit_in_group;
 uint opt_spider_modify_status_interval;
 uint opt_spider_status_least;
 my_bool opt_spider_not_convert_binary;
+my_bool opt_spider_parallel_group_order;
+my_bool opt_spider_parallel_limit;
 /*
   True if the bootstrap thread is running. Protected by LOCK_start_thread.
   Used in bootstrap() function to determine if the bootstrap thread

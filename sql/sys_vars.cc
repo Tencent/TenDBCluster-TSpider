@@ -2937,7 +2937,7 @@ static Sys_var_mybool Sys_secure_auth(
        "Disallow authentication for accounts that have old (pre-4.1) "
        "passwords",
        GLOBAL_VAR(opt_secure_auth), CMD_LINE(OPT_ARG),
-       DEFAULT(TRUE));
+       DEFAULT(FALSE));
 
 static Sys_var_charptr Sys_secure_file_priv(
        "secure_file_priv",
@@ -6164,3 +6164,14 @@ static Sys_var_mybool Sys_spider_not_convert_binary(
     "spider_not_convert_binary",
     "spider_not_convert_binary defaults is true, set spider to use binary to express binary",
     GLOBAL_VAR(opt_spider_not_convert_binary), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
+
+static Sys_var_mybool Sys_spider_parallel_group_order(
+    "spider_parallel_group_order",
+    "spider_parallel_group_order defaults is TRUE, set spider parallel process without supporting group by, order by",
+    GLOBAL_VAR(opt_spider_parallel_group_order), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
+
+
+static Sys_var_mybool Sys_spider_parallel_limit(
+    "spider_parallel_limit",
+    "spider_parallel_limit defaults is false, set spider parallel process without supporting  limit",
+    GLOBAL_VAR(opt_spider_parallel_limit), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
