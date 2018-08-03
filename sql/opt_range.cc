@@ -3440,6 +3440,15 @@ bool prune_partitions(THD *thd, TABLE *table, Item *pprune_cond)
   partition_info *part_info = table->part_info;
   DBUG_ENTER("prune_partitions");
 
+  /*
+  If the prepare stage already have completed pruning successfully,
+  it is no use of running prune_partitions() again on the same condition.
+  Since it will not be able to prune anything more than the previous call
+  from the prepare step.
+  */
+  if (part_info && part_info->is_pruning_completed)
+      DBUG_RETURN(false);
+
   table->sql_use_partition_count = 0;
   if (!part_info)
     DBUG_RETURN(FALSE); /* not a partitioned table */
@@ -3502,8 +3511,10 @@ bool prune_partitions(THD *thd, TABLE *table, Item *pprune_cond)
 
   if (tree->type == SEL_TREE::IMPOSSIBLE)
   {
-    retval= TRUE;
-    goto end;
+      /* Cannot improve the pruning any further. */
+      part_info->is_pruning_completed = true;
+      retval = TRUE;
+      goto end;
   }
 
   if (tree->type != SEL_TREE::KEY && tree->type != SEL_TREE::KEY_SMALLER)
@@ -3556,7 +3567,19 @@ bool prune_partitions(THD *thd, TABLE *table, Item *pprune_cond)
         goto all_used;
     }
   }
-  
+ 
+
+  /*
+  If the condition can be evaluated now, we are done with pruning.
+
+  During the prepare phase, before locking, subqueries and stored programs
+  are not evaluated. So we need to run prune_partitions() a second time in
+  the optimize phase to prune partitions for reading, when subqueries and
+  stored programs may be evaluated.
+  */
+  //if (pprune_cond->can_be_evaluated_now())
+      part_info->is_pruning_completed = true;
+
   /*
     res == 0 => no used partitions => retval=TRUE
     res == 1 => some used partitions => retval=FALSE
@@ -3589,7 +3612,7 @@ end:
     'UPDATE t SET part_key = const WHERE cond_is_prunable' so it adds
     a lock for part_key partition.
   */
-  if (table->file->get_lock_type() == F_UNLCK &&
+  if (!thd->lex->is_query_tables_locked() &&
       !partition_key_modified(table, table->write_set))
   {
     bitmap_copy(&prune_param.part_info->lock_partitions,

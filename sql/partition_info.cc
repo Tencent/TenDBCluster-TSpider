@@ -298,6 +298,7 @@ bool partition_info::set_partition_bitmaps(List<String> *partition_names)
 
   DBUG_ASSERT(bitmaps_are_initialized);
   DBUG_ASSERT(table);
+  is_pruning_completed = false;
   if (!bitmaps_are_initialized)
     DBUG_RETURN(TRUE);
 

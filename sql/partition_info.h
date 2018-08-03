@@ -283,6 +283,15 @@ public:
   bool is_auto_partitioned;
   bool has_null_value;
   bool column_list;                          // COLUMNS PARTITIONING, 5.5+
+    /**
+    True if pruning has been completed and can not be pruned any further,
+    even if there are subqueries or stored programs in the condition.
+
+    Some times it is needed to run prune_partitions() a second time to prune
+    read partitions after tables are locked, when subquery and
+    stored functions might have been evaluated.
+  */
+  bool is_pruning_completed;
 
   partition_info()
   : get_partition_id(NULL), get_part_partition_id(NULL),

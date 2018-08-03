@@ -1021,6 +1021,8 @@ public:
 
   /// Array of pointers to top elements of all_fields list
   Ref_ptr_array ref_pointer_array;
+  /// Number of partitioned tables
+  uint partitioned_table_count;
 
   /*
     number of items in select_list and HAVING clause used to get number

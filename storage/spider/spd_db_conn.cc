@@ -29,6 +29,7 @@
 #include "sql_base.h"
 #include "tztime.h"
 #include "errmsg.h"
+#include "lf.h"
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
 #include "sql_select.h"
 #endif
