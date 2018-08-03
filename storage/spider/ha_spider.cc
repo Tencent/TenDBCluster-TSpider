@@ -20,6 +20,7 @@
 #define MYSQL_SERVER 1
 #include <my_global.h>
 #include "mysql_version.h"
+#include "lf.h"
 #include "spd_environ.h"
 #if MYSQL_VERSION_ID < 50500
 #include "mysql_priv.h"
@@ -172,6 +173,7 @@ ha_spider::ha_spider(
   result_list.use_both_key = FALSE;
   result_list.in_cmp_ref = FALSE;
   mem_calc_id = 0;
+  conn_pins = NULL;
   DBUG_VOID_RETURN;
 }
 
@@ -286,6 +288,7 @@ ha_spider::ha_spider(
   result_list.in_cmp_ref = FALSE;
   ref_length = sizeof(SPIDER_POSITION);
   mem_calc_id = 0;  /* may cause crash */
+  conn_pins = NULL;
   DBUG_VOID_RETURN;
 }
 
@@ -15553,4 +15556,17 @@ int ha_spider::spider_set_trx_status_info()
 		}
 	}
 	DBUG_RETURN(0);
+}
+
+int ha_spider::spider_fix_pins()
+{
+    return 0;
+   /* return conn_pins ? 0 : (conn_pins = lf_hash_get_pins(&spider_open_connections)) == 0;*/
+}
+
+void ha_spider::spider_destory_pins()
+{
+    return;
+    /*if (conn_pins)
+        lf_hash_put_pins(conn_pins);*/
 }

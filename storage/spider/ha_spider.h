@@ -75,6 +75,7 @@ public:
   char               *conn_keys_first_ptr;
   char               **conn_keys;
   SPIDER_CONN        **conns;
+  LF_PINS            *conn_pins;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   char               **hs_r_conn_keys;
   SPIDER_CONN        **hs_r_conns;
@@ -1218,4 +1219,6 @@ public:
           return error;
       return ER_SPIDER_SHARE_INVALID_NUM;
   }
+  int spider_fix_pins();
+  void spider_destory_pins();
 };

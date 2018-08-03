@@ -989,6 +989,8 @@ JOIN::prepare(TABLE_LIST *tables_init,
   select_lex->join= this;
   join_list= &select_lex->top_join_list;
   union_part= unit_arg->is_unit_op();
+  select_lex->partitioned_table_count = 0;
+
 
   // simple check that we got usable conds
   dbug_print_item(conds);
@@ -1076,6 +1078,10 @@ JOIN::prepare(TABLE_LIST *tables_init,
     */
     if (mixed_implicit_grouping && tbl->table)
       tbl->table->maybe_null= 1;
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+    if (tbl->table->part_info)
+        select_lex->partitioned_table_count++;
+#endif
   }
  
   uint real_og_num= og_num;
@@ -1338,6 +1344,25 @@ JOIN::prepare(TABLE_LIST *tables_init,
     goto err;					/* purecov: inspected */
 
   unit= unit_arg;
+
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  if (select_lex->partitioned_table_count)
+  {
+      TABLE_LIST *tbl;
+      List_iterator_fast<TABLE_LIST> li(select_lex->leaf_tables);
+      while ((tbl = li++))
+      {
+          /*
+          This will only prune constant conditions, which will be used for
+          lock pruning.
+          */
+          if (prune_partitions(thd, tbl->table,
+              tbl->on_expr ? tbl->on_expr : conds))
+              DBUG_RETURN(-1); /* purecov: inspected */;
+      }
+  }
+#endif
+
   if (prepare_stage2())
     goto err;
 
@@ -4254,6 +4279,37 @@ mysql_select(THD *thd,
     {
       goto err;
     }
+  }
+
+  if (!thd->lex->is_query_tables_locked())
+  {
+      /*
+      If tables are not locked at this point, it means that we have delayed
+      this step until after prepare stage (i.e. this moment). This allows to
+      do better partition pruning and avoid locking unused partitions.
+      As a consequence, in such a case, prepare stage can rely only on
+      metadata about tables used and not data from them.
+      We need to lock tables now in order to proceed with the remaning
+      stages of query optimization and execution.
+      */
+      if (lock_tables(thd, thd->lex->query_tables, thd->lex->table_count, 0))
+      {
+          if (free_join)
+          {
+              THD_STAGE_INFO(thd, stage_end);
+              (void)select_lex->cleanup();
+          }
+          DBUG_RETURN(true);
+      }
+
+      /*
+      Only register query in cache if it tables were locked above.
+
+      Tables must be locked before storing the query in the query cache.
+      Transactional engines must been signalled that the statement started,
+      which external_lock signals.
+      */
+      query_cache_store_query(thd, thd->lex->query_tables);
   }
 
   if ((err= join->optimize()))

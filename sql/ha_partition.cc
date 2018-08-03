@@ -8938,9 +8938,11 @@ int ha_partition::extra(enum ha_extra_function operation)
   }
     /* Category 9) Operations only used by MERGE */
   case HA_EXTRA_ADD_CHILDREN_LIST:
-    DBUG_RETURN(loop_extra(operation));
+      break;
+    /*DBUG_RETURN(loop_extra(operation));*/
   case HA_EXTRA_ATTACH_CHILDREN:
   {
+      break;
     int result;
     uint num_locks;
     handler **file;
@@ -8959,9 +8961,11 @@ int ha_partition::extra(enum ha_extra_function operation)
     break;
   }
   case HA_EXTRA_IS_ATTACHED_CHILDREN:
-    DBUG_RETURN(loop_extra(operation));
+      break;
+  /*  DBUG_RETURN(loop_extra(operation));*/
   case HA_EXTRA_DETACH_CHILDREN:
-    DBUG_RETURN(loop_extra(operation));
+      break;
+   /* DBUG_RETURN(loop_extra(operation));*/
   case HA_EXTRA_MARK_AS_LOG_TABLE:
   /*
     http://dev.mysql.com/doc/refman/5.1/en/partitioning-limitations.html
