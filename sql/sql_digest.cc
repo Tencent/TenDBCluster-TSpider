@@ -35,6 +35,7 @@
 #include "sql_yacc.h"
 #define LEX_TOKEN_WITH_DEFINITION
 #include "lex_token.h"
+#include "sql_data_change.h"
 
 /* Name pollution from sql/sql_lex.h */
 #ifdef LEX_YYSTYPE

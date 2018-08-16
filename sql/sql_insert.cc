@@ -78,6 +78,8 @@
 #include "sql_audit.h"
 #include "sql_derived.h"                        // mysql_handle_derived
 #include "sql_prepare.h"
+#include "delayable_insert_operation.h"
+#include "partition_info.h"
 #include <my_bit.h>
 
 #include "debug_sync.h"
@@ -709,12 +711,37 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
   /* counter of iteration in bulk PS operation*/
   ulonglong iteration= 0;
   ulonglong id;
-  COPY_INFO info;
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  uint num_partitions = 0;
+  enum partition_info::enum_can_prune can_prune_partitions = partition_info::PRUNE_NO;
+  MY_BITMAP used_partitions;
+  bool prune_needs_default_values;
+#endif /* WITH_PARITITION_STORAGE_ENGINE */
+  /*
+  We have three alternative syntax rules for the INSERT statement:
+  1) "INSERT (columns) VALUES ...", so non-listed columns need a default
+  2) "INSERT VALUES (), ..." so all columns need a default;
+  note that "VALUES (),(expr_1, ..., expr_n)" is not allowed, so checking
+  emptiness of the first row is enough
+  3) "INSERT VALUES (expr_1, ...), ..." so no defaults are needed; even if
+  expr_i is "DEFAULT" (in which case the column is set by
+  Item_default_value::save_in_field()).
+  */
+  const bool manage_defaults =
+      fields.elements != 0 ||                     // 1)
+      values_list.head()->elements == 0;          // 2)
+  COPY_INFO info(COPY_INFO::INSERT_OPERATION,
+      &fields,
+      manage_defaults,
+      duplic,
+      ignore);
+  COPY_INFO update(COPY_INFO::UPDATE_OPERATION, &update_fields, &update_values);
   TABLE *table= 0;
   List_iterator_fast<List_item> its(values_list);
   List_item *values;
   Name_resolution_context *context;
   Name_resolution_context_state ctx_state;
+  bool is_locked = false;
 #ifndef EMBEDDED_LIBRARY
   char *query= thd->query();
   /*
@@ -760,11 +787,12 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
   {
     if (open_and_lock_for_insert_delayed(thd, table_list))
       DBUG_RETURN(TRUE);
+    is_locked = true;
   }
   else
   {
-    if (open_and_lock_tables(thd, table_list, TRUE, 0))
-      DBUG_RETURN(TRUE);
+    if (open_normal_and_derived_tables(thd, table_list, 0, DT_INIT | DT_PREPARE))
+        DBUG_RETURN(true);
   }
 
   THD_STAGE_INFO(thd, stage_init_update);
@@ -782,6 +810,13 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
 
   /* mysql_prepare_insert sets table_list->table if it was not set */
   table= table_list->table;
+
+  /* Must be done before can_prune_insert, due to internal initialization. */
+  if (info.add_function_default_columns(table, table->write_set))
+      goto abort;
+  if (duplic == DUP_UPDATE &&
+      update.add_function_default_columns(table, table->write_set))
+      goto abort;
 
   context= &thd->lex->select_lex.context;
   /*
@@ -804,6 +839,45 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
   context->resolve_in_table_list_only(table_list);
   switch_to_nullable_trigger_fields(*values, table);
 
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  if (!is_locked && table->part_info)
+  {
+      if (table->part_info->can_prune_insert(thd,
+          duplic,
+          update,
+          update_fields,
+          fields,
+          !MY_TEST(values->elements),
+          &can_prune_partitions,
+          &prune_needs_default_values,
+          &used_partitions))
+          goto abort;
+
+      if (can_prune_partitions != partition_info::PRUNE_NO)
+      {
+          num_partitions = table->part_info->lock_partitions.n_bits;
+          /*
+          Pruning probably possible, all partitions is unmarked for read/lock,
+          and we must now add them on row by row basis.
+
+          Check the first INSERT value.
+          Do not fail here, since that would break MyISAM behavior of inserting
+          all rows before the failing row.
+
+          PRUNE_DEFAULTS means the partitioning fields are only set to DEFAULT
+          values, so we only need to check the first INSERT value, since all the
+          rest will be in the same partition.
+          */
+          if (table->part_info->set_used_partition(fields,
+              *values,
+              info,
+              prune_needs_default_values,
+              &used_partitions))
+              can_prune_partitions = partition_info::PRUNE_NO;
+      }
+  }
+#endif /* WITH_PARTITION_STORAGE_ENGINE */
+
   while ((values= its++))
   {
     counter++;
@@ -816,6 +890,36 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
                      *values, MARK_COLUMNS_READ, 0, NULL, 0))
       goto abort;
     switch_to_nullable_trigger_fields(*values, table);
+
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+    /*
+    To make it possible to increase concurrency on table level locking
+    engines such as MyISAM, we check pruning for each row until we will use
+    all partitions, Even if the number of rows is much higher than the
+    number of partitions.
+    TODO: Cache the calculated part_id and reuse in
+    ha_partition::write_row() if possible.
+    */
+    if (can_prune_partitions == partition_info::PRUNE_YES)
+    {
+        if (table->part_info->set_used_partition(fields,
+            *values,
+            info,
+            prune_needs_default_values,
+            &used_partitions))
+            can_prune_partitions = partition_info::PRUNE_NO;
+        if (!(counter % num_partitions))
+        {
+            /*
+            Check if we using all partitions in table after adding partition
+            for current row to the set of used partitions. Do it only from
+            time to time to avoid overhead from bitmap_is_set_all() call.
+            */
+            if (bitmap_is_set_all(&used_partitions))
+                can_prune_partitions = partition_info::PRUNE_NO;
+        }
+    }
+#endif /* WITH_PARTITION_STORAGE_ENGINE */
   }
   its.rewind ();
  
@@ -833,16 +937,32 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
     goto abort;
   }
 
-  /*
-    Fill in the given fields and dump it to the table file
-  */
-  bzero((char*) &info,sizeof(info));
-  info.ignore= ignore;
-  info.handle_duplicates=duplic;
-  info.update_fields= &update_fields;
-  info.update_values= &update_values;
-  info.view= (table_list->view ? table_list : 0);
-  info.table_list= table_list;
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  if (can_prune_partitions != partition_info::PRUNE_NO)
+  {
+      /*
+      Only lock the partitions we will insert into.
+      And also only read from those partitions (duplicates etc.).
+      If explicit partition selection 'INSERT INTO t PARTITION (p1)' is used,
+      the new set of read/lock partitions is the intersection of read/lock
+      partitions and used partitions, i.e only the partitions that exists in
+      both sets will be marked for read/lock.
+      It is also safe for REPLACE, since all potentially conflicting records
+      always belong to the same partition as the one which we try to
+      insert a row. This is because ALL unique/primary keys must
+      include ALL partitioning columns.
+      */
+      bitmap_intersect(&table->part_info->read_partitions,
+          &used_partitions);
+      bitmap_intersect(&table->part_info->lock_partitions,
+          &used_partitions);
+  }
+#endif /* WITH_PARTITION_STORAGE_ENGINE */
+
+  /* Lock the tables now if not delayed/already locked. */
+  if (!is_locked &&
+      lock_tables(thd, table_list, thd->lex->table_count, 0))
+      DBUG_RETURN(true);
 
   /*
     Count warnings for all inserts.
@@ -858,7 +978,7 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
 
 #ifdef HAVE_REPLICATION
   if (thd->rgi_slave &&
-      (info.handle_duplicates == DUP_UPDATE) &&
+      (info.get_duplicate_handling() == DUP_UPDATE) &&
       (table->next_number_field != NULL) &&
       rpl_master_has_bug(thd->rgi_slave->rli, 24432, TRUE, NULL, NULL))
     goto abort;
@@ -969,7 +1089,7 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
         {
           if (values_list.elements != 1 && ! thd->is_error())
           {
-            info.records++;
+            info.stats.records++;
             continue;
           }
           /*
@@ -1017,7 +1137,7 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
         {
           if (values_list.elements != 1 && ! thd->is_error())
 	  {
-	    info.records++;
+	    info.stats.records++;
 	    continue;
 	  }
 	  error=1;
@@ -1066,7 +1186,7 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
       }
       else
 #endif
-        error=write_record(thd, table ,&info);
+        error=write_record(thd, table ,&info, &update);
       if (unlikely(error))
         break;
       thd->get_stmt_da()->inc_current_row_for_warning();
@@ -1088,7 +1208,7 @@ values_loop_end:
   {
     if (likely(!error))
     {
-      info.copied=values_list.elements;
+      info.stats.copied=values_list.elements;
       end_delayed_insert(thd);
     }
   }
@@ -1111,7 +1231,7 @@ values_loop_end:
 
     transactional_table= table->file->has_transactions();
 
-    if (likely(changed= (info.copied || info.deleted || info.updated)))
+    if (likely(changed= (info.stats.copied || info.stats.deleted || info.stats.updated)))
     {
       /*
         Invalidate the table in the query cache if something changed.
@@ -1207,7 +1327,7 @@ values_loop_end:
     thd->first_successful_insert_id_in_cur_stmt :
     (thd->arg_of_last_insert_id_function ?
      thd->first_successful_insert_id_in_prev_stmt :
-     ((table->next_number_field && info.copied) ?
+     ((table->next_number_field && info.stats.copied) ?
      table->next_number_field->val_int() : 0));
   table->next_number_field=0;
   thd->count_cuted_fields= CHECK_FIELD_IGNORE;
@@ -1226,26 +1346,26 @@ values_loop_end:
   if ((iteration * values_list.elements) == 1 && (!(thd->variables.option_bits & OPTION_WARNINGS) ||
 				    !thd->cuted_fields))
   {
-    my_ok(thd, info.copied + info.deleted +
+    my_ok(thd, info.stats.copied + info.stats.deleted +
                ((thd->client_capabilities & CLIENT_FOUND_ROWS) ?
-                info.touched : info.updated),
+                info.stats.touched : info.stats.updated),
           id);
   }
   else
   {
     char buff[160];
     ha_rows updated=((thd->client_capabilities & CLIENT_FOUND_ROWS) ?
-                     info.touched : info.updated);
+                     info.stats.touched : info.stats.updated);
     if (ignore)
-      sprintf(buff, ER_THD(thd, ER_INSERT_INFO), (ulong) info.records,
+      sprintf(buff, ER_THD(thd, ER_INSERT_INFO), (ulong) info.stats.records,
 	      (lock_type == TL_WRITE_DELAYED) ? (ulong) 0 :
-	      (ulong) (info.records - info.copied),
+	      (ulong) (info.stats.records - info.stats.copied),
               (long) thd->get_stmt_da()->current_statement_warn_count());
     else
-      sprintf(buff, ER_THD(thd, ER_INSERT_INFO), (ulong) info.records,
-	      (ulong) (info.deleted + updated),
+      sprintf(buff, ER_THD(thd, ER_INSERT_INFO), (ulong) info.stats.records,
+	      (ulong) (info.stats.deleted + updated),
               (long) thd->get_stmt_da()->current_statement_warn_count());
-    ::my_ok(thd, info.copied + info.deleted + updated, id, buff);
+    ::my_ok(thd, info.stats.copied + info.stats.deleted + updated, id, buff);
   }
   thd->abort_on_warning= 0;
   if (thd->lex->current_select->first_cond_optimization)
@@ -1680,7 +1800,7 @@ int vers_insert_history_row(TABLE *table)
 */
 
 
-int write_record(THD *thd, TABLE *table,COPY_INFO *info)
+int write_record(THD *thd, TABLE *table, COPY_INFO *info, COPY_INFO *update)
 {
   int error, trg_error= 0;
   char *key=0;
@@ -1688,14 +1808,17 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
   ulonglong prev_insert_id= table->file->next_insert_id;
   ulonglong insert_id_for_cur_row= 0;
   ulonglong prev_insert_id_for_cur_row= 0;
+  const enum_duplicates duplicate_handling = info->get_duplicate_handling();
+  const bool ignore_errors = info->get_ignore_errors();
   DBUG_ENTER("write_record");
 
-  info->records++;
+  info->stats.records++;
   save_read_set=  table->read_set;
   save_write_set= table->write_set;
+  //info->set_function_defaults(table);
 
-  if (info->handle_duplicates == DUP_REPLACE ||
-      info->handle_duplicates == DUP_UPDATE)
+  if (duplicate_handling == DUP_REPLACE ||
+      duplicate_handling == DUP_UPDATE)
   {
     while (unlikely(error=table->file->ha_write_row(table->record[0])))
     {
@@ -1723,7 +1846,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
           key error. In this we ignore error if ignore flag is set, otherwise
           report error as usual. We will not do any duplicate key processing.
         */
-        if (info->ignore)
+        if (ignore_errors)
         {
           table->file->print_error(error, MYF(ME_JUST_WARNING));
           goto ok_or_after_trg_err; /* Ignoring a not fatal error, return 0 */
@@ -1744,7 +1867,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
 	was used.  This ensures that we don't get a problem when the
 	whole range of the key has been used.
       */
-      if (info->handle_duplicates == DUP_REPLACE &&
+      if (duplicate_handling == DUP_REPLACE &&
           table->next_number_field &&
           key_nr == table->s->next_number_index &&
 	  (insert_id_for_cur_row > 0))
@@ -1788,7 +1911,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
         table->update_virtual_fields(table->file, VCOL_UPDATE_FOR_REPLACE);
         table->move_fields(table->field, table->record[0], table->record[1]);
       }
-      if (info->handle_duplicates == DUP_UPDATE)
+      if (duplicate_handling == DUP_UPDATE)
       {
         int res= 0;
         /*
@@ -1806,12 +1929,11 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
           change per row. Thus, we have to do reset_default_fields() per row.
           Twice (before insert and before update).
         */
-        DBUG_ASSERT(info->update_fields->elements ==
-                    info->update_values->elements);
+        DBUG_ASSERT(update->get_changed_columns()->elements == update->update_values->elements);
         if (fill_record_n_invoke_before_triggers(thd, table,
-                                                 *info->update_fields,
-                                                 *info->update_values,
-                                                 info->ignore,
+                                                 *update->get_changed_columns(),
+                                                 *update->update_values,
+                                                 ignore_errors,
                                                  TRG_EVENT_UPDATE))
           goto before_trg_err;
 
@@ -1826,26 +1948,30 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
         */
         if (different_records && table->default_field)
         {
-          if (table->update_default_fields(1, info->ignore))
+          if (table->update_default_fields(1, ignore_errors))
             goto err;
         }
 
         /* CHECK OPTION for VIEW ... ON DUPLICATE KEY UPDATE ... */
-        res= info->table_list->view_check_option(table->in_use, info->ignore);
-        if (res == VIEW_CHECK_SKIP)
-          goto ok_or_after_trg_err;
-        if (res == VIEW_CHECK_ERROR)
-          goto before_trg_err;
+        TABLE_LIST *inserted_view = table->pos_in_table_list->belong_to_view;
+        if (inserted_view != NULL)
+        {
+            res = inserted_view->view_check_option(thd, ignore_errors);
+            if (res == VIEW_CHECK_SKIP)
+                goto ok_or_after_trg_err;
+            if (res == VIEW_CHECK_ERROR)
+                goto before_trg_err;
+        }
 
         table->file->restore_auto_increment(prev_insert_id);
-        info->touched++;
+        info->stats.touched++;
         if (different_records)
         {
           if (unlikely(error=table->file->ha_update_row(table->record[1],
                                                         table->record[0])) &&
               error != HA_ERR_RECORD_IS_THE_SAME)
           {
-            if (info->ignore &&
+            if (ignore_errors &&
                 !table->file->is_fatal_error(error, HA_CHECK_ALL))
             {
               if (!(thd->variables.old_behavior &
@@ -1858,7 +1984,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
 
           if (error != HA_ERR_RECORD_IS_THE_SAME)
           {
-            info->updated++;
+            info->stats.updated++;
             if (table->versioned())
             {
               if (table->versioned(VERS_TIMESTAMP))
@@ -1874,7 +2000,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
                 }
                 restore_record(table, record[2]);
               }
-              info->copied++;
+              info->stats.copied++;
             }
           }
           else
@@ -1892,7 +2018,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
           trg_error= (table->triggers &&
                       table->triggers->process_triggers(thd, TRG_EVENT_UPDATE,
                                                         TRG_ACTION_AFTER, TRUE));
-          info->copied++;
+          info->stats.copied++;
         }
 
         /*
@@ -1946,7 +2072,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
             goto err;
           if (likely(!error))
           {
-            info->deleted++;
+            info->stats.deleted++;
             if (table->versioned(VERS_TIMESTAMP))
             {
               store_record(table, record[2]);
@@ -1987,9 +2113,9 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
           if (unlikely(error))
             goto err;
           if (!table->versioned(VERS_TIMESTAMP))
-            info->deleted++;
+            info->stats.deleted++;
           else
-            info->updated++;
+            info->stats.updated++;
           if (!table->file->has_transactions())
             thd->transaction.stmt.modified_non_trans_table= TRUE;
           if (table->triggers &&
@@ -2027,7 +2153,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
   else if (unlikely((error=table->file->ha_write_row(table->record[0]))))
   {
     DEBUG_SYNC(thd, "write_row_noreplace");
-    if (!info->ignore ||
+    if (!ignore_errors ||
         table->file->is_fatal_error(error, HA_CHECK_ALL))
       goto err;
     if (!(thd->variables.old_behavior &
@@ -2038,7 +2164,7 @@ int write_record(THD *thd, TABLE *table,COPY_INFO *info)
   }
 
 after_trg_n_copied_inc:
-  info->copied++;
+  info->stats.copied++;
   thd->record_first_successful_insert_id_in_cur_stmt(table->file->insert_id_for_cur_row);
   trg_error= (table->triggers &&
               table->triggers->process_triggers(thd, TRG_EVENT_INSERT,
@@ -2151,7 +2277,7 @@ public:
     Access to handler_thread_initialized is protected by di->mutex.
   */
   bool handler_thread_initialized;
-  COPY_INFO info;
+  Delayable_insert_operation d_info;
   I_List<delayed_row> rows;
   ulong group_count;
   TABLE_LIST table_list;			// Argument
@@ -2185,7 +2311,6 @@ public:
     bzero((char*) &table_list, sizeof(table_list));	// Safety
     thd.system_thread= SYSTEM_THREAD_DELAYED_INSERT;
     thd.security_ctx->host_or_ip= "";
-    bzero((char*) &info,sizeof(info));
     mysql_mutex_init(key_delayed_insert_mutex, &mutex, MY_MUTEX_INIT_FAST);
     mysql_cond_init(key_delayed_insert_cond, &cond, NULL);
     mysql_cond_init(key_delayed_insert_cond_client, &cond_client, NULL);
@@ -3348,22 +3473,23 @@ bool Delayed_insert::handle_inserts(void)
       thd.force_one_auto_inc_interval(row->forced_insert_id);
     }
 
-    info.ignore= row->ignore;
-    info.handle_duplicates= row->dup;
-    if (info.ignore ||
-	info.handle_duplicates != DUP_ERROR)
+    d_info.set_dup_and_ignore(row->dup, row->ignore);
+    const enum_duplicates duplicate_handling = d_info.get_duplicate_handling();
+   
+    if (d_info.get_ignore_errors() ||
+        duplicate_handling != DUP_ERROR)
     {
       table->file->extra(HA_EXTRA_IGNORE_DUP_KEY);
       using_ignore=1;
     }
-    if (info.handle_duplicates == DUP_REPLACE &&
+    if (duplicate_handling == DUP_REPLACE &&
         (!table->triggers ||
          !table->triggers->has_delete_triggers()))
     {
       table->file->extra(HA_EXTRA_WRITE_CAN_REPLACE);
       using_opt_replace= 1;
     }
-    if (info.handle_duplicates == DUP_UPDATE)
+    if (duplicate_handling == DUP_UPDATE)
       table->file->extra(HA_EXTRA_INSERT_WITH_UPDATE);
     thd.clear_error(); // reset error for binlog
 
@@ -3379,9 +3505,9 @@ bool Delayed_insert::handle_inserts(void)
                                               VCOL_UPDATE_FOR_WRITE);
     }
 
-    if (unlikely(tmp_error) || unlikely(write_record(&thd, table, &info)))
+    if (unlikely(tmp_error) || unlikely(write_record(&thd, table, &d_info, NULL)))
     {
-      info.error_count++;				// Ignore errors
+      d_info.stats.error_count++;               // Ignore errors
       thread_safe_increment(delayed_insert_errors,&LOCK_delayed_status);
       row->log_query = 0;
     }
@@ -3597,15 +3723,18 @@ select_insert::select_insert(THD *thd_arg, TABLE_LIST *table_list_par,
   select_result_interceptor(thd_arg),
   table_list(table_list_par), table(table_par), fields(fields_par),
   autoinc_value_of_last_inserted_row(0),
+    info(COPY_INFO::INSERT_OPERATION,
+        fields_par,
+        // manage_defaults
+        (fields_par == NULL || fields_par->elements != 0),
+        duplic,
+        ignore_check_option_errors),
+    update(COPY_INFO::UPDATE_OPERATION,
+        update_fields,
+        update_values),
   insert_into_view(table_list_par && table_list_par->view != 0)
 {
-  bzero((char*) &info,sizeof(info));
-  info.handle_duplicates= duplic;
-  info.ignore= ignore_check_option_errors;
-  info.update_fields= update_fields;
-  info.update_values= update_values;
-  info.view= (table_list_par->view ? table_list_par : 0);
-  info.table_list= table_list_par;
+    DBUG_ASSERT(fields_par != NULL);
 }
 
 
@@ -3616,6 +3745,8 @@ select_insert::prepare(List<Item> &values, SELECT_LEX_UNIT *u)
   int res;
   table_map map= 0;
   SELECT_LEX *lex_current_select_save= lex->current_select;
+  const enum_duplicates duplicate_handling = info.get_duplicate_handling();
+  const bool ignore_errors = info.get_ignore_errors();
   DBUG_ENTER("select_insert::prepare");
 
   unit= u;
@@ -3635,12 +3766,12 @@ select_insert::prepare(List<Item> &values, SELECT_LEX_UNIT *u)
   if (!res && fields->elements)
   {
     bool saved_abort_on_warning= thd->abort_on_warning;
-    thd->abort_on_warning= !info.ignore && thd->is_strict_mode();
+    thd->abort_on_warning= !ignore_errors && thd->is_strict_mode();
     res= check_that_all_fields_are_given_values(thd, table_list->table, table_list);
     thd->abort_on_warning= saved_abort_on_warning;
   }
 
-  if (info.handle_duplicates == DUP_UPDATE && !res)
+  if (duplicate_handling == DUP_UPDATE && !res)
   {
     Name_resolution_context *context= &lex->select_lex.context;
     Name_resolution_context_state ctx_state;
@@ -3655,7 +3786,7 @@ select_insert::prepare(List<Item> &values, SELECT_LEX_UNIT *u)
     lex->select_lex.no_wrap_view_item= TRUE;
     res= res ||
       check_update_fields(thd, context->table_list,
-                          *info.update_fields, *info.update_values,
+                          *update.get_changed_columns(), *update.update_values,
                           /*
                             In INSERT SELECT ON DUPLICATE KEY UPDATE col=x
                             'x' can legally refer to a non-inserted table.
@@ -3680,7 +3811,7 @@ select_insert::prepare(List<Item> &values, SELECT_LEX_UNIT *u)
       table_list->next_name_resolution_table= 
         ctx_state.get_first_name_resolution_table();
 
-    res= res || setup_fields(thd, Ref_ptr_array(), *info.update_values,
+    res= res || setup_fields(thd, Ref_ptr_array(), *update.update_values,
                              MARK_COLUMNS_READ, 0, NULL, 0);
     if (!res)
     {
@@ -3690,7 +3821,7 @@ select_insert::prepare(List<Item> &values, SELECT_LEX_UNIT *u)
         order to get correct values from those fields when the select
         employs a temporary table.
       */
-      List_iterator<Item> li(*info.update_values);
+      List_iterator<Item> li(*update.update_values);
       Item *item;
 
       while ((item= li++))
@@ -3743,21 +3874,21 @@ select_insert::prepare(List<Item> &values, SELECT_LEX_UNIT *u)
 
 #ifdef HAVE_REPLICATION
   if (thd->rgi_slave &&
-      (info.handle_duplicates == DUP_UPDATE) &&
+      (duplicate_handling == DUP_UPDATE) &&
       (table->next_number_field != NULL) &&
       rpl_master_has_bug(thd->rgi_slave->rli, 24432, TRUE, NULL, NULL))
     DBUG_RETURN(1);
 #endif
 
   thd->cuted_fields=0;
-  if (info.ignore || info.handle_duplicates != DUP_ERROR)
+  if (ignore_errors || duplicate_handling != DUP_ERROR)
     table->file->extra(HA_EXTRA_IGNORE_DUP_KEY);
-  if (info.handle_duplicates == DUP_REPLACE &&
+  if (duplicate_handling == DUP_REPLACE &&
       (!table->triggers || !table->triggers->has_delete_triggers()))
     table->file->extra(HA_EXTRA_WRITE_CAN_REPLACE);
-  if (info.handle_duplicates == DUP_UPDATE)
+  if (duplicate_handling == DUP_UPDATE)
     table->file->extra(HA_EXTRA_INSERT_WITH_UPDATE);
-  thd->abort_on_warning= !info.ignore && thd->is_strict_mode();
+  thd->abort_on_warning= !ignore_errors && thd->is_strict_mode();
   res= (table_list->prepare_where(thd, 0, TRUE) ||
         table_list->prepare_check_option(thd));
 
@@ -3837,7 +3968,7 @@ int select_insert::send_data(List<Item> &values)
   thd->count_cuted_fields= CHECK_FIELD_WARN;	// Calculate cuted fields
   store_values(values);
   if (table->default_field &&
-      unlikely(table->update_default_fields(0, info.ignore)))
+      unlikely(table->update_default_fields(0, update.get_ignore_errors())))
     DBUG_RETURN(1);
   thd->count_cuted_fields= CHECK_FIELD_ERROR_FOR_NULL;
   if (unlikely(thd->is_error()))
@@ -3849,7 +3980,7 @@ int select_insert::send_data(List<Item> &values)
   table->vers_write= table->versioned();
   if (table_list)                               // Not CREATE ... SELECT
   {
-    switch (table_list->view_check_option(thd, info.ignore)) {
+    switch (table_list->view_check_option(thd, info.get_ignore_errors())) {
     case VIEW_CHECK_SKIP:
       DBUG_RETURN(0);
     case VIEW_CHECK_ERROR:
@@ -3857,13 +3988,13 @@ int select_insert::send_data(List<Item> &values)
     }
   }
 
-  error= write_record(thd, table, &info);
+  error = write_record(thd, table, &info, &update);
   table->vers_write= table->versioned();
   table->auto_increment_field_not_null= FALSE;
   
   if (likely(!error))
   {
-    if (table->triggers || info.handle_duplicates == DUP_UPDATE)
+    if (table->triggers || info.get_duplicate_handling() == DUP_UPDATE)
     {
       /*
         Restore fields of the record since it is possible that they were
@@ -3931,7 +4062,7 @@ bool select_insert::prepare_eof()
   table->file->extra(HA_EXTRA_NO_IGNORE_DUP_KEY);
   table->file->extra(HA_EXTRA_WRITE_CANNOT_REPLACE);
 
-  if (likely((changed= (info.copied || info.deleted || info.updated))))
+  if (likely((changed= (info.stats.copied || info.stats.deleted || info.stats.updated))))
   {
     /*
       We must invalidate the table in the query cache before binlog writing
@@ -3988,24 +4119,24 @@ bool select_insert::send_ok_packet() {
 
   DBUG_ENTER("select_insert::send_ok_packet");
 
-  if (info.ignore)
+  if (info.get_ignore_errors())
     my_snprintf(message, sizeof(message), ER(ER_INSERT_INFO),
-                (ulong) info.records, (ulong) (info.records - info.copied),
+                (ulong) info.stats.records, (ulong) (info.stats.records - info.stats.copied),
                 (long) thd->get_stmt_da()->current_statement_warn_count());
   else
     my_snprintf(message, sizeof(message), ER(ER_INSERT_INFO),
-                (ulong) info.records, (ulong) (info.deleted + info.updated),
+                (ulong) info.stats.records, (ulong) (info.stats.deleted + info.stats.updated),
                 (long) thd->get_stmt_da()->current_statement_warn_count());
 
-  row_count= info.copied + info.deleted +
+  row_count= info.stats.copied + info.stats.deleted +
     ((thd->client_capabilities & CLIENT_FOUND_ROWS) ?
-     info.touched : info.updated);
+     info.stats.touched : info.stats.updated);
 
   id= (thd->first_successful_insert_id_in_cur_stmt > 0) ?
     thd->first_successful_insert_id_in_cur_stmt :
     (thd->arg_of_last_insert_id_function ?
      thd->first_successful_insert_id_in_prev_stmt :
-     (info.copied ? autoinc_value_of_last_inserted_row : 0));
+     (info.stats.copied ? autoinc_value_of_last_inserted_row : 0));
 
   ::my_ok(thd, row_count, id, message);
 
@@ -4053,7 +4184,7 @@ void select_insert::abort_result_set() {
       If table creation failed, the number of rows modified will also be
       zero, so no check for that is made.
     */
-    changed= (info.copied || info.deleted || info.updated);
+    changed= (info.stats.copied || info.stats.deleted || info.stats.updated);
     transactional_table= table->file->has_transactions();
     if (thd->transaction.stmt.modified_non_trans_table ||
         thd->log_current_statement)
@@ -4458,16 +4589,16 @@ select_create::prepare(List<Item> &_values, SELECT_LEX_UNIT *u)
 
   restore_record(table,s->default_values);      // Get empty record
   thd->cuted_fields=0;
-  if (info.ignore || info.handle_duplicates != DUP_ERROR)
+  if (info.get_ignore_errors() || info.get_duplicate_handling()!= DUP_ERROR)
     table->file->extra(HA_EXTRA_IGNORE_DUP_KEY);
-  if (info.handle_duplicates == DUP_REPLACE &&
+  if (info.get_duplicate_handling() == DUP_REPLACE &&
       (!table->triggers || !table->triggers->has_delete_triggers()))
     table->file->extra(HA_EXTRA_WRITE_CAN_REPLACE);
-  if (info.handle_duplicates == DUP_UPDATE)
+  if (info.get_duplicate_handling() == DUP_UPDATE)
     table->file->extra(HA_EXTRA_INSERT_WITH_UPDATE);
   if (thd->locked_tables_mode <= LTM_LOCK_TABLES)
     table->file->ha_start_bulk_insert((ha_rows) 0);
-  thd->abort_on_warning= !info.ignore && thd->is_strict_mode();
+  thd->abort_on_warning= !info.get_ignore_errors() && thd->is_strict_mode();
   if (check_that_all_fields_are_given_values(thd, table, table_list))
     DBUG_RETURN(1);
   table->mark_columns_needed_for_insert();

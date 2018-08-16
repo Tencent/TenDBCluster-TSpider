@@ -32,15 +32,42 @@
 #include "sql_cte.h"
 
 bool mysql_union(THD *thd, LEX *lex, select_result *result,
-                 SELECT_LEX_UNIT *unit, ulong setup_tables_done_option)
+    SELECT_LEX_UNIT *unit, ulong setup_tables_done_option)
 {
-  DBUG_ENTER("mysql_union");
-  bool res;
-  if (!(res= unit->prepare(unit->derived, result, SELECT_NO_UNLOCK |
-                           setup_tables_done_option)))
-    res= unit->exec();
-  res|= unit->cleanup();
-  DBUG_RETURN(res);
+    bool res;
+    DBUG_ENTER("mysql_union");
+
+    res = unit->prepare(unit->derived, result, SELECT_NO_UNLOCK |
+        setup_tables_done_option);
+    if (res)
+        goto err;
+
+    /*
+    Tables are not locked at this point, it means that we have delayed
+    this step until after prepare stage (i.e. this moment). This allows to
+    do better partition pruning and avoid locking unused partitions.
+    As a consequence, in such a case, prepare stage can rely only on
+    metadata about tables used and not data from them.
+    We need to lock tables now in order to proceed with the remaning
+    stages of query optimization and execution.
+    */
+    DBUG_ASSERT(!thd->lex->is_query_tables_locked());
+    if (lock_tables(thd, lex->query_tables, lex->table_count, 0))
+        goto err;
+
+    /*
+    Tables must be locked before storing the query in the query cache.
+    Transactional engines must been signalled that the statement started,
+    which external_lock signals.
+    */
+    query_cache_store_query(thd, thd->lex->query_tables);
+
+    unit->exec();
+    res |= unit->cleanup();
+    DBUG_RETURN(res);
+err:
+    (void)unit->cleanup();
+    DBUG_RETURN(true);
 }
 
 
@@ -121,11 +148,11 @@ int select_unit::send_data(List<Item> &values)
     table->null_catch_flags= CHECK_ROW_FOR_NULLS_TO_REJECT;
   if (intersect_mark)
   {
-    fill_record(thd, table, table->field + 1, values, TRUE, FALSE);
+    fill_record(thd, table, table->field + 1, values, TRUE, FALSE, NULL);
     table->field[0]->store((ulonglong) curr_step, 1);
   }
   else
-    fill_record(thd, table, table->field, values, TRUE, FALSE);
+    fill_record(thd, table, table->field, values, TRUE, FALSE, NULL);
   if (unlikely(thd->is_error()))
   {
     rc= 1;
@@ -546,7 +573,7 @@ int select_union_direct::send_data(List<Item> &items)
   }
 
   send_records++;
-  fill_record(thd, table, table->field, items, true, false);
+  fill_record(thd, table, table->field, items, true, false, NULL);
   if (unlikely(thd->is_error()))
     return true; /* purecov: inspected */
 
