@@ -1657,6 +1657,7 @@ public:
   virtual bool register_field_in_write_map(void *arg) { return 0; }
   virtual bool register_field_in_bitmap(void *arg) { return 0; }
   virtual bool update_table_bitmaps_processor(void *arg) { return 0; }
+  virtual bool remove_column_from_bitmap(void *arg) { return false; }
 
   virtual bool enumerate_field_refs_processor(void *arg) { return 0; }
   virtual bool mark_as_eliminated_processor(void *arg) { return 0; }
@@ -3029,6 +3030,7 @@ public:
   bool collect_item_field_processor(void * arg);
   bool add_field_to_set_processor(void * arg);
   bool find_item_in_field_list_processor(void *arg);
+  bool remove_column_from_bitmap(void *argument);
   bool register_field_in_read_map(void *arg);
   bool register_field_in_write_map(void *arg);
   bool register_field_in_bitmap(void *arg);

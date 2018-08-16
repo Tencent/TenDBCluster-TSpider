@@ -4187,7 +4187,9 @@ mysql_execute_command(THD *thd)
       /* Copy temporarily the statement flags to thd for lock_table_names() */
       uint save_thd_create_info_options= thd->lex->create_info.options;
       thd->lex->create_info.options|= create_info.options;
-      res= open_and_lock_tables(thd, create_info, lex->query_tables, TRUE, 0);
+      /*res= open_and_lock_tables(thd, create_info, lex->query_tables, TRUE, 0);*/
+      res = open_normal_and_derived_tables(thd, all_tables, 0, DT_INIT | DT_PREPARE);
+
       thd->lex->create_info.options= save_thd_create_info_options;
       if (unlikely(res))
       {
@@ -4805,7 +4807,8 @@ end_with_restore_list:
 
     unit->set_limit(select_lex);
 
-    if (!(res=open_and_lock_tables(thd, all_tables, TRUE, 0)))
+    if (!(res = open_normal_and_derived_tables(thd, all_tables, 0, DT_INIT | DT_PREPARE)))
+    /*if (!(res=open_and_lock_tables(thd, all_tables, TRUE, 0)))*/
     {
       MYSQL_INSERT_SELECT_START(thd->query());
       /*
@@ -4962,7 +4965,8 @@ end_with_restore_list:
       goto error;
 
     THD_STAGE_INFO(thd, stage_init);
-    if ((res= open_and_lock_tables(thd, all_tables, TRUE, 0)))
+    /*if ((res= open_and_lock_tables(thd, all_tables, TRUE, 0)))*/
+    if ((res = open_normal_and_derived_tables(thd, all_tables, 0, DT_INIT | DT_PREPARE)))
       break;
 
     MYSQL_MULTI_DELETE_START(thd->query());
@@ -6467,7 +6471,7 @@ static bool execute_sqlcom_select(THD *thd, TABLE_LIST *all_tables)
                                      (ulonglong) thd->variables.select_limit);
   }
 
-  if (!(res = open_normal_and_derived_tables(thd, all_tables, 0, DT_PREPARE)))
+  if (!(res = open_normal_and_derived_tables(thd, all_tables, 0, DT_INIT | DT_PREPARE)))
   //if (!(res= open_and_lock_tables(thd, all_tables, TRUE, 0)))
   {
     if (lex->describe)

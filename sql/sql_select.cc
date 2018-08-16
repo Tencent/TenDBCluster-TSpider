@@ -11467,7 +11467,7 @@ end_sj_materialize(JOIN *join, JOIN_TAB *join_tab, bool end_of_records)
       if (item->is_null())
         DBUG_RETURN(NESTED_LOOP_OK);
     }
-    fill_record(thd, table, table->field, sjm->sjm_table_cols, TRUE, FALSE);
+    fill_record(thd, table, table->field, sjm->sjm_table_cols, TRUE, FALSE, NULL);
     if (unlikely(thd->is_error()))
       DBUG_RETURN(NESTED_LOOP_ERROR); /* purecov: inspected */
     if (unlikely((error= table->file->ha_write_tmp_row(table->record[0]))))
@@ -25817,9 +25817,27 @@ bool mysql_explain_union(THD *thd, SELECT_LEX_UNIT *unit, select_result *result)
       unit->fake_select_lex->type= unit_operation_text[unit->common_op()];
       unit->fake_select_lex->options|= SELECT_DESCRIBE;
     }
-    if (!(res= unit->prepare(unit->derived, result,
-                             SELECT_NO_UNLOCK | SELECT_DESCRIBE)))
-      res= unit->exec();
+
+
+    res = unit->prepare(unit->derived, result,
+        SELECT_NO_UNLOCK | SELECT_DESCRIBE);
+
+    if (res)
+        DBUG_RETURN(res);
+
+    /*
+    If tables are not locked at this point, it means that we have delayed
+    this step until after prepare stage (now), in order to do better
+    partition pruning.
+
+    We need to lock tables now in order to proceed with the remaning
+    stages of query optimization.
+    */
+    if (!thd->lex->is_query_tables_locked() &&
+        lock_tables(thd, thd->lex->query_tables, thd->lex->table_count, 0))
+        DBUG_RETURN(true);
+    
+    res= unit->exec();
   }
   else
   {

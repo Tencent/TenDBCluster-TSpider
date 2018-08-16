@@ -18,10 +18,10 @@
 
 #include "sql_class.h"                          /* enum_duplicates */
 #include "sql_list.h"
+#include "sql_data_change.h"
 
 /* Instead of including sql_lex.h we add this typedef here */
 typedef List<Item> List_item;
-typedef struct st_copy_info COPY_INFO;
 
 bool mysql_prepare_insert(THD *thd, TABLE_LIST *table_list, TABLE *table,
                           List<Item> &fields, List_item *values,
@@ -38,7 +38,7 @@ void upgrade_lock_type_for_insert(THD *thd, thr_lock_type *lock_type,
 int check_that_all_fields_are_given_values(THD *thd, TABLE *entry,
                                            TABLE_LIST *table_list);
 int vers_insert_history_row(TABLE *table);
-int write_record(THD *thd, TABLE *table, COPY_INFO *info);
+int write_record(THD *thd, TABLE *table, COPY_INFO *info, COPY_INFO *update);
 void kill_delayed_threads(void);
 
 #ifdef EMBEDDED_LIBRARY

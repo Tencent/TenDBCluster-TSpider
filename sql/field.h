@@ -975,6 +975,11 @@ public:
     return unireg_check == TIMESTAMP_DN_FIELD
         || unireg_check == TIMESTAMP_DNUN_FIELD;
   }
+  bool has_default_insert_unireg_check() const
+  {
+      return unireg_check == TIMESTAMP_UN_FIELD ||
+          unireg_check == TIMESTAMP_DNUN_FIELD;
+  }
 
   /*
     Mark the field as having a value supplied by the client, thus it should

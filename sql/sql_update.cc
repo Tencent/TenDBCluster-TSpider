@@ -353,8 +353,6 @@ int mysql_update(THD *thd,
     /* convert to multiupdate */
     DBUG_RETURN(2);
   }
-  if (lock_tables(thd, table_list, table_count, 0))
-    DBUG_RETURN(1);
 
   THD_STAGE_INFO(thd, stage_init_update);
   if (table_list->handle_derived(thd->lex, DT_MERGE_FOR_INSERT))
@@ -429,6 +427,22 @@ int mysql_update(THD *thd,
   switch_to_nullable_trigger_fields(fields, table);
   switch_to_nullable_trigger_fields(values, table);
 
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  if (prune_partitions(thd, table, conds))
+  {
+      free_underlaid_joins(thd, select_lex);
+
+      query_plan.set_no_partitions();
+      if (thd->lex->describe || thd->lex->analyze_stmt)
+          goto produce_explain_and_leave;
+
+      my_ok(thd);				// No matching records
+      DBUG_RETURN(0);
+  }
+#endif
+  if (lock_tables(thd, table_list, table_count, 0))
+      DBUG_RETURN(1);
+
   /* Apply the IN=>EXISTS transformation to all subqueries and optimize them */
   if (select_lex->optimize_unflattened_subqueries(false))
     DBUG_RETURN(TRUE);
@@ -453,20 +467,6 @@ int mysql_update(THD *thd,
   // Don't count on usage of 'only index' when calculating which key to use
   table->covering_keys.clear_all();
 
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-  if (prune_partitions(thd, table, conds))
-  {
-    free_underlaid_joins(thd, select_lex);
-
-    query_plan.set_no_partitions();
-    if (thd->lex->describe || thd->lex->analyze_stmt)
-      goto produce_explain_and_leave;
-
-    my_ok(thd);				// No matching records
-    DBUG_RETURN(0);
-  }
-#endif
-
   if (!(thd->security_ctx->master_access & SUPER_ACL))
   {
       if (opt_spider_transaction_one_shard && thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
@@ -490,6 +490,24 @@ int mysql_update(THD *thd,
           }
       }
   }
+
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  /*
+  Also try a second time after locking, to prune when subqueries and
+  stored programs can be evaluated.
+  */
+  if (prune_partitions(thd, table, conds))
+  {
+      free_underlaid_joins(thd, select_lex);
+
+      query_plan.set_no_partitions();
+      if (thd->lex->describe || thd->lex->analyze_stmt)
+          goto produce_explain_and_leave;
+
+      my_ok(thd);				// No matching records
+      DBUG_RETURN(0);
+  }
+#endif
 
   /* Update the table->file->stats.records number */
   table->file->info(HA_STATUS_VARIABLE | HA_STATUS_NO_LOCK);
@@ -2466,7 +2484,7 @@ int multi_update::send_data(List<Item> &not_used_values)
                   tmp_table_param[offset].func_count);
       fill_record(thd, tmp_table,
                   tmp_table->field + 1 + unupdated_check_opt_tables.elements,
-                  *values_for_table[offset], TRUE, FALSE);
+                  *values_for_table[offset], TRUE, FALSE, NULL);
 
       /* Write row, ignoring duplicated updates to a row */
       error= tmp_table->file->ha_write_tmp_row(tmp_table->record[0]);

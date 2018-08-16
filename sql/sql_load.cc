@@ -107,7 +107,7 @@ static bool wsrep_load_data_split(THD *thd, const TABLE *table,
   DBUG_ENTER("wsrep_load_data_split");
 
   if (!wsrep_load_data_splitting || !wsrep_on(thd)
-      || !info.records || (info.records % 10000)
+      || !info.stats.records || (info.stats.records % 10000)
       || !thd->transaction.stmt.ha_list
       || thd->transaction.stmt.ha_list->ht() != binlog_hton
       || !thd->transaction.stmt.ha_list->next()
@@ -345,6 +345,7 @@ int mysql_load(THD *thd, const sql_exchange *ex, TABLE_LIST *table_list,
   bool is_concurrent;
 #endif
   const char *db= table_list->db.str;		// This is never null
+  const String *escaped = ex->escaped;
   /*
     If path for file is not defined, we will use the current database.
     If this is not set, we will use the directory where the table to be
@@ -583,14 +584,16 @@ int mysql_load(THD *thd, const sql_exchange *ex, TABLE_LIST *table_list,
 
       DBUG_RETURN(TRUE);
   }
-
-  COPY_INFO info;
-  bzero((char*) &info,sizeof(info));
-  info.ignore= ignore;
-  info.handle_duplicates=handle_duplicates;
-  info.escape_char= (ex->escaped->length() && (ex->escaped_given() ||
-                    !(thd->variables.sql_mode & MODE_NO_BACKSLASH_ESCAPES)))
-                    ? (*ex->escaped)[0] : INT_MAX;
+  const int escape_char = (escaped->length() && (ex->escaped_given() ||
+      !(thd->variables.sql_mode & MODE_NO_BACKSLASH_ESCAPES)))
+      ? (*escaped)[0] : INT_MAX;
+  const bool manage_defaults = fields_vars.elements != 0;
+  COPY_INFO info(COPY_INFO::INSERT_OPERATION,
+      &fields_vars, &set_fields,
+      manage_defaults,
+      handle_duplicates, ignore, escape_char);
+  if (info.add_function_default_columns(table, table->write_set))
+      DBUG_RETURN(TRUE);
 
   READ_INFO read_info(thd, file, param,
                       *ex->field_term, *ex->line_start,
@@ -743,8 +746,8 @@ int mysql_load(THD *thd, const sql_exchange *ex, TABLE_LIST *table_list,
     goto err;
   }
   sprintf(name, ER_THD(thd, ER_LOAD_INFO),
-          (ulong) info.records, (ulong) info.deleted,
-	  (ulong) (info.records - info.copied),
+          (ulong) info.stats.records, (ulong) info.stats.deleted,
+	  (ulong) (info.stats.records - info.stats.copied),
           (long) thd->get_stmt_da()->current_statement_warn_count());
 
   if (thd->transaction.stmt.modified_non_trans_table)
@@ -796,9 +799,9 @@ int mysql_load(THD *thd, const sql_exchange *ex, TABLE_LIST *table_list,
 #endif /*!EMBEDDED_LIBRARY*/
 
   /* ok to client sent only after binlog write and engine commit */
-  my_ok(thd, info.copied + info.deleted, 0L, name);
+  my_ok(thd, info.stats.copied + info.stats.deleted, 0L, name);
 err:
-  DBUG_ASSERT(transactional_table || !(info.copied || info.deleted) ||
+  DBUG_ASSERT(transactional_table || !(info.stats.copied || info.stats.deleted) ||
               thd->transaction.stmt.modified_non_trans_table);
   table->file->ha_release_auto_increment();
   table->auto_increment_field_not_null= FALSE;
@@ -1011,7 +1014,7 @@ read_fixed_length(THD *thd, COPY_INFO &info, TABLE_LIST *table_list,
     }
 
     WSREP_LOAD_DATA_SPLIT(thd, table, info);
-    err= write_record(thd, table, &info);
+    err= write_record(thd, table, &info, NULL);
     table->auto_increment_field_not_null= FALSE;
     if (err)
       DBUG_RETURN(1);
@@ -1154,7 +1157,7 @@ read_sep_field(THD *thd, COPY_INFO &info, TABLE_LIST *table_list,
     }
 
     WSREP_LOAD_DATA_SPLIT(thd, table, info);
-    err= write_record(thd, table, &info);
+    err= write_record(thd, table, &info, NULL);
     table->auto_increment_field_not_null= FALSE;
     if (err)
       DBUG_RETURN(1);
@@ -1277,7 +1280,7 @@ read_xml_field(THD *thd, COPY_INFO &info, TABLE_LIST *table_list,
     }
     
     WSREP_LOAD_DATA_SPLIT(thd, table, info);
-    err= write_record(thd, table, &info);
+    err= write_record(thd, table, &info, NULL);
     table->auto_increment_field_not_null= false;
     if (err)
       DBUG_RETURN(1);
