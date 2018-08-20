@@ -308,7 +308,7 @@ bool mysql_delete(THD *thd, TABLE_LIST *table_list, COND *conds,
 
   create_explain_query(thd->lex, thd->mem_root);
  /* if (open_and_lock_tables(thd, table_list, TRUE, 0))*/
-  if (open_normal_and_derived_tables(thd, table_list, 0, DT_INIT | DT_PREPARE))
+  if (open_normal_and_derived_tables(thd, table_list, 0, DT_INIT))
     DBUG_RETURN(TRUE);
 
   THD_STAGE_INFO(thd, stage_init_update);

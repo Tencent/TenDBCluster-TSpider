@@ -791,7 +791,8 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
   }
   else
   {
-    if (open_normal_and_derived_tables(thd, table_list, 0, DT_INIT | DT_PREPARE))
+     /* if (open_and_lock_tables(thd, table_list, TRUE, 0))*/
+    if (open_normal_and_derived_tables(thd, table_list, 0, DT_INIT))
         DBUG_RETURN(true);
   }
 
