@@ -975,7 +975,7 @@ public:
     return unireg_check == TIMESTAMP_DN_FIELD
         || unireg_check == TIMESTAMP_DNUN_FIELD;
   }
-  bool has_default_insert_unireg_check() const
+  bool has_default_update_unireg_check() const
   {
       return unireg_check == TIMESTAMP_UN_FIELD ||
           unireg_check == TIMESTAMP_DNUN_FIELD;
@@ -4463,6 +4463,11 @@ public:
   {
     return unireg_check == Field::TIMESTAMP_DN_FIELD
         || unireg_check == Field::TIMESTAMP_DNUN_FIELD;
+  }
+  bool has_default_update_unireg_check() const
+  {
+      return unireg_check == Field::TIMESTAMP_UN_FIELD ||
+          unireg_check == Field::TIMESTAMP_DNUN_FIELD;
   }
 
   void set_type(const Column_definition &other)

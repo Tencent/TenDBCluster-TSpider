@@ -78,8 +78,8 @@ bool COPY_INFO::get_function_default_columns(TABLE *table)
   for (uint i= 0; i < table->s->fields; ++i)
   {
     Field *f= table->field[i];
-    if ((m_optype == INSERT_OPERATION && f->has_default_insert_unireg_check()) ||
-        (m_optype == UPDATE_OPERATION && f->has_default_now_unireg_check()))
+    if ((m_optype == INSERT_OPERATION && f->has_default_now_unireg_check()) ||
+        (m_optype == UPDATE_OPERATION && f->has_default_update_unireg_check()))
       bitmap_set_bit(m_function_default_columns, f->field_index);
   }
 
