@@ -2730,6 +2730,15 @@ TABLE *Delayed_insert::get_local_table(THD* client_thd)
     memdup_vcol(client_thd, (*field)->check_constraint);
     if (*org_field == found_next_number_field)
       (*field)->table->found_next_number_field= *field;
+
+    /*
+    The Field::new_field() method does not transfer unireg_check values to
+    the new Field object, and function defaults needed to be copied
+    here. Hence this must be done manually.
+    */
+    if ((*org_field)->has_default_now_unireg_check() ||
+        (*org_field)->has_default_update_unireg_check())
+        (*field)->unireg_check = (*org_field)->unireg_check;
   }
   *field=0;
 
@@ -2755,9 +2764,13 @@ TABLE *Delayed_insert::get_local_table(THD* client_thd)
   copy->lock_count= 0;
 
   /* Adjust bitmaps */
-  copy->def_read_set.bitmap= (my_bitmap_map*) bitmap;
-  copy->def_write_set.bitmap= ((my_bitmap_map*)
-                               (bitmap + share->column_bitmap_size));
+  //copy->def_read_set.bitmap= (my_bitmap_map*) bitmap;
+  //copy->def_write_set.bitmap= ((my_bitmap_map*)
+  //                             (bitmap + share->column_bitmap_size));
+
+  my_bitmap_init(&copy->def_read_set, (my_bitmap_map*)bitmap, table->def_read_set.n_bits, FALSE);
+  my_bitmap_init(&copy->def_write_set, (my_bitmap_map*)(bitmap + share->column_bitmap_size), table->def_write_set.n_bits, FALSE);
+
   bitmaps_used= 2;
   if (share->virtual_fields)
   {
