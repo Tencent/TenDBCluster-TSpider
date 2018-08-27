@@ -210,7 +210,7 @@ const char *compatible_mode_names[]=
 TYPELIB compatible_mode_typelib= {array_elements(compatible_mode_names) - 1,
                                   "", compatible_mode_names, NULL};
 
-#define MED_ENGINES "MRG_MyISAM, MRG_ISAM, CONNECT, OQGRAPH, SPIDER, VP, FEDERATED"
+#define MED_ENGINES "MRG_MyISAM, MRG_ISAM, CONNECT, OQGRAPH, VP, FEDERATED"
 
 static HASH ignore_table;
 
@@ -452,7 +452,7 @@ static struct my_option my_long_options[] =
    &opt_no_data, 0, GET_BOOL, NO_ARG, 0, 0, 0, 0, 0, 0},
   {"no-data-med", 0, "No row information for engines that "
    "Manage External Data (" MED_ENGINES ").", &opt_no_data_med,
-   &opt_no_data_med, 0, GET_BOOL, NO_ARG, 1, 0, 0, 0, 0, 0},
+   &opt_no_data_med, 0, GET_BOOL, NO_ARG, 0, 0, 0, 0, 0, 0},
   {"no-set-names", 'N', "Same as --skip-set-charset.",
    0, 0, 0, GET_NO_ARG, NO_ARG, 0, 0, 0, 0, 0, 0},
   {"opt", OPT_OPTIMIZE,
