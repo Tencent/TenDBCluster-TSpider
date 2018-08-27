@@ -12,6 +12,9 @@
 # Change Date:                                                                 #
 # Change:                                                                      #
 ################################################################################
+-- disable_query_log
+set sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER';
+-- enable_query_log
 
 --enable_warnings
 set sql_warnings = 1;

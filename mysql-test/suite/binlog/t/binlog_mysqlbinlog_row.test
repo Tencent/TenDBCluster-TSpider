@@ -1,6 +1,7 @@
 --source include/have_log_bin.inc
 --source include/have_binlog_format_row.inc
 --source include/have_ucs2.inc 
+--source include/set_sql_mode.inc
 
 --echo #
 --echo # Preparatory cleanup.

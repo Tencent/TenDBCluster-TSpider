@@ -2,6 +2,21 @@ SELECT * FROM information_schema.columns
 WHERE table_schema = 'mysql'
 ORDER BY table_schema, table_name, column_name;
 TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	COLUMN_NAME	ORDINAL_POSITION	COLUMN_DEFAULT	IS_NULLABLE	DATA_TYPE	CHARACTER_MAXIMUM_LENGTH	CHARACTER_OCTET_LENGTH	NUMERIC_PRECISION	NUMERIC_SCALE	DATETIME_PRECISION	CHARACTER_SET_NAME	COLLATION_NAME	COLUMN_TYPE	COLUMN_KEY	EXTRA	PRIVILEGES	COLUMN_COMMENT	IS_GENERATED	GENERATION_EXPRESSION
+def	mysql	alter_log	affected_rows	11	NULL	NO	bigint	NULL	NULL	19	0	NULL	NULL	NULL	bigint(20)			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	data_free	14	NULL	NO	bigint	NULL	NULL	20	0	NULL	NULL	NULL	bigint(20) unsigned			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	data_length	12	NULL	NO	bigint	NULL	NULL	20	0	NULL	NULL	NULL	bigint(20) unsigned			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	db	5	NULL	NO	varchar	64	192	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(64)			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	engine	7	NULL	NO	varchar	64	192	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(64)			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	index_length	13	NULL	NO	bigint	NULL	NULL	20	0	NULL	NULL	NULL	bigint(20) unsigned			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	is_partitoned	9	NULL	NO	int	NULL	NULL	10	0	NULL	NULL	NULL	int(11)			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	lock_time	4	NULL	YES	time	NULL	NULL	NULL	NULL	0	NULL	NULL	time			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	query_time	3	NULL	YES	time	NULL	NULL	NULL	NULL	0	NULL	NULL	time			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	record_time	1	current_timestamp()	NO	timestamp	NULL	NULL	NULL	NULL	0	NULL	NULL	timestamp	MUL	on update current_timestamp()	select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	row_format	8	NULL	NO	varchar	10	30	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(10)			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	sql_text	10	NULL	NO	mediumtext	16777215	16777215	NULL	NULL	NULL	utf8	utf8_general_ci	mediumtext			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	table_name	6	NULL	NO	varchar	64	192	NULL	NULL	NULL	utf8	utf8_general_ci	varchar(64)			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	table_rows	15	NULL	NO	bigint	NULL	NULL	20	0	NULL	NULL	NULL	bigint(20) unsigned			select,insert,update,references		NEVER	NULL
+def	mysql	alter_log	user_host	2	NULL	NO	mediumtext	16777215	16777215	NULL	NULL	NULL	utf8	utf8_general_ci	mediumtext			select,insert,update,references		NEVER	NULL
 def	mysql	columns_priv	Column_name	5	''	NO	char	64	192	NULL	NULL	NULL	utf8	utf8_bin	char(64)	PRI		select,insert,update,references		NEVER	NULL
 def	mysql	columns_priv	Column_priv	7	''	NO	set	31	93	NULL	NULL	NULL	utf8	utf8_general_ci	set('Select','Insert','Update','References')			select,insert,update,references		NEVER	NULL
 def	mysql	columns_priv	Db	2	''	NO	char	64	192	NULL	NULL	NULL	utf8	utf8_bin	char(64)	PRI		select,insert,update,references		NEVER	NULL
@@ -345,6 +360,21 @@ FROM information_schema.columns
 WHERE table_schema = 'mysql'
 ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION;
 COL_CML	TABLE_SCHEMA	TABLE_NAME	COLUMN_NAME	DATA_TYPE	CHARACTER_MAXIMUM_LENGTH	CHARACTER_OCTET_LENGTH	CHARACTER_SET_NAME	COLLATION_NAME	COLUMN_TYPE
+NULL	mysql	alter_log	record_time	timestamp	NULL	NULL	NULL	NULL	timestamp
+1.0000	mysql	alter_log	user_host	mediumtext	16777215	16777215	utf8	utf8_general_ci	mediumtext
+NULL	mysql	alter_log	query_time	time	NULL	NULL	NULL	NULL	time
+NULL	mysql	alter_log	lock_time	time	NULL	NULL	NULL	NULL	time
+3.0000	mysql	alter_log	db	varchar	64	192	utf8	utf8_general_ci	varchar(64)
+3.0000	mysql	alter_log	table_name	varchar	64	192	utf8	utf8_general_ci	varchar(64)
+3.0000	mysql	alter_log	engine	varchar	64	192	utf8	utf8_general_ci	varchar(64)
+3.0000	mysql	alter_log	row_format	varchar	10	30	utf8	utf8_general_ci	varchar(10)
+NULL	mysql	alter_log	is_partitoned	int	NULL	NULL	NULL	NULL	int(11)
+1.0000	mysql	alter_log	sql_text	mediumtext	16777215	16777215	utf8	utf8_general_ci	mediumtext
+NULL	mysql	alter_log	affected_rows	bigint	NULL	NULL	NULL	NULL	bigint(20)
+NULL	mysql	alter_log	data_length	bigint	NULL	NULL	NULL	NULL	bigint(20) unsigned
+NULL	mysql	alter_log	index_length	bigint	NULL	NULL	NULL	NULL	bigint(20) unsigned
+NULL	mysql	alter_log	data_free	bigint	NULL	NULL	NULL	NULL	bigint(20) unsigned
+NULL	mysql	alter_log	table_rows	bigint	NULL	NULL	NULL	NULL	bigint(20) unsigned
 3.0000	mysql	columns_priv	Host	char	60	180	utf8	utf8_bin	char(60)
 3.0000	mysql	columns_priv	Db	char	64	192	utf8	utf8_bin	char(64)
 3.0000	mysql	columns_priv	User	char	80	240	utf8	utf8_bin	char(80)
