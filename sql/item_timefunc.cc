@@ -1703,10 +1703,13 @@ bool Item_func_now::fix_fields(THD *thd, Item **items)
 void Item_func_now::print(String *str, enum_query_type query_type)
 {
   str->append(func_name());
-  str->append('(');
   if (decimals)
-    str->append_ulonglong(decimals);
-  str->append(')');
+  {
+      str->append('(');
+      if (decimals)
+          str->append_ulonglong(decimals);
+      str->append(')');
+  }
 }
 
 
