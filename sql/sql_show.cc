@@ -1746,11 +1746,11 @@ static bool print_on_update_clause(Field *field, String *val, bool lcase)
       val->append(STRING_WITH_LEN("on update "));
     else
       val->append(STRING_WITH_LEN("ON UPDATE "));
-    val->append(STRING_WITH_LEN("current_timestamp"));
+    val->append(STRING_WITH_LEN("CURRENT_TIMESTAMP"));
     if (field->decimals() > 0)
       val->append_parenthesized(field->decimals());
-    else
-      val->append(STRING_WITH_LEN("()"));
+   /* else
+      val->append(STRING_WITH_LEN("()"));*/
     return true;
   }
   return false;
