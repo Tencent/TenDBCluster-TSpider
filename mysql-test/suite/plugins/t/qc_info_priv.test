@@ -1,3 +1,4 @@
+--source include/set_sql_mode.inc
 --source include/not_embedded.inc
 --source qc_info_init.inc
 

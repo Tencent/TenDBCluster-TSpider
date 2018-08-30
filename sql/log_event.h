@@ -713,6 +713,9 @@ enum Log_event_type
 
   /* Add new MariaDB events here - right above this comment!  */
 
+  /* just adjust the enum value, for test suite */
+  WILL_DELETE_MARK = 171,
+
   ENUM_END_EVENT /* end marker */
 };
 

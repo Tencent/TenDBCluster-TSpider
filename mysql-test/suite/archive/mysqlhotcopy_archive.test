@@ -3,6 +3,7 @@
 # Created: 2010-05-10
 
 --source include/have_archive.inc
+--source include/set_sql_mode.inc
 let $engine= archive;
 --source include/mysqlhotcopy.inc
 --exit
