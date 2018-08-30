@@ -145,10 +145,10 @@ drop table t1;
 #  - vcol_ins_upd.inc
 #  - vcol_select.inc
 create table t1 (a int, b timestamp as (now()), key (b));
-ERROR HY000: Function or expression 'current_timestamp()' cannot be used in the GENERATED ALWAYS AS clause of `b`
+ERROR HY000: Function or expression 'CURRENT_TIMESTAMP()' cannot be used in the GENERATED ALWAYS AS clause of `b`
 create table t1 (a int, b timestamp as (now()));
 alter table t1 add index (b);
-ERROR HY000: Function or expression 'current_timestamp()' cannot be used in the GENERATED ALWAYS AS clause of `b`
+ERROR HY000: Function or expression 'CURRENT_TIMESTAMP()' cannot be used in the GENERATED ALWAYS AS clause of `b`
 drop table t1;
 create table t1 (a int, b varchar(100) as (user()), key (b));
 ERROR HY000: Function or expression 'user()' cannot be used in the GENERATED ALWAYS AS clause of `b`

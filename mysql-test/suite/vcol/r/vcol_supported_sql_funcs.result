@@ -2513,7 +2513,7 @@ create table t1 (a timestamp, b timestamp, c long as (timestampdiff(MONTH, a,b))
 show create table t1;
 Table	Create Table
 t1	CREATE TABLE `t1` (
-  `a` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `a` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `b` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   `c` mediumtext GENERATED ALWAYS AS (timestampdiff(MONTH,`a`,`b`)) VIRTUAL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1
