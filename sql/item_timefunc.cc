@@ -1702,14 +1702,16 @@ bool Item_func_now::fix_fields(THD *thd, Item **items)
 
 void Item_func_now::print(String *str, enum_query_type query_type)
 {
-  str->append(func_name());
-  if (decimals)
-  {
-      str->append('(');
-      if (decimals)
-          str->append_ulonglong(decimals);
-      str->append(')');
-  }
+    const char *name_str = func_name();
+    const char *cur_str = "CURRENT_TIMESTAMP";
+    str->append(func_name());
+    if (decimals || strcasecmp(cur_str, name_str))
+    {
+        str->append('(');
+        if (decimals)
+            str->append_ulonglong(decimals);
+        str->append(')');
+    }
 }
 
 
