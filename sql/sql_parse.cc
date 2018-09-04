@@ -6550,7 +6550,10 @@ static bool execute_sqlcom_select(THD *thd, TABLE_LIST *all_tables)
         if (!result && !(result= new (thd->mem_root) select_send(thd)))
           return 1;                               /* purecov: inspected */
       }
-      query_cache_store_query(thd, all_tables);
+     /*
+       do that after lock table
+     query_cache_store_query(thd, all_tables);
+       */
       res= handle_select(thd, lex, result, 0);
       if (result != lex->result)
         delete result;
