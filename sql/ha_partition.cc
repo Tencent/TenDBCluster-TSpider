@@ -10969,6 +10969,7 @@ const COND *ha_partition::cond_push(const COND *cond)
 {
   handler **file= m_file;
   COND *res_cond= NULL;
+  uint i = 0;
   DBUG_ENTER("ha_partition::cond_push");
 
   if (set_top_table_fields)
@@ -10987,16 +10988,18 @@ const COND *ha_partition::cond_push(const COND *cond)
     file= m_file;
   }
 
-  do
+  for (i = bitmap_get_first_set(&m_partitions_to_reset);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_partitions_to_reset, i))
   {
-    if ((*file)->pushed_cond != cond)
-    {
-      if ((*file)->cond_push(cond))
-        res_cond= (COND *) cond;
-      else
-        (*file)->pushed_cond= cond;
-    }
-  } while (*(++file));
+      if (m_file[i]->pushed_cond != cond)
+      {
+          if (m_file[i]->cond_push(cond))
+              res_cond = (COND *)cond;
+          else
+              m_file[i]->pushed_cond = cond;
+      }
+  }
   DBUG_RETURN(res_cond);
 }
 
