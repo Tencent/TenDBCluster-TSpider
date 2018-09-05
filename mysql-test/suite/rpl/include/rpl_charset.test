@@ -129,6 +129,9 @@ drop table t1;
 --echo #
 
 connection master;
+-- disable_query_log
+set sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER';
+-- enable_query_log
 CREATE DATABASE db1 DEFAULT CHARACTER SET latin1 COLLATE latin1_bin;
 USE db1;
 CREATE TABLE t1 AS SELECT CHR(0x60);

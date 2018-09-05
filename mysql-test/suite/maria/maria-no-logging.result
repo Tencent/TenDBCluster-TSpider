@@ -39,7 +39,7 @@ truncate table t1;
 insert into t1 select * from t2;
 show engine aria logs;
 Type	Name	Status
-Aria	Size        16384 aria_log.00000001	unknown
+Aria	Size        24576 aria_log.00000001	unknown
 drop table t1;
 connection default;
 connection admin;
@@ -61,5 +61,5 @@ drop table t1;
 create table t1 engine=aria transactional=1 select * from t2;
 show engine aria logs;
 Type	Name	Status
-Aria	Size        16384 aria_log.00000001	unknown
+Aria	Size        24576 aria_log.00000001	unknown
 drop database mysqltest;

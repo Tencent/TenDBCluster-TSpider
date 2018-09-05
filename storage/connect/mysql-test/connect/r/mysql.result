@@ -235,6 +235,7 @@ CREATE TABLE `t2` (
   `a` int(11) DEFAULT NULL
 ) ENGINE=CONNECT DEFAULT CHARSET=latin1 CONNECTION='mysql://root@localhost:PORT/test/t1' `TABLE_TYPE`='MYSQL';
 /*!40101 SET character_set_client = @saved_cs_client */;
+INSERT INTO `t2` VALUES (10),(20),(30);
 # End of mysqldump ------
 DROP TABLE t2;
 DROP TABLE t1;

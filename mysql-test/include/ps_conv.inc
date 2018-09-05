@@ -32,6 +32,7 @@ drop table if exists t5 ;
 --enable_warnings
 --disable_query_log
 SET TIME_ZONE= '+03:00';
+set sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER';
 --enable_query_log
 set @arg01= 8;
 set @arg02= 8.0;
