@@ -1,18 +1,18 @@
 SET @start_value = @@global.query_cache_limit;
 SELECT @start_value;
 @start_value
-1048576
+0
 '#--------------------FN_DYNVARS_131_01------------------------#'
 SET @@global.query_cache_limit = 99;
 SET @@global.query_cache_limit = DEFAULT;
 SELECT @@global.query_cache_limit;
 @@global.query_cache_limit
-1048576
+0
 '#---------------------FN_DYNVARS_131_02-------------------------#'
 SET @@global.query_cache_limit = @start_value;
 SELECT @@global.query_cache_limit = 1048576;
 @@global.query_cache_limit = 1048576
-1
+0
 '#--------------------FN_DYNVARS_131_03------------------------#'
 SET @@global.query_cache_limit = 0;
 SELECT @@global.query_cache_limit;
@@ -122,4 +122,4 @@ ERROR 42S22: Unknown column 'query_cache_limit' in 'field list'
 SET @@global.query_cache_limit = @start_value;
 SELECT @@global.query_cache_limit;
 @@global.query_cache_limit
-1048576
+0
