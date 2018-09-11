@@ -392,6 +392,7 @@ int spider_param_conn_meta_invalid_max_count();
 my_bool spider_param_index_hint_pushdown(
   THD *thd
 );
+my_bool spider_param_enable_mem_calc();
 uint spider_param_max_connections();
 uint spider_param_conn_wait_timeout();
 my_bool spider_param_fetch_minimum_columns();

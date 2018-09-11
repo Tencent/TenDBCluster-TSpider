@@ -29,6 +29,7 @@
 #include "spd_db_include.h"
 #include "spd_include.h"
 #include "spd_malloc.h"
+#include "spd_param.h"
 
 extern handlerton *spider_hton_ptr;
 
@@ -49,50 +50,54 @@ void spider_merge_mem_calc(
   uint roop_count;
   time_t tmp_time;
   DBUG_ENTER("spider_merge_mem_calc");
-  if (force)
+  if (spider_param_enable_mem_calc())
   {
-    pthread_mutex_lock(&spider_mem_calc_mutex);
-    tmp_time = (time_t) time((time_t*) 0);
-  } else {
-    tmp_time = (time_t) time((time_t*) 0);
-    if (
-      difftime(tmp_time, trx->mem_calc_merge_time) < 2 ||
-      pthread_mutex_trylock(&spider_mem_calc_mutex)
-    )
-      DBUG_VOID_RETURN;
+      if (force)
+      {
+          pthread_mutex_lock(&spider_mem_calc_mutex);
+          tmp_time = (time_t)time((time_t*)0);
+      }
+      else {
+          tmp_time = (time_t)time((time_t*)0);
+          if (
+              difftime(tmp_time, trx->mem_calc_merge_time) < 2 ||
+              pthread_mutex_trylock(&spider_mem_calc_mutex)
+              )
+              DBUG_VOID_RETURN;
+      }
+      for (roop_count = 0; roop_count < SPIDER_MEM_CALC_LIST_NUM; roop_count++)
+      {
+          DBUG_ASSERT(!spider_alloc_func_name[roop_count] ||
+              !trx->alloc_func_name[roop_count] ||
+              spider_alloc_func_name[roop_count] == trx->alloc_func_name[roop_count]);
+          DBUG_ASSERT(!spider_alloc_file_name[roop_count] ||
+              !trx->alloc_file_name[roop_count] ||
+              spider_alloc_file_name[roop_count] == trx->alloc_file_name[roop_count]);
+          DBUG_ASSERT(!spider_alloc_line_no[roop_count] ||
+              !trx->alloc_line_no[roop_count] ||
+              spider_alloc_line_no[roop_count] == trx->alloc_line_no[roop_count]);
+          if (trx->alloc_func_name[roop_count])
+          {
+              spider_alloc_func_name[roop_count] = trx->alloc_func_name[roop_count];
+              spider_alloc_file_name[roop_count] = trx->alloc_file_name[roop_count];
+              spider_alloc_line_no[roop_count] = trx->alloc_line_no[roop_count];
+              spider_total_alloc_mem[roop_count] +=
+                  trx->total_alloc_mem_buffer[roop_count];
+              trx->total_alloc_mem_buffer[roop_count] = 0;
+              spider_alloc_mem_count[roop_count] +=
+                  trx->alloc_mem_count_buffer[roop_count];
+              trx->alloc_mem_count_buffer[roop_count] = 0;
+          }
+          spider_current_alloc_mem[roop_count] +=
+              trx->current_alloc_mem_buffer[roop_count];
+          trx->current_alloc_mem_buffer[roop_count] = 0;
+          spider_free_mem_count[roop_count] +=
+              trx->free_mem_count_buffer[roop_count];
+          trx->free_mem_count_buffer[roop_count] = 0;
+      }
+      pthread_mutex_unlock(&spider_mem_calc_mutex);
+      trx->mem_calc_merge_time = tmp_time;
   }
-  for (roop_count = 0; roop_count < SPIDER_MEM_CALC_LIST_NUM; roop_count++)
-  {
-    DBUG_ASSERT(!spider_alloc_func_name[roop_count] ||
-      !trx->alloc_func_name[roop_count] ||
-      spider_alloc_func_name[roop_count] == trx->alloc_func_name[roop_count]);
-    DBUG_ASSERT(!spider_alloc_file_name[roop_count] ||
-      !trx->alloc_file_name[roop_count] ||
-      spider_alloc_file_name[roop_count] == trx->alloc_file_name[roop_count]);
-    DBUG_ASSERT(!spider_alloc_line_no[roop_count] ||
-      !trx->alloc_line_no[roop_count] ||
-      spider_alloc_line_no[roop_count] == trx->alloc_line_no[roop_count]);
-    if (trx->alloc_func_name[roop_count])
-    {
-      spider_alloc_func_name[roop_count] = trx->alloc_func_name[roop_count];
-      spider_alloc_file_name[roop_count] = trx->alloc_file_name[roop_count];
-      spider_alloc_line_no[roop_count] = trx->alloc_line_no[roop_count];
-      spider_total_alloc_mem[roop_count] +=
-        trx->total_alloc_mem_buffer[roop_count];
-      trx->total_alloc_mem_buffer[roop_count] = 0;
-      spider_alloc_mem_count[roop_count] +=
-        trx->alloc_mem_count_buffer[roop_count];
-      trx->alloc_mem_count_buffer[roop_count] = 0;
-    }
-    spider_current_alloc_mem[roop_count] +=
-      trx->current_alloc_mem_buffer[roop_count];
-    trx->current_alloc_mem_buffer[roop_count] = 0;
-    spider_free_mem_count[roop_count] +=
-      trx->free_mem_count_buffer[roop_count];
-    trx->free_mem_count_buffer[roop_count] = 0;
-  }
-  pthread_mutex_unlock(&spider_mem_calc_mutex);
-  trx->mem_calc_merge_time = tmp_time;
   DBUG_VOID_RETURN;
 }
 
@@ -105,19 +110,23 @@ void spider_free_mem_calc(
   DBUG_ASSERT(id < SPIDER_MEM_CALC_LIST_NUM);
   DBUG_PRINT("info",("spider trx=%p id=%u size=%llu",
     trx, id, (ulonglong) size));
-  if (trx)
+  if (spider_param_enable_mem_calc())
   {
-    DBUG_PRINT("info",("spider calc into trx"));
-    trx->current_alloc_mem[id] -= size;
-    trx->current_alloc_mem_buffer[id] -= size;
-    trx->free_mem_count[id] += 1;
-    trx->free_mem_count_buffer[id] += 1;
-  } else {
-    DBUG_PRINT("info",("spider calc into global"));
-    pthread_mutex_lock(&spider_mem_calc_mutex);
-    spider_current_alloc_mem[id] -= size;
-    spider_free_mem_count[id] += 1;
-    pthread_mutex_unlock(&spider_mem_calc_mutex);
+      if (trx)
+      {
+          DBUG_PRINT("info", ("spider calc into trx"));
+          trx->current_alloc_mem[id] -= size;
+          trx->current_alloc_mem_buffer[id] -= size;
+          trx->free_mem_count[id] += 1;
+          trx->free_mem_count_buffer[id] += 1;
+      }
+      else {
+          DBUG_PRINT("info", ("spider calc into global"));
+          pthread_mutex_lock(&spider_mem_calc_mutex);
+          spider_current_alloc_mem[id] -= size;
+          spider_free_mem_count[id] += 1;
+          pthread_mutex_unlock(&spider_mem_calc_mutex);
+      }
   }
   DBUG_VOID_RETURN;
 }
@@ -134,40 +143,44 @@ void spider_alloc_mem_calc(
   DBUG_ASSERT(id < SPIDER_MEM_CALC_LIST_NUM);
   DBUG_PRINT("info",("spider trx=%p id=%u size=%llu",
     trx, id, (ulonglong) size));
-  if (trx)
+  if (spider_param_enable_mem_calc())
   {
-    DBUG_PRINT("info",("spider calc into trx"));
-    DBUG_ASSERT(!trx->alloc_func_name[id] ||
-      trx->alloc_func_name[id] == func_name);
-    DBUG_ASSERT(!trx->alloc_file_name[id] ||
-      trx->alloc_file_name[id] == file_name);
-    DBUG_ASSERT(!trx->alloc_line_no[id] ||
-      trx->alloc_line_no[id] == line_no);
-    trx->alloc_func_name[id] = func_name;
-    trx->alloc_file_name[id] = file_name;
-    trx->alloc_line_no[id] = line_no;
-    trx->total_alloc_mem[id] += size;
-    trx->total_alloc_mem_buffer[id] += size;
-    trx->current_alloc_mem[id] += size;
-    trx->current_alloc_mem_buffer[id] += size;
-    trx->alloc_mem_count[id] += 1;
-    trx->alloc_mem_count_buffer[id] += 1;
-  } else {
-    DBUG_PRINT("info",("spider calc into global"));
-    pthread_mutex_lock(&spider_mem_calc_mutex);
-    DBUG_ASSERT(!spider_alloc_func_name[id] ||
-      spider_alloc_func_name[id] == func_name);
-    DBUG_ASSERT(!spider_alloc_file_name[id] ||
-      spider_alloc_file_name[id] == file_name);
-    DBUG_ASSERT(!spider_alloc_line_no[id] ||
-      spider_alloc_line_no[id] == line_no);
-    spider_alloc_func_name[id] = func_name;
-    spider_alloc_file_name[id] = file_name;
-    spider_alloc_line_no[id] = line_no;
-    spider_total_alloc_mem[id] += size;
-    spider_current_alloc_mem[id] += size;
-    spider_alloc_mem_count[id] += 1;
-    pthread_mutex_unlock(&spider_mem_calc_mutex);
+      if (trx)
+      {
+          DBUG_PRINT("info", ("spider calc into trx"));
+          DBUG_ASSERT(!trx->alloc_func_name[id] ||
+              trx->alloc_func_name[id] == func_name);
+          DBUG_ASSERT(!trx->alloc_file_name[id] ||
+              trx->alloc_file_name[id] == file_name);
+          DBUG_ASSERT(!trx->alloc_line_no[id] ||
+              trx->alloc_line_no[id] == line_no);
+          trx->alloc_func_name[id] = func_name;
+          trx->alloc_file_name[id] = file_name;
+          trx->alloc_line_no[id] = line_no;
+          trx->total_alloc_mem[id] += size;
+          trx->total_alloc_mem_buffer[id] += size;
+          trx->current_alloc_mem[id] += size;
+          trx->current_alloc_mem_buffer[id] += size;
+          trx->alloc_mem_count[id] += 1;
+          trx->alloc_mem_count_buffer[id] += 1;
+      }
+      else {
+          DBUG_PRINT("info", ("spider calc into global"));
+          pthread_mutex_lock(&spider_mem_calc_mutex);
+          DBUG_ASSERT(!spider_alloc_func_name[id] ||
+              spider_alloc_func_name[id] == func_name);
+          DBUG_ASSERT(!spider_alloc_file_name[id] ||
+              spider_alloc_file_name[id] == file_name);
+          DBUG_ASSERT(!spider_alloc_line_no[id] ||
+              spider_alloc_line_no[id] == line_no);
+          spider_alloc_func_name[id] = func_name;
+          spider_alloc_file_name[id] = file_name;
+          spider_alloc_line_no[id] = line_no;
+          spider_total_alloc_mem[id] += size;
+          spider_current_alloc_mem[id] += size;
+          spider_alloc_mem_count[id] += 1;
+          pthread_mutex_unlock(&spider_mem_calc_mutex);
+      }
   }
   DBUG_VOID_RETURN;
 }
