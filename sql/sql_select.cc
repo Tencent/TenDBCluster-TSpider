@@ -25119,7 +25119,8 @@ bool JOIN_TAB::save_explain_data(Explain_table_access *eta,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
     partition_info *part_info;
     if (!table->derived_select_number && 
-        (part_info= table->part_info))
+        (part_info= table->part_info) &&
+        (join && join->thd->lex->describe))
     { //TODO: all thd->mem_root here should be fixed
       make_used_partitions_str(thd->mem_root, part_info, &eta->used_partitions,
                                eta->used_partitions_list);

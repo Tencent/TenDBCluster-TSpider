@@ -11686,15 +11686,16 @@ bool ha_partition::support_more_partiton_log()
 bool ha_partition::is_spider_storage_engine()
 {
     DBUG_ENTER("ha_partition::is_spider_storage_engine");
-    handler ** file;
-    bool    is_spider = TRUE;
+   /* handler ** file;*/
+    bool    is_spider = m_file[0]->is_spider_storage_engine();
+    /***  assume that there is no mixed engine use   ***/
 
-    for (file = m_file; *file; file++)
-    {
-        is_spider = (*file)->is_spider_storage_engine();
-        if (!is_spider)
-            DBUG_RETURN(is_spider);
-    }
+    /* for (file = m_file; *file; file++)
+     {
+         is_spider = (*file)->is_spider_storage_engine();
+         if (!is_spider)
+             DBUG_RETURN(is_spider);
+     }*/
     DBUG_RETURN(is_spider);
 }
 
