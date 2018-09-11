@@ -43,10 +43,10 @@ id	c
 ** check status on not setting query_cache_limit value **
 SHOW STATUS LIKE 'Qcache_not_cached';
 Variable_name	Value
-Qcache_not_cached	0
+Qcache_not_cached	1
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	1
+Qcache_queries_in_cache	0
 '#---------------------FN_DYNVARS_132_02----------------------#'
 ** Reset cache values **
 FLUSH STATUS;
@@ -84,20 +84,20 @@ id	c
 4	xxxxxxxxxxxxxxxxxxxxxxxxxxxxgw
 SHOW STATUS LIKE 'Qcache_not_cached';
 Variable_name	Value
-Qcache_not_cached	0
+Qcache_not_cached	1
 0 Expected
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	1
+Qcache_queries_in_cache	0
 1 Expected
 SET @@GLOBAL.query_cache_limit = 0;
 SHOW STATUS LIKE 'Qcache_not_cached';
 Variable_name	Value
-Qcache_not_cached	0
+Qcache_not_cached	1
 0 Expected
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	1
+Qcache_queries_in_cache	0
 1 Expected
 ** fetching results **
 SELECT * FROM t;
@@ -109,11 +109,11 @@ id	c
 ** Check status after setting value **
 SHOW STATUS LIKE 'Qcache_not_cached';
 Variable_name	Value
-Qcache_not_cached	0
+Qcache_not_cached	2
 0 Expected
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	1
+Qcache_queries_in_cache	0
 1 Expected
 SET @@GLOBAL.query_cache_limit = @global_query_cache_limit;
 SET GLOBAL query_cache_size = @global_query_cache_size;

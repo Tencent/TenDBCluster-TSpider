@@ -61,7 +61,7 @@ id	value
 3	val3
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	1
+Qcache_queries_in_cache	0
 1 Expected
 SELECT value FROM t1;
 value
@@ -70,7 +70,7 @@ val2
 val3
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	2
+Qcache_queries_in_cache	0
 2 Expected
 '#--------------------FN_DYNVARS_135_04-------------------------#'
 ** CACHE HIT **
@@ -81,7 +81,7 @@ id	value
 3	val3
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	2
+Qcache_queries_in_cache	0
 2 Expected
 SELECT SQL_CACHE value FROM t1;
 value
@@ -90,7 +90,7 @@ val2
 val3
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	3
+Qcache_queries_in_cache	0
 3 Expected
 SELECT SQL_NO_CACHE value FROM t1;
 value
@@ -99,7 +99,7 @@ val2
 val3
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	3
+Qcache_queries_in_cache	0
 3 Expected
 '#--------------------FN_DYNVARS_135_05-------------------------#'
 Testing with store procedure
@@ -119,7 +119,7 @@ val2
 val3
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	5
+Qcache_queries_in_cache	0
 Expected value : 3
 ==================
 Bug#35388: Stored procedure execution causes improper behavior of query cache.
@@ -186,7 +186,7 @@ id	value
 3	val3
 SHOW STATUS LIKE 'Qcache_queries_in_cache';
 Variable_name	Value
-Qcache_queries_in_cache	1
+Qcache_queries_in_cache	0
 0 Expected
 ** TESTING GLOBAL SCOPE **
 '#--------------------FN_DYNVARS_135_10-------------------------#'
