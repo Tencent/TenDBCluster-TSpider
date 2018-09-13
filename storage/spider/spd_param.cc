@@ -3018,6 +3018,24 @@ my_bool spider_param_enable_mem_calc()
     DBUG_RETURN(spider_enable_mem_calc);
 }
 
+
+static my_bool spider_enable_trx_ha;
+static MYSQL_SYSVAR_BOOL(
+    enable_trx_ha,
+    spider_enable_trx_ha,
+    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+    "enable trx_ha",
+    NULL,
+    NULL,
+    FALSE
+);
+
+my_bool spider_param_enable_trx_ha()
+{
+    DBUG_ENTER("spider_param_enable_trx_ha");
+    DBUG_RETURN(spider_enable_trx_ha);
+}
+
 static int spider_idle_conn_recycle_interval;
 static MYSQL_SYSVAR_INT(
 	idle_conn_recycle_interval,
@@ -3651,6 +3669,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
 #endif
   MYSQL_SYSVAR(quick_mode_only_select),
   MYSQL_SYSVAR(enable_mem_calc),
+  MYSQL_SYSVAR(enable_trx_ha),
   MYSQL_SYSVAR(idle_conn_recycle_interval),
   MYSQL_SYSVAR(conn_meta_max_invalid_duration),
   NULL

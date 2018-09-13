@@ -4120,65 +4120,70 @@ int spider_create_trx_ha(
   uchar *conn_can_fo;
   SPIDER_SHARE *share = spider->share;
   DBUG_ENTER("spider_create_trx_ha");
-  if (!trx_ha)
+  if (spider_param_enable_trx_ha())
   {
-    DBUG_PRINT("info",("spider need create"));
-    need_create = TRUE;
-  } else if (
-    trx_ha->share != share ||
-    trx_ha->link_count != share->link_count ||
-    trx_ha->link_bitmap_size != share->link_bitmap_size
-  ) {
-    DBUG_PRINT("info",("spider need recreate"));
-    need_create = TRUE;
-    my_hash_delete(&trx->trx_ha_hash, (uchar*) trx_ha);
-    spider_free(trx, trx_ha, MYF(0));
-  } else {
-    DBUG_PRINT("info",("spider use this"));
-    trx_ha->wait_for_reusing = FALSE;
-    need_create = FALSE;
+      if (!trx_ha)
+      {
+          DBUG_PRINT("info", ("spider need create"));
+          need_create = TRUE;
+      }
+      else if (
+          trx_ha->share != share ||
+          trx_ha->link_count != share->link_count ||
+          trx_ha->link_bitmap_size != share->link_bitmap_size
+          ) {
+          DBUG_PRINT("info", ("spider need recreate"));
+          need_create = TRUE;
+          my_hash_delete(&trx->trx_ha_hash, (uchar*)trx_ha);
+          spider_free(trx, trx_ha, MYF(0));
+      }
+      else {
+          DBUG_PRINT("info", ("spider use this"));
+          trx_ha->wait_for_reusing = FALSE;
+          need_create = FALSE;
+      }
+      if (need_create)
+      {
+          if (!(trx_ha = (SPIDER_TRX_HA *)
+              spider_bulk_malloc(spider_current_trx, 58, MYF(MY_WME),
+                  &trx_ha, sizeof(SPIDER_TRX_HA),
+                  &tmp_name, sizeof(char *) * (share->table_name_length + 1),
+                  &conn_link_idx, sizeof(uint) * share->link_count,
+                  &conn_can_fo, sizeof(uchar) * share->link_bitmap_size,
+                  NullS))
+              ) {
+              DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          trx_ha->table_name = tmp_name;
+          memcpy(trx_ha->table_name, share->table_name, share->table_name_length);
+          trx_ha->table_name[share->table_name_length] = '\0';
+          trx_ha->table_name_length = share->table_name_length;
+          trx_ha->trx = trx;
+          trx_ha->share = share;
+          trx_ha->link_count = share->link_count;
+          trx_ha->link_bitmap_size = share->link_bitmap_size;
+          trx_ha->conn_link_idx = conn_link_idx;
+          trx_ha->conn_can_fo = conn_can_fo;
+          trx_ha->wait_for_reusing = FALSE;
+          uint old_elements = trx->trx_ha_hash.array.max_element;
+          if (my_hash_insert(&trx->trx_ha_hash, (uchar*)trx_ha))
+          {
+              spider_free(trx, trx_ha, MYF(0));
+              DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          if (trx->trx_ha_hash.array.max_element > old_elements)
+          {
+              spider_alloc_calc_mem(spider_current_trx,
+                  trx->trx_ha_hash,
+                  (trx->trx_ha_hash.array.max_element - old_elements) *
+                  trx->trx_ha_hash.array.size_of_element);
+          }
+      }
+      memcpy(trx_ha->conn_link_idx, spider->conn_link_idx,
+          sizeof(uint) * share->link_count);
+      memcpy(trx_ha->conn_can_fo, spider->conn_can_fo,
+          sizeof(uint) * share->link_bitmap_size);
   }
-  if (need_create)
-  {
-    if (!(trx_ha = (SPIDER_TRX_HA *)
-      spider_bulk_malloc(spider_current_trx, 58, MYF(MY_WME),
-        &trx_ha, sizeof(SPIDER_TRX_HA),
-        &tmp_name, sizeof(char *) * (share->table_name_length + 1),
-        &conn_link_idx, sizeof(uint) * share->link_count,
-        &conn_can_fo, sizeof(uchar) * share->link_bitmap_size,
-        NullS))
-    ) {
-      DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-    }
-    trx_ha->table_name = tmp_name;
-    memcpy(trx_ha->table_name, share->table_name, share->table_name_length);
-    trx_ha->table_name[share->table_name_length] = '\0';
-    trx_ha->table_name_length = share->table_name_length;
-    trx_ha->trx = trx;
-    trx_ha->share = share;
-    trx_ha->link_count = share->link_count;
-    trx_ha->link_bitmap_size = share->link_bitmap_size;
-    trx_ha->conn_link_idx = conn_link_idx;
-    trx_ha->conn_can_fo = conn_can_fo;
-    trx_ha->wait_for_reusing = FALSE;
-    uint old_elements = trx->trx_ha_hash.array.max_element;
-    if (my_hash_insert(&trx->trx_ha_hash, (uchar*) trx_ha))
-    {
-      spider_free(trx, trx_ha, MYF(0));
-      DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-    }
-    if (trx->trx_ha_hash.array.max_element > old_elements)
-    {
-      spider_alloc_calc_mem(spider_current_trx,
-        trx->trx_ha_hash,
-        (trx->trx_ha_hash.array.max_element - old_elements) *
-        trx->trx_ha_hash.array.size_of_element);
-    }
-  }
-  memcpy(trx_ha->conn_link_idx, spider->conn_link_idx,
-    sizeof(uint) * share->link_count);
-  memcpy(trx_ha->conn_can_fo, spider->conn_can_fo,
-    sizeof(uint) * share->link_bitmap_size);
   DBUG_RETURN(0);
 }
 
@@ -4189,20 +4194,23 @@ SPIDER_TRX_HA *spider_check_trx_ha(
   SPIDER_TRX_HA *trx_ha;
   SPIDER_SHARE *share = spider->share;
   DBUG_ENTER("spider_check_trx_ha");
-#ifdef SPIDER_HAS_HASH_VALUE_TYPE
-  if ((trx_ha = (SPIDER_TRX_HA *) my_hash_search_using_hash_value(
-    &trx->trx_ha_hash, share->table_name_hash_value,
-    (uchar*) share->table_name, share->table_name_length)))
-#else
-  if ((trx_ha = (SPIDER_TRX_HA *) my_hash_search(&trx->trx_ha_hash,
-    (uchar*) share->table_name, share->table_name_length)))
-#endif
+  if (spider_param_enable_trx_ha())
   {
-    memcpy(spider->conn_link_idx, trx_ha->conn_link_idx,
-      sizeof(uint) * share->link_count);
-    memcpy(spider->conn_can_fo, trx_ha->conn_can_fo,
-      sizeof(uint) * share->link_bitmap_size);
-    DBUG_RETURN(trx_ha);
+#ifdef SPIDER_HAS_HASH_VALUE_TYPE
+      if ((trx_ha = (SPIDER_TRX_HA *)my_hash_search_using_hash_value(
+          &trx->trx_ha_hash, share->table_name_hash_value,
+          (uchar*)share->table_name, share->table_name_length)))
+#else
+      if ((trx_ha = (SPIDER_TRX_HA *)my_hash_search(&trx->trx_ha_hash,
+          (uchar*)share->table_name, share->table_name_length)))
+#endif
+      {
+          memcpy(spider->conn_link_idx, trx_ha->conn_link_idx,
+              sizeof(uint) * share->link_count);
+          memcpy(spider->conn_can_fo, trx_ha->conn_can_fo,
+              sizeof(uint) * share->link_bitmap_size);
+          DBUG_RETURN(trx_ha);
+      }
   }
   DBUG_RETURN(NULL);
 }

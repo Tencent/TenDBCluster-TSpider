@@ -334,9 +334,9 @@ void spider_free_conn_from_trx(
 			/* Create conn_meta whose status is updated then when CONN object is pushed
 			/* into spider_open_connections
 			/************************************************************************/
-			if (!spider_add_conn_meta_info(conn)) {
-				spider_my_err_logging("[ERROR] spider_add_conn_meta_info failed for conn within conn_id=[%ull]!\n", conn->conn_id);
-			}
+			//if (!spider_add_conn_meta_info(conn)) {
+			//	spider_my_err_logging("[ERROR] spider_add_conn_meta_info failed for conn within conn_id=[%ull]!\n", conn->conn_id);
+			//}
             pthread_mutex_unlock(&spider_conn_mutex);
           }
         }
