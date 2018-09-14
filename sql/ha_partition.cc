@@ -11006,13 +11006,16 @@ const COND *ha_partition::cond_push(const COND *cond)
 
 void ha_partition::cond_pop()
 {
-  handler **file= m_file;
+  uint i = 0;
   DBUG_ENTER("ha_partition::cond_push");
 
-  do
+  for (i = bitmap_get_first_set(&m_partitions_to_reset);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_partitions_to_reset, i))
   {
-    (*file)->cond_pop();
-  } while (*(++file));
+          m_file[i]->cond_pop();
+  }
+
   DBUG_VOID_RETURN;
 }
 
@@ -11623,15 +11626,17 @@ int ha_partition::pre_direct_delete_rows()
 int ha_partition::info_push(uint info_type, void *info)
 {
   int error= 0;
-  handler **file= m_file;
+  uint i = 0;
   DBUG_ENTER("ha_partition::info_push");
 
-  do
+  for (i = bitmap_get_first_set(&m_partitions_to_reset);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_partitions_to_reset, i))
   {
-    int tmp;
-    if ((tmp= (*file)->info_push(info_type, info)))
-      error= tmp;
-  } while (*(++file));
+          int tmp;
+          if ((tmp = m_file[i]->info_push(info_type, info)))
+              error = tmp;
+  }
   DBUG_RETURN(error);
 }
 

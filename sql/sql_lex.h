@@ -2742,7 +2742,7 @@ public:
 
   Explain_update* save_explain_update_data(MEM_ROOT *mem_root, THD *thd);
 protected:
-  bool save_explain_data_intern(MEM_ROOT *mem_root, Explain_update *eu, bool is_analyze);
+  bool save_explain_data_intern(MEM_ROOT *mem_root, Explain_update *eu, bool is_analyze, THD *thd);
 public:
   virtual ~Update_plan() {}
 

@@ -2410,6 +2410,17 @@ int SQL_SELECT::test_quick_select(THD *thd, key_map keys_to_use,
   needed_reg.clear_all();
   quick_keys.clear_all();
   DBUG_ASSERT(!head->is_filled_at_execution());
+
+  /* single table query in spider do not need using index */
+  if (opt_spider_ignore_single_select_index &&
+      thd && thd->lex &&
+      thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
+      head->file && head->file->is_spider_storage_engine())  /* only for spider */
+  {
+      DBUG_RETURN(0);
+  }
+
+
   if (keys_to_use.is_clear_all() || head->is_filled_at_execution())
     DBUG_RETURN(0);
   records= head->stat_records();

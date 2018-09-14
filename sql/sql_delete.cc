@@ -74,7 +74,7 @@ Explain_delete* Delete_plan::save_explain_delete_data(MEM_ROOT *mem_root, THD *t
   {
     explain->deleting_all_rows= false;
     if (Update_plan::save_explain_data_intern(mem_root, explain,
-                                              thd->lex->analyze_stmt))
+                                              thd->lex->analyze_stmt, thd))
       return 0;
   }
  
@@ -91,7 +91,7 @@ Update_plan::save_explain_update_data(MEM_ROOT *mem_root, THD *thd)
     new (mem_root) Explain_update(mem_root, thd->lex->analyze_stmt);
   if (!explain)
     return 0;
-  if (save_explain_data_intern(mem_root, explain, thd->lex->analyze_stmt))
+  if (save_explain_data_intern(mem_root, explain, thd->lex->analyze_stmt, thd))
     return 0;
   query->add_upd_del_plan(explain);
   return explain;
@@ -100,7 +100,8 @@ Update_plan::save_explain_update_data(MEM_ROOT *mem_root, THD *thd)
 
 bool Update_plan::save_explain_data_intern(MEM_ROOT *mem_root,
                                            Explain_update *explain,
-                                           bool is_analyze)
+                                           bool is_analyze,
+                                           THD *thd)
 {
   explain->select_type= "SIMPLE";
   explain->table_name.append(&table->pos_in_table_list->alias);
@@ -131,7 +132,7 @@ bool Update_plan::save_explain_data_intern(MEM_ROOT *mem_root,
   {
 #ifdef WITH_PARTITION_STORAGE_ENGINE
     partition_info *part_info;
-    if ((part_info= table->part_info))
+    if ((part_info= table->part_info) && thd && thd->lex->describe)
     {          
       make_used_partitions_str(mem_root, part_info, &explain->used_partitions,
                                explain->used_partitions_list);
