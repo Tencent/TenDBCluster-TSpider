@@ -418,6 +418,7 @@ my_bool opt_spider_auto_increment_mode_switch;
 uint opt_spider_auto_increment_step;
 uint opt_spider_auto_increment_mode_value;
 my_bool opt_spider_ignore_single_select_index;
+my_bool opt_spider_ignore_single_update_index;
 my_bool opt_spider_rone_shard_switch;
 my_bool opt_spider_slow_log;
 my_bool opt_spider_query_one_shard;
