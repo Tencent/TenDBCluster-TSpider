@@ -5452,21 +5452,21 @@ err:
 int ha_partition::index_end()
 {
   int error= 0;
-  handler **file;
+  uint i = 0;
   DBUG_ENTER("ha_partition::index_end");
 
   active_index= MAX_KEY;
   m_part_spec.start_part= NO_CURRENT_PART_ID;
-  file= m_file;
-  do
+
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
-    if ((*file)->inited == INDEX)
-    {
       int tmp;
-      if ((tmp= (*file)->ha_index_end()))
-        error= tmp;
-    }
-  } while (*(++file));
+      if ((tmp = m_file[i]->ha_index_end()))
+          error = tmp;
+  }
+
   destroy_record_priority_queue();
   DBUG_RETURN(error);
 }
@@ -11230,10 +11230,11 @@ int ha_partition::direct_update_rows_init()
   m_direct_update_part_spec= m_part_spec;
 
   found= 0;
-  for (i= m_part_spec.start_part; i <= m_part_spec.end_part; i++)
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
-    if (bitmap_is_set(&(m_part_info->read_partitions), i) &&
-        bitmap_is_set(&(m_part_info->lock_partitions), i))
+    if (bitmap_is_set(&(m_part_info->lock_partitions), i))
     {
       file= m_file[i];
       if (unlikely((error= (m_pre_calling ?
@@ -11323,6 +11324,7 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found
   uint32 i;
   THD  *thd = ha_thd();
   bool finish_flag = false;
+  handler *file;
   DBUG_ENTER("ha_partition::direct_update_rows");
 
   /* If first call to direct_update_rows with RND scan */
@@ -11334,11 +11336,13 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found
 
   *update_rows_result= 0;
   *found_rows_result= 0;
-  for (i= m_part_spec.start_part; i <= m_part_spec.end_part; i++)
+
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
-    handler *file= m_file[i];
-    if (bitmap_is_set(&(m_part_info->read_partitions), i) &&
-        bitmap_is_set(&(m_part_info->lock_partitions), i))
+    file= m_file[i];
+    if ( bitmap_is_set(&(m_part_info->lock_partitions), i))
     {
       if (rnd_seq && (m_pre_calling ? file->pre_inited : file->inited) == NONE)
       {
@@ -11436,10 +11440,11 @@ int ha_partition::direct_delete_rows_init()
   m_direct_update_part_spec= m_part_spec;
 
   found= 0;
-  for (i= m_part_spec.start_part; i <= m_part_spec.end_part; i++)
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
-    if (bitmap_is_set(&(m_part_info->read_partitions), i) &&
-        bitmap_is_set(&(m_part_info->lock_partitions), i))
+    if (bitmap_is_set(&(m_part_info->lock_partitions), i))
     {
       handler *file= m_file[i];
       if (unlikely((error= (m_pre_calling ?
@@ -11539,11 +11544,12 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
 
   *delete_rows_result= 0;
   m_part_spec= m_direct_update_part_spec;
-  for (i= m_part_spec.start_part; i <= m_part_spec.end_part; i++)
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+      i < m_tot_parts;
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
     file= m_file[i];
-    if (bitmap_is_set(&(m_part_info->read_partitions), i) &&
-        bitmap_is_set(&(m_part_info->lock_partitions), i))
+    if (bitmap_is_set(&(m_part_info->lock_partitions), i))
     {
       if (rnd_seq && (m_pre_calling ? file->pre_inited : file->inited) == NONE)
       {
