@@ -9121,9 +9121,7 @@ void sql_kill_all_threads(THD *thd, killed_state state, bool force)
         This is probably ER_OUT_OF_RESOURCES, but in the future we may
         want to write the name of the user we tried to kill
         */
-
-       /* my_error(error, MYF(0), thd->security_ctx->host_or_ip, thd->security_ctx->user);*/
-       my_error(error, MYF(0), 0);
+        my_error(error, MYF(0), thd->security_ctx->host_or_ip, thd->security_ctx->user);
     }
 }
 
