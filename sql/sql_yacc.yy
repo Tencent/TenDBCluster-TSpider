@@ -1131,6 +1131,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  RIGHT                         /* SQL-2003-R */
 %token  ROWS_SYM                      /* SQL-2003-R */
 %token  ROW_NUMBER_SYM
+%token  SAFE_SYM
 %token  SECOND_MICROSECOND_SYM
 %token  SELECT_SYM                    /* SQL-2003-R */
 %token  SENSITIVE_SYM                 /* FUTURE-USE */
@@ -1168,6 +1169,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  TERMINATED
 %token  TEXT_STRING
 %token  THEN_SYM                      /* SQL-2003-R */
+%token  THREADS_SYM
 %token  TINYBLOB
 %token  TINYINT
 %token  TINYTEXT
@@ -14450,6 +14452,7 @@ kill_type:
 kill_option:
           /* empty */    { $$= (int) KILL_CONNECTION; }
         | CONNECTION_SYM { $$= (int) KILL_CONNECTION; }
+        | THREADS_SYM    { $$= (int) KILL_CONNECTION; }
         | QUERY_SYM      { $$= (int) KILL_QUERY; }
         | QUERY_SYM ID_SYM
           {
@@ -14462,12 +14465,26 @@ kill_expr:
         expr
         {
           Lex->value_list.push_front($$, thd->mem_root);
+          Lex->is_kill_safe = FALSE;
          }
+        | expr SAFE_SYM
+        {
+           Lex->value_list.push_front($$, thd->mem_root);
+           Lex->is_kill_safe = TRUE;
+        }
         | USER_SYM user
           {
             Lex->users_list.push_back($2, thd->mem_root);
             Lex->kill_type= KILL_TYPE_USER;
           }
+        | ALL 
+        { 
+          Lex->kill_type= KILL_TYPE_ALL_THREADS; 
+         }
+        | ALL FORCE_SYM
+        { 
+          Lex->kill_type= KILL_TYPE_ALL_THREADS_FORCE; 
+         }
         ;
 
 

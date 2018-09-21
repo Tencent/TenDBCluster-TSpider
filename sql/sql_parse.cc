@@ -123,8 +123,10 @@ static void wsrep_mysql_parse(THD *thd, char *rawbuf, uint length,
 */
 
 static bool execute_sqlcom_select(THD *thd, TABLE_LIST *all_tables);
-static void sql_kill(THD *thd, longlong id, killed_state state, killed_type type);
+static void sql_kill(THD *thd, longlong id, killed_state state, killed_type type, my_bool is_kill_safe);
 static void sql_kill_user(THD *thd, LEX_USER *user, killed_state state);
+static void sql_kill_all_threads(THD *thd, killed_state state, bool force);
+static uint kill_all_threads(THD *thd, killed_state kill_signal, ha_rows *rows, bool force);
 static bool lock_tables_precheck(THD *thd, TABLE_LIST *tables);
 static bool execute_show_status(THD *, TABLE_LIST *);
 static bool check_rename_table(THD *, TABLE_LIST *, TABLE_LIST *);
@@ -2245,7 +2247,7 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
   {
     status_var_increment(thd->status_var.com_stat[SQLCOM_KILL]);
     ulong id=(ulong) uint4korr(packet);
-    sql_kill(thd, id, KILL_CONNECTION_HARD, KILL_TYPE_ID);
+    sql_kill(thd, id, KILL_CONNECTION_HARD, KILL_TYPE_ID, FALSE);
     break;
   }
   case COM_SET_OPTION:
@@ -5692,7 +5694,15 @@ end_with_restore_list:
                    MYF(0));
         goto error;
       }
-      sql_kill(thd, it->val_int(), lex->kill_signal, lex->kill_type);
+      sql_kill(thd, it->val_int(), lex->kill_signal, lex->kill_type, lex->is_kill_safe);
+    }
+    else if (lex->kill_type == KILL_TYPE_ALL_THREADS)
+    {
+        sql_kill_all_threads(thd, lex->kill_signal, FALSE);
+    }
+    else if (lex->kill_type == KILL_TYPE_ALL_THREADS_FORCE)
+    {
+        sql_kill_all_threads(thd, lex->kill_signal, TRUE);
     }
     else
       sql_kill_user(thd, get_current_user(thd, lex->users_list.head()),
@@ -8906,7 +8916,7 @@ THD *find_thread_by_id(longlong id, bool query_id)
 */
 
 uint
-kill_one_thread(THD *thd, longlong id, killed_state kill_signal, killed_type type)
+kill_one_thread(THD *thd, longlong id, killed_state kill_signal, killed_type type, my_bool is_kill_safe)
 {
   THD *tmp;
   uint error= (type == KILL_TYPE_QUERY ? ER_NO_SUCH_QUERY : ER_NO_SUCH_THREAD);
@@ -8940,8 +8950,21 @@ kill_one_thread(THD *thd, longlong id, killed_state kill_signal, killed_type typ
         thd->security_ctx->user_matches(tmp->security_ctx)) &&
 	!wsrep_thd_is_BF(tmp, false))
     {
-      tmp->awake_no_mutex(kill_signal);
-      error=0;
+        if (!is_kill_safe  || 
+            ((tmp->get_command() == COM_SLEEP) && !thd_test_options(tmp, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+            )
+        {
+            /*
+            1. is_kill_safe = true, tmp must be SLEEP and not in transaction
+            2. is_kill_safe = false; kill
+         */
+            tmp->awake_no_mutex(kill_signal);
+            error = 0;
+        }
+        else
+        {
+            error = ER_THREAD_IN_USING_OR_TRANSACTION;
+        }
     }
     else
       error= (type == KILL_TYPE_QUERY ? ER_KILL_QUERY_DENIED_ERROR :
@@ -9043,10 +9066,10 @@ static uint kill_threads_for_user(THD *thd, LEX_USER *user,
 */
 
 static
-void sql_kill(THD *thd, longlong id, killed_state state, killed_type type)
+void sql_kill(THD *thd, longlong id, killed_state state, killed_type type, my_bool is_kill_safe)
 {
   uint error;
-  if (likely(!(error= kill_one_thread(thd, id, state, type))))
+  if (likely(!(error= kill_one_thread(thd, id, state, type, is_kill_safe))))
   {
     if (!thd->killed)
       my_ok(thd);
@@ -9073,6 +9096,99 @@ void sql_kill_user(THD *thd, LEX_USER *user, killed_state state)
     */
     my_error(error, MYF(0), user->host.str, user->user.str);
   }
+}
+
+
+
+static
+void sql_kill_all_threads(THD *thd, killed_state state, bool force)
+{
+    uint error;
+    ha_rows rows;
+    if (likely(!(error = kill_all_threads(thd, state, &rows, force))))
+        my_ok(thd, rows);
+    else
+    {
+        /*
+        This is probably ER_OUT_OF_RESOURCES, but in the future we may
+        want to write the name of the user we tried to kill
+        */
+
+        my_error(error, MYF(0), thd->security_ctx->host_or_ip, thd->security_ctx->user);
+    }
+}
+
+
+static uint kill_all_threads(THD *thd, killed_state kill_signal, ha_rows *rows, bool force)
+{
+    THD *tmp;
+    List<THD> threads_to_kill;
+    longlong max_thread_id = thd->thread_id;
+    DBUG_ENTER("sql_kill_all_threads");
+
+    *rows = 0;
+    if (unlikely(thd->is_fatal_error))        // If we run out of memory
+        DBUG_RETURN(ER_OUT_OF_RESOURCES);
+
+    mysql_mutex_lock(&LOCK_thread_count); // For unlink from list
+    I_List_iterator<THD> it(threads);
+    while ((tmp = it++))
+    {
+        if (tmp->get_command() == COM_DAEMON)
+            continue;
+        if (tmp == thd)
+            continue; /* skip current thd */
+        if (!(thd->security_ctx->master_access & SUPER_ACL))
+        {
+            mysql_mutex_unlock(&LOCK_thread_count);
+            DBUG_RETURN(ER_KILL_DENIED_ERROR);
+        }
+        
+        if (tmp->thread_id > max_thread_id)
+            max_thread_id = tmp->thread_id;
+
+        /*
+        1. kill threads all force, all user thd
+        2. other: sleep thd and not in transaction
+        */
+        if(force || 
+          ((tmp->get_command() == COM_SLEEP) && !thd_test_options(tmp, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+            )
+        {/* kill all force, all thread */
+         /* other:  only kill idel thread */
+            if (!threads_to_kill.push_back(tmp, thd->mem_root))
+                mysql_mutex_lock(&tmp->LOCK_thd_kill); // Lock from delete
+        }
+        else
+        {
+            tmp->kill_self = TRUE;
+        }
+    }
+
+    thd->status_var.max_thread_id_on_kill = max_thread_id;
+    mysql_mutex_unlock(&LOCK_thread_count);
+    if (!threads_to_kill.is_empty())
+    {
+        List_iterator_fast<THD> it2(threads_to_kill);
+        THD *next_ptr;
+        THD *ptr = it2++;
+        do
+        {
+            ptr->awake_no_mutex(kill_signal);
+            /*
+            Careful here: The list nodes are allocated on the memroots of the
+            THDs to be awakened.
+            But those THDs may be terminated and deleted as soon as we release
+            LOCK_thd_kill, which will make the list nodes invalid.
+            Since the operation "it++" dereferences the "next" pointer of the
+            previous list node, we need to do this while holding LOCK_thd_kill.
+            */
+            next_ptr = it2++;
+            mysql_mutex_unlock(&ptr->LOCK_thd_kill);
+            (*rows)++;
+        } while ((ptr = next_ptr));
+    }
+    DBUG_RETURN(0);
 }
 
 

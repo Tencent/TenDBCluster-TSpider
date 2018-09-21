@@ -516,7 +516,9 @@ enum killed_type
 {
   KILL_TYPE_ID,
   KILL_TYPE_USER,
-  KILL_TYPE_QUERY
+  KILL_TYPE_QUERY,
+  KILL_TYPE_ALL_THREADS,
+  KILL_TYPE_ALL_THREADS_FORCE
 };
 
 #include "sql_lex.h"				/* Must be here */
@@ -858,6 +860,7 @@ typedef struct system_status_var
   ulonglong table_open_cache_hits;
   ulonglong table_open_cache_misses;
   ulonglong table_open_cache_overflows;
+  ulonglong max_thread_id_on_kill;
   double last_query_cost;
   double cpu_time, busy_time;
   uint32 threads_running;
@@ -2283,6 +2286,7 @@ public:
     - Also ensures that THD is not deleted while mutex is hold
   */
   mysql_mutex_t LOCK_thd_kill;
+  my_bool kill_self;
 
   /* all prepared statements and cursors of this connection */
   Statement_map stmt_map;

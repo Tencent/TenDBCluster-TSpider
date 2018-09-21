@@ -838,6 +838,7 @@ THD::THD(my_thread_id id, bool is_wsrep_applier, bool skip_global_sys_var_lock)
   spider_slow_query_num = 0;
   spider_current_partition_num = 0;
   spider_features_type = 0;
+  kill_self = FALSE;
 
   file_id = 0;
   query_id= 0;
