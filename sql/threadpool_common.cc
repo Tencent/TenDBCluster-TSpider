@@ -189,6 +189,10 @@ void tp_callback(TP_connection *c)
     goto error;
   }
 
+  /* for "kill threads all" , and not in transaction */
+  if (thd->kill_self &&  !thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+      goto error;
+
   /* Set priority */
   c->priority= get_priority(c);
 

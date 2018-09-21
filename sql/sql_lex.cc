@@ -3118,6 +3118,7 @@ LEX::LEX()
                       initial_gtid_domain_buffer_size,
                       initial_gtid_domain_buffer_size, 0);
   spider_rone_shard_flag = FALSE;
+  is_kill_safe = FALSE;
 }
 
 

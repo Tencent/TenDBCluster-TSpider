@@ -562,6 +562,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  TERMINATED
 %token  TEXT_STRING
 %token  THEN_SYM                      /* SQL-2003-R */
+%token  THREADS_SYM
 %token  TINYBLOB
 %token  TINYINT
 %token  TINYTEXT

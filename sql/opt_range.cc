@@ -2411,7 +2411,7 @@ int SQL_SELECT::test_quick_select(THD *thd, key_map keys_to_use,
   quick_keys.clear_all();
   DBUG_ASSERT(!head->is_filled_at_execution());
 
-  /* single table query updaet in spider do not need using index */
+  /* single table query update in spider do not need using index */
   if (opt_spider_ignore_single_update_index &&
       thd && thd->lex &&
       thd->lex->sql_command == SQLCOM_UPDATE &&  /* simple update*/
