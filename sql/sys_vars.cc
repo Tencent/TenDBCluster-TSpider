@@ -6123,6 +6123,11 @@ static Sys_var_mybool Sys_spider_ignore_single_update_index(
     "spider_ignore_single_update_index defaults is TRUE, let single update in spider ignore all index",
     GLOBAL_VAR(opt_spider_ignore_single_update_index), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
 
+static Sys_var_mybool Sys_spider_group_by_handler(
+	"spider_group_by_handler",
+	"spider_group_by_handler defaults is FALSE, disable this function",
+	READ_ONLY GLOBAL_VAR(opt_spider_group_by_handler), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+
 static Sys_var_mybool Sys_spider_rone_shard_switch(
     "spider_rone_shard_switch",
     "enable the SPIDER_RONE_SHARD option effective",
