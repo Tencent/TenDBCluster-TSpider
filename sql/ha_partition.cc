@@ -9014,6 +9014,11 @@ int ha_partition::reset(void)
       result= tmp;
   }
   bitmap_clear_all(&m_partitions_to_reset);
+  if (opt_spider_group_by_handler)
+  {
+	  m_part_spec.start_part = NO_CURRENT_PART_ID;
+	  m_part_spec.end_part = NO_CURRENT_PART_ID;
+  }
   m_extra_prepare_for_update= FALSE;
   DBUG_RETURN(result);
 }
