@@ -1750,7 +1750,9 @@ int Lex_input_stream::lex_one_token(YYSTYPE *yylval, THD *thd)
             do not ignore MariaDB specific comments for the same versions.
           */ 
           if (version <= MYSQL_VERSION_ID &&
-              (version < 50700 || version > 99999 || maria_comment_syntax))
+              version != TMYSQL_IGNORE_ID &&
+            ((version < 50700 || version > 99999 || maria_comment_syntax) ||
+             (version >= TMYSQL_VERSION_START_ID && version <= TMYSQL_VERSION_ID)))
           {
             /* Accept 'M' 'm' 'm' 'd' 'd' */
             yySkipn(length);
