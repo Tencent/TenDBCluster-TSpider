@@ -28,6 +28,12 @@
 #define WSREP_PATCH_VERSION             "@WSREP_PATCH_VERSION@"
 #endif
 
+/* TMySQL start version,Should never change it! */
+#define TMYSQL_VERSION_START_ID	99000
+/* current TMySQL version, may change with TMySQL version: 5 numbers start from 99000 */
+#define TMYSQL_VERSION_ID  99106
+#define TMYSQL_IGNORE_ID  12345
+
 /* mysqld compile time options */
 #endif /* _CUSTOMCONFIG_ */
 
