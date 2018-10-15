@@ -1398,9 +1398,12 @@ void do_handle_one_connection(CONNECT *connect)
 
     while (thd_is_connection_alive(thd))
     {
-      mysql_audit_release(thd);
-      if (do_command(thd))
-	break;
+        mysql_audit_release(thd);
+        if (do_command(thd))
+            break;
+        /* for "kill threads all" , and not in transaction */
+        if (thd->kill_self && !thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+            break;
     }
     end_connection(thd);
 
