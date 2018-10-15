@@ -190,8 +190,11 @@ void tp_callback(TP_connection *c)
   }
 
   /* for "kill threads all" , and not in transaction */
-  if (thd->kill_self &&  !thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+  if (thd->kill_self && !thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+  {
+      thd->kill_self = FALSE;
       goto error;
+  }
 
   /* Set priority */
   c->priority= get_priority(c);
