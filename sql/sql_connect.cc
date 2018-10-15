@@ -1403,7 +1403,10 @@ void do_handle_one_connection(CONNECT *connect)
             break;
         /* for "kill threads all" , and not in transaction */
         if (thd->kill_self && !thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+        {
+            thd->kill_self = FALSE;
             break;
+        }
     }
     end_connection(thd);
 
