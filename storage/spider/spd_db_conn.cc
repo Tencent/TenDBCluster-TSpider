@@ -271,6 +271,9 @@ int spider_db_ping(
   int link_idx
 ) {
   DBUG_ENTER("spider_db_ping");
+  /* 去掉ping的行为,可能导致异常crash */
+      DBUG_RETURN(0);
+
 #ifndef DBUG_OFF
   if (spider->trx->thd)
     DBUG_PRINT("info", ("spider thd->query_id is %lld",
