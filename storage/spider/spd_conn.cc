@@ -2494,6 +2494,7 @@ void *spider_bg_conn_action(
     my_thread_end();
     DBUG_RETURN(NULL);
   }
+  thread_safe_decrement32(&thread_count);  /* for shutdonw, don't wait this thread */
   /* lex_start(thd); */
   conn->bg_thd = thd;
   pthread_mutex_lock(&conn->bg_conn_mutex);
@@ -5151,7 +5152,7 @@ static void *spider_get_status_action(void *arg)
             sleep(1);
         }
     }/* end while */
-    delete thd;
+ //   delete thd;
     my_thread_end();
     DBUG_RETURN(NULL);
 }
