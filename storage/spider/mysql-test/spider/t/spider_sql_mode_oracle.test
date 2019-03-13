@@ -1,3 +1,4 @@
+# fix bug for "set sql_mode=oracle" 
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

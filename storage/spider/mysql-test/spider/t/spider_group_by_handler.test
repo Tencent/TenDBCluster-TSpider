@@ -1,3 +1,4 @@
+# add read only variable:spider_group_by_handler,default false,means forbid direct join for spider
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

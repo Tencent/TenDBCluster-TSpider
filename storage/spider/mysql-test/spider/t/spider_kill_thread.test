@@ -1,3 +1,4 @@
+# add three ways to kill thread:1.kill thread_id safe 2.kill threads all  3.kill threads all force
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

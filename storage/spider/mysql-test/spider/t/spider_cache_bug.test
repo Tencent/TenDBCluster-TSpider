@@ -1,3 +1,6 @@
+# fix bug for cache
+# for the sql:"select uin, svr_id from DBPlayerInfo where level < 16 and date(now())-date(logout_time) > 14"
+# would send the result of date(now()) ,and compare with date(logout_time)
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

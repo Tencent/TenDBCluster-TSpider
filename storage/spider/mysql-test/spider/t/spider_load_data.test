@@ -1,3 +1,5 @@
+# fix bug for "load data local infile xxx replace into table t"
+# The above query insert into ignore in the logic distributed in tspider;After correction, distribute replace to the  remote db.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

@@ -1,3 +1,5 @@
+# when spider_bgs_mode=ON,and execute sql:"select * from t1 where c1>1 limit 1",each partition would execute sql:" select * from t1 where c1 > 1 limit 1".
+# when one partiton get result and spider commit,the other pastitions may be executing the sql.spider commit think the work thread is wrong,free con,and make crash.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

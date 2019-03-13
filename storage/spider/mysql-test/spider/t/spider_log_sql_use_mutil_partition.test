@@ -1,3 +1,4 @@
+#add global variables "log_sql_use_mutil_partition" just like log_queries_not_using_indexes, but log_sql_use_mutil_partition using for logging query which involving multiple partition
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

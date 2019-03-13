@@ -1,3 +1,4 @@
+# Fix bug for spider when using "not like"
 --disable_warnings
 --disable_query_log
 --disable_result_log
@@ -77,17 +78,10 @@ eval CREATE TABLE ta_l (
   PRIMARY KEY(a)
 ) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_2_1;
 --enable_query_log
-  if ($USE_GENERAL_LOG)
-  {
-    SET @old_log_output = @@global.log_output;
-    TRUNCATE TABLE mysql.general_log;
-    set global log_output = 'TABLE';
-  }
 INSERT INTO ta_l (a, b, c) VALUES
   (1, 'a', '2018-11-01 10:21:39'),
   (2, 'b', '2015-06-30 23:59:59'),
   (3, 'c', '2013-11-01 01:01:01');
-    SELECT * FROM mysql.general_log;
 
 --echo
 --echo spider not like bug fix test
@@ -127,11 +121,6 @@ if ($USE_CHILD_GROUP2)
 --disable_warnings
 --connection master_1
 DROP DATABASE IF EXISTS auto_test_local;
-if ($USE_CHILD_GROUP2)
-{
-  DROP DATABASE IF EXISTS auto_test_remote;
-  SET GLOBAL log_output = @old_log_output;
-}
 if ($USE_CHILD_GROUP2)
 {
   --connection child2_1

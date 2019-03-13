@@ -1,3 +1,4 @@
+# when set autocommit=0, it will send  autocommit=0 to remote mysql, and the next transactions do not need to display the specified start transaction.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

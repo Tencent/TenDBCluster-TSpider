@@ -1,3 +1,6 @@
+# fix bug for "select a, count(*) from t group by a order by 2 desc limit n;"
+# The above query will distribute group by order by limit to remote db,and finally get the wrong result.
+# after repair, for query like  grooup by+limit, limit will not be distributed to remote.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

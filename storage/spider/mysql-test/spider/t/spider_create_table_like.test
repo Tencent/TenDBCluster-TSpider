@@ -1,3 +1,6 @@
+# castrate thr usage of create table like on tspider
+# 1.when executing create table like on the tspider node, ignore the comment information in each partition. Avoid misoperation after tspider uses create table like.
+# 2.The above logic is controlled by the parameter opt_spider_ignore_create_like and is turned on by default. That is, the comment information of each partition is ignored when creating a spider table like.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc
