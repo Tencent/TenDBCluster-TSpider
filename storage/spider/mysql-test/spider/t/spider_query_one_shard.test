@@ -1,3 +1,5 @@
+# add variable:spider_query_one_shard, spider_transaction_one_shardi
+# the usage of config_table,specify config_table as true, the limit of spider_query_one_shard will be skipped, but the limit of spider_transaction_one_shard cannot be skipped.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

@@ -1,3 +1,4 @@
+# new function:fï¼:flush table with no block
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

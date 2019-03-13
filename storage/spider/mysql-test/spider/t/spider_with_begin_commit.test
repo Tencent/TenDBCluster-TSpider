@@ -1,3 +1,4 @@
+# add session variable "spider_with_begin_commit", default is false, done't send begin/commit to remote when autocommit=1 and without using begin/commit in application
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

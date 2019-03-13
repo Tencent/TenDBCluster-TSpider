@@ -1,3 +1,4 @@
+# delete without where , and return true rows.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

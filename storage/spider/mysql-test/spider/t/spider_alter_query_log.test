@@ -1,3 +1,4 @@
+# mysql.alter_log records all the log of DDL
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

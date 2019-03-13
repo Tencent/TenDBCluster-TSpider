@@ -1,3 +1,4 @@
+#add varaible:sql_safe_updates
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

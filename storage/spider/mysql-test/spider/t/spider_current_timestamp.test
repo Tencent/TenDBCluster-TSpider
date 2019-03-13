@@ -1,3 +1,5 @@
+# let current_timestamp  in show create table display as CURRENT_TIMESTAMP
+# let "ON UPDATE current_timestamp(0)" in show create table display as "ON UPDATE CURRENT_TIMESTAMP"
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

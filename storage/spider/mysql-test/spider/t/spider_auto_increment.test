@@ -1,3 +1,5 @@
+# add 3 variables : spider_auto_increment_mode_switch  spider_auto_increment_mode_value  spider_auto_increment_mode_step
+# spider_auto_increment:each spider node maintain their own auto_increment,all the spider in a cluster have the same spider_auto_increment_mode_step and have different spider_auto_increment_mode_value.
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

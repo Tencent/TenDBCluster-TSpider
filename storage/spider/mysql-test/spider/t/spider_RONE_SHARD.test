@@ -1,3 +1,6 @@
+# add global variables spider_rone_shard_switch, which enabling the SPIDER_RONE_SHARD option effective
+# add SPIDER_RONE_SHARD option, which enabling spider to  choose rand one shard to run sql
+# sql like this: select spider_rone_shard from tb limit 1;   only fetch result from one shard
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

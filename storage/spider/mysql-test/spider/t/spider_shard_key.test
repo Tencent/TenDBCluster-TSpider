@@ -1,3 +1,4 @@
+# support spceify shard_key in comment for spider
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

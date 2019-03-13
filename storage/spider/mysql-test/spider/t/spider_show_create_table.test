@@ -1,3 +1,5 @@
+# fix bug
+# after execute "show create table", an auto_inc state will be assigned, which affects the generation of the following auto_ inc.Resulting in duplicate auto-increase columns
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

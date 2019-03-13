@@ -1,3 +1,8 @@
+# some optimize
+# 1:direct_update/direct_delete support limit
+# 2:if assign order by,not support direct_update/direct_delete
+# 3:if contain user variables,not support direct_update/direct_delete
+# 4:fix bug about direct_update
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

@@ -1,3 +1,6 @@
+# fix bug for update timestamp
+# no-direct_udpate will be executed if the following conditions are met at the same time
+# 1:set timestamp = xxxx 2:table contains timestamp,and on update CURRENT_TIMESTAMP
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc

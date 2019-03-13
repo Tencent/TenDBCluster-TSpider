@@ -1,3 +1,4 @@
+# fix bug for "create or replace table t1 (a int, b varchar(10) generated always as (sysdate()) virtual)"
 --disable_warnings
 --disable_query_log
 --disable_result_log

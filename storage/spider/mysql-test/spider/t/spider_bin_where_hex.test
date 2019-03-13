@@ -1,3 +1,4 @@
+# when hexadecimal is used as a condition for binary, the intercept length is incorrect
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc
