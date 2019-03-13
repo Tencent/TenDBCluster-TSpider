@@ -1,0 +1,55 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+
+create table with multi CHARACTER-SET
+DROP TABLE IF EXISTS tbl_a;
+CREATE TABLE tbl_a (
+`id` varchar(8) character set gbk NOT NULL default '',
+PRIMARY KEY  (`id`),
+col1 CHAR(10) CHARACTER SET utf8 ) 
+MASTER_1_ENGINE  CHARACTER SET latin1 COLLATE latin1_bin  MASTER_1_COMMENT_2_1
+ERROR HY000: Field 'id' can not charset for column in this storage
+
+select for master
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%create %';
+argument
+CREATE TABLE tbl_a (
+`id` varchar(8) character set gbk NOT NULL default '',
+PRIMARY KEY  (`id`),
+col1 CHAR(10) CHARACTER SET utf8 ) 
+ENGINE=Spider  CHARACTER SET latin1 COLLATE latin1_bin  COMMENT='database "auto_test_remote", table "tbl_a", srv "s_2_1", aim "0"'
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%create %'
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

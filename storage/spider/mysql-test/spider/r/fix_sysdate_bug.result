@@ -1,0 +1,50 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET GLOBAL log_output = 'TABLE,FILE';
+DROP TABLE IF EXISTS tbl_a;
+create or replace table tbl_a (a int, b varchar(10) generated always as (sysdate()) virtual);
+create or replace table tbl_a (a int, b varchar(10) generated always as (sysdate()) virtual);
+show create table tbl_a;
+Table	Create Table
+tbl_a	CREATE TABLE `tbl_a` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) GENERATED ALWAYS AS (sysdate()) VIRTUAL
+) ENGINE=MyISAM DEFAULT CHARSET=latin1
+
+select for master
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%create %';
+argument
+create or replace table tbl_a (a int, b varchar(10) generated always as (sysdate()) virtual)
+create or replace table tbl_a (a int, b varchar(10) generated always as (sysdate()) virtual)
+show create table tbl_a
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%create %'
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

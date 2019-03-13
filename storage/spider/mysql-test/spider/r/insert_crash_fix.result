@@ -1,0 +1,52 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET GLOBAL log_output = 'TABLE,FILE';
+DROP TABLE IF EXISTS tbl_a;
+CREATE TABLE tbl_a (
+ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+tsv TIMESTAMP AS (ADDDATE(ts, INTERVAL 1 DAY)) VIRTUAL
+) ENGINE=MyISAM;
+INSERT INTO tbl_a (tsv) VALUES (DEFAULT);
+INSERT DELAYED INTO tbl_a (tsv) VALUES (DEFAULT);
+
+select for master
+SELECT argument FROM mysql.general_log;
+argument
+DROP TABLE IF EXISTS tbl_a
+CREATE TABLE tbl_a (
+ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+tsv TIMESTAMP AS (ADDDATE(ts, INTERVAL 1 DAY)) VIRTUAL
+) ENGINE=MyISAM
+INSERT INTO tbl_a (tsv) VALUES (DEFAULT)
+INSERT DELAYED INTO tbl_a (tsv) VALUES (DEFAULT)
+SELECT argument FROM mysql.general_log
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

@@ -1,0 +1,222 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+show variables like "spider_bgs_mode";
+Variable_name	Value
+spider_bgs_mode	0
+SET @old_spider_bgs_mode = @@spider_bgs_mode;
+SET spider_bgs_mode = 1;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+connection child2_3;
+DROP DATABASE IF EXISTS auto_test_remote_3;
+CREATE DATABASE auto_test_remote_3;
+USE auto_test_remote_3;
+connection child3_1;
+DROP DATABASE IF EXISTS auto_test_remote_4;
+CREATE DATABASE auto_test_remote_4;
+USE auto_test_remote_4;
+connection child3_2;
+DROP DATABASE IF EXISTS auto_test_remote_5;
+CREATE DATABASE auto_test_remote_5;
+USE auto_test_remote_5;
+connection child3_3;
+DROP DATABASE IF EXISTS auto_test_remote_6;
+CREATE DATABASE auto_test_remote_6;
+USE auto_test_remote_6;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child2_3;
+CHILD2_3_DROP_TABLES
+CHILD2_3_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child3_1;
+CHILD3_1_DROP_TABLES
+CHILD3_1_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child3_2;
+CHILD3_2_DROP_TABLES
+CHILD3_2_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child3_3;
+CHILD3_3_DROP_TABLES
+CHILD3_3_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS ta_l;
+show variables like "spider_bgs_mode";
+Variable_name	Value
+spider_bgs_mode	1
+CREATE TABLE tbl_a
+(id INT AUTO_INCREMENT PRIMARY KEY,
+t INT,
+start_time DATE NOT NULL, 
+end_time DATE NOT NULL) ENGINE=Spider  PARTITION BY LIST (crc32(id)%6)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"',
+PARTITION pt2 VALUES IN (2) COMMENT = 'database "auto_test_remote_3", table "tbl_a", srv "s_2_3",aim "2"',
+PARTITION pt3 VALUES IN (3) COMMENT = 'database "auto_test_remote_4", table "tbl_a", srv "s_3_1",aim "3"',
+PARTITION pt4 VALUES IN (4) COMMENT = 'database "auto_test_remote_5", table "tbl_a", srv "s_3_2",aim "4"',
+PARTITION pt5 VALUES IN (5) COMMENT = 'database "auto_test_remote_6", table "tbl_a", srv "s_3_3",aim "5"');
+INSERT INTO tbl_a(t,start_time, end_time)
+VALUES(1,'1983-01-01', '1990-01-01'),
+(2,'1983-01-01', '1989-06-06'),
+(3,'1983-01-01', '1985-03-02'),
+(4,'1983-01-01', '1992-05-05'),
+(5,'1983-01-01', '1995-12-01'),
+(6,'1984-01-01', '1989-06-06'),
+(7,'1984-01-01', '1985-03-02'),
+(8,'1984-01-01', '1992-05-05'),
+(9,'1984-01-01', '1995-12-01');
+select * from tbl_a;
+id	t	start_time	end_time
+103	7	1984-01-01	1985-03-02
+52	4	1983-01-01	1992-05-05
+120	8	1984-01-01	1992-05-05
+137	9	1984-01-01	1995-12-01
+18	2	1983-01-01	1989-06-06
+86	6	1984-01-01	1989-06-06
+35	3	1983-01-01	1985-03-02
+69	5	1983-01-01	1995-12-01
+1	1	1983-01-01	1990-01-01
+connection child2_1;
+truncate table mysql.general_log;
+connection child2_2;
+select * from tbl_a;
+id	t	start_time	end_time
+52	4	1983-01-01	1992-05-05
+truncate table mysql.general_log;
+connection child2_3;
+select * from tbl_a;
+id	t	start_time	end_time
+120	8	1984-01-01	1992-05-05
+137	9	1984-01-01	1995-12-01
+truncate table mysql.general_log;
+connection child3_1;
+truncate table mysql.general_log;
+connection child3_2;
+truncate table mysql.general_log;
+connection child3_3;
+truncate table mysql.general_log;
+connection master_1;
+truncate table mysql.general_log;
+select * from  tbl_a where t > 7 limit 1;
+id	t	start_time	end_time
+120	8	1984-01-01	1992-05-05
+
+select for master
+SELECT argument FROM mysql.general_log;
+argument
+select * from  tbl_a where t > 7 limit 1
+mysql localhost select `id`,`t`,`start_time`,`end_time` from `auto_test_remote`.`tbl_a` where (`t` > 7) limit 1
+mysql localhost select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_2`.`tbl_a` where (`t` > 7) limit 1
+mysql localhost select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_3`.`tbl_a` where (`t` > 7) limit 1
+SELECT argument FROM mysql.general_log
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+select `id`,`t`,`start_time`,`end_time` from `auto_test_remote`.`tbl_a` where (`t` > 7) limit 1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_2`.`tbl_a` where (`t` > 7) limit 1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child2_3;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_3`.`tbl_a` where (`t` > 7) limit 1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child3_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child3_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child3_3;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET spider_bgs_mode = @old_spider_bgs_mode;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+SET GLOBAL log_output = @old_log_output;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+SET GLOBAL log_output = @old_log_output;
+connection child2_3;
+DROP DATABASE IF EXISTS auto_test_remote_3;
+SET GLOBAL log_output = @old_log_output;
+connection child3_1;
+DROP DATABASE IF EXISTS auto_test_remote_4;
+SET GLOBAL log_output = @old_log_output;
+connection child3_2;
+DROP DATABASE IF EXISTS auto_test_remote_5;
+SET GLOBAL log_output = @old_log_output;
+connection child3_3;
+DROP DATABASE IF EXISTS auto_test_remote_6;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

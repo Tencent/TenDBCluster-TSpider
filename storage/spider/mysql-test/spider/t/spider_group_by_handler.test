@@ -1,0 +1,245 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+    SET @old_log_output = @@global.log_output;
+    SET @old_log_output1 = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE,FILE';
+    set global spider_general_log=1;
+    TRUNCATE TABLE mysql.general_log;
+}
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+  if ($USE_GENERAL_LOG)
+  {
+    SET @old_log_output = @@global.log_output;
+    TRUNCATE TABLE mysql.general_log;
+    set global log_output = 'TABLE';
+  }
+}
+--enable_warnings
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+    --disable_query_log
+    --disable_result_log
+    CREATE TABLE `tbl_a1` (
+  `zone` int(11) NOT NULL DEFAULT 1,
+  `groupname` varchar(64) NOT NULL DEFAULT '0',
+  `prename` varchar(64) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `publicip` varchar(128) NOT NULL,
+  `ip` varchar(128) NOT NULL,
+  `port` int(11) NOT NULL DEFAULT 8006,
+  `logicport` int(11) NOT NULL DEFAULT 8001,
+  `isstop` int(11) NOT NULL DEFAULT 0,
+  `isvisible` int(11) NOT NULL DEFAULT 1,
+  `isrecommend` int(11) NOT NULL DEFAULT 0,
+  `maxonline` int(11) NOT NULL DEFAULT 5000,
+  `onlinenum` int(11) NOT NULL DEFAULT 0,
+  `regnum` int(11) NOT NULL DEFAULT 15000,
+  `dbip` varchar(64) NOT NULL,
+  `dbport` int(11) NOT NULL DEFAULT 3306,
+  `dbuser` varchar(64) NOT NULL DEFAULT 'root',
+  `dbpass` varchar(64) NOT NULL DEFAULT '123456',
+  `roledbname` varchar(64) NOT NULL DEFAULT 'master2_role',
+  `platform` int(11) NOT NULL DEFAULT 8,
+  PRIMARY KEY (`zone`),
+  UNIQUE KEY `zone` (`zone`) USING BTREE
+  );
+
+  CREATE TABLE `tbl_a2` (
+  `account` varchar(128) NOT NULL,
+  `zone` int(11) NOT NULL,
+  PRIMARY KEY (`account`)
+  );
+    create table tbl_a1_0 like tbl_a1;
+    create table tbl_a1_1 like tbl_a1;
+    create table tbl_a1_2 like tbl_a1;
+    create table tbl_a1_3 like tbl_a1;
+    create table tbl_a1_4 like tbl_a1;
+    create table tbl_a1_5 like tbl_a1;
+    create table tbl_a1_6 like tbl_a1;
+    create table tbl_a1_7 like tbl_a1;
+    create table tbl_a1_8 like tbl_a1;
+    create table tbl_a1_9 like tbl_a1;
+    create table tbl_a1_10 like tbl_a1;
+    create table tbl_a1_11 like tbl_a1;
+    create table tbl_a2_0 like tbl_a2;
+    create table tbl_a2_1 like tbl_a2;
+    create table tbl_a2_2 like tbl_a2;
+    create table tbl_a2_3 like tbl_a2;
+    create table tbl_a2_4 like tbl_a2;
+    create table tbl_a2_5 like tbl_a2;
+    create table tbl_a2_6 like tbl_a2;
+    create table tbl_a2_7 like tbl_a2;
+    create table tbl_a2_8 like tbl_a2;
+    create table tbl_a2_9 like tbl_a2;
+    create table tbl_a2_10 like tbl_a2;
+    create table tbl_a2_11 like tbl_a2;
+    --enable_query_log
+    --enable_result_log
+}
+
+
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+DROP TABLE IF EXISTS tbl_a1;
+DROP TABLE IF EXISTS tbl_a2;
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+
+CREATE TABLE `tbl_a1` (
+  `zone` int(11) NOT NULL DEFAULT 1,
+  `groupname` varchar(64) NOT NULL DEFAULT '0',
+  `prename` varchar(64) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `publicip` varchar(128) NOT NULL,
+  `ip` varchar(128) NOT NULL,
+  `port` int(11) NOT NULL DEFAULT 8006,
+  `logicport` int(11) NOT NULL DEFAULT 8001,
+  `isstop` int(11) NOT NULL DEFAULT 0,
+  `isvisible` int(11) NOT NULL DEFAULT 1,
+  `isrecommend` int(11) NOT NULL DEFAULT 0,
+  `maxonline` int(11) NOT NULL DEFAULT 5000,
+  `onlinenum` int(11) NOT NULL DEFAULT 0,
+  `regnum` int(11) NOT NULL DEFAULT 15000,
+  `dbip` varchar(64) NOT NULL,
+  `dbport` int(11) NOT NULL DEFAULT 3306,
+  `dbuser` varchar(64) NOT NULL DEFAULT 'root',
+  `dbpass` varchar(64) NOT NULL DEFAULT '123456',
+  `roledbname` varchar(64) NOT NULL DEFAULT 'master2_role',
+  `platform` int(11) NOT NULL DEFAULT 8,
+  PRIMARY KEY (`zone`),
+  UNIQUE KEY `zone` (`zone`) USING BTREE
+) ENGINE=SPIDER DEFAULT CHARSET=utf8mb4
+ PARTITION BY LIST (crc32(`zone`) MOD 12)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a1_0", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote", table "tbl_a1_1", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt2` VALUES IN (2) COMMENT = 'database "auto_test_remote", table "tbl_a1_2", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt3` VALUES IN (3) COMMENT = 'database "auto_test_remote", table "tbl_a1_3", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt4` VALUES IN (4) COMMENT = 'database "auto_test_remote", table "tbl_a1_4", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt5` VALUES IN (5) COMMENT = 'database "auto_test_remote", table "tbl_a1_5", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt6` VALUES IN (6) COMMENT = 'database "auto_test_remote", table "tbl_a1_6", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt7` VALUES IN (7) COMMENT = 'database "auto_test_remote", table "tbl_a1_7", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt8` VALUES IN (8) COMMENT = 'database "auto_test_remote", table "tbl_a1_8", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt9` VALUES IN (9) COMMENT = 'database "auto_test_remote", table "tbl_a1_9", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt10` VALUES IN (10) COMMENT = 'database "auto_test_remote", table "tbl_a1_10", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt11` VALUES IN (11) COMMENT = 'database "auto_test_remote", table "tbl_a1_11", server "s_2_1"' ENGINE = SPIDER);
+
+CREATE TABLE `tbl_a2` (
+  `account` varchar(128) NOT NULL,
+  `zone` int(11) NOT NULL,
+  PRIMARY KEY (`account`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8mb4
+ PARTITION BY LIST (crc32(`account`) MOD 12)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a2_0", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote", table "tbl_a2_1", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt2` VALUES IN (2) COMMENT = 'database "auto_test_remote", table "tbl_a2_2", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt3` VALUES IN (3) COMMENT = 'database "auto_test_remote", table "tbl_a2_3", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt4` VALUES IN (4) COMMENT = 'database "auto_test_remote", table "tbl_a2_4", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt5` VALUES IN (5) COMMENT = 'database "auto_test_remote", table "tbl_a2_5", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt6` VALUES IN (6) COMMENT = 'database "auto_test_remote", table "tbl_a2_6", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt7` VALUES IN (7) COMMENT = 'database "auto_test_remote", table "tbl_a2_7", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt8` VALUES IN (8) COMMENT = 'database "auto_test_remote", table "tbl_a2_8", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt9` VALUES IN (9) COMMENT = 'database "auto_test_remote", table "tbl_a2_9", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt10` VALUES IN (10) COMMENT = 'database "auto_test_remote", table "tbl_a2_10", server "s_2_1"' ENGINE = SPIDER,
+ PARTITION `pt11` VALUES IN (11) COMMENT = 'database "auto_test_remote", table "tbl_a2_11", server "s_2_1"' ENGINE = SPIDER);
+
+--disable_warnings
+insert into tbl_a1(zone,isvisible) values(1,1);
+insert into tbl_a1(zone,isvisible) values(2,0);
+insert into tbl_a1(zone,isvisible) values(3,0);
+--enable_warnings
+insert into tbl_a2(account,zone) values("o110W5yqygj8LeFHXT2FEr-Ft_Zc",1);
+insert into tbl_a2(account,zone) values("xxxo110W5yqygj8LeFHXT2FEr-Ft_Zc",2);
+insert into tbl_a2(account,zone) values("yyyo110W5yqygj8LeFHXT2FEr-Ft_Zc",3);
+
+show variables like 'spider_group_by_handler';
+if ($USE_GENERAL_LOG)
+{
+    TRUNCATE TABLE mysql.general_log;
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  TRUNCATE TABLE mysql.general_log;
+}
+--connection master_1
+select isvisible, prename,  name, publicip as ip,  port, tbl_a1.zone as zone, maxonline, onlinenum from tbl_a2,tbl_a1 where tbl_a2.zone=tbl_a1.zone and isvisible  = 1 and account = 'o110W5yqygj8LeFHXT2FEr-Ft_Zc';
+select * from tbl_a2;
+
+
+--echo
+--echo test for master
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log;
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log;
+  }
+}
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+  SET GLOBAL log_output = @old_log_output;
+  SET GLOBAL spider_general_log = @old_log_output1;
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
+
+

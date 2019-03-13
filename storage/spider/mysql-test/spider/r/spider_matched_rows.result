@@ -1,0 +1,69 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+
+create table for child
+connection master_1;
+DROP TABLE IF EXISTS ta_l;
+CREATE TABLE ta_l (
+a INT,
+b CHAR(1),
+c DATETIME,
+PRIMARY KEY(a)
+) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_2_1
+INSERT INTO ta_l (a, b, c) VALUES
+(3, 'c', '2013-11-01 01:01:01');
+update ta_l set b='d' where a=3;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%';
+argument
+update ta_l set b='d' where a=3
+mysql localhost update `auto_test_remote`.`ta_r` set `b` = 'd' where (`a` = 3)
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%'
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%';
+argument
+update `auto_test_remote`.`ta_r` set `b` = 'd' where (`a` = 3)
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%'
+
+deinit
+connection master_1;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

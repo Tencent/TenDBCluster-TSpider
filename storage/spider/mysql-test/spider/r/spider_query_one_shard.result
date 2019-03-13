@@ -1,0 +1,143 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET @old_spider_query_one_shard = @@global.spider_query_one_shard;
+SET @old_spider_transaction_one_shard = @@global.spider_transaction_one_shard;
+SET GLOBAL spider_query_one_shard = ON;
+SET GLOBAL spider_transaction_one_shard = ON;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+CREATE TABLE tbl_a (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`)
+) ENGINE=Spider  COMMENT='shard_key "id"' PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+insert into tbl_a(id,c1)
+VALUES(1,1),
+(2,2),
+(3,3),
+(4,4),
+(5,5);
+
+test for super
+
+test for spider_query_one_shard
+select *  from  tbl_a;
+id	c1
+4	4
+5	5
+1	1
+2	2
+3	3
+
+test for spider_transaction_one_shard
+set autocommit=0;
+begin;
+update tbl_a set c1=4 where id=1;
+update tbl_a set c1=4 where id=1;
+commit;
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, EXECUTE on *.* to alex@'localhost';
+connect  master_1_test, localhost, alex, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK;
+connection master_1_test;
+USE test;
+CREATE TABLE tbl_a (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`)
+) ENGINE=Spider  COMMENT='shard_key "id"' PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+
+test for no_super
+
+test for spider_query_one_shard
+select *  from  tbl_a where id>1;
+ERROR HY000: Select across multiple partitions denied to user 'alex'@'localhost' for table '' 
+
+test for spider_transaction_one_shard
+set autocommit=0;
+begin;
+update tbl_a set c1=4 where id=1;
+update tbl_a set c1=4 where id=4;
+ERROR HY000: Transaction across different partitions denied to user 'alex'@'localhost'
+commit;
+CREATE TABLE tbl_a_2 (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`)
+) ENGINE=Spider COMMENT='shard_key "id",config_table "true"' PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+
+test for config_table
+
+test for spider_query_one_shard
+set autocommit=1;
+select *  from  tbl_a_2 where id>1;
+id	c1
+4	4
+5	5
+2	2
+3	3
+
+test for spider_transaction_one_shard
+set autocommit=0;
+begin;
+update tbl_a_2 set c1=4 where id=1;
+update tbl_a_2 set c1=4 where id=4;
+ERROR HY000: Transaction across different partitions denied to user 'alex'@'localhost'
+commit;
+
+deinit
+connection master_1_test;
+drop table tbl_a;
+drop table tbl_a_2;
+connection master_1;
+revoke all privileges on *.* from alex@'localhost';
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL spider_query_one_shard = @old_spider_query_one_shard;
+SET GLOBAL spider_transaction_one_shard = @old_spider_transaction_one_shard;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
