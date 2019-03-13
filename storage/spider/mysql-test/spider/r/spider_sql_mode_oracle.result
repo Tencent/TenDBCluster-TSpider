@@ -1,0 +1,85 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child2_2;
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+
+create table for master
+connection master_1;
+show variables like "sql_mode";
+Variable_name	Value
+sql_mode	
+set sql_mode='oracle';
+
+select for master
+SELECT argument FROM mysql.general_log;
+argument
+CREATE DATABASE auto_test_local
+USE auto_test_local
+show variables like "sql_mode"
+set sql_mode='oracle'
+SELECT argument FROM mysql.general_log
+connection child2_1;
+SELECT argument FROM mysql.general_log;
+argument
+SELECT argument FROM mysql.general_log
+connection child2_2;
+SELECT argument FROM mysql.general_log;
+argument
+SELECT argument FROM mysql.general_log
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+SET GLOBAL log_output = @old_log_output;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

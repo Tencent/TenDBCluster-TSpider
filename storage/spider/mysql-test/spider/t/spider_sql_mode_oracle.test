@@ -1,0 +1,159 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+    SET @old_log_output = @@global.log_output;
+    SET @old_log_output1 = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE,FILE';
+    set global spider_general_log=1;
+    TRUNCATE TABLE mysql.general_log;
+}
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  CREATE DATABASE auto_test_remote_2;
+  USE auto_test_remote_2;
+}
+--enable_warnings
+
+
+
+
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SET @old_log_output = @@global.log_output;
+    TRUNCATE TABLE mysql.general_log;
+    set global log_output = 'TABLE';
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SET @old_log_output = @@global.log_output;
+    TRUNCATE TABLE mysql.general_log;
+    set global log_output = 'TABLE';
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+show variables like "sql_mode";
+set sql_mode='oracle';
+
+--echo
+--echo select for master
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log;
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log;
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log;
+  }
+}
+
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+  SET GLOBAL log_output = @old_log_output;
+  SET GLOBAL spider_general_log = @old_log_output1;
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
+
+
+
+
+
+
+
+

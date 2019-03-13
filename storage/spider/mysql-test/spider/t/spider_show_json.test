@@ -1,0 +1,48 @@
+--disable_warnings
+--disable_query_log
+--disable_result_log
+--source test_init.inc
+--enable_result_log
+--enable_query_log
+
+--echo
+--echo drop and create databases
+--connection master_1
+--disable_warnings
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+--enable_warnings
+
+
+
+--disable_warnings
+DROP TABLE IF EXISTS tbl_a;
+--enable_warnings
+
+
+--enable_query_log
+create table t_comp (c1  blob compressed, c2 json)  ENGINE=innodb DEFAULT CHARSET=latin1;
+show create table t_comp;
+--disable_query_log
+
+
+
+
+
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
+
+

@@ -1,0 +1,64 @@
+--disable_warnings
+--disable_query_log
+--disable_result_log
+--source test_init.inc
+--enable_result_log
+--enable_query_log
+
+--echo
+--echo drop and create databases
+--connection master_1
+--disable_warnings
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_GENERAL_LOG)
+ {
+    SET @old_log_output = @@global.log_output;
+    SET GLOBAL log_output = 'TABLE,FILE';
+ }
+--enable_warnings
+
+
+--disable_warnings
+DROP TABLE IF EXISTS tbl_a;
+--enable_warnings
+--enable_query_log
+
+
+
+ eval CREATE TABLE tbl_a (
+ ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ tsv TIMESTAMP AS (ADDDATE(ts, INTERVAL 1 DAY)) VIRTUAL
+) ENGINE=MyISAM;
+INSERT INTO tbl_a (tsv) VALUES (DEFAULT);
+INSERT DELAYED INTO tbl_a (tsv) VALUES (DEFAULT);
+
+if ($USE_GENERAL_LOG)
+{
+   --echo
+   --echo select for master
+   SELECT argument FROM mysql.general_log;
+}
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
+
+

@@ -1,0 +1,88 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS ta_l;
+CREATE TABLE tbl_a (
+`id` int(11) NOT NULL default '0',
+`v1` int(10) unsigned NOT NULL default '0',
+`v2` int(10) unsigned NOT NULL default '0',
+`v3` int(10) unsigned NOT NULL default '0',
+PRIMARY KEY  (`id`),
+KEY `v1_v2_v3` (`v1`,`v2`,`v3`)
+) ENGINE=Spider  PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+show create table tbl_a;
+Table	Create Table
+tbl_a	CREATE TABLE `tbl_a` (
+  `id` int(11) NOT NULL DEFAULT 0,
+  `v1` int(10) unsigned NOT NULL DEFAULT 0,
+  `v2` int(10) unsigned NOT NULL DEFAULT 0,
+  `v3` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `v1_v2_v3` (`v1`,`v2`,`v3`)
+) ENGINE=SPIDER DEFAULT CHARSET=latin1
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+explain select count(distinct v1) from tbl_a;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tbl_a	ALL	NULL	NULL	NULL	NULL	4	
+connection child2_1;
+explain select count(distinct v1) from tbl_a;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tbl_a	range	NULL	v1_v2_v3	4	NULL	2	Using index for group-by (scanning)
+connection child2_2;
+explain select count(distinct v1) from tbl_a;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tbl_a	range	NULL	v1_v2_v3	4	NULL	2	Using index for group-by (scanning)
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
