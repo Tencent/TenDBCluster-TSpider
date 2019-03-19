@@ -11,92 +11,33 @@ child3_3
 drop and create databases
 connection master_1;
 DROP DATABASE IF EXISTS auto_test_local;
-SET @old_log_output = @@global.log_output;
-SET @old_log_output1 = @@global.spider_general_log;
-SET GLOBAL log_output = 'TABLE,FILE';
-set global spider_general_log=1;
-TRUNCATE TABLE mysql.general_log;
 CREATE DATABASE auto_test_local;
 USE auto_test_local;
-connection child2_1;
-DROP DATABASE IF EXISTS auto_test_remote;
-CREATE DATABASE auto_test_remote;
-USE auto_test_remote;
-connection child2_2;
-DROP DATABASE IF EXISTS auto_test_remote_2;
-CREATE DATABASE auto_test_remote_2;
-USE auto_test_remote_2;
-
-create table for child
-connection child2_1;
-CHILD2_1_DROP_TABLES
-CHILD2_1_CREATE_TABLES
 SET @old_log_output = @@global.log_output;
-TRUNCATE TABLE mysql.general_log;
-set global log_output = 'TABLE';
-connection child2_2;
-CHILD2_2_DROP_TABLES
-CHILD2_2_CREATE_TABLES
-SET @old_log_output = @@global.log_output;
-TRUNCATE TABLE mysql.general_log;
-set global log_output = 'TABLE';
-
-create table for master
-connection master_1;
-DROP TABLE IF EXISTS ta_l;
-create  table  tbl_a
-(
-id INT AUTO_INCREMENT PRIMARY KEY,
+SET GLOBAL log_output = 'TABLE,FILE';
+DROP TABLE IF EXISTS tbl_a;
+CREATE TABLE tbl_a (
 ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 tsv TIMESTAMP AS (ADDDATE(ts, INTERVAL 1 DAY)) VIRTUAL
-) ENGINE=Spider DEFAULT CHARSET=latin1 PARTITION BY LIST (crc32(id)%2)
-(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
-PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
-set timestamp=unix_timestamp('2001-02-03 10:20:30');
+) ENGINE=MyISAM;
 INSERT INTO tbl_a (tsv) VALUES (DEFAULT);
-INSERT INTO tbl_a (tsv) VALUES (DEFAULT);
-INSERT INTO tbl_a (tsv) VALUES (DEFAULT);
-INSERT INTO tbl_a (tsv) VALUES (DEFAULT);
+INSERT DELAYED INTO tbl_a (tsv) VALUES (DEFAULT);
 
 select for master
 SELECT argument FROM mysql.general_log;
 argument
-CREATE DATABASE auto_test_local
-USE auto_test_local
-DROP TABLE IF EXISTS ta_l
-create  table  tbl_a
-(
-id INT AUTO_INCREMENT PRIMARY KEY,
+DROP TABLE IF EXISTS tbl_a
+CREATE TABLE tbl_a (
 ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 tsv TIMESTAMP AS (ADDDATE(ts, INTERVAL 1 DAY)) VIRTUAL
-) ENGINE=Spider DEFAULT CHARSET=latin1 PARTITION BY LIST (crc32(id)%2)
-(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
-PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"')
-set timestamp=unix_timestamp('2001-02-03 10:20:30')
+) ENGINE=MyISAM
 INSERT INTO tbl_a (tsv) VALUES (DEFAULT)
-mysql localhost set session transaction isolation level repeatable read;set session autocommit = 1;set session time_zone = 'SYSTEM'
-mysql localhost select `id`,`ts`,`tsv` from `auto_test_remote`.`tbl_a` order by `id` desc limit 1 for update
-mysql localhost set session transaction isolation level repeatable read;set session autocommit = 1;set session time_zone = 'SYSTEM'
-mysql localhost select `id`,`ts`,`tsv` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 1 for update
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`ts`,`tsv`)values(1,'2001-02-03 10:20:30','2001-02-04 10:20:30')
-INSERT INTO tbl_a (tsv) VALUES (DEFAULT)
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`ts`,`tsv`)values(18,'2001-02-03 10:20:30','2001-02-04 10:20:30')
-INSERT INTO tbl_a (tsv) VALUES (DEFAULT)
-mysql localhost insert into `auto_test_remote`.`tbl_a`(`id`,`ts`,`tsv`)values(35,'2001-02-03 10:20:30','2001-02-04 10:20:30')
-INSERT INTO tbl_a (tsv) VALUES (DEFAULT)
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`ts`,`tsv`)values(52,'2001-02-03 10:20:30','2001-02-04 10:20:30')
+INSERT DELAYED INTO tbl_a (tsv) VALUES (DEFAULT)
 SELECT argument FROM mysql.general_log
 
 deinit
 connection master_1;
 DROP DATABASE IF EXISTS auto_test_local;
-SET GLOBAL log_output = @old_log_output;
-SET GLOBAL spider_general_log = @old_log_output1;
-connection child2_1;
-DROP DATABASE IF EXISTS auto_test_remote;
-SET GLOBAL log_output = @old_log_output;
-connection child2_2;
-DROP DATABASE IF EXISTS auto_test_remote_2;
 SET GLOBAL log_output = @old_log_output;
 for master_1
 for child2
