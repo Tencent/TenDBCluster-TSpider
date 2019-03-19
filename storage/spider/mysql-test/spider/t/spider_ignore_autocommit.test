@@ -1,4 +1,4 @@
-# fix bug for "create or replace table t1 (a int, b varchar(10) generated always as (sysdate()) virtual)"
+# set spider_ignore_autocommit=ON will  distribute "set autocommit=ON" to  remotedb, and ignore sql:"set autocommit=OFF"
 --disable_warnings
 --disable_query_log
 --source ../t/test_init.inc
@@ -15,6 +15,7 @@
 --echo drop and create databases
 --connection master_1
 DROP DATABASE IF EXISTS auto_test_local;
+
 if ($USE_GENERAL_LOG)
 {
     SET @old_log_output = @@global.log_output;
@@ -38,16 +39,16 @@ if ($USE_CHILD_GROUP2)
   USE auto_test_remote_2;
 }
 --enable_warnings
-
-
 --let $CHILD2_1_DROP_TABLES_BACKUP= $CHILD2_1_DROP_TABLES
 let $CHILD2_1_DROP_TABLES=
   DROP TABLE IF EXISTS tbl_a;
 --let $CHILD2_1_CREATE_TABLES_BACKUP= $CHILD2_1_CREATE_TABLES
 let $CHILD2_1_CREATE_TABLES=
-CREATE TABLE tbl_a
-(
-    a int, b varchar(10) generated always as (sysdate()) virtual 
+ CREATE TABLE tbl_a (
+  `id` int(8) NOT NULL AUTO_INCREMENT,
+   `t` int(11) NOT NULL DEFAULT '0',
+  `name` char(24) DEFAULT NULL,
+  PRIMARY KEY (`id`)
 )$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
 
 
@@ -56,9 +57,11 @@ let $CHILD2_2_DROP_TABLES=
   DROP TABLE IF EXISTS tbl_a;
 --let $CHILD2_2_CREATE_TABLES_BACKUP= $CHILD2_2_CREATE_TABLES
 let $CHILD2_2_CREATE_TABLES=
-CREATE TABLE tbl_a
-(
-    a int, b varchar(10) generated always as (sysdate()) virtual 
+ CREATE TABLE tbl_a (
+  `id` int(8) NOT NULL AUTO_INCREMENT,
+   `t` int(11) NOT NULL DEFAULT '0',
+  `name` char(24) DEFAULT NULL,
+  PRIMARY KEY (`id`)
 )$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
 
 
@@ -143,36 +146,66 @@ DROP TABLE IF EXISTS ta_l;
 --disable_query_log
 --enable_query_log
 
-
-create or replace table  tbl_a
-(
-    a int, b varchar(10) generated always as (sysdate()) virtual
-) ENGINE=Spider DEFAULT CHARSET=latin1 PARTITION BY LIST (crc32(a)%2)
+let $MASTER_1_CHARSET=DEFAULT CHARSET=utf8;
+eval CREATE TABLE tbl_a (
+  `id` int(8) NOT NULL AUTO_INCREMENT,
+   `t` int(11) NOT NULL DEFAULT '0',
+  `name` char(24) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) $MASTER_1_ENGINE  PARTITION BY LIST (crc32(id)%2)
 (PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
  PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
 
-create or replace table  tbl_a
-(
-    a int, b varchar(10) generated always as (sysdate()) virtual
-) ENGINE=Spider DEFAULT CHARSET=latin1 PARTITION BY LIST (crc32(a)%2)
-(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
- PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+if ($USE_GENERAL_LOG)
+{
+    TRUNCATE TABLE mysql.general_log;
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+ TRUNCATE TABLE mysql.general_log;
+  --connection child2_2
+  TRUNCATE TABLE mysql.general_log;
+}
 
- show create table tbl_a;
+--connection master_1
+set autocommit=OFF;
+begin;
+insert into tbl_a(t,name) values(1,"alex");
+insert into tbl_a(t,name) values(2,"ivy");
+commit;
 
+SET @old_spider_ignore_autocommit = @@global.spider_ignore_autocommit;
+SET GLOBAL spider_ignore_autocommit=ON;
 
+insert into tbl_a(t,name) values(3,"tom");
+insert into tbl_a(t,name) values(4,"jam");
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log;
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
   if ($USE_GENERAL_LOG)
   {
-    --echo
-    --echo select for master
-    SELECT argument FROM mysql.general_log WHERE argument LIKE '%create %';
+   SELECT argument FROM mysql.general_log;
   }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log;
+  }
+}
 
 --echo
 --echo deinit
 --disable_warnings
 --connection master_1
 DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL spider_ignore_autocommit = @old_spider_ignore_autocommit;
 if ($USE_GENERAL_LOG)
 {
   SET GLOBAL log_output = @old_log_output;
@@ -203,5 +236,4 @@ if ($USE_CHILD_GROUP2)
 --enable_warnings
 --echo
 --echo end of test
-
 
