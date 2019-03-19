@@ -151,40 +151,11 @@ end_time DATE NOT NULL) $MASTER_1_ENGINE PARTITION BY LIST (crc32(id)%2)
 (PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
  PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
  
+set autocommit=0;
 
-
-start transaction;
- INSERT INTO tbl_a(id,start_time, end_time)
-VALUES(1,'1983-01-01', '1990-01-01'),
-(2,'1983-01-01', '1989-06-06');
-commit;
-
-
-if ($USE_GENERAL_LOG)
-{
-    TRUNCATE TABLE mysql.general_log;
-}
-if ($USE_CHILD_GROUP2)
-{
-  --connection child2_1
-  if ($USE_GENERAL_LOG)
-  {
-      TRUNCATE TABLE mysql.general_log;
-  }
-  --connection child2_2
-  if ($USE_GENERAL_LOG)
-  {
-      TRUNCATE TABLE mysql.general_log;
-  }
-}
-
---echo
---echo test for start transaction
-start transaction;
 INSERT INTO tbl_a(id,start_time, end_time)
-VALUES(3,'1983-01-01', '1985-03-02'),
-(4,'1983-01-01', '1992-05-05');
-commit;
+VALUES(1,'1983-01-01', '1985-03-02'),
+(4,'1989-01-01', '1999-05-05');
 
 --echo
 --echo select for child
@@ -208,52 +179,7 @@ if ($USE_GENERAL_LOG)
     SELECT argument FROM mysql.general_log;
 }
 
-if ($USE_GENERAL_LOG)
-{
-    TRUNCATE TABLE mysql.general_log;
-}
-if ($USE_CHILD_GROUP2)
-{
-  --connection child2_1
-  if ($USE_GENERAL_LOG)
-  {
-      TRUNCATE TABLE mysql.general_log;
-  }
-  --connection child2_2
-  if ($USE_GENERAL_LOG)
-  {
-      TRUNCATE TABLE mysql.general_log;
-  }
-}
 
---echo
---echo test for no start transaction
-INSERT INTO tbl_a(id,start_time, end_time)
-VALUES(5,'1983-01-01', '1988-09-02'),
-(6,'1983-01-01', '1995-05-05');
-commit;
-
---echo
---echo select for child
-if ($USE_CHILD_GROUP2)
-{
-  --connection child2_1
-  if ($USE_GENERAL_LOG)
-  {
-    SELECT argument FROM mysql.general_log;
-  }
-  --connection child2_2
-  if ($USE_GENERAL_LOG)
-  {
-    SELECT argument FROM mysql.general_log;
-  }
-}
---echo
---echo select for master
-if ($USE_GENERAL_LOG)
-{
-    SELECT argument FROM mysql.general_log;
-}
 --echo
 --echo deinit
 --disable_warnings
@@ -289,12 +215,3 @@ if ($USE_CHILD_GROUP2)
 --enable_warnings
 --echo
 --echo end of test
-
-
-
-
-
-
-
-
-
