@@ -505,7 +505,7 @@ typedef struct st_spider_conn
 #endif
     int              *need_mon;
   int                *conn_need_mon;
-
+  bool               is_xa_commit_one_phase;
   bool               use_for_active_standby;
   bool               in_before_query;
 

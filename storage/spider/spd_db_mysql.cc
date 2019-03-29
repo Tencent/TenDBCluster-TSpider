@@ -101,6 +101,8 @@ static const char *name_quote_str = SPIDER_SQL_NAME_QUOTE_STR;
 #define SPIDER_SQL_XA_PREPARE_LEN sizeof(SPIDER_SQL_XA_PREPARE_STR) - 1
 #define SPIDER_SQL_XA_COMMIT_STR "xa commit "
 #define SPIDER_SQL_XA_COMMIT_LEN sizeof(SPIDER_SQL_XA_COMMIT_STR) - 1
+#define SPIDER_SQL_XA_ONE_PHASE_STR " one phase "
+#define SPIDER_SQL_XA_ONE_PHASE_LEN sizeof(SPIDER_SQL_XA_ONE_PHASE_STR) - 1
 #define SPIDER_SQL_XA_ROLLBACK_STR "xa rollback "
 #define SPIDER_SQL_XA_ROLLBACK_LEN sizeof(SPIDER_SQL_XA_ROLLBACK_STR) - 1
 
@@ -2121,7 +2123,7 @@ int spider_db_mysql::next_result()
   int status;
   DBUG_ENTER("spider_db_mysql::next_result");
   DBUG_PRINT("info",("spider this=%p", this));
-  if (db_conn->status != MYSQL_STATUS_READY)
+  if (!db_conn || db_conn->status != MYSQL_STATUS_READY)
   {
     my_message(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
@@ -2392,6 +2394,42 @@ int spider_db_mysql::xa_prepare(
   DBUG_RETURN(0);
 }
 
+int spider_db_mysql::xa_end_and_prepare(
+	XID *xid,
+	int *need_mon
+)
+{
+	int error_num = 0;
+	int error_num1 = 0;
+	int error_num2 = 0;
+	char sql_buf[SPIDER_SQL_XA_END_LEN + SPIDER_SQL_XA_PREPARE_LEN + 2 * XIDDATASIZE + 2 * sizeof(long) + 20];
+	spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
+	DBUG_ENTER("spider_db_mysql::xa_end_and_prepare");
+	DBUG_PRINT("info", ("spider this=%p", this));
+	sql_str.init_calc_mem(315);
+
+	sql_str.length(0);
+	/* xa end */
+	sql_str.q_append(SPIDER_SQL_XA_END_STR, SPIDER_SQL_XA_END_LEN);
+	spider_db_append_xid_str(&sql_str, xid);
+	sql_str.q_append(";", 1);
+	/* xa prepare */
+	sql_str.q_append(SPIDER_SQL_XA_PREPARE_STR, SPIDER_SQL_XA_PREPARE_LEN);
+	spider_db_append_xid_str(&sql_str, xid);
+	if (spider_db_query(
+		conn,
+		sql_str.ptr(),
+		sql_str.length(),
+		-1,
+		need_mon))
+		error_num1 = spider_db_errorno(conn);
+	if (conn->db_conn)
+		error_num2 = conn->db_conn->next_result();
+	error_num = error_num1 ? error_num1 : error_num2;
+	spider_mta_conn_mutex_unlock(conn);
+	DBUG_RETURN(error_num);
+}
+
 int spider_db_mysql::xa_commit(
   XID *xid,
   int *need_mon
@@ -2415,6 +2453,44 @@ int spider_db_mysql::xa_commit(
     DBUG_RETURN(spider_db_errorno(conn));
   spider_mta_conn_mutex_unlock(conn);
   DBUG_RETURN(0);
+}
+
+int spider_db_mysql::xa_commit_one_phase(
+	XID *xid,
+	int *need_mon
+) {
+	int error_num = 0;
+	int error_num1 = 0;
+	int error_num2 = 0;
+	char sql_buf[SPIDER_SQL_XA_COMMIT_LEN + XIDDATASIZE + sizeof(long) + 9];
+	spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
+	DBUG_ENTER("spider_db_mysql::xa_commit_one_phase");
+	DBUG_PRINT("info", ("spider this=%p", this));
+	sql_str.init_calc_mem(110);
+
+	sql_str.length(0);
+	sql_str.q_append(SPIDER_SQL_XA_END_STR, SPIDER_SQL_XA_END_LEN);
+	spider_db_append_xid_str(&sql_str, xid);
+	sql_str.q_append(";", 1);
+
+	sql_str.q_append(SPIDER_SQL_XA_COMMIT_STR, SPIDER_SQL_XA_COMMIT_LEN);
+	spider_db_append_xid_str(&sql_str, xid);
+	sql_str.q_append(SPIDER_SQL_XA_ONE_PHASE_STR, SPIDER_SQL_XA_ONE_PHASE_LEN);
+
+	if (spider_db_query(
+		conn,
+		sql_str.ptr(),
+		sql_str.length(),
+		-1,
+		need_mon)
+		)
+		error_num1 = spider_db_errorno(conn);
+	if (conn->db_conn)
+		error_num2 = conn->db_conn->next_result();
+
+	error_num = error_num1 ? error_num1 : error_num2;
+	spider_mta_conn_mutex_unlock(conn);
+	DBUG_RETURN(error_num);
 }
 
 int spider_db_mysql::xa_rollback(

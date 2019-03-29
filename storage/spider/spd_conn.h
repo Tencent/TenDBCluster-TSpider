@@ -190,6 +190,10 @@ SPIDER_CONN *spider_tree_next(
   SPIDER_CONN *current
 );
 
+uint spider_tree_num(
+	SPIDER_CONN *top
+);
+
 SPIDER_CONN *spider_tree_delete(
   SPIDER_CONN *conn,
   SPIDER_CONN *top
@@ -355,7 +359,9 @@ bool spider_conn_need_open_handler(
   uint idx,
   int link_idx
 );
-
+uchar *spider_xid_get_hash_key(const uchar *ptr, size_t *length,
+	my_bool not_used __attribute__((unused)));
+void spider_xid_free_hash(void *ptr);
 SPIDER_IP_PORT_CONN *spider_create_ipport_conn(SPIDER_CONN *conn);
 SPIDER_CONN* spider_get_conn_from_idle_connection
 (

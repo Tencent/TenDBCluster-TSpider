@@ -357,6 +357,10 @@ public:
     XID *xid,
     int *need_mon
   );
+  int xa_commit_one_phase(
+	  XID *xid,
+	  int *need_mon
+  );
   int xa_rollback(
     XID *xid,
     int *need_mon

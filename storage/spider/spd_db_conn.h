@@ -390,9 +390,19 @@ int spider_db_xa_prepare(
   XID *xid
 );
 
+int spider_db_xa_end_and_prepare(
+	SPIDER_CONN *conn,
+	XID *xid
+);
+
 int spider_db_xa_commit(
   SPIDER_CONN *conn,
   XID *xid
+);
+
+int spider_db_xa_commit_one_phase(
+	SPIDER_CONN *conn,
+	XID *xid
 );
 
 int spider_db_xa_rollback(

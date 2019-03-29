@@ -1112,9 +1112,17 @@ public:
     XID *xid,
     int *need_mon
   ) = 0;
+  virtual int xa_end_and_prepare(
+	  XID *xid,
+	  int *need_mon
+  ) = 0;
   virtual int xa_commit(
     XID *xid,
     int *need_mon
+  ) = 0;
+  virtual int xa_commit_one_phase(
+	  XID *xid,
+	  int *need_mon
   ) = 0;
   virtual int xa_rollback(
     XID *xid,

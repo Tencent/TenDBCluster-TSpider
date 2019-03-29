@@ -641,6 +641,18 @@ void spider_store_xa_status(
   DBUG_VOID_RETURN;
 }
 
+void spider_store_xa_member_status(
+	TABLE *table,
+	const char *status
+) {
+	DBUG_ENTER("spider_store_xa_status");
+	table->field[18]->store(
+		status,
+		(uint)strlen(status),
+		system_charset_info);
+	DBUG_VOID_RETURN;
+}
+
 void spider_store_xa_member_pk(
   TABLE *table,
   XID *xid,
@@ -669,7 +681,8 @@ void spider_store_xa_member_pk(
 void spider_store_xa_member_info(
   TABLE *table,
   XID *xid,
-  SPIDER_CONN *conn
+  SPIDER_CONN *conn,
+  const char *status
 ) {
   DBUG_ENTER("spider_store_xa_member_info");
   table->field[2]->store(xid->bqual_length);
@@ -771,6 +784,10 @@ void spider_store_xa_member_info(
     table->field[17]->set_null();
     table->field[17]->reset();
   }
+  table->field[18]->store(
+	  status,
+	  (uint)strlen(status),
+	  system_charset_info);
   DBUG_VOID_RETURN;
 }
 
@@ -1263,10 +1280,12 @@ int spider_insert_xa(
     spider_store_xa_status(table, status);
     if ((error_num = spider_write_sys_table_row(table)))
       DBUG_RETURN(error_num);
-  } else {
-    my_message(ER_SPIDER_XA_EXISTS_NUM, ER_SPIDER_XA_EXISTS_STR, MYF(0));
-    DBUG_RETURN(ER_SPIDER_XA_EXISTS_NUM);
-  }
+  } 
+  //after restart,and crash inmediately, will throw error
+  //else {
+  // my_message(ER_SPIDER_XA_EXISTS_NUM, ER_SPIDER_XA_EXISTS_STR, MYF(0));
+  //DBUG_RETURN(ER_SPIDER_XA_EXISTS_NUM);
+  //}
 
   DBUG_RETURN(0);
 }
@@ -1274,7 +1293,8 @@ int spider_insert_xa(
 int spider_insert_xa_member(
   TABLE *table,
   XID *xid,
-  SPIDER_CONN *conn
+  SPIDER_CONN *conn,
+  const char *status
 ) {
   int error_num;
   char table_key[MAX_KEY_LENGTH];
@@ -1291,14 +1311,16 @@ int spider_insert_xa_member(
       DBUG_RETURN(error_num);
     }
     table->use_all_columns();
-    spider_store_xa_member_info(table, xid, conn);
+    spider_store_xa_member_info(table, xid, conn, status);
     if ((error_num = spider_write_sys_table_row(table)))
       DBUG_RETURN(error_num);
-  } else {
-    my_message(ER_SPIDER_XA_MEMBER_EXISTS_NUM, ER_SPIDER_XA_MEMBER_EXISTS_STR,
-      MYF(0));
-    DBUG_RETURN(ER_SPIDER_XA_MEMBER_EXISTS_NUM);
-  }
+  } 
+  //the same as spider_insert_xa 
+  //else {
+  //  my_message(ER_SPIDER_XA_MEMBER_EXISTS_NUM, ER_SPIDER_XA_MEMBER_EXISTS_STR,
+  //    MYF(0));
+  //  DBUG_RETURN(ER_SPIDER_XA_MEMBER_EXISTS_NUM);
+  //}
 
   DBUG_RETURN(0);
 }
@@ -1459,7 +1481,7 @@ int spider_log_xa_failed(
   DBUG_ENTER("spider_log_xa_failed");
   table->use_all_columns();
   spider_store_xa_member_pk(table, xid, conn);
-  spider_store_xa_member_info(table, xid, conn);
+  spider_store_xa_member_info(table, xid, conn, status);
   if (thd)
   {
     table->field[18]->set_notnull();
@@ -1513,6 +1535,46 @@ int spider_update_xa(
   }
 
   DBUG_RETURN(0);
+}
+
+int spider_update_xa_member_status(
+	TABLE *table,
+	XID *xid,
+	SPIDER_CONN *conn,
+	const char *status
+) {
+	int error_num;
+	char table_key[MAX_KEY_LENGTH];
+	DBUG_ENTER("spider_update_xa_member_status");
+	table->use_all_columns();
+	spider_store_xa_member_pk(table, xid, conn);
+
+	if ((error_num = spider_check_sys_table(table, table_key)))
+	{
+		if (error_num != HA_ERR_KEY_NOT_FOUND && error_num != HA_ERR_END_OF_FILE)
+		{
+			table->file->print_error(error_num, MYF(0));
+			DBUG_RETURN(error_num);
+		}
+		my_message(ER_SPIDER_XA_NOT_EXISTS_NUM, ER_SPIDER_XA_NOT_EXISTS_STR, MYF(0));
+		DBUG_RETURN(ER_SPIDER_XA_NOT_EXISTS_NUM);
+	}
+	else
+	{
+		store_record(table, record[1]);
+		table->use_all_columns();
+		spider_store_xa_status(table, status);
+		if (
+			(error_num = table->file->ha_update_row(
+				table->record[1], table->record[0])) &&
+			error_num != HA_ERR_RECORD_IS_THE_SAME
+			) {
+			table->file->print_error(error_num, MYF(0));
+			DBUG_RETURN(error_num);
+		}
+	}
+
+	DBUG_RETURN(0);
 }
 
 int spider_update_tables_name(

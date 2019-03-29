@@ -123,9 +123,10 @@ inline void spider_destroy_thd(MYSQL_THD thd)
 #ifdef XID_CACHE_IS_SPLITTED
 uint *spd_db_att_xid_cache_split_num;
 #endif
-pthread_mutex_t *spd_db_att_LOCK_xid_cache;
-HASH *spd_db_att_xid_cache;
+pthread_mutex_t spd_db_att_xid_cache_mutex;
+HASH spd_db_att_xid_cache;
 #endif
+pthread_mutex_t spider_xid_mutex;
 struct charset_info_st *spd_charset_utf8_bin;
 const char **spd_defaults_extra_file;
 const char **spd_defaults_file;
@@ -190,6 +191,8 @@ PSI_mutex_key spd_key_mutex_mem_calc;
 PSI_mutex_key spd_key_thread_id;
 PSI_mutex_key spd_key_conn_id;
 PSI_mutex_key spd_key_mutex_ipport_count;
+PSI_mutex_key spd_key_mutex_xid_cache;
+PSI_mutex_key spd_key_mutex_xid;
 PSI_mutex_key spd_key_mutex_conn_i;
 #ifndef WITHOUT_SPIDER_BG_SEARCH
 PSI_mutex_key spd_key_mutex_bg_stss;
@@ -218,6 +221,8 @@ static PSI_mutex_info all_spider_mutexes[]=
   { &spd_key_thread_id, "thread_id", PSI_FLAG_GLOBAL},
   { &spd_key_conn_id, "conn_id", PSI_FLAG_GLOBAL},
   { &spd_key_mutex_ipport_count, "ipport_count", PSI_FLAG_GLOBAL},
+  { &spd_key_mutex_xid, "xid", PSI_FLAG_GLOBAL },
+  { &spd_key_mutex_xid_cache, "xid_cache", PSI_FLAG_GLOBAL },
 #ifndef WITHOUT_SPIDER_BG_SEARCH
   { &spd_key_mutex_bg_stss, "bg_stss", PSI_FLAG_GLOBAL},
   { &spd_key_mutex_bg_crds, "bg_crds", PSI_FLAG_GLOBAL},
@@ -6768,7 +6773,7 @@ int spider_db_init(
   spd_db_att_xid_cache_split_num = (uint *)
     GetProcAddress(current_module,
       "?opt_xid_cache_split_num@@3IA");
-  spd_db_att_LOCK_xid_cache = *((pthread_mutex_t **)
+  /*spd_db_att_LOCK_xid_cache = *((pthread_mutex_t **)
     GetProcAddress(current_module,
       "?LOCK_xid_cache@@3PAUst_mysql_mutex@@A"));
   spd_db_att_xid_cache = *((HASH **)
@@ -6783,7 +6788,7 @@ int spider_db_init(
       "?LOCK_xid_cache@@3Ust_mysql_mutex@@A");
 #endif
   spd_db_att_xid_cache = (HASH *)
-    GetProcAddress(current_module, "?xid_cache@@3Ust_hash@@A");
+    GetProcAddress(current_module, "?xid_cache@@3Ust_hash@@A");*/
 #endif
 #endif
   spd_charset_utf8_bin = (struct charset_info_st *)
@@ -6808,11 +6813,11 @@ int spider_db_init(
 #else
 #ifdef XID_CACHE_IS_SPLITTED
   spd_db_att_xid_cache_split_num = &opt_xid_cache_split_num;
-  spd_db_att_LOCK_xid_cache = LOCK_xid_cache;
-  spd_db_att_xid_cache = xid_cache;
-#else
-  spd_db_att_LOCK_xid_cache = &LOCK_xid_cache;
-  spd_db_att_xid_cache = &xid_cache;
+  //spd_db_att_LOCK_xid_cache = LOCK_xid_cache;
+  //spd_db_att_xid_cache = xid_cache;
+//#else
+  //spd_db_att_LOCK_xid_cache = &LOCK_xid_cache;
+  //spd_db_att_xid_cache = &xid_cache;
 #endif
 #endif
   spd_charset_utf8_bin = &my_charset_utf8_bin;
@@ -6881,7 +6886,29 @@ int spider_db_init(
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_ipport_count_mutex_init;
   }
-
+#ifdef SPIDER_XID_USES_xid_cache_iterate
+#else
+#if MYSQL_VERSION_ID < 50500
+  if (pthread_mutex_init(&spd_db_att_xid_cache_mutex, MY_MUTEX_INIT_FAST))
+#else
+  if (mysql_mutex_init(spd_key_mutex_xid_cache,
+	  &spd_db_att_xid_cache_mutex, MY_MUTEX_INIT_FAST))
+#endif
+  {
+	  error_num = HA_ERR_OUT_OF_MEM;
+	  goto error_spd_xid_cache_mutex_init;
+  }
+#endif
+#if MYSQL_VERSION_ID < 50500
+  if (pthread_mutex_init(&spider_xid_mutex, MY_MUTEX_INIT_FAST))
+#else
+  if (mysql_mutex_init(spd_key_mutex_xid,
+	  &spider_xid_mutex, MY_MUTEX_INIT_FAST))
+#endif
+  {
+	  error_num = HA_ERR_OUT_OF_MEM;
+	  goto error_spider_xid_mutex_init;
+  }
 #if MYSQL_VERSION_ID < 50500
   if (pthread_mutex_init(&spider_init_error_tbl_mutex, MY_MUTEX_INIT_FAST))
 #else
@@ -7078,6 +7105,15 @@ int spider_db_init(
       error_num = HA_ERR_OUT_OF_MEM;
       goto error_ipport_conn__hash_init;
   }
+#ifdef SPIDER_XID_USES_xid_cache_iterate
+#else
+  if (my_hash_init(&spd_db_att_xid_cache, spd_charset_utf8_bin, 32, 0, 0,
+	  spider_xid_get_hash_key, spider_xid_free_hash, 0))
+  {
+	  error_num = HA_ERR_OUT_OF_MEM;
+	  goto error_xid_cache_hash_init;
+  }
+#endif
   spider_alloc_calc_mem_init(spider_open_connections, 146);
   spider_alloc_calc_mem(NULL,
     spider_open_connections,
@@ -7342,6 +7378,11 @@ error_hs_w_conn_hash_init:
   my_hash_free(&spider_hs_r_conn_hash);
 error_hs_r_conn_hash_init:
 #endif
+#ifdef SPIDER_XID_USES_xid_cache_iterate
+#else
+  my_hash_free(&spd_db_att_xid_cache);
+error_xid_cache_hash_init:
+#endif
   my_hash_free(&spider_for_sts_conns);
 error_sts_for_conn_hash_init:
   my_hash_free(&spider_conn_meta_info);
@@ -7404,6 +7445,13 @@ error_pt_share_mutex_init:
 #endif
   pthread_mutex_destroy(&spider_init_error_tbl_mutex);
 error_init_error_tbl_mutex_init:
+  pthread_mutex_destroy(&spider_xid_mutex);
+error_spider_xid_mutex_init:
+#ifdef SPIDER_XID_USES_xid_cache_iterate
+#else
+  pthread_mutex_destroy(&spd_db_att_xid_cache_mutex);
+error_spd_xid_cache_mutex_init:
+#endif
   pthread_mutex_destroy(&spider_ipport_conn_mutex);
 error_ipport_count_mutex_init:
   pthread_mutex_destroy(&spider_conn_id_mutex);

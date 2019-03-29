@@ -88,6 +88,9 @@
 #define ER_SPIDER_XA_MEMBER_NOT_EXISTS_STR "This xid member is not exist"
 #define ER_SPIDER_SYS_TABLE_VERSION_NUM 12609
 #define ER_SPIDER_SYS_TABLE_VERSION_STR "System table %s is different version"
+#define ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM 12610
+#define ER_SPIDER_XA_MAY_PARTIAL_COMMIT_STR "XA transaction may partial commit"
+#define ER_SPIDER_XA_MAY_PARTIAL_COMMIT_LEN (sizeof(ER_SPIDER_XA_MAY_PARTIAL_COMMIT_STR) - 1)
 #define ER_SPIDER_WRONG_CHARACTER_IN_NAME_NUM 12611
 #define ER_SPIDER_WRONG_CHARACTER_IN_NAME_STR "Wrong character in name string"
 #define ER_SPIDER_LOW_MEM_READ_PREV_NUM 12621
@@ -138,6 +141,14 @@
 #define ER_SPIDER_SHARE_INVALID_STR "may duplicate error after flush with no block"
 #define ER_SPIDER_SHARE_INVALID_LEN (sizeof(ER_SPIDER_SHARE_INVALID_STR) - 1)
 #define ER_SPIDER_COND_SKIP_NUM 12801
+
+#define ER_SPIDER_XA_TIMEOUT_NUM 12728
+#define ER_SPIDER_XA_TIMEOUT_STR "transaction execute timeout, wait some seconds and see the results."
+#define ER_SPIDER_XA_TIMEOUT_LEN (sizeof(ER_SPIDER_XA_TIMEOUT_NUM) - 1)
+#define ER_SPIDER_XA_FAILED_NUM 12729
+#define ER_SPIDER_XA_FAILED_STR "transaction execute failed, please retry transaction"
+#define ER_SPIDER_XA_FAILED_LEN (sizeof(ER_SPIDER_XA_FAILED_STR) - 1)
+
 
 #define ER_SPIDER_UNKNOWN_NUM 12500
 #define ER_SPIDER_UNKNOWN_STR "unknown"

@@ -217,6 +217,7 @@ extern const double log_10[309];
 extern ulonglong keybuff_size;
 extern ulonglong thd_startup_options;
 extern my_thread_id global_thread_id;
+extern ulonglong spider_xid_gtrid;
 extern ulong binlog_cache_use, binlog_cache_disk_use;
 extern ulong binlog_stmt_cache_use, binlog_stmt_cache_disk_use;
 extern ulong aborted_threads,aborted_connects;

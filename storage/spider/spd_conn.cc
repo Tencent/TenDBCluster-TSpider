@@ -185,6 +185,19 @@ uchar *spider_conn_meta_get_key(
 	DBUG_RETURN((uchar*)meta->key);
 }
 
+uchar *spider_xid_get_hash_key(const uchar *ptr, size_t *length,
+	my_bool not_used __attribute__((unused)))
+{
+	*length = ((XID_STATE*)ptr)->xid.key_length();
+	return ((XID_STATE*)ptr)->xid.key();
+}
+
+void spider_xid_free_hash(void *ptr)
+{
+	if(!((XID_STATE*)ptr)->check_has_uncommitted_xa())
+		my_free(ptr);
+}
+
 int spider_reset_conn_setted_parameter(
   SPIDER_CONN *conn,
   THD *thd
@@ -1475,6 +1488,7 @@ void spider_conn_clear_queue_at_commit(
     conn->trx_start = FALSE;
   }
   conn->queued_xa_start = FALSE;
+  conn->is_xa_commit_one_phase = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -1613,6 +1627,22 @@ SPIDER_CONN *spider_tree_next(
     current = current->p_small;
   }
 }
+
+uint spider_tree_num(
+	SPIDER_CONN *top
+)
+{
+	DBUG_ENTER("spider_tree_num");
+	uint num = 0;
+	SPIDER_CONN *conn = spider_tree_first(top);
+
+	while (conn)
+	{
+		num++;
+		conn = spider_tree_next(conn);
+	}
+	DBUG_RETURN(num);
+};
 
 SPIDER_CONN *spider_tree_delete(
   SPIDER_CONN *conn,

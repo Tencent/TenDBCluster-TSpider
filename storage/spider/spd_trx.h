@@ -133,6 +133,16 @@ int spider_internal_xa_commit(
   TABLE *table_xa_member
 );
 
+int spider_internal_xa_commit_one_phase(
+	THD* thd,
+	SPIDER_TRX *trx
+);
+
+int spider_free_prepared_trx(
+	THD* thd,
+	SPIDER_TRX *trx
+);
+
 int spider_internal_xa_rollback(
   THD* thd,
   SPIDER_TRX *trx

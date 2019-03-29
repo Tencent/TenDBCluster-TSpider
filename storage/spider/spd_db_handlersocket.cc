@@ -1778,6 +1778,16 @@ int spider_db_handlersocket::xa_commit(
   DBUG_RETURN(0);
 }
 
+int spider_db_handlersocket::xa_commit_one_phase(
+	XID *xid,
+	int *need_mon
+) {
+	DBUG_ENTER("spider_db_handlersocket::xa_commit");
+	DBUG_PRINT("info", ("spider this=%p", this));
+	/* nothing to do */
+	DBUG_RETURN(0);
+}
+
 int spider_db_handlersocket::xa_rollback(
   XID *xid,
   int *need_mon

@@ -10557,6 +10557,12 @@ bool ha_spider::get_error_message(
         buf->q_append(ER_SPIDER_COND_INVALID_STR,
             ER_SPIDER_COND_INVALID_LEN);
         break;
+	case ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM:
+		if (buf->reserve(ER_SPIDER_XA_MAY_PARTIAL_COMMIT_LEN))
+			DBUG_RETURN(TRUE);
+		buf->q_append(ER_SPIDER_XA_MAY_PARTIAL_COMMIT_STR,
+			ER_SPIDER_XA_MAY_PARTIAL_COMMIT_LEN);
+		break;
     default:
       if (buf->reserve(ER_SPIDER_UNKNOWN_LEN))
         DBUG_RETURN(TRUE);
@@ -15304,7 +15310,12 @@ SPIDER_CONN* ha_spider::spider_get_conn_by_idx(int link_idx)
 	int error_num;
 	assert(this->conns);
 	if (this && this->conns && this->conns[link_idx])
+	{
+		trans_register_ha(trx->thd, FALSE, spider_hton_ptr);
+		if (thd_test_options(trx->thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+			trans_register_ha(trx->thd, TRUE, spider_hton_ptr);
 		return this->conns[link_idx];
+	}
 	else
 	{
 		/* create conn */

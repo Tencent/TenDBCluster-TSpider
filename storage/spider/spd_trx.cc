@@ -45,9 +45,10 @@
 #ifdef XID_CACHE_IS_SPLITTED
 extern uint *spd_db_att_xid_cache_split_num;
 #endif
-extern pthread_mutex_t *spd_db_att_LOCK_xid_cache;
-extern HASH *spd_db_att_xid_cache;
+extern pthread_mutex_t spd_db_att_xid_cache_mutex;
+extern HASH spd_db_att_xid_cache;
 #endif
+extern pthread_mutex_t spider_xid_mutex;
 extern struct charset_info_st *spd_charset_utf8_bin;
 
 extern handlerton *spider_hton_ptr;
@@ -1670,7 +1671,7 @@ int spider_xa_lock(
 #ifdef SPIDER_XID_USES_xid_cache_iterate
 #else
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
-  my_hash_value_type hash_value = my_calc_hash(spd_db_att_xid_cache,
+  my_hash_value_type hash_value = my_calc_hash(&spd_db_att_xid_cache,
     (uchar*) xid_state->xid.key(), xid_state->xid.key_length());
 #ifdef XID_CACHE_IS_SPLITTED
   uint idx = hash_value % *spd_db_att_xid_cache_split_num;
@@ -1687,35 +1688,37 @@ int spider_xa_lock(
   }
 #else
 #ifdef XID_CACHE_IS_SPLITTED
-  pthread_mutex_lock(&spd_db_att_LOCK_xid_cache[idx]);
+  //modify by alex
+  pthread_mutex_lock(&spd_db_att_xid_cache_mutex+idx);
+  //pthread_mutex_lock(&spd_db_att_xid_cache_mutex[idx]);
 #else
-  pthread_mutex_lock(spd_db_att_LOCK_xid_cache);
+  pthread_mutex_lock(&spd_db_att_xid_cache_mutex);
 #endif
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
 #ifdef XID_CACHE_IS_SPLITTED
-  if (my_hash_search_using_hash_value(&spd_db_att_xid_cache[idx], hash_value,
+  if (my_hash_search_using_hash_value(&spd_db_att_xid_cache+idx, hash_value,
     xid_state->xid.key(), xid_state->xid.key_length()))
 #else
-  if (my_hash_search_using_hash_value(spd_db_att_xid_cache, hash_value,
+  if (my_hash_search_using_hash_value(&spd_db_att_xid_cache, hash_value,
     xid_state->xid.key(), xid_state->xid.key_length()))
 #endif
 #else
-  if (my_hash_search(spd_db_att_xid_cache,
+  if (my_hash_search(&spd_db_att_xid_cache,
     xid_state->xid.key(), xid_state->xid.key_length()))
 #endif
   {
     error_num = ER_SPIDER_XA_LOCKED_NUM;
     goto error;
   }
-  if (my_hash_insert(spd_db_att_xid_cache, (uchar*)xid_state))
+  if (my_hash_insert(&spd_db_att_xid_cache, (uchar*)xid_state))
   {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error;
   }
 #ifdef XID_CACHE_IS_SPLITTED
-  pthread_mutex_unlock(&spd_db_att_LOCK_xid_cache[idx]);
+  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex+idx);
 #else
-  pthread_mutex_unlock(spd_db_att_LOCK_xid_cache);
+  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex);
 #endif
 #endif
   thd_proc_info(thd, old_proc_info);
@@ -1725,9 +1728,9 @@ error:
 #ifdef SPIDER_XID_USES_xid_cache_iterate
 #else
 #ifdef XID_CACHE_IS_SPLITTED
-  pthread_mutex_unlock(&spd_db_att_LOCK_xid_cache[idx]);
+  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex+idx);
 #else
-  pthread_mutex_unlock(spd_db_att_LOCK_xid_cache);
+  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex);
 #endif
 #endif
   thd_proc_info(thd, old_proc_info);
@@ -1745,15 +1748,15 @@ int spider_xa_unlock(
   xid_cache_delete(thd, xid_state);
 #else
 #ifdef XID_CACHE_IS_SPLITTED
-  pthread_mutex_lock(&spd_db_att_LOCK_xid_cache[idx]);
+  pthread_mutex_lock(&spd_db_att_xid_cache_mutex+idx);
 #else
-  pthread_mutex_lock(spd_db_att_LOCK_xid_cache);
+  pthread_mutex_lock(&spd_db_att_xid_cache_mutex);
 #endif
-  my_hash_delete(spd_db_att_xid_cache, (uchar *)xid_state);
+  my_hash_delete(&spd_db_att_xid_cache, (uchar *)xid_state);
 #ifdef XID_CACHE_IS_SPLITTED
-  pthread_mutex_unlock(&spd_db_att_LOCK_xid_cache[idx]);
+  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex+idx);
 #else
-  pthread_mutex_unlock(spd_db_att_LOCK_xid_cache);
+  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex+idx);
 #endif
 #endif
   thd_proc_info(thd, old_proc_info);
@@ -1785,6 +1788,8 @@ int spider_internal_start_trx(
     spider_param_ping_interval_at_trx_start(thd);
   bool xa_lock = FALSE;
   time_t tmp_time = (time_t) time((time_t*) 0);
+  //alex spider1.x do this
+  //THD *thd = current_thd;
   DBUG_ENTER("spider_internal_start_trx");
 
   if (
@@ -1844,17 +1849,22 @@ int spider_internal_start_trx(
 
     if (
       !trx->trx_xa &&
-      trx->internal_xa &&
+      trx->internal_xa && /*thd_test_options(thd,OPTION_NOT_AUTOCOMMIT) &&*/
       (!trx->trx_consistent_snapshot || trx->internal_xa_snapshot == 3) &&
       spider->sql_command != SQLCOM_LOCK_TABLES
     ) {
       trx->trx_xa = TRUE;
-      trx->xid.formatID = 1;
+      trx->xid.formatID = opt_spider_auto_increment_mode_value ? opt_spider_auto_increment_mode_value : 1;
+	  //alex  bug may exist
       if (spider_param_internal_xa_id_type(thd) == 0)
       {
+	   pthread_mutex_lock(&spider_xid_mutex);
+	   if (spider_xid_gtrid == ULLONG_MAX)
+			 spider_xid_gtrid = 1;
         trx->xid.gtrid_length
           = my_sprintf(trx->xid.data,
-          (trx->xid.data, "%lx", thd_get_thread_id(thd)));
+          (trx->xid.data, "%llx%llx", my_interval_timer(), spider_xid_gtrid++));
+		pthread_mutex_unlock(&spider_xid_mutex);
       } else {
         trx->xid.gtrid_length
           = my_sprintf(trx->xid.data,
@@ -1885,9 +1895,11 @@ int spider_internal_start_trx(
         goto error;
       }
       xa_lock = TRUE;
-    } else
-      trx->internal_xa = FALSE;
-
+	}
+	else
+	{
+		trx->internal_xa = FALSE;
+	}
     DBUG_PRINT("info",("spider trx->trx_consistent_snapshot= %s",
       trx->trx_consistent_snapshot ? "TRUE" : "FALSE"));
     if (!trx->trx_consistent_snapshot)
@@ -1978,7 +1990,8 @@ int spider_internal_xa_commit(
   TABLE *table_xa,
   TABLE *table_xa_member
 ) {
-  int error_num = 0, tmp_error_num;
+  int error_num = 0;
+  int tmp_error_num=0;
   char xa_key[MAX_KEY_LENGTH];
   SPIDER_CONN *conn;
   uint force_commit = spider_param_force_commit(thd);
@@ -1994,72 +2007,75 @@ int spider_internal_xa_commit(
 
   if (trx->updated_in_this_trx || spider_param_xa_register_mode(thd) == 0)
   {
-    /*
-      select
-        status
-      from
-        mysql.spider_xa
-      where
-        format_id = xid->format_id and
-        gtrid_length = xid->gtrid_length and
-        data = xid->data
-    */
-    if (
-      !(table_xa = spider_open_sys_table(
-        thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
-        TRUE, &open_tables_backup, TRUE, &error_num))
-    )
-      goto error_open_table;
-    table_xa_opened = TRUE;
-    spider_store_xa_pk(table_xa, &trx->xid);
-    if (
-      (error_num = spider_check_sys_table(table_xa, xa_key))
-    ) {
-      if (error_num != HA_ERR_KEY_NOT_FOUND && error_num != HA_ERR_END_OF_FILE)
-      {
-        table_xa->file->print_error(error_num, MYF(0));
-        goto error;
-      }
-      my_message(ER_SPIDER_XA_NOT_EXISTS_NUM, ER_SPIDER_XA_NOT_EXISTS_STR,
-        MYF(0));
-      error_num = ER_SPIDER_XA_NOT_EXISTS_NUM;
-      goto error;
-    }
-    SPD_INIT_ALLOC_ROOT(&mem_root, 4096, 0, MYF(MY_WME));
-    if (
-      force_commit != 2 &&
-      (error_num = spider_check_sys_xa_status(
-        table_xa,
-        SPIDER_SYS_XA_PREPARED_STR,
-        SPIDER_SYS_XA_COMMIT_STR,
-        NULL,
-        ER_SPIDER_XA_NOT_PREPARED_NUM,
-        &mem_root))
-    ) {
-      free_root(&mem_root, MYF(0));
-      if (error_num == ER_SPIDER_XA_NOT_PREPARED_NUM)
-        my_message(error_num, ER_SPIDER_XA_NOT_PREPARED_STR, MYF(0));
-      goto error;
-    }
-    free_root(&mem_root, MYF(0));
+	  /*
+		select
+		  status
+		from
+		  mysql.spider_xa
+		where
+		  format_id = xid->format_id and
+		  gtrid_length = xid->gtrid_length and
+		  data = xid->data
+	  */
+	  if (!thd->variables.spider_ignore_xa_log)
+	  {
+		  if (
+			  !(table_xa = spider_open_sys_table(
+				  thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
+				  TRUE, &open_tables_backup, TRUE, &error_num))
+			  )
+			  goto error_open_table;
+		  table_xa_opened = TRUE;
+		  spider_store_xa_pk(table_xa, &trx->xid);
+		  if (
+			  (error_num = spider_check_sys_table(table_xa, xa_key))
+			  ) {
+			  if (error_num != HA_ERR_KEY_NOT_FOUND && error_num != HA_ERR_END_OF_FILE)
+			  {
+				  table_xa->file->print_error(error_num, MYF(0));
+				  goto error;
+			  }
+			  my_message(ER_SPIDER_XA_NOT_EXISTS_NUM, ER_SPIDER_XA_NOT_EXISTS_STR,
+				  MYF(0));
+			  error_num = ER_SPIDER_XA_NOT_EXISTS_NUM;
+			  goto error;
+		  }
+		  SPD_INIT_ALLOC_ROOT(&mem_root, 4096, 0, MYF(MY_WME));
+		  if (
+			  force_commit != 2 &&
+			  (error_num = spider_check_sys_xa_status(
+				  table_xa,
+				  SPIDER_SYS_XA_PREPARED_STR,
+				  SPIDER_SYS_XA_COMMIT_STR,
+				  NULL,
+				  ER_SPIDER_XA_NOT_PREPARED_NUM,
+				  &mem_root))
+			  ) {
+			  free_root(&mem_root, MYF(0));
+			  if (error_num == ER_SPIDER_XA_NOT_PREPARED_NUM)
+				  my_message(error_num, ER_SPIDER_XA_NOT_PREPARED_STR, MYF(0));
+			  goto error;
+		  }
+		  free_root(&mem_root, MYF(0));
 
-    /*
-      update
-        mysql.spider_xa
-      set
-        status = 'COMMIT'
-      where
-        format_id = trx->xid.format_id and
-        gtrid_length = trx->xid.gtrid_length and
-        data = trx->xid.data
-    */
-    if (
-      (error_num = spider_update_xa(
-        table_xa, &trx->xid, SPIDER_SYS_XA_COMMIT_STR))
-    )
-      goto error;
-    spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
-    table_xa_opened = FALSE;
+		  /*
+			update
+			  mysql.spider_xa
+			set
+			  status = 'COMMIT'
+			where
+			  format_id = trx->xid.format_id and
+			  gtrid_length = trx->xid.gtrid_length and
+			  data = trx->xid.data
+		  */
+		  if (
+			  (error_num = spider_update_xa(
+				  table_xa, &trx->xid, SPIDER_SYS_XA_COMMIT_STR))
+			  )
+			  goto error;
+		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
+		  table_xa_opened = FALSE;
+	  }
   }
 
   SPIDER_BACKUP_DASTATUS;
@@ -2079,7 +2095,8 @@ int spider_internal_xa_commit(
           {
             SPIDER_CONN_RESTORE_DASTATUS_AND_RESET_TMP_ERROR_NUM;
             if (!error_num && tmp_error_num)
-              error_num = tmp_error_num;
+				error_num = ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM;
+              //error_num = tmp_error_num;
           }
           spider_sys_log_xa_failed(thd, &trx->xid, conn,
             SPIDER_SYS_XA_COMMIT_STR, TRUE);
@@ -2088,7 +2105,8 @@ int spider_internal_xa_commit(
         {
           SPIDER_CONN_RESTORE_DASTATUS_AND_RESET_TMP_ERROR_NUM;
           if (!error_num && tmp_error_num)
-            error_num = tmp_error_num;
+			error_num = ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM;
+           // error_num = tmp_error_num;
         }
         conn->join_trx = 0;
       }
@@ -2096,65 +2114,127 @@ int spider_internal_xa_commit(
     trx->join_trx_top = NULL;
   }
   if (error_num)
-    goto error_in_commit;
-
+  {
+	  /*if commit partial,the error information is as follows */
+	  thd->clear_error();
+	  my_message(ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM, ER_SPIDER_XA_MAY_PARTIAL_COMMIT_STR, MYF(0));
+	  goto error_in_commit;
+  }
   if (trx->updated_in_this_trx || spider_param_xa_register_mode(thd) == 0)
   {
-    /*
-      delete from
-        mysql.spider_xa_member
-      where
-        format_id = xid->format_id and
-        gtrid_length = xid->gtrid_length and
-        data = xid->data
-    */
-    if (
-      !(table_xa_member = spider_open_sys_table(
-        thd, SPIDER_SYS_XA_MEMBER_TABLE_NAME_STR,
-        SPIDER_SYS_XA_MEMBER_TABLE_NAME_LEN, TRUE, &open_tables_backup, TRUE,
-        &error_num))
-    )
-      goto error_open_table;
-    table_xa_member_opened = TRUE;
-    if ((error_num = spider_delete_xa_member(table_xa_member, &trx->xid)))
-      goto error;
-    spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
-    table_xa_member_opened = FALSE;
+	  /*
+		delete from
+		  mysql.spider_xa_member
+		where
+		  format_id = xid->format_id and
+		  gtrid_length = xid->gtrid_length and
+		  data = xid->data
+	  */
+	  if (!thd->variables.spider_ignore_xa_log)
+	  {
+		  if (
+			  !(table_xa_member = spider_open_sys_table(
+				  thd, SPIDER_SYS_XA_MEMBER_TABLE_NAME_STR,
+				  SPIDER_SYS_XA_MEMBER_TABLE_NAME_LEN, TRUE, &open_tables_backup, TRUE,
+				  &error_num))
+			  )
+			  goto error_open_table;
+		  table_xa_member_opened = TRUE;
+		  if ((error_num = spider_delete_xa_member(table_xa_member, &trx->xid)))
+			  goto error;
+		  spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+		  table_xa_member_opened = FALSE;
 
-    /*
-      delete from
-        mysql.spider_xa
-      where
-        format_id = xid->format_id and
-        gtrid_length = xid->gtrid_length and
-        data = xid->data
-    */
-    if (
-      !(table_xa = spider_open_sys_table(
-        thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
-        TRUE, &open_tables_backup, TRUE, &error_num))
-    )
-      goto error_open_table;
-    table_xa_opened = TRUE;
-    if ((error_num = spider_delete_xa(table_xa, &trx->xid)))
-      goto error;
-    spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
-    table_xa_opened = FALSE;
+		  /*
+			delete from
+			  mysql.spider_xa
+			where
+			  format_id = xid->format_id and
+			  gtrid_length = xid->gtrid_length and
+			  data = xid->data
+		  */
+		  if (
+			  !(table_xa = spider_open_sys_table(
+				  thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
+				  TRUE, &open_tables_backup, TRUE, &error_num))
+			  )
+			  goto error_open_table;
+		  table_xa_opened = TRUE;
+		  if ((error_num = spider_delete_xa(table_xa, &trx->xid)))
+			  goto error;
+		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
+		  table_xa_opened = FALSE;
+	  }
   }
   spider_xa_unlock(&trx->internal_xid_state);
   trx->internal_xid_state.xa_state = XA_NOTR;
   DBUG_RETURN(0);
 
 error:
-  if (table_xa_opened)
-    spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
-  if (table_xa_member_opened)
-    spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+  if (!thd->variables.spider_ignore_xa_log)
+  {
+	  if (table_xa_opened)
+		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
+	  if (table_xa_member_opened)
+		  spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+  }
 error_in_commit:
 error_open_table:
   spider_xa_unlock(&trx->internal_xid_state);
   trx->internal_xid_state.xa_state = XA_NOTR;
   DBUG_RETURN(error_num);
+}
+
+int spider_internal_xa_commit_one_phase(
+	THD* thd,
+	SPIDER_TRX *trx) {
+	int error_num = 0;
+	int tmp_error_num = 0;
+	SPIDER_CONN *conn;
+	DBUG_ENTER("spider_internal_xa_commit_one_phase");
+
+	if ((conn = spider_tree_first(trx->join_trx_top)))
+	{
+		do {
+			DBUG_PRINT("info", ("spider conn=%p", conn));
+			DBUG_PRINT("info", ("spider conn->join_trx=%u", conn->join_trx));
+			if (conn->join_trx)
+			{
+				if ((tmp_error_num = spider_db_xa_commit_one_phase(conn, &trx->xid)))
+				{
+					if (tmp_error_num != ER_XAER_NOTA)
+					{
+						if (!error_num && tmp_error_num)
+							error_num = ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM;
+						/*   error_num = tmp_error_num;*/
+					}
+				}
+				if ((tmp_error_num = spider_end_trx(trx, conn)))
+				{
+					if (!error_num && tmp_error_num)
+						error_num = ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM;
+					/*error_num = tmp_error_num;*/
+				}
+				conn->join_trx = 0;
+			}
+		} while ((conn = spider_tree_next(conn)));
+		trx->join_trx_top = NULL;
+	}
+	if (error_num)
+	{/* 如果事务提交时出错，（可能部分提交）， 则有如下错误信息 */
+		thd->clear_error();
+		my_message(ER_SPIDER_XA_MAY_PARTIAL_COMMIT_NUM, ER_SPIDER_XA_MAY_PARTIAL_COMMIT_STR, MYF(0));
+		goto error_in_commit;
+	}
+
+	spider_xa_unlock(&trx->internal_xid_state);
+	trx->internal_xid_state.xa_state = XA_NOTR;
+	DBUG_RETURN(0);
+
+error_in_commit:
+	spider_xa_unlock(&trx->internal_xid_state);
+	trx->internal_xid_state.xa_state = XA_NOTR;
+	DBUG_RETURN(error_num);
 }
 
 int spider_internal_xa_rollback(
@@ -2178,7 +2258,7 @@ int spider_internal_xa_rollback(
   DBUG_ENTER("spider_internal_xa_rollback");
 
   if (
-    trx->trx_xa_prepared &&
+    trx->trx_xa_prepared && !thd->variables.spider_ignore_xa_log &&
     (
       trx->updated_in_this_trx ||
       spider_param_xa_register_mode(thd) == 0
@@ -2288,7 +2368,8 @@ int spider_internal_xa_rollback(
                     tmp_error_num != ER_XA_RBTIMEOUT &&
                     tmp_error_num != ER_XA_RBDEADLOCK
                   )
-                )
+					)||
+				  tmp_error_num == ER_XAER_RMFAIL  /* have done xa end */
               ) {
                 SPIDER_CONN_RESTORE_DASTATUS_AND_RESET_TMP_ERROR_NUM;
                 if (!error_num && tmp_error_num)
@@ -2331,7 +2412,7 @@ int spider_internal_xa_rollback(
     goto error_in_rollback;
 
   if (
-    trx->trx_xa_prepared &&
+    trx->trx_xa_prepared && !thd->variables.spider_ignore_xa_log && 
     !server_lost &&
     (
       trx->updated_in_this_trx ||
@@ -2384,17 +2465,44 @@ int spider_internal_xa_rollback(
   DBUG_RETURN(0);
 
 error:
-  if (table_xa_opened)
-    spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
-  if (table_xa_member_opened)
-    spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+  if (!thd->variables.spider_ignore_xa_log)
+  {
+	  if (table_xa_opened)
+		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
+	  if (table_xa_member_opened)
+		  spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+  }
 error_in_rollback:
 error_open_table:
   spider_xa_unlock(&trx->internal_xid_state);
   trx->internal_xid_state.xa_state = XA_NOTR;
   DBUG_RETURN(error_num);
 }
+int spider_free_prepared_trx(
+	THD* thd,
+	SPIDER_TRX *trx
+)
+{
+	SPIDER_CONN *conn, *conn_next;
+	DBUG_ENTER("spider_free_prepared_trx");
+	trx->trx_ha_reuse_count = 0;
+	spider_free_trx_ha(trx);
 
+	if ((conn = spider_tree_first(trx->join_trx_top)))
+	{
+		do
+		{
+			conn_next = spider_tree_next(conn);
+			spider_tree_delete(conn, trx->join_trx_top);
+			my_hash_delete(&trx->trx_conn_hash, (uchar*)conn);
+			spider_free_conn(conn);
+			conn = conn_next;
+		} while (conn);
+		trx->join_trx_top = NULL;
+	}
+
+	DBUG_RETURN(0);
+}
 int spider_internal_xa_prepare(
   THD* thd,
   SPIDER_TRX *trx,
@@ -2415,35 +2523,54 @@ int spider_internal_xa_prepare(
   DBUG_ENTER("spider_internal_xa_prepare");
   if (trx->updated_in_this_trx || spider_param_xa_register_mode(thd) == 0)
   {
-    /*
-      insert into mysql.spider_xa
-        (format_id, gtrid_length, bqual_length, data, status) values
-        (trx->xid.format_id, trx->xid.gtrid_length, trx->xid.bqual_length,
-        trx->xid.data, 'NOT YET')
-    */
-    if (
-      !(table_xa = spider_open_sys_table(
-        thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
-        TRUE, &open_tables_backup, TRUE, &error_num))
-    )
-      goto error_open_table;
-    table_xa_opened = TRUE;
-    if (
-      (error_num = spider_insert_xa(
-        table_xa, &trx->xid, SPIDER_SYS_XA_NOT_YET_STR))
-    )
-      goto error;
-    spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
-    table_xa_opened = FALSE;
+	  /*
+		insert into mysql.spider_xa
+		  (format_id, gtrid_length, bqual_length, data, status) values
+		  (trx->xid.format_id, trx->xid.gtrid_length, trx->xid.bqual_length,
+		  trx->xid.data, 'NOT YET')
+	  */
+	  if (!thd->variables.spider_ignore_xa_log)
+	  {
+		  if (
+			  !(table_xa = spider_open_sys_table(
+				  thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
+				  TRUE, &open_tables_backup, TRUE, &error_num))
+			  )
+			  goto error_open_table;
+		  table_xa_opened = TRUE;
+		  if (
+			  (error_num = spider_insert_xa(
+				  table_xa, &trx->xid, SPIDER_SYS_XA_NOT_YET_STR))
+			  )
+			  goto error;
+		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
+		  table_xa_opened = FALSE;
 
-    if (
-      !(table_xa_member = spider_open_sys_table(
-        thd, SPIDER_SYS_XA_MEMBER_TABLE_NAME_STR,
-        SPIDER_SYS_XA_MEMBER_TABLE_NAME_LEN, TRUE, &open_tables_backup, TRUE,
-        &error_num))
-    )
-      goto error_open_table;
-    table_xa_member_opened = TRUE;
+		  if (
+			  !(table_xa_member = spider_open_sys_table(
+				  thd, SPIDER_SYS_XA_MEMBER_TABLE_NAME_STR,
+				  SPIDER_SYS_XA_MEMBER_TABLE_NAME_LEN, TRUE, &open_tables_backup, TRUE,
+				  &error_num))
+			  )
+			  goto error_open_table;
+		  table_xa_member_opened = TRUE;
+		  SPIDER_BACKUP_DASTATUS;
+		  if ((conn = spider_tree_first(trx->join_trx_top)))
+		  {
+			  do {
+				  if (
+					  (error_num = spider_insert_xa_member(
+						  table_xa_member, &trx->xid, conn, SPIDER_SYS_XA_NOT_YET_STR))
+					  ) {
+					  SPIDER_CONN_RESTORE_DASTATUS_AND_RESET_ERROR_NUM;
+					  if (error_num)
+						  goto error;
+				  }
+			  } while ((conn = spider_tree_next(conn)));
+		  }
+		  spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+		  table_xa_member_opened = FALSE;
+	  }
   }
   SPIDER_BACKUP_DASTATUS;
   if ((conn = spider_tree_first(trx->join_trx_top)))
@@ -2470,8 +2597,8 @@ int spider_internal_xa_prepare(
         }
         conn->join_trx = 0;
       } else {
-        if (trx->updated_in_this_trx || spider_param_xa_register_mode(thd) == 0)
-        {
+        /*if (trx->updated_in_this_trx || spider_param_xa_register_mode(thd) == 0)
+        {*/
           /*
             insert into mysql.spider_xa_member
               (format_id, gtrid_length, bqual_length, data,
@@ -2485,7 +2612,7 @@ int spider_internal_xa_prepare(
               conn->tgt_username,
               conn->tgt_password)
           */
-          if (
+         /*if (
             (error_num = spider_insert_xa_member(
               table_xa_member, &trx->xid, conn))
           ) {
@@ -2493,9 +2620,9 @@ int spider_internal_xa_prepare(
             if (error_num)
               goto error;
           }
-        }
+        }*/
 
-        if ((error_num = spider_db_xa_end(conn, &trx->xid)))
+        /*if ((error_num = spider_db_xa_end(conn, &trx->xid)))
         {
           if (force_commit == 0 ||
             (force_commit == 1 && error_num != ER_XAER_NOTA))
@@ -2504,8 +2631,8 @@ int spider_internal_xa_prepare(
             if (error_num)
               goto error;
           }
-        }
-        if ((error_num = spider_db_xa_prepare(conn, &trx->xid)))
+        }*/
+        /*if ((error_num = spider_db_xa_prepare(conn, &trx->xid)))
         {
           if (force_commit == 0 ||
             (force_commit == 1 && error_num != ER_XAER_NOTA))
@@ -2514,7 +2641,12 @@ int spider_internal_xa_prepare(
             if (error_num)
               goto error;
           }
-        }
+        }*/
+		error_num = spider_db_xa_end_and_prepare(conn, &trx->xid);
+		if (error_num)
+		{/*prepare error,then rollback*/
+			goto error;	
+		}
 /*
         if (!internal_xa)
         {
@@ -2524,51 +2656,61 @@ int spider_internal_xa_prepare(
         }
 */
       }
-    } while ((conn = spider_tree_next(conn)));
+    } while ((conn = spider_tree_next(conn)) && spider_tree_next(conn));
 /*
     if (!internal_xa)
       trx->join_trx_top = NULL;
 */
   }
+  if (error_num = spider_db_xa_commit_one_phase(conn, &trx->xid))
+  {
+	  goto error;
+  }
   if (trx->updated_in_this_trx || spider_param_xa_register_mode(thd) == 0)
   {
-    spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
-    table_xa_member_opened = FALSE;
+	  //spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+	  //table_xa_member_opened = FALSE;
 
-    /*
-      update
-        mysql.spider_xa
-      set
-        status = 'PREPARED'
-      where
-        format_id = trx->xid.format_id and
-        gtrid_length = trx->xid.gtrid_length and
-        data = trx->xid.data
-    */
-    if (
-      !(table_xa = spider_open_sys_table(
-        thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
-        TRUE, &open_tables_backup, TRUE, &error_num))
-    )
-      goto error_open_table;
-    table_xa_opened = TRUE;
-    if (
-      (error_num = spider_update_xa(
-        table_xa, &trx->xid, SPIDER_SYS_XA_PREPARED_STR))
-    )
-      goto error;
-    spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
-    table_xa_opened = FALSE;
+	  /*
+		update
+		  mysql.spider_xa
+		set
+		  status = 'PREPARED'
+		where
+		  format_id = trx->xid.format_id and
+		  gtrid_length = trx->xid.gtrid_length and
+		  data = trx->xid.data
+	  */
+	  if (!thd->variables.spider_ignore_xa_log)
+	  {
+		  if (
+			  !(table_xa = spider_open_sys_table(
+				  thd, SPIDER_SYS_XA_TABLE_NAME_STR, SPIDER_SYS_XA_TABLE_NAME_LEN,
+				  TRUE, &open_tables_backup, TRUE, &error_num))
+			  )
+			  goto error_open_table;
+		  table_xa_opened = TRUE;
+		  if (
+			  (error_num = spider_update_xa(
+				  table_xa, &trx->xid, SPIDER_SYS_XA_PREPARED_STR))
+			  )
+			  goto error;
+		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
+		  table_xa_opened = FALSE;
+	  }
   }
   if (internal_xa)
     trx->internal_xid_state.xa_state = XA_PREPARED;
   DBUG_RETURN(0);
 
 error:
-  if (table_xa_opened)
-    spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
-  if (table_xa_member_opened)
-    spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+  if (!thd->variables.spider_ignore_xa_log)
+  {
+	  if (table_xa_opened)
+		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
+	  if (table_xa_member_opened)
+		  spider_close_sys_table(thd, table_xa_member, &open_tables_backup, TRUE);
+  }
 error_open_table:
   DBUG_RETURN(error_num);
 }
@@ -3334,33 +3476,44 @@ int spider_commit(
     {
       if (trx->trx_xa)
       {
-        if (trx->internal_xa && !trx->trx_xa_prepared)
-        {
-          if (
-            (error_num = spider_internal_xa_prepare(
-              thd, trx, table_xa, table_xa_member, TRUE))
-          ) {
-/*
-            if (!thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
-            {
-*/
-              /* rollback for semi_trx */
-              spider_rollback(hton, thd, all);
-/*
-            }
-*/
-            DBUG_RETURN(error_num);
-          }
-          trx->trx_xa_prepared = TRUE;
-        }
-        int tmp_error_num;
-        if (
-          (tmp_error_num = spider_internal_xa_commit(
-            thd, trx, &trx->xid, table_xa, table_xa_member))
-        ) {
-          if (tmp_error_num)
-            error_num = tmp_error_num;
-        }
+		  if (trx->internal_xa && !trx->trx_xa_prepared)
+		  {
+			  int tmp_error_num;
+			  uint tree_conn_num = spider_tree_num(trx->join_trx_top);
+			  if (tree_conn_num == 1)
+			  {
+				  if (
+					  (tmp_error_num = spider_internal_xa_commit_one_phase(thd, trx))
+					  ) {
+					  if (tmp_error_num)
+						  error_num = tmp_error_num;
+				  }
+			  }
+			  else
+			  {
+				  if (
+					  (error_num = spider_internal_xa_prepare(
+						  thd, trx, table_xa, table_xa_member, TRUE))
+					  ) {
+					  if (error_num == ER_SPIDER_XA_TIMEOUT_NUM)
+							spider_free_prepared_trx(thd, trx);
+					  else
+							spider_rollback(hton, thd, all);
+					  /*
+								  }
+					  */
+					  DBUG_RETURN(error_num);
+				  }
+				  trx->trx_xa_prepared = TRUE;
+			  }
+			  if (
+				  (tmp_error_num = spider_internal_xa_commit(
+					  thd, trx, &trx->xid, table_xa, table_xa_member))
+				  ) {
+				  if (tmp_error_num)
+					  error_num = tmp_error_num;
+			  }
+		  }
         trx->trx_xa = FALSE;
         trx->join_trx_top = NULL;
       } else {
@@ -3472,6 +3625,10 @@ int spider_rollback(
   }
 
   spider_merge_mem_calc(trx, FALSE);
+  if (!all  && spider_param_trans_rollback(thd) && thd->is_error())
+  {/*one query error in the procedure of transaction,then need to rollback*/
+	  thd->mark_transaction_to_rollback(true);
+  }
   DBUG_RETURN(error_num);
 }
 
@@ -3517,6 +3674,8 @@ int spider_xa_recover(
 ) {
   THD* thd = current_thd;
   DBUG_ENTER("spider_xa_recover");
+  /* do not support spider do xa */
+  DBUG_RETURN(0);
   if (len == 0 || xid_list == NULL)
     DBUG_RETURN(0);
 
@@ -3534,7 +3693,8 @@ int spider_xa_commit_by_xid(
   int error_num;
   THD* thd = current_thd;
   DBUG_ENTER("spider_xa_commit_by_xid");
-
+  /* do not support spider do xa */
+  DBUG_RETURN(0);
   if (!(trx = spider_get_trx(thd, TRUE, &error_num)))
     goto error_get_trx;
 
@@ -3556,7 +3716,8 @@ int spider_xa_rollback_by_xid(
   int error_num;
   THD* thd = current_thd;
   DBUG_ENTER("spider_xa_rollback_by_xid");
-
+  /* do not support spider do xa */
+  DBUG_RETURN(0);
   if (!(trx = spider_get_trx(thd, TRUE, &error_num)))
     goto error_get_trx;
 

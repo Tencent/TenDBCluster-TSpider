@@ -3000,7 +3000,6 @@ my_bool spider_param_quick_mode_only_select()
     DBUG_RETURN(spider_quick_mode_only_select);
 }
 
-
 static my_bool spider_enable_mem_calc;
 static MYSQL_SYSVAR_BOOL(
     enable_mem_calc,
@@ -3018,7 +3017,6 @@ my_bool spider_param_enable_mem_calc()
     DBUG_RETURN(spider_enable_mem_calc);
 }
 
-
 static my_bool spider_enable_trx_ha;
 static MYSQL_SYSVAR_BOOL(
     enable_trx_ha,
@@ -3034,6 +3032,26 @@ my_bool spider_param_enable_trx_ha()
 {
     DBUG_ENTER("spider_param_enable_trx_ha");
     DBUG_RETURN(spider_enable_trx_ha);
+}
+
+/*
+FALSE: off
+TRUE:  on
+*/
+static MYSQL_THDVAR_BOOL(
+	trans_rollback, /* name */
+	PLUGIN_VAR_OPCMDARG, /* opt */
+	"spider_trans_rollback is TRUE: let transaction rollback when error;  default is FALSE",
+	NULL, /* check */
+	NULL, /* update */
+	FALSE /* def */
+);
+
+bool spider_param_trans_rollback(
+	THD *thd
+) {
+	DBUG_ENTER("spider_param_trans_rollback");
+	DBUG_RETURN(THDVAR(thd, trans_rollback));
 }
 
 static int spider_idle_conn_recycle_interval;
@@ -3602,6 +3620,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
 #endif
   MYSQL_SYSVAR(auto_increment_mode),
   MYSQL_SYSVAR(same_server_link),
+  MYSQL_SYSVAR(trans_rollback),
   MYSQL_SYSVAR(with_begin_commit),
   MYSQL_SYSVAR(get_conn_from_idx),
   MYSQL_SYSVAR(get_sts_or_crd),

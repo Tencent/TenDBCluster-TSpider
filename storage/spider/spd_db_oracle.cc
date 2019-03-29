@@ -1911,6 +1911,22 @@ int spider_db_oracle::xa_prepare(
   DBUG_RETURN(0);
 }
 
+int spider_db_oracle::xa_end_and_prepare(
+	XID *xid,
+	int *need_mon
+) {
+	sword res;
+	DBUG_ENTER("spider_db_oracle::xa_end_and_prepare");
+	DBUG_PRINT("info", ("spider this=%p", this));
+	res = OCITransPrepare(svchp, errhp, OCI_DEFAULT);
+	if (res != OCI_SUCCESS)
+	{
+		*need_mon = set_error(res, errhp, 0, NULL, NULL);
+		DBUG_RETURN(*need_mon);
+	}
+	DBUG_RETURN(0);
+}
+
 int spider_db_oracle::xa_commit(
   XID *xid,
   int *need_mon
@@ -1940,6 +1956,14 @@ int spider_db_oracle::xa_commit(
     txnhp = NULL;
   }
   DBUG_RETURN(0);
+}
+
+int spider_db_oracle::xa_commit_one_phase(
+	XID *xid,
+	int *need_mon
+) {
+	DBUG_ENTER("spider_db_oracle::xa_commit");
+	DBUG_RETURN(0);
 }
 
 int spider_db_oracle::xa_rollback(

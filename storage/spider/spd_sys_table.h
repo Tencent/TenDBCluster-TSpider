@@ -42,7 +42,7 @@
 #define SPIDER_SYS_XA_COL_CNT 5
 #define SPIDER_SYS_XA_PK_COL_CNT 3
 #define SPIDER_SYS_XA_IDX1_COL_CNT 1
-#define SPIDER_SYS_XA_MEMBER_COL_CNT 18
+#define SPIDER_SYS_XA_MEMBER_COL_CNT 19
 #define SPIDER_SYS_XA_MEMBER_PK_COL_CNT 6
 #define SPIDER_SYS_TABLES_COL_CNT 25
 #define SPIDER_SYS_TABLES_PK_COL_CNT 3
@@ -196,6 +196,11 @@ void spider_store_xa_status(
   const char *status
 );
 
+void spider_store_xa_member_status(
+	TABLE *table,
+	const char *status
+);
+
 void spider_store_xa_member_pk(
   TABLE *table,
   XID *xid,
@@ -205,7 +210,8 @@ void spider_store_xa_member_pk(
 void spider_store_xa_member_info(
   TABLE *table,
   XID *xid,
-  SPIDER_CONN *conn
+  SPIDER_CONN *conn,
+  const char *status
 );
 
 void spider_store_tables_name(
@@ -313,7 +319,8 @@ int spider_insert_xa(
 int spider_insert_xa_member(
   TABLE *table,
   XID *xid,
-  SPIDER_CONN *conn
+  SPIDER_CONN *conn,
+  const char *status
 );
 
 int spider_insert_tables(

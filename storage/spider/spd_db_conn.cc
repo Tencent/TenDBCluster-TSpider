@@ -676,6 +676,10 @@ int spider_db_query(
     DBUG_PRINT("info", ("spider query=%s", query));
     DBUG_PRINT("info", ("spider length=%u", length));
 #endif
+	if (length > 6 && query[length - 6] == 'p' && query[length - 5] == 'h' &&  query[length - 4] == 'a' &&  query[length - 3] == 's' && query[length - 2] == 'e')
+	{
+		int a = 1;
+	}
     error_num = conn->db_conn->exec_query(query, length, quick_mode);
     thd_proc_info(thd, "spider_db_query end");
     DBUG_RETURN(error_num);
@@ -771,6 +775,17 @@ int spider_db_errorno(
         }
         DBUG_RETURN(error_num);
       }
+	  else if (conn->is_xa_commit_one_phase)
+	  {
+		  *conn->need_mon = ER_SPIDER_XA_TIMEOUT_NUM;
+		  my_message(ER_SPIDER_XA_TIMEOUT_NUM,
+			  ER_SPIDER_XA_TIMEOUT_STR, MYF(0));
+		  if (!conn->mta_conn_mutex_unlock_later)
+		  {
+			  spider_mta_conn_mutex_unlock(conn);
+		  }
+		  DBUG_RETURN(ER_SPIDER_XA_TIMEOUT_NUM);
+	  }
       *conn->need_mon = error_num;
       my_message(error_num, conn->db_conn->get_error(), MYF(0));
       if (spider_param_log_result_errors() >= 1)
@@ -1326,17 +1341,52 @@ int spider_db_xa_prepare(
   DBUG_RETURN(0);
 }
 
+int spider_db_xa_end_and_prepare(
+	SPIDER_CONN *conn,
+	XID *xid
+)
+{
+	int need_mon = 0;
+	DBUG_ENTER("spider_xa_end_and_prepare");
+
+	if (!conn->queued_connect && !conn->queued_xa_start)
+	{
+		if (conn->use_for_active_standby && conn->server_lost)
+		{
+			my_message(ER_SPIDER_LINK_IS_FAILOVER_NUM,
+				ER_SPIDER_LINK_IS_FAILOVER_STR, MYF(0));
+			DBUG_RETURN(ER_SPIDER_LINK_IS_FAILOVER_NUM);
+		}
+		DBUG_RETURN(conn->db_conn->xa_end_and_prepare(xid, &need_mon));
+	}
+	DBUG_RETURN(0);
+}
+
 int spider_db_xa_commit(
   SPIDER_CONN *conn,
   XID *xid
 ) {
   int need_mon = 0;
   DBUG_ENTER("spider_db_xa_commit");
-  if (!conn->queued_connect && !conn->queued_xa_start)
+  if (!conn->is_xa_commit_one_phase && !conn->queued_connect && !conn->queued_xa_start)
   {
     DBUG_RETURN(conn->db_conn->xa_commit(xid, &need_mon));
   }
   DBUG_RETURN(0);
+}
+
+int spider_db_xa_commit_one_phase(
+	SPIDER_CONN *conn,
+	XID *xid
+) {
+	int need_mon = 0;
+	DBUG_ENTER("spider_db_xa_commit_one_phase");
+	if (!conn->queued_connect && !conn->queued_xa_start)
+	{
+		conn->is_xa_commit_one_phase = TRUE;
+		DBUG_RETURN(conn->db_conn->xa_commit_one_phase(xid, &need_mon));
+	}
+	DBUG_RETURN(0);
 }
 
 int spider_db_xa_rollback(

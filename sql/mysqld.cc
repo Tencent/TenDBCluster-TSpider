@@ -583,6 +583,7 @@ uint prepared_stmt_count=0;
 my_thread_id global_thread_id= 0;
 ulong current_pid;
 ulong slow_launch_threads = 0;
+ulonglong spider_xid_gtrid = 1L;
 uint sync_binlog_period= 0, sync_relaylog_period= 0,
      sync_relayloginfo_period= 0, sync_masterinfo_period= 0;
 ulong expire_logs_days = 0;

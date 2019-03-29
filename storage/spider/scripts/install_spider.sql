@@ -494,3 +494,7 @@ end;//
 delimiter ;
 call mysql.spider_plugin_installer;
 drop procedure mysql.spider_plugin_installer;
+
+-- alter table mysql.spider_xa_member drop index idx1;
+-- alter table mysql.spider_xa_member add index idx1(data,format_id,gtrid_length,host,port, socket(64));
+-- alter table mysql.spider_xa_member add `status` char(8) NOT NULL DEFAULT '';
