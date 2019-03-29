@@ -691,6 +691,10 @@ int spider_db_query(
     DBUG_PRINT("info", ("spider query=%s", query));
     DBUG_PRINT("info", ("spider length=%u", length));
 #endif
+	if (length > 6 && query[length - 6] == 'p' && query[length - 5] == 'h' &&  query[length - 4] == 'a' &&  query[length - 3] == 's' && query[length - 2] == 'e')
+	{
+		int a = 1;
+	}
     error_num = conn->db_conn->exec_query(query, length, quick_mode);
     thd_proc_info(thd, "spider_db_query end");
     DBUG_RETURN(error_num);

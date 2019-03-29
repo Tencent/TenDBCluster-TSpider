@@ -1908,7 +1908,7 @@ int spider_internal_xa_commit(
 			 However, the current suspension transaction is not perfect enough to temporarily return ER_SPIDER_XA_TIMEOUT_NUM, timeout*/
             SPIDER_CONN_RESTORE_DASTATUS_AND_RESET_TMP_ERROR_NUM;
             if (!error_num && tmp_error_num)
-				error_num = ER_SPIDER_XA_TIMEOUT_NUM;
+				        error_num = ER_SPIDER_XA_TIMEOUT_NUM;
               //error_num = tmp_error_num;
           }
           spider_sys_log_xa_failed(thd, &trx->xid, conn,
@@ -1918,7 +1918,7 @@ int spider_internal_xa_commit(
         {
           SPIDER_CONN_RESTORE_DASTATUS_AND_RESET_TMP_ERROR_NUM;
           if (!error_num && tmp_error_num)
-			error_num = ER_SPIDER_XA_TIMEOUT_NUM;
+			      error_num = ER_SPIDER_XA_TIMEOUT_NUM;
            // error_num = tmp_error_num;
         }
         conn->join_trx = 0;
