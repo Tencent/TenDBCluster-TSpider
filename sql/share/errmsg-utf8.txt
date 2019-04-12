@@ -7929,3 +7929,7 @@ ER_THREAD_IN_USING_OR_TRANSACTION
         eng "thread %lu is in using or in transaction, can't be killed safe"
 ER_CANT_UPDATE_WITH_WRITELOCK
 		eng "Can't execute the query because you have a conflicting write lock"
+ER_UNSUPPORT_SQL_IN_DDL_CTL
+        eng "SQL TYPE: %s ,can not be supported when set ddl_execute_by_ctl"
+ER_FAILED_DO_DDL_IN_CTL
+        eng "Failed to execute ddl by tdbctl, error happend when %s"

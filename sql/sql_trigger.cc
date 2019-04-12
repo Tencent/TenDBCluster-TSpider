@@ -527,6 +527,13 @@ bool mysql_create_or_drop_trigger(THD *thd, TABLE_LIST *tables, bool create)
     goto end;
   }
 
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(TRUE);
+  }
+
+
   /* We also don't allow creation of triggers on views. */
   tables->required_type= TABLE_TYPE_NORMAL;
   /*

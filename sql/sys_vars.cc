@@ -6193,3 +6193,9 @@ static Sys_var_mybool Sys_spider_parallel_limit(
     "spider_parallel_limit",
     "spider_parallel_limit defaults is false, set spider parallel process without supporting  limit",
     GLOBAL_VAR(opt_spider_parallel_limit), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+
+static Sys_var_mybool Sys_ddl_execute_by_ctl(
+    "ddl_execute_by_ctl",
+    "use tdbctl to process ddl query",
+    SESSION_VAR(ddl_execute_by_ctl), CMD_LINE(OPT_ARG),
+    DEFAULT(FALSE));

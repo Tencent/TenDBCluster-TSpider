@@ -46,6 +46,7 @@
 #include <direct.h>
 #endif
 #include "debug_sync.h"
+#include "sql_parse.h"
 
 #define MAX_DROP_TABLE_Q_LEN      1024
 
@@ -629,6 +630,13 @@ mysql_create_db_internal(THD *thd, const LEX_CSTRING *db,
   }
 
 
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(-1);
+  }
+
+
   if (my_mkdir(path, 0777, MYF(0)) < 0)
   {
     my_error(ER_CANT_CREATE_DB, MYF(0), db->str, my_errno);
@@ -825,14 +833,16 @@ mysql_rm_db_internal(THD *thd, const LEX_CSTRING *db, bool if_exists, bool silen
 
   length= build_table_filename(path, sizeof(path) - 1, db->str, "", "", 0);
   strmov(path+length, MY_DB_OPT_FILE);		// Append db option file name
-  del_dbopt(path);				// Remove dboption hash entry
+  if(!tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    del_dbopt(path);				// Remove dboption hash entry
   /*
      Now remove the db.opt file.
      The 'find_db_tables_and_rm_known_files' doesn't remove this file
      if there exists a table with the name 'db', so let's just do it
      separately. We know this file exists and needs to be deleted anyway.
   */
-  if (mysql_file_delete_with_symlink(key_file_misc, path, "", MYF(0)) &&
+  if (!tdbctl_is_ddl_by_ctl(thd, thd->lex) &&
+      mysql_file_delete_with_symlink(key_file_misc, path, "", MYF(0)) &&
       my_errno != ENOENT)
   {
     my_error(EE_DELETE, MYF(0), path, my_errno);
@@ -857,6 +867,12 @@ mysql_rm_db_internal(THD *thd, const LEX_CSTRING *db, bool if_exists, bool silen
       error= false;
       goto update_binlog;
     }
+  }
+
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(true);
   }
 
   if (find_db_tables_and_rm_known_files(thd, dirp, dbnorm, path, &tables))

@@ -348,6 +348,13 @@ Events::create_event(THD *thd, Event_parse_data *parse_data)
     DBUG_RETURN(TRUE);
   }
 
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(TRUE);
+  }
+
+
   if (parse_data->do_not_create)
     DBUG_RETURN(FALSE);
   /*
@@ -474,6 +481,12 @@ Events::update_event(THD *thd, Event_parse_data *parse_data,
   {
     my_error(ER_BAD_DB_ERROR, MYF(0), parse_data->dbname.str);
     DBUG_RETURN(TRUE);
+  }
+
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(TRUE);
   }
 
 
@@ -606,6 +619,13 @@ Events::drop_event(THD *thd, const LEX_CSTRING *dbname,
   if (lock_object_name(thd, MDL_key::EVENT,
                        dbname->str, name->str))
     DBUG_RETURN(TRUE);
+
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(TRUE);
+  }
+
   /* On error conditions my_error() is called so no need to handle here */
   if (!(ret= db_repository->drop_event(thd, dbname, name, if_exists)))
   {

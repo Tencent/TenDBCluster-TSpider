@@ -692,6 +692,7 @@ typedef struct system_variables
   ulong session_track_transaction_info;
   my_bool session_track_schema;
   my_bool session_track_state_change;
+  my_bool ddl_execute_by_ctl;
 
   ulong threadpool_priority;
 
@@ -2435,6 +2436,7 @@ public:
   int32 spider_current_partition_num;
   int32 spider_last_partition_num;
   ulong spider_features_type;
+  bool do_ddl_by_ctl;
 
   // Process indicator
   struct {

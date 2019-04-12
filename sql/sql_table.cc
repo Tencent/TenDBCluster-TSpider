@@ -2043,7 +2043,13 @@ bool mysql_rm_table(THD *thd,TABLE_LIST *tables, bool if_exists,
       DBUG_RETURN(true);
   }
 
-  if (!drop_temporary)
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(true);
+  }
+
+   if (!drop_temporary)
   {
     if (!in_bootstrap)
     {
@@ -4753,6 +4759,13 @@ handler *mysql_create_frm_image(THD *thd,
                                  file, key_info, key_count,
                                  create_table_mode))
     goto err;
+
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      goto err;
+  }
+
   create_info->table_options=db_options;
 
   *frm= build_frm_image(thd, table_name, create_info,
@@ -5649,6 +5662,7 @@ bool mysql_create_like_table(THD* thd, TABLE_LIST* table,
                                     &local_create_info, &local_alter_info,
                                     &is_trans, C_ORDINARY_CREATE,
                                     table)) > 0);
+
   /* Remember to log if we deleted something */
   do_logging= thd->log_current_statement;
   if (res)

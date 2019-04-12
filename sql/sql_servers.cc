@@ -1363,10 +1363,12 @@ FOREIGN_SERVER *get_server_by_name(MEM_ROOT *mem, const char *server_name,
   DBUG_RETURN(server);
 
 }
+
 ulong get_modify_server_version()
 {
 	return global_modify_server_version;
 }
+
 ulong get_server_version_by_name(const char *server_name)
 {
 	size_t server_name_length;
@@ -1459,4 +1461,28 @@ bool update_server_version(bool *version_updated)
 		}
 	}
 	DBUG_RETURN(FALSE);
+}
+
+FOREIGN_SERVER *get_server_by_idx(MEM_ROOT *mem, int idx, FOREIGN_SERVER *buff)
+{
+    FOREIGN_SERVER *server;
+    DBUG_ENTER("get_server_by_idx");
+    mysql_rwlock_rdlock(&THR_LOCK_servers);
+    if (!(server = (FOREIGN_SERVER*)my_hash_element(&servers_cache, idx)))
+    {
+        server = (FOREIGN_SERVER *)NULL;
+    }
+    else
+        server = clone_server(mem, server, buff);
+    mysql_rwlock_unlock(&THR_LOCK_servers);
+    DBUG_RETURN(server);
+}
+
+ulong get_servers_count()
+{
+    ulong records = 0;
+    mysql_rwlock_rdlock(&THR_LOCK_servers);
+    records = servers_cache.records;
+    mysql_rwlock_unlock(&THR_LOCK_servers);
+    return records;
 }

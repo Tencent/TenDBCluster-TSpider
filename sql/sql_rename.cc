@@ -30,6 +30,7 @@
 #include "sql_base.h"   // tdc_remove_table, lock_table_names,
 #include "sql_handler.h"                        // mysql_ha_rm_tables
 #include "sql_statistics.h" 
+#include "sql_parse.h"
 
 static TABLE_LIST *rename_tables(THD *thd, TABLE_LIST *table_list,
 				 bool skip_error);
@@ -286,6 +287,12 @@ do_rename(THD *thd, TABLE_LIST *ren_table, const LEX_CSTRING *new_db,
   {
     my_error(ER_TABLE_EXISTS_ERROR, MYF(0), new_alias.str);
     DBUG_RETURN(1);                     // This can't be skipped
+  }
+
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(1);
   }
 
   if (ha_table_exists(thd, &ren_table->db, &old_alias, &hton) && hton)

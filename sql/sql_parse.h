@@ -18,6 +18,10 @@
 
 #include "sql_acl.h"                            /* GLOBAL_ACLS */
 
+#define SERVER_NAME_PRE "SPT"
+#define SERVER_SPIDER_NAME_PRE "SPIDER"
+#define SERVER_TDBCTL_NAME_PRE "TDBCTL"
+
 class Comp_creator;
 class Item;
 class Object_creation_ctx;
@@ -81,6 +85,7 @@ bool check_ident_length(const LEX_CSTRING *ident);
 CHARSET_INFO* merge_charset_and_collation(CHARSET_INFO *cs, CHARSET_INFO *cl);
 CHARSET_INFO *find_bin_collation(CHARSET_INFO *cs);
 bool check_host_name(LEX_CSTRING *str);
+bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex);
 bool check_identifier_name(LEX_CSTRING *str, uint max_char_length,
                            uint err_code, const char *param_for_err_msg);
 bool mysql_test_parse_for_slave(THD *thd,char *inBuf,uint length);
@@ -142,6 +147,8 @@ inline bool check_identifier_name(LEX_CSTRING *str)
 {
   return check_identifier_name(str, NAME_CHAR_LEN, 0, "");
 }
+
+bool tdbctl_execute_command(THD *thd, LEX *lex);
 
 #ifndef NO_EMBEDDED_ACCESS_CHECKS
 bool check_one_table_access(THD *thd, ulong privilege, TABLE_LIST *tables);

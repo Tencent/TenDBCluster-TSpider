@@ -637,6 +637,13 @@ bool mysql_create_view(THD *thd, TABLE_LIST *views,
   }
 #endif
 
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      res = TRUE;
+      goto err;
+  }
+
   res= mysql_register_view(thd, view, mode);
 
   /*
@@ -1811,33 +1818,38 @@ bool mysql_drop_view(THD *thd, TABLE_LIST *views, enum_drop_mode drop_mode)
 
     if ((not_exist= my_access(path, F_OK)) || !dd_frm_is_view(thd, path))
     {
-      char name[FN_REFLEN];
-      my_snprintf(name, sizeof(name), "%s.%s", view->db.str,
-                  view->table_name.str);
-      if (thd->lex->if_exists())
-      {
-	push_warning_printf(thd, Sql_condition::WARN_LEVEL_NOTE,
-			    ER_UNKNOWN_VIEW,
-                            ER_THD(thd, ER_UNKNOWN_VIEW),
-			    name);
-	continue;
-      }
-      if (not_exist)
-      {
-        if (non_existant_views.length())
-          non_existant_views.append(',');
-        non_existant_views.append(name);
-      }
-      else
-      {
-        if (!wrong_object_name)
+        char name[FN_REFLEN];
+        my_snprintf(name, sizeof(name), "%s.%s", view->db.str,
+            view->table_name.str);
+        if (thd->lex->if_exists())
         {
-          wrong_object_db= view->db.str;
-          wrong_object_name= view->table_name.str;
+            push_warning_printf(thd, Sql_condition::WARN_LEVEL_NOTE, ER_UNKNOWN_VIEW,
+                ER_THD(thd, ER_UNKNOWN_VIEW), name);
+            continue;
         }
-      }
-      continue;
+        if (not_exist)
+        {
+            if (non_existant_views.length())
+                non_existant_views.append(',');
+            non_existant_views.append(name);
+        }
+        else
+        {
+            if (!wrong_object_name)
+            {
+                wrong_object_db = view->db.str;
+                wrong_object_name = view->table_name.str;
+            }
+        }
+        continue;
     }
+
+    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    {
+        thd->do_ddl_by_ctl = TRUE;
+        DBUG_RETURN(FALSE);
+    }
+
     if (unlikely(mysql_file_delete(key_file_frm, path, MYF(MY_WME))))
       error= TRUE;
 

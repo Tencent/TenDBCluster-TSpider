@@ -54,4 +54,6 @@ ulong get_server_version_by_name(const char *server_name);
 int back_up_one_server(FOREIGN_SERVER *server);
 bool update_server_version(bool *version_updated);
 bool backup_server_cache();
+FOREIGN_SERVER *get_server_by_idx(MEM_ROOT *mem, int idx, FOREIGN_SERVER *buff);
+ulong get_servers_count();
 #endif /* SQL_SERVERS_INCLUDED */

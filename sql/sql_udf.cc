@@ -503,6 +503,12 @@ int mysql_create_function(THD *thd,udf_func *udf)
   if (check_ident_length(&udf->name))
     DBUG_RETURN(1);
 
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(1);
+  }
+
   tables.init_one_table(&MYSQL_SCHEMA_NAME, &MYSQL_FUNC_NAME, 0, TL_WRITE);
   table= open_ltable(thd, &tables, TL_WRITE, MYSQL_LOCK_IGNORE_TIMEOUT);
 

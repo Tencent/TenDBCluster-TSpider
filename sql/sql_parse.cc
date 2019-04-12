@@ -102,6 +102,8 @@
 #include "sql_sequence.h"
 
 #include "my_json_writer.h" 
+#include "mysql.h"
+#include "sql_common.h"
 
 #define FLAGSTR(V,F) ((V)&(F)?#F" ":"")
 
@@ -3008,6 +3010,13 @@ static int mysql_create_routine(THD *thd, LEX *lex)
   }
 #endif
 
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      return true;
+  }
+
+
   if (sp_process_definer(thd))
     return true;
 
@@ -4129,6 +4138,12 @@ mysql_execute_command(THD *thd)
     {
       select_result *result;
 
+      if (tdbctl_is_ddl_by_ctl(thd, lex))
+      {
+          my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0), "CRREATE TABLE ... SELECT");
+          goto end_with_restore_list;
+      }
+
       /*
         CREATE TABLE...IGNORE/REPLACE SELECT... can be unsafe, unless
         ORDER BY PRIMARY KEY clause is used in SELECT statement. We therefore
@@ -4273,25 +4288,30 @@ mysql_execute_command(THD *thd)
       }
       else
       {
-        if (create_info.vers_fix_system_fields(thd, &alter_info, *create_table) ||
-            create_info.vers_check_system_fields(thd, &alter_info, *create_table))
-          goto end_with_restore_list;
+          if (tdbctl_is_ddl_by_ctl(thd, lex) && create_info.tmp_table())
+          {
+              my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0), "CRREATE TEMPORARY TABLE");
+              goto end_with_restore_list;
+          }
+          if (create_info.vers_fix_system_fields(thd, &alter_info, *create_table) ||
+              create_info.vers_check_system_fields(thd, &alter_info, *create_table))
+              goto end_with_restore_list;
 
-        /*
-          In STATEMENT format, we probably have to replicate also temporary
-          tables, like mysql replication does. Also check if the requested
-          engine is allowed/supported.
-        */
-        if (WSREP(thd) &&
-            !check_engine(thd, create_table->db.str, create_table->table_name.str,
-                          &create_info) &&
-            (!thd->is_current_stmt_binlog_format_row() ||
-             !create_info.tmp_table()))
-        {
-	  WSREP_TO_ISOLATION_BEGIN(create_table->db.str, create_table->table_name.str, NULL);
-        }
-        /* Regular CREATE TABLE */
-        res= mysql_create_table(thd, create_table, &create_info, &alter_info);
+          /*
+            In STATEMENT format, we probably have to replicate also temporary
+            tables, like mysql replication does. Also check if the requested
+            engine is allowed/supported.
+          */
+          if (WSREP(thd) &&
+              !check_engine(thd, create_table->db.str, create_table->table_name.str,
+                  &create_info) &&
+                  (!thd->is_current_stmt_binlog_format_row() ||
+                      !create_info.tmp_table()))
+          {
+              WSREP_TO_ISOLATION_BEGIN(create_table->db.str, create_table->table_name.str, NULL);
+          }
+          /* Regular CREATE TABLE */
+          res = mysql_create_table(thd, create_table, &create_info, &alter_info);
       }
 
       if (!res)
@@ -5239,14 +5259,14 @@ end_with_restore_list:
     break;
   case SQLCOM_CREATE_DB:
   {
-    if (prepare_db_action(thd, lex->create_info.or_replace() ?
-                          (CREATE_ACL | DROP_ACL) : CREATE_ACL,
-                          &lex->name))
+      if (prepare_db_action(thd, lex->create_info.or_replace() ?
+          (CREATE_ACL | DROP_ACL) : CREATE_ACL,
+          &lex->name))
+          break;
+      WSREP_TO_ISOLATION_BEGIN(lex->name.str, NULL, NULL);
+      res = mysql_create_db(thd, &lex->name,
+          lex->create_info, &lex->create_info);
       break;
-    WSREP_TO_ISOLATION_BEGIN(lex->name.str, NULL, NULL);
-    res= mysql_create_db(thd, &lex->name,
-                         lex->create_info, &lex->create_info);
-    break;
   }
   case SQLCOM_DROP_DB:
   {
@@ -5403,6 +5423,11 @@ end_with_restore_list:
                      "mysql", NULL, NULL, 1, 1) &&
         check_global_access(thd,CREATE_USER_ACL))
       break;
+    if (tdbctl_is_ddl_by_ctl(thd, lex))
+    {
+        thd->do_ddl_by_ctl = TRUE;
+        break;
+    }
     WSREP_TO_ISOLATION_BEGIN(WSREP_MYSQL_DB, NULL, NULL);
     /* Conditionally writes to binlog */
     if (!(res= mysql_create_user(thd, lex->users_list,
@@ -5416,6 +5441,11 @@ end_with_restore_list:
     if (check_access(thd, DELETE_ACL, "mysql", NULL, NULL, 1, 1) &&
         check_global_access(thd,CREATE_USER_ACL))
       break;
+    if (tdbctl_is_ddl_by_ctl(thd, lex))
+    {
+        thd->do_ddl_by_ctl = TRUE;
+        break;
+    }
     /* Conditionally writes to binlog */
     WSREP_TO_ISOLATION_BEGIN(WSREP_MYSQL_DB, NULL, NULL);
     if (!(res= mysql_drop_user(thd, lex->users_list,
@@ -5430,6 +5460,11 @@ end_with_restore_list:
         check_global_access(thd,CREATE_USER_ACL))
       break;
     /* Conditionally writes to binlog */
+    if (tdbctl_is_ddl_by_ctl(thd, lex))
+    {
+        thd->do_ddl_by_ctl = TRUE;
+        break;
+    }
     WSREP_TO_ISOLATION_BEGIN(WSREP_MYSQL_DB, NULL, NULL);
     if (lex->sql_command == SQLCOM_ALTER_USER)
       res= mysql_alter_user(thd, lex->users_list);
@@ -5444,7 +5479,11 @@ end_with_restore_list:
     if (check_access(thd, UPDATE_ACL, "mysql", NULL, NULL, 1, 1) &&
         check_global_access(thd,CREATE_USER_ACL))
       break;
-
+    if (tdbctl_is_ddl_by_ctl(thd, lex))
+    {
+        thd->do_ddl_by_ctl = TRUE;
+        break;
+    }
     /* Conditionally writes to binlog */
     WSREP_TO_ISOLATION_BEGIN(WSREP_MYSQL_DB, NULL, NULL);
     if (!(res = mysql_revoke_all(thd, lex->users_list)))
@@ -5462,6 +5501,11 @@ end_with_restore_list:
                      first_table ? 0 : 1, 0))
       goto error;
 
+    if (tdbctl_is_ddl_by_ctl(thd, lex))
+    {
+        thd->do_ddl_by_ctl = TRUE;
+        goto error;
+    }
     /* Replicate current user as grantor */
     thd->binlog_invoker(false);
 
@@ -5936,6 +5980,12 @@ end_with_restore_list:
                                &lex->spname->m_name, sph, 0))
         goto error;
 
+      if (tdbctl_is_ddl_by_ctl(thd, lex))
+      {
+          thd->do_ddl_by_ctl = TRUE;
+          goto error;
+      }
+
       /*
         Note that if you implement the capability of ALTER FUNCTION to
         alter the body of the function, this command should be made to
@@ -5947,19 +5997,19 @@ end_with_restore_list:
       switch (sp_result)
       {
       case SP_OK:
-	my_ok(thd);
-	break;
+          my_ok(thd);
+          break;
       case SP_KEY_NOT_FOUND:
-	my_error(ER_SP_DOES_NOT_EXIST, MYF(0),
-                 sph->type_str(), ErrConvDQName(lex->spname).ptr());
-	goto error;
+          my_error(ER_SP_DOES_NOT_EXIST, MYF(0),
+              sph->type_str(), ErrConvDQName(lex->spname).ptr());
+          goto error;
       default:
-	my_error(ER_SP_CANT_ALTER, MYF(0),
-                 sph->type_str(), ErrConvDQName(lex->spname).ptr());
-	goto error;
+          my_error(ER_SP_CANT_ALTER, MYF(0),
+              sph->type_str(), ErrConvDQName(lex->spname).ptr());
+          goto error;
       }
       break;
-    }
+  }
   case SQLCOM_DROP_PROCEDURE:
   case SQLCOM_DROP_FUNCTION:
   case SQLCOM_DROP_PACKAGE:
@@ -5976,7 +6026,11 @@ end_with_restore_list:
         {
           if (check_access(thd, DELETE_ACL, "mysql", NULL, NULL, 1, 0))
             goto error;
-
+          if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+          {
+              thd->do_ddl_by_ctl = TRUE;
+              goto error;
+          }
           if (!(res = mysql_drop_function(thd, &lex->spname->m_name)))
           {
             my_ok(thd);
@@ -6014,6 +6068,11 @@ end_with_restore_list:
         goto error;
       WSREP_TO_ISOLATION_BEGIN(WSREP_MYSQL_DB, NULL, NULL);
 
+      if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+      {
+          thd->do_ddl_by_ctl = TRUE;
+          goto error;
+      }
       /* Conditionally writes to binlog */
       sp_result= sph->sp_drop_routine(thd, lex->spname);
 
@@ -6052,27 +6111,27 @@ end_with_restore_list:
       res= sp_result;
       switch (sp_result) {
       case SP_OK:
-	my_ok(thd);
-	break;
+          my_ok(thd);
+          break;
       case SP_KEY_NOT_FOUND:
-	if (lex->if_exists())
-	{
-          res= write_bin_log(thd, TRUE, thd->query(), thd->query_length());
-	  push_warning_printf(thd, Sql_condition::WARN_LEVEL_NOTE,
-			      ER_SP_DOES_NOT_EXIST, ER_THD(thd, ER_SP_DOES_NOT_EXIST),
-                              sph->type_str(),
-                              ErrConvDQName(lex->spname).ptr());
-          if (!res)
-            my_ok(thd);
-	  break;
-	}
-	my_error(ER_SP_DOES_NOT_EXIST, MYF(0),
-                 sph->type_str(), ErrConvDQName(lex->spname).ptr());
-	goto error;
+          if (lex->if_exists())
+          {
+              res = write_bin_log(thd, TRUE, thd->query(), thd->query_length());
+              push_warning_printf(thd, Sql_condition::WARN_LEVEL_NOTE,
+                  ER_SP_DOES_NOT_EXIST, ER_THD(thd, ER_SP_DOES_NOT_EXIST),
+                  sph->type_str(),
+                  ErrConvDQName(lex->spname).ptr());
+              if (!res)
+                  my_ok(thd);
+              break;
+          }
+          my_error(ER_SP_DOES_NOT_EXIST, MYF(0),
+              sph->type_str(), ErrConvDQName(lex->spname).ptr());
+          goto error;
       default:
-	my_error(ER_SP_DROP_FAILED, MYF(0),
-                 sph->type_str(), ErrConvDQName(lex->spname).ptr());
-	goto error;
+          my_error(ER_SP_DROP_FAILED, MYF(0),
+              sph->type_str(), ErrConvDQName(lex->spname).ptr());
+          goto error;
       }
       break;
     }
@@ -6475,6 +6534,11 @@ finish:
     thd->mdl_context.release_transactional_locks();
   }
 #endif /* WITH_WSREP */
+
+  if (tdbctl_is_ddl_by_ctl(thd, lex) && thd->do_ddl_by_ctl)
+  {
+      tdbctl_execute_command(thd, lex);
+  }
   DBUG_RETURN(res || thd->is_error());
 }
 
@@ -7654,6 +7718,7 @@ void THD::reset_for_next_command(bool do_clear_error)
       thd->lex->type &= ~REFRESH_NO_BLOCK;
 
   thd->is_spider_query = FALSE;
+  thd->do_ddl_by_ctl = FALSE;
   thd->spider_remote_query.free();
   thd->spider_slow_query_num = 0;
   thd->spider_current_partition_num = 0;
@@ -10282,4 +10347,219 @@ CHARSET_INFO *find_bin_collation(CHARSET_INFO *cs)
     my_error(ER_UNKNOWN_COLLATION, MYF(0), tmp);
   }
   return cs;
+}
+
+
+int tdbctl_mysql_next_result(MYSQL *mysql)
+{
+    int status;
+    if (!mysql || mysql->status != MYSQL_STATUS_READY)
+    {
+        return 1;
+    }
+
+    mysql->net.last_errno = 0;
+    mysql->net.last_error[0] = '\0';
+    strmov(mysql->net.sqlstate, "00000");
+    mysql->affected_rows = ~(my_ulonglong)0;
+
+    if (mysql->server_status & SERVER_MORE_RESULTS_EXISTS)
+    {
+        if ((status = mysql->methods->read_query_result(mysql)) > 0)
+            return(mysql_errno(mysql));
+        return status;
+    }
+    return -1;
+}
+
+bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex)
+{
+    if (thd->variables.ddl_execute_by_ctl)
+    {
+        switch (lex->sql_command)
+        {
+        case SQLCOM_CREATE_USER:
+        case SQLCOM_DROP_USER:
+        case SQLCOM_ALTER_USER:
+        case SQLCOM_RENAME_USER:
+        case SQLCOM_REVOKE_ALL:
+        case SQLCOM_REVOKE:
+        case SQLCOM_GRANT:
+        case SQLCOM_CREATE_EVENT:
+        case SQLCOM_ALTER_EVENT:
+        case SQLCOM_DROP_EVENT:
+        case SQLCOM_CREATE_PROCEDURE:
+        case SQLCOM_CREATE_SPFUNCTION:
+        case SQLCOM_ALTER_PROCEDURE:
+        case SQLCOM_DROP_PROCEDURE:
+        case SQLCOM_CREATE_FUNCTION:
+        case SQLCOM_ALTER_FUNCTION:
+        case SQLCOM_DROP_FUNCTION:
+        case SQLCOM_CREATE_TRIGGER:
+        case SQLCOM_DROP_TRIGGER:
+        case SQLCOM_CREATE_VIEW:
+        case SQLCOM_DROP_VIEW:
+        case SQLCOM_CREATE_TABLE:
+        case SQLCOM_DROP_TABLE:
+        case SQLCOM_ALTER_TABLE:
+        case SQLCOM_RENAME_TABLE:
+        case SQLCOM_CREATE_INDEX:
+        case SQLCOM_DROP_INDEX:
+        case SQLCOM_CREATE_DB:
+        case SQLCOM_DROP_DB:
+            return TRUE;
+        default:
+            return FALSE;
+        }
+    }
+    return FALSE;
+}
+
+bool tdbctl_get_ctl_info(THD *thd, char *host, int *port, char *user, char *passwd)
+{
+    ulong records = get_servers_count();
+    MEM_ROOT *mem = thd->mem_root;
+    FOREIGN_SERVER *server, server_buffer;
+
+    for (ulong i = 0; i < records; i++)
+    {
+        if (server = get_server_by_idx(mem, i, &server_buffer))
+        {
+            if (!strcasecmp(server->scheme, SERVER_TDBCTL_NAME_PRE))
+            {
+                strcpy(host, server->host);
+                strcpy(user, server->username);
+                strcpy(passwd, server->password);
+                *port = server->port;
+                break;
+            }
+        }
+    }
+
+    return FALSE;
+}
+
+bool tdbctl_conn_connect(THD *thd, MYSQL *mysql, char *host, int port, char *user, char *passwd)
+{
+    int read_timeout = 600;
+    int write_timeout = 600;
+    int connect_timeout = 60;
+   
+    mysql_init(mysql);
+    mysql_options(mysql, MYSQL_OPT_READ_TIMEOUT, &read_timeout);
+    mysql_options(mysql, MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
+    mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
+    if (!mysql_real_connect(mysql, host, user, passwd, "", port, NULL, CLIENT_MULTI_STATEMENTS))
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void tdbctl_conn_close(THD *thd, MYSQL *mysql)
+{
+    mysql_close(mysql);
+}
+
+bool tdbctl_conn_before_query(THD *thd, LEX *lex, MYSQL *mysql, String *sql_str)
+{
+    /* 1. charset */
+    /* 2. sql_mode */
+    /* 3. use db */
+    
+    thd->variables.sql_mode;
+    LEX_CSTRING  db;
+    CHARSET_INFO *charset;
+    sql_mode_t tmp_mode;
+    LEX_CSTRING ls;
+    LEX_STRING *lex_str;
+
+    /* 1. append set names */
+    charset = thd->charset();
+    sql_str->append("set names ", 10);
+    sql_str->append(charset->csname, strlen(charset->csname));
+    sql_str->append(";", 1);
+
+    /* 2. append sql mode */
+   
+    tmp_mode = thd->variables.sql_mode;
+    sql_mode_string_representation(thd, tmp_mode, &ls);
+    sql_str->append("set sql_mode='", 14);
+    sql_str->append(ls.str, ls.length);
+    sql_str->append("';", 2);
+
+    /* 3. append set tcadmin=1 */
+    sql_str->append("set tc_admin=1;", 15);
+
+    /* 4. append use database; */
+    if (!(lex->sql_command == SQLCOM_CREATE_DB ||
+        lex->sql_command == SQLCOM_CHANGE_DB ||
+        lex->sql_command == SQLCOM_DROP_DB))
+    {/* skip append db_name */
+        TABLE_LIST* table_list = lex->query_tables;
+        db = table_list->db;
+        sql_str->append("use ", 4);
+        sql_str->append(db.str, db.length);
+        sql_str->append(";", 1);
+    }
+
+    /* 5. append current query */
+    lex_str = thd_query_string(thd);
+    sql_str->append(lex_str->str, lex_str->length);
+
+    return FALSE;
+}
+
+bool tbdctl_conn_exec_query(THD *thd, MYSQL *mysql, String *sql)
+{
+    int ret = mysql_real_query(mysql, sql->ptr(), sql->length());
+    int err_code;
+    const char *err_msg;
+    while (!ret)
+    {
+        ret = tdbctl_mysql_next_result(mysql);
+    }
+    if (ret != -1)
+    {/* error happened */
+        err_code = mysql_errno(mysql);
+        err_msg = mysql_error(mysql);
+    }
+    return FALSE;
+}
+
+
+bool tdbctl_execute_command(THD *thd, LEX *lex)
+{
+    MYSQL mysql;
+    String sql_str;
+    char host[64] = "";
+    char user[64] = "";
+    char passwd[64] = "";
+    int port = 0;
+
+    if (tdbctl_get_ctl_info(thd, host, &port, user, passwd))
+    {
+        my_error(ER_FAILED_DO_DDL_IN_CTL, MYF(0), "get ctl info");
+        return TRUE;
+    }
+    if (tdbctl_conn_connect(thd, &mysql, host, port, user, passwd))
+    {
+        my_error(ER_FAILED_DO_DDL_IN_CTL, MYF(0), "connect to tdbctl");
+        return TRUE;
+    }
+    if (tdbctl_conn_before_query(thd, lex, &mysql, &sql_str))
+    {
+        my_error(ER_FAILED_DO_DDL_IN_CTL, MYF(0), "append sql before query");
+        return TRUE;
+    }
+
+    if (tbdctl_conn_exec_query(thd, &mysql, &sql_str))
+    {// TODO, process error result, by will
+        tdbctl_conn_close(thd, &mysql);
+        return TRUE;
+    }
+
+    tdbctl_conn_close(thd, &mysql);
+    my_ok(thd);
+    return FALSE;
 }
