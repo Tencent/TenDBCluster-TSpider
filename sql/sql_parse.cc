@@ -10628,7 +10628,6 @@ bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex)
     return FALSE;
 }
 
-
 bool tdbctl_need_current_db(THD *thd, LEX *lex)
 {
     switch (lex->sql_command)
@@ -10682,7 +10681,6 @@ bool tdbctl_get_ctl_info(THD *thd, char *host, int *port, char *user, char *pass
     }
     return FALSE;
 }
-
 
 bool tdbctl_conn_connect(THD *thd, MYSQL *mysql, char *host, int port, char *user, char *passwd)
 {
@@ -10771,7 +10769,6 @@ bool tbdctl_conn_exec_query(THD *thd, MYSQL *mysql, String *sql)
     }
     if (ret != -1)
     {/* error happened */
-        
         return TRUE;
     }
     return FALSE;
