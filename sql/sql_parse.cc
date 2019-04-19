@@ -3704,7 +3704,7 @@ mysql_execute_command(THD *thd)
   /* Start timeouts */
   thd->set_query_timer();
 
-  switch (lex->sql_command) {
+ switch (lex->sql_command) {
 
   case SQLCOM_SHOW_EVENTS:
 #ifndef HAVE_EVENT_SCHEDULER
@@ -4125,6 +4125,11 @@ mysql_execute_command(THD *thd)
 #ifdef WITH_PARTITION_STORAGE_ENGINE
     {
       partition_info *part_info= thd->lex->part_info;
+      if (part_info && tdbctl_is_ddl_by_ctl(thd, lex))
+      {
+          my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0), "CRREATE PARTITION TABLE");
+          goto end_with_restore_list;
+      }
       if (part_info && !(part_info= part_info->get_clone(thd)))
       {
         res= -1;
@@ -10512,17 +10517,15 @@ bool tdbctl_conn_before_query(THD *thd, LEX *lex, MYSQL *mysql, String *sql_str)
 
 bool tbdctl_conn_exec_query(THD *thd, MYSQL *mysql, String *sql)
 {
-    int ret = mysql_real_query(mysql, sql->ptr(), sql->length());
-    int err_code;
-    const char *err_msg;
+    int ret = mysql_real_query(mysql, sql->ptr(), sql->length()); 
     while (!ret)
     {
         ret = tdbctl_mysql_next_result(mysql);
     }
     if (ret != -1)
     {/* error happened */
-        err_code = mysql_errno(mysql);
-        err_msg = mysql_error(mysql);
+        
+        return TRUE;
     }
     return FALSE;
 }
@@ -10539,22 +10542,26 @@ bool tdbctl_execute_command(THD *thd, LEX *lex)
 
     if (tdbctl_get_ctl_info(thd, host, &port, user, passwd))
     {
-        my_error(ER_FAILED_DO_DDL_IN_CTL, MYF(0), "get ctl info");
+        my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "get ctl info", "");
         return TRUE;
     }
     if (tdbctl_conn_connect(thd, &mysql, host, port, user, passwd))
     {
-        my_error(ER_FAILED_DO_DDL_IN_CTL, MYF(0), "connect to tdbctl");
+        const char *err_msg = mysql_error(&mysql);
+        my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "connect to tdbctl, ", err_msg);
         return TRUE;
     }
     if (tdbctl_conn_before_query(thd, lex, &mysql, &sql_str))
     {
-        my_error(ER_FAILED_DO_DDL_IN_CTL, MYF(0), "append sql before query");
+        my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "append sql before query", "");
         return TRUE;
     }
 
     if (tbdctl_conn_exec_query(thd, &mysql, &sql_str))
-    {// TODO, process error result, by will
+    {
+        int err_code = mysql_errno(&mysql);
+        const char *err_msg = mysql_error(&mysql);
+        my_error(ER_EXECUTE_DDL_FAILED_IN_CTL, MYF(0), err_code, err_msg);
         tdbctl_conn_close(thd, &mysql);
         return TRUE;
     }

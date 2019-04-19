@@ -9090,7 +9090,7 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
     }
 #endif
   }
-
+ 
   THD_STAGE_INFO(thd, stage_init_update);
 
   /*
@@ -9112,6 +9112,14 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
 
   TABLE *table= table_list->table;
   bool versioned= table && table->versioned();
+
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex) && alter_info->partition_flags)
+  {
+      my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0), "ALTER TABLE PARTITION");
+      DBUG_RETURN(true);
+  }
+#endif
 
   if (versioned)
   {
