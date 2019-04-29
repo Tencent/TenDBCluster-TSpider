@@ -10628,6 +10628,7 @@ bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex)
     return FALSE;
 }
 
+
 bool tdbctl_need_current_db(THD *thd, LEX *lex)
 {
     switch (lex->sql_command)
@@ -10745,11 +10746,8 @@ bool tdbctl_conn_before_query(THD *thd, LEX *lex, MYSQL *mysql, String *sql_str)
     sql_str->append("set tc_admin=1;", 15);
 
     /* 4. append use database; */
-    if (!(lex->sql_command == SQLCOM_CREATE_DB ||
-        lex->sql_command == SQLCOM_CHANGE_DB ||
-        lex->sql_command == SQLCOM_DROP_DB ||
-        lex->sql_command == SQLCOM_ALTER_DB))
-    {/* skip append db_name */
+    if (tdbctl_need_current_db(thd, lex))
+    {
         TABLE_LIST* table_list = lex->query_tables;
         db = table_list->db;
         sql_str->append("use ", 4);
