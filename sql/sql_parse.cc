@@ -3704,6 +3704,11 @@ mysql_execute_command(THD *thd)
   /* Start timeouts */
   thd->set_query_timer();
 
+  if (tdbctl_is_forbid_type_in_ctl(thd, lex))
+  {
+      goto finish;
+  }
+
  switch (lex->sql_command) {
 
   case SQLCOM_SHOW_EVENTS:
@@ -10355,6 +10360,175 @@ CHARSET_INFO *find_bin_collation(CHARSET_INFO *cs)
 }
 
 
+const char* get_stmt_type_str(int type)
+{
+    switch (type)
+    {
+    case SQLCOM_SELECT: return "SQLCOM_SELECT";
+    case SQLCOM_CREATE_TABLE: return "SQLCOM_CREATE_TABLE";
+    case SQLCOM_CREATE_INDEX: return "SQLCOM_CREATE_INDEX";
+    case SQLCOM_ALTER_TABLE: return "SQLCOM_ALTER_TABLE";
+    case SQLCOM_UPDATE: return "SQLCOM_UPDATE";
+    case SQLCOM_INSERT: return "SQLCOM_INSERT";
+    case SQLCOM_INSERT_SELECT: return "SQLCOM_INSERT_SELECT";
+    case SQLCOM_DELETE: return "SQLCOM_DELETE";
+    case SQLCOM_TRUNCATE: return "SQLCOM_TRUNCATE";
+    case SQLCOM_DROP_TABLE: return "SQLCOM_DROP_TABLE";
+    case SQLCOM_DROP_INDEX: return "SQLCOM_DROP_INDEX";
+    case SQLCOM_SHOW_DATABASES: return "SQLCOM_SHOW_DATABASES";
+    case SQLCOM_SHOW_TABLES: return "SQLCOM_SHOW_TABLES";
+    case SQLCOM_SHOW_FIELDS: return "SQLCOM_SHOW_FIELDS";
+    case SQLCOM_SHOW_KEYS: return "SQLCOM_SHOW_KEYS";
+    case SQLCOM_SHOW_VARIABLES: return "SQLCOM_SHOW_VARIABLES";
+    case SQLCOM_SHOW_STATUS: return "SQLCOM_SHOW_STATUS";
+    case SQLCOM_SHOW_ENGINE_LOGS: return "SQLCOM_SHOW_ENGINE_LOGS";
+    case SQLCOM_SHOW_ENGINE_STATUS: return "SQLCOM_SHOW_ENGINE_STATUS";
+    case SQLCOM_SHOW_ENGINE_MUTEX: return "SQLCOM_SHOW_ENGINE_MUTEX";
+    case SQLCOM_SHOW_PROCESSLIST: return "SQLCOM_SHOW_PROCESSLIST";
+    case SQLCOM_SHOW_MASTER_STAT: return "SQLCOM_SHOW_MASTER_STAT";
+    case SQLCOM_SHOW_SLAVE_STAT: return "SQLCOM_SHOW_SLAVE_STAT";
+    case SQLCOM_SHOW_GRANTS: return "SQLCOM_SHOW_GRANTS";
+    case SQLCOM_SHOW_CREATE: return "SQLCOM_SHOW_CREATE";
+    case SQLCOM_SHOW_CHARSETS: return "SQLCOM_SHOW_CHARSETS";
+    case SQLCOM_SHOW_COLLATIONS: return "SQLCOM_SHOW_COLLATIONS";
+    case SQLCOM_SHOW_CREATE_DB: return "SQLCOM_SHOW_CREATE_DB";
+    case SQLCOM_SHOW_TABLE_STATUS: return "SQLCOM_SHOW_TABLE_STATUS";
+    case SQLCOM_SHOW_TRIGGERS: return "SQLCOM_SHOW_TRIGGERS";
+    case SQLCOM_LOAD: return "SQLCOM_LOAD";
+    case SQLCOM_SET_OPTION: return "SQLCOM_SET_OPTION";
+    case SQLCOM_LOCK_TABLES: return "SQLCOM_LOCK_TABLES";
+    case SQLCOM_UNLOCK_TABLES: return "SQLCOM_UNLOCK_TABLES";
+    case SQLCOM_GRANT: return "SQLCOM_GRANT";
+    case SQLCOM_CHANGE_DB: return "SQLCOM_CHANGE_DB";
+    case SQLCOM_CREATE_DB: return "SQLCOM_CREATE_DB";
+    case SQLCOM_DROP_DB: return "SQLCOM_DROP_DB";
+    case SQLCOM_ALTER_DB: return "SQLCOM_ALTER_DB";
+    case SQLCOM_REPAIR: return "SQLCOM_REPAIR";
+    case SQLCOM_REPLACE: return "SQLCOM_REPLACE";
+    case SQLCOM_REPLACE_SELECT: return "SQLCOM_REPLACE_SELECT";
+    case SQLCOM_CREATE_FUNCTION: return "SQLCOM_CREATE_FUNCTION";
+    case SQLCOM_DROP_FUNCTION: return "SQLCOM_DROP_FUNCTION";
+    case SQLCOM_REVOKE: return "SQLCOM_REVOKE";
+    case SQLCOM_OPTIMIZE: return "SQLCOM_OPTIMIZE";
+    case SQLCOM_CHECK: return "SQLCOM_CHECK";
+    case SQLCOM_ASSIGN_TO_KEYCACHE: return "SQLCOM_ASSIGN_TO_KEYCACHE";
+    case SQLCOM_PRELOAD_KEYS: return "SQLCOM_PRELOAD_KEYS";
+    case SQLCOM_FLUSH: return "SQLCOM_FLUSH";
+    case SQLCOM_KILL: return "SQLCOM_KILL";
+    case SQLCOM_ANALYZE: return "SQLCOM_ANALYZE";
+    case SQLCOM_ROLLBACK: return "SQLCOM_ROLLBACK";
+    case SQLCOM_ROLLBACK_TO_SAVEPOINT: return "SQLCOM_ROLLBACK_TO_SAVEPOINT";
+    case SQLCOM_COMMIT: return "SQLCOM_COMMIT";
+    case SQLCOM_SAVEPOINT: return "SQLCOM_SAVEPOINT";
+    case SQLCOM_RELEASE_SAVEPOINT: return "SQLCOM_RELEASE_SAVEPOINT";
+    case SQLCOM_SLAVE_START: return "SQLCOM_SLAVE_START";
+    case SQLCOM_SLAVE_STOP: return "SQLCOM_SLAVE_STOP";
+    case SQLCOM_BEGIN: return "SQLCOM_BEGIN";
+    case SQLCOM_CHANGE_MASTER: return "SQLCOM_CHANGE_MASTER";
+    case SQLCOM_RENAME_TABLE: return "SQLCOM_RENAME_TABLE";
+    case SQLCOM_RESET: return "SQLCOM_RESET";
+    case SQLCOM_PURGE: return "SQLCOM_PURGE";
+    case SQLCOM_PURGE_BEFORE: return "SQLCOM_PURGE_BEFORE";
+    case SQLCOM_SHOW_BINLOGS: return "SQLCOM_SHOW_BINLOGS";
+    case SQLCOM_SHOW_OPEN_TABLES: return "SQLCOM_SHOW_OPEN_TABLES";
+    case SQLCOM_HA_OPEN: return "SQLCOM_HA_OPEN";
+    case SQLCOM_HA_CLOSE: return "SQLCOM_HA_CLOSE";
+    case SQLCOM_HA_READ: return "SQLCOM_HA_READ";
+    case SQLCOM_SHOW_SLAVE_HOSTS: return "SQLCOM_SHOW_SLAVE_HOSTS";
+    case SQLCOM_DELETE_MULTI: return "SQLCOM_DELETE_MULTI";
+    case SQLCOM_UPDATE_MULTI: return "SQLCOM_UPDATE_MULTI";
+    case SQLCOM_SHOW_BINLOG_EVENTS: return "SQLCOM_SHOW_BINLOG_EVENTS";
+    case SQLCOM_DO: return "SQLCOM_DO";
+    case SQLCOM_SHOW_WARNS: return "SQLCOM_SHOW_WARNS";
+    case SQLCOM_EMPTY_QUERY: return "SQLCOM_EMPTY_QUERY";
+    case SQLCOM_SHOW_ERRORS: return "SQLCOM_SHOW_ERRORS";
+    case SQLCOM_SHOW_STORAGE_ENGINES: return "SQLCOM_SHOW_STORAGE_ENGINES";
+    case SQLCOM_SHOW_PRIVILEGES: return "SQLCOM_SHOW_PRIVILEGES";
+    case SQLCOM_HELP: return "SQLCOM_HELP";
+    case SQLCOM_CREATE_USER: return "SQLCOM_CREATE_USER";
+    case SQLCOM_DROP_USER: return "SQLCOM_DROP_USER";
+    case SQLCOM_RENAME_USER: return "SQLCOM_RENAME_USER";
+    case SQLCOM_REVOKE_ALL: return "SQLCOM_REVOKE_ALL";
+    case SQLCOM_CHECKSUM: return "SQLCOM_CHECKSUM";
+    case SQLCOM_CREATE_PROCEDURE: return "SQLCOM_CREATE_PROCEDURE";
+    case SQLCOM_CREATE_SPFUNCTION: return "SQLCOM_CREATE_SPFUNCTION";
+    case SQLCOM_CALL: return "SQLCOM_CALL";
+    case SQLCOM_DROP_PROCEDURE: return "SQLCOM_DROP_PROCEDURE";
+    case SQLCOM_ALTER_PROCEDURE: return "SQLCOM_ALTER_PROCEDURE";
+    case SQLCOM_ALTER_FUNCTION: return "SQLCOM_ALTER_FUNCTION";
+    case SQLCOM_SHOW_CREATE_PROC: return "SQLCOM_SHOW_CREATE_PROC";
+    case SQLCOM_SHOW_CREATE_FUNC: return "SQLCOM_SHOW_CREATE_FUNC";
+    case SQLCOM_SHOW_STATUS_PROC: return "SQLCOM_SHOW_STATUS_PROC";
+    case SQLCOM_SHOW_STATUS_FUNC: return "SQLCOM_SHOW_STATUS_FUNC";
+    case SQLCOM_PREPARE: return "SQLCOM_PREPARE";
+    case SQLCOM_EXECUTE: return "SQLCOM_EXECUTE";
+    case SQLCOM_DEALLOCATE_PREPARE: return "SQLCOM_DEALLOCATE_PREPARE";
+    case SQLCOM_CREATE_VIEW: return "SQLCOM_CREATE_VIEW";
+    case SQLCOM_DROP_VIEW: return "SQLCOM_DROP_VIEW";
+    case SQLCOM_CREATE_TRIGGER: return "SQLCOM_CREATE_TRIGGER";
+    case SQLCOM_DROP_TRIGGER: return "SQLCOM_DROP_TRIGGER";
+    case SQLCOM_XA_START: return "SQLCOM_XA_START";
+    case SQLCOM_XA_END: return "SQLCOM_XA_END";
+    case SQLCOM_XA_PREPARE: return "SQLCOM_XA_PREPARE";
+    case SQLCOM_XA_COMMIT: return "SQLCOM_XA_COMMIT";
+    case SQLCOM_XA_ROLLBACK: return "SQLCOM_XA_ROLLBACK";
+    case SQLCOM_XA_RECOVER: return "SQLCOM_XA_RECOVER";
+    case SQLCOM_SHOW_PROC_CODE: return "SQLCOM_SHOW_PROC_CODE";
+    case SQLCOM_SHOW_FUNC_CODE: return "SQLCOM_SHOW_FUNC_CODE";
+    case SQLCOM_ALTER_TABLESPACE: return "SQLCOM_ALTER_TABLESPACE";
+    case SQLCOM_INSTALL_PLUGIN: return "SQLCOM_INSTALL_PLUGIN";
+    case SQLCOM_UNINSTALL_PLUGIN: return "SQLCOM_UNINSTALL_PLUGIN";
+    case SQLCOM_SHOW_AUTHORS: return "SQLCOM_SHOW_AUTHORS";
+    case SQLCOM_BINLOG_BASE64_EVENT: return "SQLCOM_BINLOG_BASE64_EVENT";
+    case SQLCOM_SHOW_PLUGINS: return "SQLCOM_SHOW_PLUGINS";
+    case SQLCOM_SHOW_CONTRIBUTORS: return "SQLCOM_SHOW_CONTRIBUTORS";
+    case SQLCOM_CREATE_SERVER: return "SQLCOM_CREATE_SERVER";
+    case SQLCOM_DROP_SERVER: return "SQLCOM_DROP_SERVER";
+    case SQLCOM_ALTER_SERVER: return "SQLCOM_ALTER_SERVER";
+    case SQLCOM_CREATE_EVENT: return "SQLCOM_CREATE_EVENT";
+    case SQLCOM_ALTER_EVENT: return "SQLCOM_ALTER_EVENT";
+    case SQLCOM_DROP_EVENT: return "SQLCOM_DROP_EVENT";
+    case SQLCOM_SHOW_CREATE_EVENT: return "SQLCOM_SHOW_CREATE_EVENT";
+    case SQLCOM_SHOW_EVENTS: return "SQLCOM_SHOW_EVENTS";
+    case SQLCOM_SHOW_CREATE_TRIGGER: return "SQLCOM_SHOW_CREATE_TRIGGER";
+    case SQLCOM_ALTER_DB_UPGRADE: return "SQLCOM_ALTER_DB_UPGRADE";
+    case SQLCOM_SHOW_PROFILE: return "SQLCOM_SHOW_PROFILE";
+    case SQLCOM_SHOW_PROFILES: return "SQLCOM_SHOW_PROFILES";
+    case SQLCOM_SIGNAL: return "SQLCOM_SIGNAL";
+    case SQLCOM_RESIGNAL: return "SQLCOM_RESIGNAL";
+    case SQLCOM_SHOW_RELAYLOG_EVENTS: return "SQLCOM_SHOW_RELAYLOG_EVENTS";
+    case SQLCOM_GET_DIAGNOSTICS: return "SQLCOM_GET_DIAGNOSTICS";
+    case SQLCOM_SLAVE_ALL_START: return "SQLCOM_SLAVE_ALL_START";
+    case SQLCOM_SLAVE_ALL_STOP: return "SQLCOM_SLAVE_ALL_STOP";
+    case SQLCOM_SHOW_EXPLAIN: return "SQLCOM_SHOW_EXPLAIN";
+    case SQLCOM_SHUTDOWN: return "SQLCOM_SHUTDOWN";
+    case SQLCOM_CREATE_ROLE: return "SQLCOM_CREATE_ROLE";
+    case SQLCOM_DROP_ROLE: return "SQLCOM_DROP_ROLE";
+    case SQLCOM_GRANT_ROLE: return "SQLCOM_GRANT_ROLE";
+    case SQLCOM_REVOKE_ROLE: return "SQLCOM_REVOKE_ROLE";
+    case SQLCOM_COMPOUND: return "SQLCOM_COMPOUND";
+    case SQLCOM_SHOW_GENERIC: return "SQLCOM_SHOW_GENERIC";
+    case SQLCOM_ALTER_USER: return "SQLCOM_ALTER_USER";
+    case SQLCOM_SHOW_CREATE_USER: return "SQLCOM_SHOW_CREATE_USER";
+    case SQLCOM_EXECUTE_IMMEDIATE: return "SQLCOM_EXECUTE_IMMEDIATE";
+    case SQLCOM_CREATE_SEQUENCE: return "SQLCOM_CREATE_SEQUENCE";
+    case SQLCOM_DROP_SEQUENCE: return "SQLCOM_DROP_SEQUENCE";
+    case SQLCOM_ALTER_SEQUENCE: return "SQLCOM_ALTER_SEQUENCE";
+    case SQLCOM_CREATE_PACKAGE: return "SQLCOM_CREATE_PACKAGE";
+    case SQLCOM_DROP_PACKAGE: return "SQLCOM_DROP_PACKAGE";
+    case SQLCOM_CREATE_PACKAGE_BODY: return "SQLCOM_CREATE_PACKAGE_BODY";
+    case SQLCOM_DROP_PACKAGE_BODY: return "SQLCOM_DROP_PACKAGE_BODY";
+    case SQLCOM_SHOW_CREATE_PACKAGE: return "SQLCOM_SHOW_CREATE_PACKAGE";
+    case SQLCOM_SHOW_CREATE_PACKAGE_BODY: return "SQLCOM_SHOW_CREATE_PACKAGE_BODY";
+    case SQLCOM_SHOW_STATUS_PACKAGE: return "SQLCOM_SHOW_STATUS_PACKAGE";
+    case SQLCOM_SHOW_STATUS_PACKAGE_BODY: return "SQLCOM_SHOW_STATUS_PACKAGE_BODY";
+    case SQLCOM_SHOW_PACKAGE_BODY_CODE: return "SQLCOM_SHOW_PACKAGE_BODY_CODE";
+    default:
+        return "unkonw type";
+    }
+    return "";
+}
+
 int tdbctl_mysql_next_result(MYSQL *mysql)
 {
     int status;
@@ -10375,6 +10549,39 @@ int tdbctl_mysql_next_result(MYSQL *mysql)
         return status;
     }
     return -1;
+}
+
+bool tdbctl_is_forbid_type_in_ctl(THD *thd, LEX *lex)
+{
+    if (thd->variables.ddl_execute_by_ctl)
+    {
+        switch (lex->sql_command)
+        {
+        case SQLCOM_ALTER_SEQUENCE:
+        case SQLCOM_ALTER_TABLESPACE:
+        case SQLCOM_CREATE_PACKAGE:
+        case SQLCOM_CREATE_PACKAGE_BODY:
+        case SQLCOM_CREATE_SEQUENCE:
+        case SQLCOM_DROP_PACKAGE:
+        case SQLCOM_DROP_PACKAGE_BODY:
+        case SQLCOM_DROP_SEQUENCE:
+        case SQLCOM_GRANT_ROLE:
+        case SQLCOM_RENAME_USER:
+        case SQLCOM_REVOKE_ALL:
+        case SQLCOM_REVOKE_ROLE:
+        case SQLCOM_XA_COMMIT:
+        case SQLCOM_XA_END:
+        case SQLCOM_XA_PREPARE:
+        case SQLCOM_XA_RECOVER:
+        case SQLCOM_XA_ROLLBACK:
+        case SQLCOM_XA_START:
+            my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0), get_stmt_type_str(lex->sql_command));
+            return TRUE;
+        default:
+            break;
+        }
+    }
+    return FALSE;
 }
 
 bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex)
@@ -10412,6 +10619,7 @@ bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex)
         case SQLCOM_DROP_INDEX:
         case SQLCOM_CREATE_DB:
         case SQLCOM_DROP_DB:
+        case SQLCOM_ALTER_DB:
             return TRUE;
         default:
             return FALSE;
@@ -10444,19 +10652,31 @@ bool tdbctl_get_ctl_info(THD *thd, char *host, int *port, char *user, char *pass
     return FALSE;
 }
 
+
 bool tdbctl_conn_connect(THD *thd, MYSQL *mysql, char *host, int port, char *user, char *passwd)
 {
     int read_timeout = 600;
     int write_timeout = 600;
     int connect_timeout = 60;
-   
-    mysql_init(mysql);
-    mysql_options(mysql, MYSQL_OPT_READ_TIMEOUT, &read_timeout);
-    mysql_options(mysql, MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
-    mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
-    if (!mysql_real_connect(mysql, host, user, passwd, "", port, NULL, CLIENT_MULTI_STATEMENTS))
+    uint connect_retry_count = 3;
+    ulong connect_retry_interval = 1000;
+    uint real_connect_option = 0;
+
+    while (connect_retry_count-- > 0)
     {
-        return TRUE;
+        mysql_init(mysql);
+        mysql_options(mysql, MYSQL_OPT_READ_TIMEOUT, &read_timeout);
+        mysql_options(mysql, MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
+        mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
+        real_connect_option = CLIENT_INTERACTIVE | CLIENT_MULTI_STATEMENTS;
+        if (!mysql_real_connect(mysql, host, user, passwd, "", port, NULL, real_connect_option))
+        {
+            mysql_close(mysql);
+            if (!connect_retry_count)
+                return TRUE;
+        }
+        else
+            break;
     }
     return FALSE;
 }
@@ -10499,7 +10719,8 @@ bool tdbctl_conn_before_query(THD *thd, LEX *lex, MYSQL *mysql, String *sql_str)
     /* 4. append use database; */
     if (!(lex->sql_command == SQLCOM_CREATE_DB ||
         lex->sql_command == SQLCOM_CHANGE_DB ||
-        lex->sql_command == SQLCOM_DROP_DB))
+        lex->sql_command == SQLCOM_DROP_DB ||
+        lex->sql_command == SQLCOM_ALTER_DB))
     {/* skip append db_name */
         TABLE_LIST* table_list = lex->query_tables;
         db = table_list->db;

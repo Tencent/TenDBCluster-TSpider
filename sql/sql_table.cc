@@ -4944,7 +4944,11 @@ int create_table_impl(THD *thd,
           goto err;
       }
       else if (options.if_not_exists())
-        goto warn;
+      {
+          if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+              thd->do_ddl_by_ctl = TRUE;
+          goto warn;
+      }
       else
       {
         my_error(ER_TABLE_EXISTS_ERROR, MYF(0), table_name->str);

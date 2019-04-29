@@ -621,7 +621,8 @@ mysql_create_db_internal(THD *thd, const LEX_CSTRING *db,
                         ER_DB_CREATE_EXISTS, ER_THD(thd, ER_DB_CREATE_EXISTS),
                         db->str);
     affected_rows= 0;
-    goto not_silent;
+    if (!tdbctl_is_ddl_by_ctl(thd, thd->lex))
+        goto not_silent;
   }
   else
   {
@@ -725,6 +726,12 @@ mysql_alter_db_internal(THD *thd, const LEX_CSTRING *db,
 
   if (lock_schema_name(thd, db->str))
     DBUG_RETURN(TRUE);
+
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(TRUE);
+  }
 
   /* 
      Recreate db options file: /dbpath/.db.opt
@@ -865,7 +872,8 @@ mysql_rm_db_internal(THD *thd, const LEX_CSTRING *db, bool if_exists, bool silen
 			  ER_DB_DROP_EXISTS, ER_THD(thd, ER_DB_DROP_EXISTS),
                           db->str);
       error= false;
-      goto update_binlog;
+      if (!tdbctl_is_ddl_by_ctl(thd, thd->lex)) 
+          goto update_binlog;
     }
   }
 

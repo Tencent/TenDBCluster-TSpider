@@ -85,6 +85,8 @@ bool check_ident_length(const LEX_CSTRING *ident);
 CHARSET_INFO* merge_charset_and_collation(CHARSET_INFO *cs, CHARSET_INFO *cl);
 CHARSET_INFO *find_bin_collation(CHARSET_INFO *cs);
 bool check_host_name(LEX_CSTRING *str);
+const char* get_stmt_type_str(int type);
+bool tdbctl_is_forbid_type_in_ctl(THD *thd, LEX *lex);
 bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex);
 bool check_identifier_name(LEX_CSTRING *str, uint max_char_length,
                            uint err_code, const char *param_for_err_msg);
