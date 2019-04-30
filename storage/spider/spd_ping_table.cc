@@ -644,7 +644,7 @@ SPIDER_CONN *spider_get_ping_table_tgt_conn(
   DBUG_ENTER("spider_get_ping_table_tgt_conn");
   if (
     !(conn = spider_get_conn(
-      share, 0, share->conn_keys[0], trx, NULL, FALSE, FALSE,
+      share, 0, trx, NULL, FALSE, FALSE,
       SPIDER_CONN_KIND_MYSQL, error_num))
   ) {
     my_error(ER_CONNECT_TO_FOREIGN_DATA_SOURCE, MYF(0),

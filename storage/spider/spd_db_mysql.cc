@@ -5829,7 +5829,7 @@ int spider_mysql_share::discover_table_structure(
     SPIDER_CONN *conn;
     int need_mon;
     if (!(conn = spider_get_conn(
-      spider_share, 0, spider_share->conn_keys[roop_count], trx, NULL, FALSE,
+      spider_share, 0, trx, NULL, FALSE,
       FALSE, SPIDER_CONN_KIND_MYSQL, &error_num))
     ) {
       DBUG_RETURN(error_num);

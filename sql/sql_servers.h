@@ -27,6 +27,7 @@ typedef struct st_federated_server
 {
   const char *server_name;
   long port;
+  long version;
   size_t server_name_length;
   const char *db, *scheme, *username, *password, *socket, *owner, *host, *sport;
 } FOREIGN_SERVER;
@@ -48,5 +49,9 @@ int alter_server(THD *thd, LEX_SERVER_OPTIONS *server_options);
 /* lookup functions */
 FOREIGN_SERVER *get_server_by_name(MEM_ROOT *mem, const char *server_name,
                                    FOREIGN_SERVER *server_buffer);
-
+ulong get_modify_server_version();
+ulong get_server_version_by_name(const char *server_name);
+int back_up_one_server(FOREIGN_SERVER *server);
+bool update_server_version(bool *version_updated);
+bool backup_server_cache();
 #endif /* SQL_SERVERS_INCLUDED */

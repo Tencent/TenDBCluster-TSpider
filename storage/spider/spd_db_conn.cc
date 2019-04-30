@@ -22,6 +22,7 @@
 #include <mysql/plugin.h>
 #else
 #include "sql_priv.h"
+#include "sql_servers.h"
 #include "probes_mysql.h"
 #include "sql_class.h"
 #include "sql_partition.h"
@@ -85,11 +86,18 @@ int spider_db_connect(
   int error_num, connect_retry_count;
   THD* thd = current_thd;
   longlong connect_retry_interval;
+  MEM_ROOT mem_root;
+  FOREIGN_SERVER *server, server_buf;
   DBUG_ENTER("spider_db_connect");
   DBUG_ASSERT(conn->conn_kind != SPIDER_CONN_KIND_MYSQL || conn->need_mon);
   DBUG_PRINT("info",("spider link_idx=%d", link_idx));
   DBUG_PRINT("info",("spider conn=%p", conn));
-
+  if (!share->server_names[link_idx])
+  {
+	  *conn->need_mon = ER_CONNECT_TO_FOREIGN_DATA_SOURCE;
+	  my_error(ER_CONNECT_TO_FOREIGN_DATA_SOURCE, MYF(0), "localhost");
+	  DBUG_RETURN(ER_CONNECT_TO_FOREIGN_DATA_SOURCE);
+  }
   if (conn->connect_error)
   {
     time_t tmp_time = (time_t) time((time_t*) 0);
@@ -139,7 +147,13 @@ int spider_db_connect(
   DBUG_PRINT("info",("spider connect_timeout=%u", conn->connect_timeout));
   DBUG_PRINT("info",("spider net_read_timeout=%u", conn->net_read_timeout));
   DBUG_PRINT("info",("spider net_write_timeout=%u", conn->net_write_timeout));
-
+  SPD_INIT_ALLOC_ROOT(&mem_root, 128, 0, MYF(MY_WME));
+  if (!(server = get_server_by_name(&mem_root, share->server_names[link_idx], &server_buf)))
+  {
+	  error_num = ER_FOREIGN_SERVER_DOESNT_EXIST;
+	  free_root(&mem_root, MYF(0));
+	  DBUG_RETURN(error_num);
+  }
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   if (conn->conn_kind == SPIDER_CONN_KIND_MYSQL)
   {
@@ -173,12 +187,12 @@ int spider_db_connect(
   }
 
   if ((error_num = conn->db_conn->connect(
-    share->tgt_hosts[link_idx],
-    share->tgt_usernames[link_idx],
-    share->tgt_passwords[link_idx],
-    share->tgt_ports[link_idx],
-    share->tgt_sockets[link_idx],
-    share->server_names[link_idx],
+	(char*)server->host,
+	(char*)server->username,
+	(char*)server->password,
+	server->port,
+	(char*)server->socket,
+    (char*)share->server_names[link_idx],
     connect_retry_count, connect_retry_interval)))
   {
       time_t cur_time = (time_t)time((time_t*)0);
@@ -203,6 +217,7 @@ int spider_db_connect(
   conn->opened_handlers = 0;
   conn->db_conn->reset_opened_handler();
   ++conn->connection_id;
+  free_root(&mem_root, MYF(0));
   DBUG_RETURN(0);
 }
 

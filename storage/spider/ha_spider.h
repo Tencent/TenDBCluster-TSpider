@@ -59,10 +59,6 @@ public:
   SPIDER_TRX         *trx;
   ulonglong          spider_thread_id;
   ulonglong          trx_conn_adjustment;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  ulonglong          trx_hs_r_conn_adjustment;
-  ulonglong          trx_hs_w_conn_adjustment;
-#endif
   uint               mem_calc_id;
   const char         *mem_calc_func_name;
   const char         *mem_calc_file_name;
@@ -72,8 +68,6 @@ public:
   ulonglong          *connection_ids;
   uint               conn_kinds;
   uint               *conn_kind;
-  char               *conn_keys_first_ptr;
-  char               **conn_keys;
   SPIDER_CONN        **conns;
   LF_PINS            *conn_pins;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
@@ -84,6 +78,7 @@ public:
   SPIDER_CONN        **hs_w_conns;
   ulonglong          *hs_w_conn_ages;
 #endif
+
   /* for active-standby mode */
   uint               *conn_link_idx;
   uchar              *conn_can_fo;

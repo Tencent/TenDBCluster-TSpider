@@ -383,7 +383,10 @@ void spider_free_lgtm_tblhnd_share_alloc(
   SPIDER_LGTM_TBLHND_SHARE *lgtm_tblhnd_share,
   bool locked
 );
-
+int spider_update_conn_keys(
+	SPIDER_SHARE *share,
+	int link_idx
+);
 SPIDER_SHARE *spider_create_share(
   const char *table_name,
   const char *table_name_with_version,

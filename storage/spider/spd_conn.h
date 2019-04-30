@@ -63,7 +63,6 @@ SPIDER_CONN *spider_create_conn(
 SPIDER_CONN *spider_get_conn(
   SPIDER_SHARE *share,
   int link_idx,
-  char *conn_key,
   SPIDER_TRX *trx,
   ha_spider *spider,
   bool another,

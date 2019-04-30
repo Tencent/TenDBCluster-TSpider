@@ -52,8 +52,11 @@
 */
 
 static HASH servers_cache;
+static HASH servers_cache_bak;
 static MEM_ROOT mem;
+static MEM_ROOT mem_bak;
 static mysql_rwlock_t THR_LOCK_servers;
+ulong global_modify_server_version = 0;
 static LEX_CSTRING MYSQL_SERVERS_NAME= {STRING_WITH_LEN("servers") };
 
 
@@ -154,6 +157,13 @@ bool servers_init(bool dont_read_servers_table)
     return_val= TRUE; /* we failed, out of memory? */
     goto end;
   }
+  /* initialise our servers cache */
+  if (my_hash_init(&servers_cache_bak, system_charset_info, 32, 0, 0,
+	  (my_hash_get_key)servers_cache_get_key, 0, 0))
+  {
+	  return_val = TRUE; /* we failed, out of memory? */
+	  goto end;
+  }
 
   /* Initialize the mem root for data */
   init_sql_alloc(&mem, "servers", ACL_ALLOC_BLOCK_SIZE, 0,
@@ -202,8 +212,10 @@ static bool servers_load(THD *thd, TABLE_LIST *tables)
   TABLE *table;
   READ_RECORD read_record_info;
   bool return_val= TRUE;
+  bool version_updated = FALSE;
   DBUG_ENTER("servers_load");
-
+  init_sql_alloc(&mem_bak, "servers_load", ACL_ALLOC_BLOCK_SIZE, 0, MYF(0));;
+  backup_server_cache();
   my_hash_reset(&servers_cache);
   free_root(&mem, MYF(0));
   init_sql_alloc(&mem, "servers_load", ACL_ALLOC_BLOCK_SIZE, 0, MYF(0));
@@ -217,11 +229,18 @@ static bool servers_load(THD *thd, TABLE_LIST *tables)
     if ((get_server_from_table_to_cache(table)))
       goto end;
   }
-
+  update_server_version(&version_updated);
+  if (version_updated)
+  {
+	  global_modify_server_version++; /* mean flush privileges modify mysql.servers */
+	  sql_print_information("modify mysql.servers and do flush privileges, server_version is %lu", global_modify_server_version);
+  }
   return_val= FALSE;
 
 end:
   end_read_record(&read_record_info);
+  my_hash_reset(&servers_cache_bak);
+  free_root(&mem_bak, MYF(0));
   DBUG_RETURN(return_val);
 }
 
@@ -339,7 +358,7 @@ get_server_from_table_to_cache(TABLE *table)
   server->sport= ptr ? ptr : blank;
 
   server->port= server->sport ? atoi(server->sport) : 0;
-
+  server->version = 0;
   ptr= get_field(&mem, table->field[6]);
   server->socket= ptr && strlen(ptr) ? ptr : blank;
   ptr= get_field(&mem, table->field[7]);
@@ -852,7 +871,8 @@ void merge_server_struct(FOREIGN_SERVER *from, FOREIGN_SERVER *to)
     to->scheme= strdup_root(&mem, from->scheme);
   if (!to->owner)
     to->owner= strdup_root(&mem, from->owner);
-
+  to->version = from->version + 1; /* update one server, version++*/
+  global_modify_server_version++;
   DBUG_VOID_RETURN;
 }
 
@@ -1159,7 +1179,7 @@ prepare_server_struct_for_insert(LEX_SERVER_OPTIONS *server_options)
   /* set to default_port if not specified */
   server->port= server_options->port > -1 ?
     server_options->port : default_port;
-
+  server->version = 0;
   DBUG_RETURN(server);
 }
 
@@ -1214,7 +1234,7 @@ prepare_server_struct_for_update(LEX_SERVER_OPTIONS *server_options,
   altered->port= (server_options->port > -1 &&
                  server_options->port != existing->port) ?
     server_options->port : -1;
-
+  altered->version = 0; /* no need */
   DBUG_VOID_RETURN;
 }
 
@@ -1279,6 +1299,7 @@ static FOREIGN_SERVER *clone_server(MEM_ROOT *mem, const FOREIGN_SERVER *server,
   buffer->server_name= strmake_root(mem, server->server_name,
                                     server->server_name_length);
   buffer->port= server->port;
+  buffer->version = server->version;
   buffer->server_name_length= server->server_name_length;
   
   /* TODO: We need to examine which of these can really be NULL */
@@ -1341,4 +1362,101 @@ FOREIGN_SERVER *get_server_by_name(MEM_ROOT *mem, const char *server_name,
   mysql_rwlock_unlock(&THR_LOCK_servers);
   DBUG_RETURN(server);
 
+}
+ulong get_modify_server_version()
+{
+	return global_modify_server_version;
+}
+ulong get_server_version_by_name(const char *server_name)
+{
+	size_t server_name_length;
+	ulong server_version = 0;
+	FOREIGN_SERVER *server;
+	DBUG_ENTER("get_server_version");
+
+	server_name_length = strlen(server_name);
+
+	if (!server_name || !strlen(server_name))
+	{
+		DBUG_RETURN(0);
+	}
+
+	mysql_rwlock_rdlock(&THR_LOCK_servers);
+	if ((server = (FOREIGN_SERVER *)my_hash_search(&servers_cache, (uchar*)server_name, server_name_length)))
+	{
+		server_version = server->version;
+	}
+	mysql_rwlock_unlock(&THR_LOCK_servers);
+	DBUG_RETURN(server_version);
+}
+int back_up_one_server(FOREIGN_SERVER *server)
+{
+	int error = 0;
+	DBUG_ENTER("insert_into_servers_cache_version");
+	/* construct  FOREIGN_SERVER_V */
+	FOREIGN_SERVER *tmp = (FOREIGN_SERVER *)alloc_root(&mem_bak, sizeof(FOREIGN_SERVER));
+	tmp->server_name = strdup_root(&mem_bak, server->server_name);
+	tmp->host = strdup_root(&mem_bak, server->host);
+	tmp->username = strdup_root(&mem_bak, server->username);
+	tmp->password = strdup_root(&mem_bak, server->password);
+	tmp->db = strdup_root(&mem_bak, server->db);
+	tmp->scheme = strdup_root(&mem_bak, server->scheme);
+	tmp->socket = strdup_root(&mem_bak, server->socket);
+	tmp->owner = strdup_root(&mem_bak, server->owner);
+	tmp->sport = strdup_root(&mem_bak, server->sport);
+	tmp->port = server->port;
+	tmp->server_name_length = server->server_name_length;
+	tmp->version = server->version;
+
+	if (my_hash_insert(&servers_cache_bak, (uchar*)tmp))
+	{
+		// error handling needed here
+		error = 1;
+	}
+	DBUG_RETURN(error);
+}
+
+bool backup_server_cache()
+{
+	FOREIGN_SERVER *server;
+	ulong share_records = servers_cache.records;
+	DBUG_ENTER("backup_server_cache");
+	for (ulong i = 0; i < share_records; i++)
+	{/* foreach share */
+		server = (FOREIGN_SERVER*)my_hash_element(&servers_cache, i);
+		if (back_up_one_server(server))
+			DBUG_RETURN(TRUE);
+	}
+	DBUG_RETURN(FALSE);
+}
+
+bool update_server_version(bool *version_updated)
+{
+	FOREIGN_SERVER *server_bak;
+	FOREIGN_SERVER *server;
+	ulong share_records = servers_cache.records;
+	DBUG_ENTER("replace_server_version");
+	for (ulong i = 0; i < share_records; i++)
+	{/* foreach share */
+		server = (FOREIGN_SERVER*)my_hash_element(&servers_cache, i);
+		if ((server_bak = (FOREIGN_SERVER *)my_hash_search(&servers_cache_bak, (uchar*)server->server_name, server->server_name_length)))
+		{/* exist, update mysql.servers.version */
+			if (strcmp(server->host, server_bak->host) ||
+				strcmp(server->username, server_bak->username) ||
+				strcmp(server->password, server_bak->password) ||
+				strcmp(server->db, server_bak->db) ||
+				strcmp(server->scheme, server_bak->scheme) ||
+				strcmp(server->socket, server_bak->socket) ||
+				strcmp(server->password, server_bak->password) ||
+				strcmp(server->owner, server_bak->owner) ||
+				strcmp(server->sport, server_bak->sport) ||
+				server->port != server_bak->port)
+			{/* not equal: 1.update server_v; 2.version++ */
+				server_bak->version++;
+				*version_updated = TRUE;
+			}
+			server->version = server_bak->version;
+		}
+	}
+	DBUG_RETURN(FALSE);
 }

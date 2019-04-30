@@ -79,7 +79,6 @@ ha_spider::ha_spider(
   condition = NULL;
   cond_check = FALSE;
   blob_buff = NULL;
-  conn_keys = NULL;
   spider_thread_id = 0;
   trx_conn_adjustment = 0;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
@@ -193,7 +192,6 @@ ha_spider::ha_spider(
   condition = NULL;
   cond_check = FALSE;
   blob_buff = NULL;
-  conn_keys = NULL;
   spider_thread_id = 0;
   trx_conn_adjustment = 0;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
@@ -638,11 +636,6 @@ error_searched_bitmap_alloc:
   spider_free_share(share);
   share = NULL;
 error_get_share:
-  if (conn_keys)
-  {
-    spider_free(spider_current_trx, conn_keys, MYF(0));
-    conn_keys = NULL;
-  }
   DBUG_RETURN(error_num);
 }
 
@@ -736,11 +729,6 @@ int ha_spider::close()
   }
 
   spider_db_free_result(this, TRUE);
-  if (conn_keys)
-  {
-    spider_free(spider_current_trx, conn_keys, MYF(0));
-    conn_keys = NULL;
-  }
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   if (
     partition_handler_share &&
@@ -1389,77 +1377,6 @@ int ha_spider::reset()
     if ((error_num2 = spider_db_free_result(this, FALSE)))
       error_num = error_num2;
     trx = trx_bak;
-/*
-    int semi_table_lock_conn = spider_param_semi_table_lock_connection(thd,
-      share->semi_table_lock_conn);
-    if (semi_table_lock_conn)
-      first_byte = '0' +
-        spider_param_semi_table_lock(thd, share->semi_table_lock);
-    else
-      first_byte = '0';
-    DBUG_PRINT("info",("spider semi_table_lock_conn = %d",
-      semi_table_lock_conn));
-    DBUG_PRINT("info",("spider semi_table_lock = %d",
-      spider_param_semi_table_lock(thd, share->semi_table_lock)));
-    DBUG_PRINT("info",("spider first_byte = %d", first_byte));
-    if (tmp_trx->spider_thread_id != spider_thread_id ||
-      (tmp_trx->trx_conn_adjustment != trx_conn_adjustment &&
-        tmp_trx->trx_conn_adjustment - 1 != trx_conn_adjustment) ||
-      first_byte != *conn_keys[0]
-    ) {
-      DBUG_PRINT("info",(first_byte != *conn_keys[0] ?
-        "spider change conn type" : tmp_trx != trx ? "spider change thd" :
-        "spider next trx"));
-      trx = tmp_trx;
-      spider_thread_id = tmp_trx->spider_thread_id;
-      trx_conn_adjustment = tmp_trx->trx_conn_adjustment;
-
-      first_byte_bak = *conn_keys[0];
-      *conn_keys[0] = first_byte;
-      for (
-        roop_count = spider_conn_link_idx_next(share->link_statuses,
-          conn_link_idx, -1, share->link_count,
-          SPIDER_LINK_STATUS_RECOVERY);
-        roop_count < share->link_count;
-        roop_count = spider_conn_link_idx_next(share->link_statuses,
-          conn_link_idx, roop_count, share->link_count,
-          SPIDER_LINK_STATUS_RECOVERY)
-      ) {
-        *conn_keys[roop_count] = first_byte;
-        if (
-          !(conns[roop_count] =
-            spider_get_conn(share, roop_count, conn_keys[roop_count], trx,
-              this, FALSE, TRUE, SPIDER_CONN_KIND_MYSQL, &error_num))
-        ) {
-          if (
-            share->monitoring_kind[roop_count] &&
-            need_mons[roop_count]
-          ) {
-            error_num = spider_ping_table_mon_from_table(
-                trx,
-                trx->thd,
-                share,
-                roop_count,
-                (uint32) share->monitoring_sid[roop_count],
-                share->table_name,
-                share->table_name_length,
-                conn_link_idx[roop_count],
-                NULL,
-                0,
-                share->monitoring_kind[roop_count],
-                share->monitoring_limit[roop_count],
-                share->monitoring_flag[roop_count],
-                TRUE
-              );
-          }
-          DBUG_PRINT("info",("spider get conn error"));
-          *conn_keys[0] = first_byte_bak;
-          conns[0] = NULL;
-          DBUG_RETURN(error_num);
-        }
-      }
-    }
-*/
     memset(need_mons, 0, sizeof(int) * share->link_count);
     memset(result_list.casual_read, 0, sizeof(int) * share->link_count);
     rm_bulk_tmp_table();
@@ -10563,6 +10480,12 @@ bool ha_spider::get_error_message(
 		buf->q_append(ER_SPIDER_XA_MAY_PARTIAL_COMMIT_STR,
 			ER_SPIDER_XA_MAY_PARTIAL_COMMIT_LEN);
 		break;
+	case ER_SPIDER_XA_TIMEOUT_NUM:
+		if (buf->reserve(ER_SPIDER_XA_TIMEOUT_LEN))
+			DBUG_RETURN(TRUE);
+		buf->q_append(ER_SPIDER_XA_TIMEOUT_STR,
+			ER_SPIDER_XA_TIMEOUT_LEN);
+		break;
     default:
       if (buf->reserve(ER_SPIDER_UNKNOWN_LEN))
         DBUG_RETURN(TRUE);
@@ -15319,8 +15242,8 @@ SPIDER_CONN* ha_spider::spider_get_conn_by_idx(int link_idx)
 	else
 	{
 		/* create conn */
-		this->conns[link_idx] = spider_get_conn(share, link_idx, this->conn_keys[link_idx],
-			this->trx, this, FALSE, TRUE, SPIDER_CONN_KIND_MYSQL, &error_num);
+		this->conns[link_idx] = spider_get_conn(share, link_idx, this->trx, this,
+			FALSE, TRUE, SPIDER_CONN_KIND_MYSQL, &error_num);
 		if (!this->conns[link_idx])
 		{/* failed to create conn */
 		 /*

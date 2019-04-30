@@ -875,7 +875,9 @@ typedef struct st_spider_share
   uchar              *cardinality_upd;
   longlong           additional_table_flags;
   bool               have_recovery_link;
-
+  bool               conn_key_init;
+  ulong              conn_key_version;
+  ulong              modify_server_version;
 #ifndef WITHOUT_SPIDER_BG_SEARCH
   int                sts_bg_mode;
 #endif
@@ -1024,6 +1026,7 @@ typedef struct st_spider_share
   long               *net_read_timeouts;
   long               *net_write_timeouts;
   long               *access_balances;
+  long               *sql_dbton_ids;
   long               *bka_table_name_types;
 
   uint               *server_names_lengths;
@@ -1053,7 +1056,6 @@ typedef struct st_spider_share
   uint               *hs_read_conn_keys_lengths;
   uint               *hs_write_conn_keys_lengths;
 #endif
-  uint               *sql_dbton_ids;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   uint               *hs_dbton_ids;
 #endif

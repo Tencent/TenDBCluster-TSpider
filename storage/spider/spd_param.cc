@@ -404,16 +404,16 @@ uint spider_param_internal_xa_snapshot(
 
 /*
   0 :off
-  1 :continue prepare, commit, rollback if xid not found return
-  2 :continue prepare, commit, rollback if all error return
+  1 :continue commit, rollback if xid not found return
+  2 :continue commit, rollback if all error return
  */
 static MYSQL_THDVAR_UINT(
   force_commit, /* name */
   PLUGIN_VAR_RQCMDARG, /* opt */
-  "Force prepare, commit, rollback mode", /* comment */
+  "Force commit, rollback mode", /* comment */
   NULL, /* check */
   NULL, /* update */
-  1, /* def */
+  2, /* def */
   0, /* min */
   2, /* max */
   0 /* blk */

@@ -2635,10 +2635,10 @@ int ha_partition::set_up_table_before_create(TABLE *tbl,
   }
   info->index_file_name= part_elem->index_file_name;
   info->data_file_name= part_elem->data_file_name;
-  info->connect_string= part_elem->connect_string;
+  //info->connect_string= part_elem->connect_string;
   if (info->connect_string.length)
     info->used_fields|= HA_CREATE_USED_CONNECTION;
-  tbl->s->connect_string= part_elem->connect_string;
+  //tbl->s->connect_string= part_elem->connect_string;
   DBUG_RETURN(0);
 }
 
