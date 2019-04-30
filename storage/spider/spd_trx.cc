@@ -1918,7 +1918,7 @@ int spider_internal_xa_commit(
         {
           SPIDER_CONN_RESTORE_DASTATUS_AND_RESET_TMP_ERROR_NUM;
           if (!error_num && tmp_error_num)
-			      error_num = ER_SPIDER_XA_TIMEOUT_NUM;
+			       error_num = ER_SPIDER_XA_TIMEOUT_NUM;
            // error_num = tmp_error_num;
         }
         conn->join_trx = 0;
