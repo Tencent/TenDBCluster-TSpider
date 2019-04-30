@@ -7354,6 +7354,22 @@ void Item_hex_string::print(String *str, enum_query_type query_type)
   str->append("'");
 }
 
+void Item_hex_string::print_for_x(String *str, enum_query_type query_type)
+{
+    uint32 len = str_value.length();
+    const char *ptr = str_value.ptr();
+    if (len == 0)
+    {
+        str->append('\'');
+        str->append('\'');
+    }
+    else
+    {
+        str->append("0x");
+        str->append_hex(ptr, len);
+    }
+}
+
 
 /*
   bin item.
