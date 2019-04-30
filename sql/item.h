@@ -4296,6 +4296,7 @@ public:
                         collation.collation);
   }
   void print(String *str, enum_query_type query_type);
+  void print_for_x(String *str, enum_query_type query_type);
   Item *get_copy(THD *thd)
   { return get_item_copy<Item_hex_string>(thd, this); }
 };
