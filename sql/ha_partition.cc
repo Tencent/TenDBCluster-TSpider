@@ -4313,7 +4313,7 @@ int ha_partition::write_row(uchar * buf)
   tmp_disable_binlog(thd); /* Do not replicate the low-level changes. */
   error= m_file[part_id]->ha_write_row(buf);
   if (have_auto_increment && !table->s->next_number_keypart)
-    set_auto_increment_if_higher(table->next_number_field);
+    set_auto_increment_if_higher(table->next_number_field, error);
   reenable_binlog(thd);
 
 exit:
@@ -4453,7 +4453,7 @@ exit:
       The following call is safe as part_share->auto_inc_initialized
       (tested in the call) is guaranteed to be set for update statements.
     */
-    set_auto_increment_if_higher(table->found_next_number_field);
+    set_auto_increment_if_higher(table->found_next_number_field, error);
   }
   DBUG_RETURN(error);
 }
