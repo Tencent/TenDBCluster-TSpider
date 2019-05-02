@@ -1276,7 +1276,7 @@ private:
       part_share->unlock_auto_inc();
     }
   }
-  virtual void set_auto_increment_if_higher(Field *field)
+  virtual void set_auto_increment_if_higher(Field *field, int error)
   {
     ulonglong nr= (((Field_num*) field)->unsigned_flag ||
                    field->val_int() > 0) ? field->val_int() : 0;
@@ -1293,6 +1293,12 @@ private:
         }
         else
             part_share->next_auto_inc_val = nr + 1;
+    }
+    /* whatever error haaped, next auto inc val is 0 */
+    if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine() && error)
+    {
+        part_share->next_auto_inc_val = 0;
+        part_share->auto_inc_initialized = FALSE;
     }
     unlock_auto_increment();
   }
