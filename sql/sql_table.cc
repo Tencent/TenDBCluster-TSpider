@@ -9365,6 +9365,12 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
     DBUG_RETURN(false);
   }
 
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(true);
+  }
+
   /*
      Test if we are only doing RENAME or KEYS ON/OFF. This works
      as we are testing if flags == 0 above.
