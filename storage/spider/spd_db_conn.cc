@@ -691,10 +691,6 @@ int spider_db_query(
     DBUG_PRINT("info", ("spider query=%s", query));
     DBUG_PRINT("info", ("spider length=%u", length));
 #endif
-	if (length > 6 && query[length - 6] == 'p' && query[length - 5] == 'h' &&  query[length - 4] == 'a' &&  query[length - 3] == 's' && query[length - 2] == 'e')
-	{
-		int a = 1;
-	}
     error_num = conn->db_conn->exec_query(query, length, quick_mode);
     thd_proc_info(thd, "spider_db_query end");
     DBUG_RETURN(error_num);
@@ -1300,7 +1296,7 @@ void spider_db_append_xid_str(
   DBUG_ENTER("spider_db_append_xid_str");
 
   format_id_length =
-    my_sprintf(format_id, (format_id, "%lu", xid->formatID));
+    my_sprintf(format_id, (format_id, "0x%lx", xid->formatID));
   spider_db_append_hex_string(tmp_str, (uchar *) xid->data, xid->gtrid_length);
 /*
   tmp_str->q_append(SPIDER_SQL_VALUE_QUOTE_STR, SPIDER_SQL_VALUE_QUOTE_LEN);

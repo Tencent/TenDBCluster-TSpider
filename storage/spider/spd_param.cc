@@ -357,25 +357,6 @@ bool spider_param_use_consistent_snapshot(
   DBUG_RETURN(THDVAR(thd, use_consistent_snapshot));
 }
 
-/*
-  FALSE: off
-  TRUE:  on
- */
-static MYSQL_THDVAR_BOOL(
-  internal_xa, /* name */
-  PLUGIN_VAR_OPCMDARG, /* opt */
-  "Use inner xa transaction", /* comment */
-  NULL, /* check */
-  NULL, /* update */
-  FALSE /* def */
-);
-
-bool spider_param_internal_xa(
-  THD *thd
-) {
-  DBUG_ENTER("spider_param_internal_xa");
-  DBUG_RETURN(THDVAR(thd, internal_xa));
-}
 
 /*
   0 :err when use a spider table
@@ -3542,7 +3523,6 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(conn_recycle_strict),
   MYSQL_SYSVAR(sync_trx_isolation),
   MYSQL_SYSVAR(use_consistent_snapshot),
-  MYSQL_SYSVAR(internal_xa),
   MYSQL_SYSVAR(internal_xa_snapshot),
   MYSQL_SYSVAR(force_commit),
   MYSQL_SYSVAR(xa_register_mode),

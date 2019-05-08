@@ -5179,6 +5179,8 @@ end_with_restore_list:
     }
     if (thd->global_read_lock.is_acquired())
       thd->global_read_lock.unlock_global_read_lock(thd);
+	if (thd->global_write_lock.is_acquired())
+		thd->global_write_lock.unlock_global_write_lock(thd);
     if (res)
       goto error;
     my_ok(thd);
@@ -5568,7 +5570,7 @@ end_with_restore_list:
     if (check_global_access(thd,RELOAD_ACL))
       goto error;
 
-    if (first_table && lex->type & (REFRESH_READ_LOCK|REFRESH_FOR_EXPORT))
+    if (first_table && lex->type & (REFRESH_READ_LOCK| REFRESH_WRITE_LOCK |REFRESH_FOR_EXPORT))
     {
       /* Check table-level privileges. */
       if (check_table_access(thd, LOCK_TABLES_ACL | SELECT_ACL, all_tables,
@@ -5611,7 +5613,7 @@ end_with_restore_list:
 #endif /* WITH_WSREP*/
 
 #ifdef HAVE_REPLICATION
-    if (lex->type & REFRESH_READ_LOCK)
+    if (lex->type & REFRESH_READ_LOCK || lex->type & REFRESH_WRITE_LOCK)
     {
       /*
         We need to pause any parallel replication slave workers during FLUSH
@@ -5675,7 +5677,7 @@ end_with_restore_list:
     else
       res= 1;                                   // reload_acl_and_cache failed
 #ifdef HAVE_REPLICATION
-    if (lex->type & REFRESH_READ_LOCK)
+    if (lex->type & REFRESH_READ_LOCK || lex->type & REFRESH_WRITE_LOCK)
       rpl_unpause_after_ftwrl(thd);
 #endif
     

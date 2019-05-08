@@ -1759,9 +1759,12 @@ bool open_table(THD *thd, TABLE_LIST *table_list, Open_table_context *ot_ctx)
 
       if (thd->global_read_lock.can_acquire_protection())
         DBUG_RETURN(TRUE);
-
-      protection_request.init(MDL_key::GLOBAL, "", "", MDL_INTENTION_EXCLUSIVE,
-                              MDL_STATEMENT);
+	  if(thd->variables.spider_internal_xa)
+		  protection_request.init(MDL_key::GLOBAL, "", "", MDL_INTENTION_EXCLUSIVE,
+				MDL_TRANSACTION);
+	  else
+		  protection_request.init(MDL_key::GLOBAL, "", "", MDL_INTENTION_EXCLUSIVE,
+				MDL_STATEMENT);
 
       /*
         Install error handler which if possible will convert deadlock error
@@ -4949,6 +4952,32 @@ bool open_and_lock_tables(THD *thd, const DDL_options_st &options,
                           bool derived, uint flags,
                           Prelocking_strategy *prelocking_strategy)
 {
+	if (thd->lex->sql_command == SQLCOM_SELECT && thd->variables.spider_internal_xa && !(thd->global_read_lock.is_acquired()) && !(thd->global_write_lock.is_acquired()))
+	{
+		Open_table_context ot_ctx(thd, flags);
+		MDL_request protection_request;
+		MDL_deadlock_handler mdl_deadlock_handler(&ot_ctx);
+
+		if (thd->global_read_lock.can_acquire_protection())
+			return 1;
+
+		protection_request.init(MDL_key::GLOBAL, "", "", MDL_INTENTION_SHARED,
+			MDL_TRANSACTION);
+
+		/*
+		Install error handler which if possible will convert deadlock error
+		into request to back-off and restart process of opening tables.
+		*/
+		thd->push_internal_handler(&mdl_deadlock_handler);
+		bool result = thd->mdl_context.acquire_lock(&protection_request,
+			ot_ctx.get_timeout());
+		thd->pop_internal_handler();
+
+		if (result)
+			return 1;
+
+		ot_ctx.set_has_protection_against_grl();;
+	}
   uint counter;
   MDL_savepoint mdl_savepoint= thd->mdl_context.mdl_savepoint();
   DBUG_ENTER("open_and_lock_tables");

@@ -1500,7 +1500,6 @@ int spider_xa_lock(
   }
 #else
 #ifdef XID_CACHE_IS_SPLITTED
-  //modify by alex
   pthread_mutex_lock(&spd_db_att_xid_cache_mutex+idx);
   //pthread_mutex_lock(&spd_db_att_xid_cache_mutex[idx]);
 #else
@@ -1600,7 +1599,6 @@ int spider_internal_start_trx(
     spider_param_ping_interval_at_trx_start(thd);
   bool xa_lock = FALSE;
   time_t tmp_time = (time_t) time((time_t*) 0);
-  //alex spider1.x do this
   //THD *thd = current_thd;
   DBUG_ENTER("spider_internal_start_trx");
 
@@ -1617,7 +1615,7 @@ int spider_internal_start_trx(
     {
       trx->use_consistent_snapshot =
         spider_param_use_consistent_snapshot(thd);
-      trx->internal_xa = spider_param_internal_xa(thd);
+	  trx->internal_xa = thd->variables.spider_internal_xa;
       trx->internal_xa_snapshot = spider_param_internal_xa_snapshot(thd);
     }
   }
@@ -1667,7 +1665,6 @@ int spider_internal_start_trx(
     ) {
       trx->trx_xa = TRUE;
       trx->xid.formatID = opt_spider_auto_increment_mode_value ? opt_spider_auto_increment_mode_value : 1;
-	  //alex  bug may exist
       if (spider_param_internal_xa_id_type(thd) == 0)
       {
 	   pthread_mutex_lock(&spider_xid_mutex);
@@ -3187,7 +3184,7 @@ int spider_start_consistent_snapshot(
     DBUG_RETURN(error_num);
   if (spider_param_use_consistent_snapshot(trx->thd))
   {
-    if (spider_param_internal_xa(trx->thd) &&
+    if (	trx->thd->variables.spider_internal_xa &&
       spider_param_internal_xa_snapshot(trx->thd) == 1)
     {
       error_num = ER_SPIDER_CANT_USE_BOTH_INNER_XA_AND_SNAPSHOT_NUM;
@@ -3239,8 +3236,9 @@ int spider_start_consistent_snapshot(
           if ((error_num = spider_free_trx_another_conn(trx, TRUE)))
             goto error_free_trx_another_conn;
         }
-      } else
-        trx->internal_xa = spider_param_internal_xa(trx->thd);
+	  }
+	  else
+		  trx->internal_xa = trx->thd->variables.spider_internal_xa;
     }
   }
 

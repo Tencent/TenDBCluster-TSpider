@@ -233,6 +233,8 @@ enum enum_mdl_type {
     certain phases of other DDL statements.
   */
   MDL_EXCLUSIVE,
+  /*scope lock_type add for select,when spider_internal_xa=ON*/
+  MDL_INTENTION_SHARED,
   /* This should be the last !!! */
   MDL_TYPE_END};
 

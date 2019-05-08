@@ -1603,7 +1603,8 @@ void THD::cleanup(void)
   /* Release the global read lock, if acquired. */
   if (global_read_lock.is_acquired())
     global_read_lock.unlock_global_read_lock(this);
-
+  if (global_write_lock.is_acquired())
+	  global_write_lock.unlock_global_write_lock(this);
   if (user_connect)
   {
     decrease_user_connections(user_connect);

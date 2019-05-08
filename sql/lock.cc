@@ -1110,6 +1110,58 @@ void Global_read_lock::unlock_global_read_lock(THD *thd)
 }
 
 
+bool Global_write_lock::lock_global_write_lock(THD *thd)
+{
+	DBUG_ENTER("lock_global_write_lock");
+
+	if (!m_state)
+	{
+		MDL_request mdl_request;
+
+		DBUG_ASSERT(!thd->mdl_context.is_lock_owner(MDL_key::GLOBAL, "", "",
+			MDL_SHARED));
+		mdl_request.init(MDL_key::GLOBAL, "", "", MDL_EXCLUSIVE, MDL_EXPLICIT);
+
+		if (thd->mdl_context.acquire_lock(&mdl_request,
+			thd->variables.lock_wait_timeout))
+			DBUG_RETURN(1);
+
+		m_mdl_global_exclusive_lock = mdl_request.ticket;
+		m_state = GRL_ACQUIRED;
+	}
+	/*
+	We DON'T set global_read_lock_blocks_commit now, it will be set after
+	tables are flushed (as the present function serves for FLUSH TABLES WITH
+	READ LOCK only). Doing things in this order is necessary to avoid
+	deadlocks (we must allow COMMIT until all tables are closed; we should not
+	forbid it before, or we can have a 3-thread deadlock if 2 do SELECT FOR
+	UPDATE and one does FLUSH TABLES WITH READ LOCK).
+	*/
+	DBUG_RETURN(0);
+}
+
+
+void Global_write_lock::unlock_global_write_lock(THD *thd)
+{
+	DBUG_ENTER("unlock_global_write_lock");
+
+	DBUG_ASSERT(m_mdl_global_exclusive_lock && m_state);
+
+	if (thd->global_disable_checkpoint)
+	{
+		thd->global_disable_checkpoint = 0;
+		if (!--global_disable_checkpoint)
+		{
+			ha_checkpoint_state(0);                   // Enable checkpoints
+		}
+	}
+	thd->mdl_context.release_lock(m_mdl_global_exclusive_lock);
+	m_mdl_global_exclusive_lock = NULL;
+	m_state = GRL_NONE;
+
+	DBUG_VOID_RETURN;
+}
+
 /**
   Make global read lock also block commits.
 

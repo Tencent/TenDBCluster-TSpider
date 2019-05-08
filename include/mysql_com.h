@@ -231,7 +231,7 @@ enum enum_indicator_type
 #define REFRESH_USER_RESOURCES  (1ULL << 19)
 #define REFRESH_FOR_EXPORT      (1ULL << 20) /* FLUSH TABLES ... FOR EXPORT */
 #define REFRESH_NO_BLOCK        (1ULL << 23) /* Refresh table no block */
-
+#define REFRESH_WRITE_LOCK		(1ULL << 24)/*Lock tables for write*/
 #define REFRESH_GENERIC         (1ULL << 30)
 #define REFRESH_FAST            (1ULL << 31) /* Intern flag */
 

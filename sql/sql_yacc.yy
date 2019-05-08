@@ -14245,6 +14245,8 @@ opt_flush_lock:
 flush_lock:
           WITH READ_SYM LOCK_SYM optional_flush_tables_arguments
           { Lex->type|= REFRESH_READ_LOCK | $4; }
+		|WITH WRITE_SYM LOCK_SYM optional_flush_tables_arguments
+          { Lex->type|= REFRESH_WRITE_LOCK | $4; }
         | WITH NO_SYM BLOCK_SYM
          {
            Lex->type|= REFRESH_NO_BLOCK;

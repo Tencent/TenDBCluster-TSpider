@@ -218,26 +218,52 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
 #endif /*HAVE_QUERY_CACHE*/
 
   DBUG_ASSERT(!thd || thd->locked_tables_mode ||
-              !thd->mdl_context.has_locks() ||
-              thd->handler_tables_hash.records ||
-              thd->ull_hash.records ||
-              thd->global_read_lock.is_acquired());
+	  !thd->mdl_context.has_locks() ||
+	  thd->handler_tables_hash.records ||
+	  thd->ull_hash.records ||
+	  thd->global_read_lock.is_acquired() ||
+	  thd->global_write_lock.is_acquired());
 
   /*
     Note that if REFRESH_READ_LOCK bit is set then REFRESH_TABLES is set too
     (see sql_yacc.yy)
   */
-  if (options & (REFRESH_TABLES | REFRESH_NO_BLOCK | REFRESH_READ_LOCK))
+  if (options & (REFRESH_TABLES | REFRESH_NO_BLOCK | REFRESH_READ_LOCK | REFRESH_WRITE_LOCK))
   {
       if ((options & REFRESH_NO_BLOCK) && thd && tables)
       {
           my_printf_error(ER_PARSE_ERROR, "illegal use flush table with no block", MYF(0));
           return 1;
       }
-
+	  if ((options & REFRESH_WRITE_LOCK) && thd)
+	  {
+		  if (thd->locked_tables_mode)
+		  {
+			  my_error(ER_LOCK_OR_ACTIVE_TRANSACTION, MYF(0));
+			  return 1;
+		  }
+		  tmp_write_to_binlog = 0;
+		  if (thd->global_read_lock.is_acquired())
+			  thd->global_read_lock.unlock_global_read_lock(thd);
+		  if (thd->global_write_lock.lock_global_write_lock(thd))
+			  return 1;                               // Killed
+		  if (close_cached_tables(thd, tables,
+			  ((options & REFRESH_FAST) ? FALSE : TRUE),
+			  thd->variables.lock_wait_timeout))
+		  {
+			  thd->global_write_lock.unlock_global_write_lock(thd);
+			  return 1;
+		  }
+		  if (options & REFRESH_CHECKPOINT)
+			  disable_checkpoints(thd);
+		  if (WSREP(thd) &&
+			  close_cached_tables(thd, tables, (options & REFRESH_FAST) ?
+				  FALSE : TRUE, TRUE))
+			  result = 1;
+	  }
     if ((options & REFRESH_READ_LOCK) && thd)
     {
-      /*
+      /*	
         On the first hand we need write lock on the tables to be flushed,
         on the other hand we must not try to aspire a global read lock
         if we have a write locked table as this would lead to a deadlock
@@ -253,7 +279,7 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
 	UNLOCK TABLES
       */
       tmp_write_to_binlog= 0;
-      if (thd->global_read_lock.lock_global_read_lock(thd))
+      if (!(thd->global_write_lock.is_acquired()) && thd->global_read_lock.lock_global_read_lock(thd))
 	return 1;                               // Killed
       if (close_cached_tables(thd, tables,
                               ((options & REFRESH_FAST) ?  FALSE : TRUE),
