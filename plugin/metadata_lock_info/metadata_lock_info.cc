@@ -46,6 +46,7 @@ static const LEX_STRING metadata_lock_info_lock_mode[] = {
   { C_STRING_WITH_LEN("MDL_SHARED_NO_WRITE") },
   { C_STRING_WITH_LEN("MDL_SHARED_NO_READ_WRITE") },
   { C_STRING_WITH_LEN("MDL_EXCLUSIVE") },
+  { C_STRING_WITH_LEN("MDL_INTENTION_SHARED") }
 };
 
 static ST_FIELD_INFO i_s_metadata_lock_info_fields_info[] =

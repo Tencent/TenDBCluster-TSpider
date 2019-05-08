@@ -1187,7 +1187,6 @@ void User_write_lock::unlock_user_write_lock(THD *thd)
 	DBUG_VOID_RETURN;
 }
 
-
 /**
   Make global read lock also block commits.
 

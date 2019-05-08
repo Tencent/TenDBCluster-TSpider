@@ -637,6 +637,7 @@ typedef struct system_variables
   my_bool sql_log_bin;
   my_bool sql_slow_log_off;
   my_bool spider_ignore_xa_log;
+  my_bool spider_internal_xa;
   /*
     A flag to help detect whether binary logging was temporarily disabled
     (see tmp_disable_binlog(A) macro).
