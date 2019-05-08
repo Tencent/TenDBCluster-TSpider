@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_xa_member` (
   KEY `idx1` (`data`,`format_id`,`gtrid_length`,`host`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
-CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_status` (
+CREATE TABLE if not exists mysql.spider_table_status (
   `db_name` char(64) NOT NULL DEFAULT '',
   `table_name` char(250) NOT NULL DEFAULT '',
   `tgt_db_name` char(64) NOT NULL DEFAULT '',
@@ -154,4 +154,3 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_status` (
   `modify_time` datetime DEFAULT NULL,
   PRIMARY KEY (`db_name`,`table_name`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
-
