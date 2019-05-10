@@ -485,7 +485,7 @@ int mysql_update(THD *thd,
           if (table->sql_use_partition_count > 1 && !is_config_table(table))
           {
               my_error(ER_ACCESS_DENIED_MULPARTITION_IN_QUERY, MYF(0),
-                  "Update", thd->security_ctx->priv_user, thd->security_ctx->host_or_ip, table_list->alias);
+                  "Update", thd->security_ctx->priv_user, thd->security_ctx->host_or_ip, table_list->alias.str);
               DBUG_RETURN(TRUE);
           }
       }
