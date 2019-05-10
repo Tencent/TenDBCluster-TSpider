@@ -1851,7 +1851,7 @@ JOIN::optimize_inner()
                 /* 1. table_num == 1, use_mul_partition_tables>1 mean multiple partition
                 2. table_name > 1, must be only one table can multiple partition */
                 my_error(ER_ACCESS_DENIED_MULPARTITION_IN_QUERY, MYF(0),
-                    "Select", thd->security_ctx->priv_user, thd->security_ctx->host_or_ip, last_tb1->alias);
+                    "Select", thd->security_ctx->priv_user, thd->security_ctx->host_or_ip, last_tb1->alias.str);
                 DBUG_RETURN(TRUE);
             }
         }
