@@ -1,0 +1,20 @@
+if you need to run "perl mysql-test-run.pl --suite=tcadmin --force", you must have a tdbctl instance and port is 27000, config just like this
+    
+    [client]
+    port=27000
+    socket=/data/will/mysqldata/27000/mysql.sock
+    [mysqld]
+    skip-grant-tables
+    bind-address=127.0.0.1
+    skip-name-resolve
+    datadir=/data/will/mysqldata/27000/data
+    character-set-server=utf8
+    port=27000
+    server_id=1025000
+    socket=/data/will/mysqldata/27000/mysql.sock
+    tmpdir=/data/will/mysqldata/27000/tmp
+    [mysql]
+    default-character-set=utf8
+    port=27000
+    socket=/data/will/mysqldata/27000/mysql.sock
+
