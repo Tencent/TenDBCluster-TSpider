@@ -1,0 +1,22 @@
+CREATE TABLE t1 (a INT) ENGINE=InnoDB;
+INSERT INTO t1 VALUES (1);
+connect  con1,localhost,root;
+XA START 'x';
+UPDATE t1 set a=2;
+XA END 'x';
+XA PREPARE 'x';
+connection default;
+disconnect con1;
+connect  con1,localhost,root;
+SELECT * FROM t1 LOCK IN SHARE MODE;
+connection default;
+disconnect con1;
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+SELECT * FROM t1;
+a
+2
+XA ROLLBACK 'x';
+SELECT * FROM t1;
+a
+1
+DROP TABLE t1;

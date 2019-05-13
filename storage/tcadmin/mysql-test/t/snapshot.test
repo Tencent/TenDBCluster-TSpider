@@ -1,0 +1,7 @@
+--source include/have_tcadmin.inc
+CREATE TABLE IF NOT EXISTS t1 (pk INT PRIMARY KEY, i INT, KEY(i)) ENGINE=InnoDB;
+select * from t1;
+UPDATE t1 SET i = 0;
+UPDATE t1 SET pk = 0;
+select * from t1;
+drop table t1;

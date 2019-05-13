@@ -1,0 +1,319 @@
+#
+# Bug #19027905 ASSERT RET.SECOND DICT_CREATE_FOREIGN_CONSTRAINTS_LOW
+# DICT_CREATE_FOREIGN_CONSTR
+#
+create table t1 (f1 int primary key) engine=InnoDB;
+create table t2 (f1 int primary key,
+constraint c1 foreign key (f1) references t1(f1),
+constraint c1 foreign key (f1) references t1(f1)) engine=InnoDB;
+ERROR HY000: Can't create table `test`.`t2` (errno: 150 "Foreign key constraint is incorrectly formed")
+create table t2 (f1 int primary key,
+constraint c1 foreign key (f1) references t1(f1)) engine=innodb;
+alter table t2 add constraint c1 foreign key (f1) references t1(f1);
+ERROR HY000: Can't create table `test`.`#sql-temporary` (errno: 121 "Duplicate key on write or update")
+set foreign_key_checks = 0;
+alter table t2 add constraint c1 foreign key (f1) references t1(f1);
+ERROR HY000: Duplicate FOREIGN KEY constraint name 'test/c1'
+drop table t2, t1;
+#
+# Bug #20031243 CREATE TABLE FAILS TO CHECK IF FOREIGN KEY COLUMN
+# NULL/NOT NULL MISMATCH
+#
+set foreign_key_checks = 1;
+show variables like 'foreign_key_checks';
+Variable_name	Value
+foreign_key_checks	ON
+CREATE TABLE t1
+(a INT NOT NULL,
+b INT NOT NULL,
+INDEX idx(a)) ENGINE=InnoDB;
+CREATE TABLE t2
+(a INT KEY,
+b INT,
+INDEX ind(b),
+FOREIGN KEY (b) REFERENCES t1(a) ON DELETE CASCADE ON UPDATE CASCADE)
+ENGINE=InnoDB;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` int(11) NOT NULL,
+  KEY `idx` (`a`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) NOT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `ind` (`b`),
+  CONSTRAINT `t2_ibfk_1` FOREIGN KEY (`b`) REFERENCES `t1` (`a`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+INSERT INTO t1 VALUES (1, 80);
+INSERT INTO t1 VALUES (2, 81);
+INSERT INTO t1 VALUES (3, 82);
+INSERT INTO t1 VALUES (4, 83);
+INSERT INTO t1 VALUES (5, 84);
+INSERT INTO t2 VALUES (51, 1);
+INSERT INTO t2 VALUES (52, 2);
+INSERT INTO t2 VALUES (53, 3);
+INSERT INTO t2 VALUES (54, 4);
+INSERT INTO t2 VALUES (55, 5);
+SELECT a, b FROM t1 ORDER BY a;
+a	b
+1	80
+2	81
+3	82
+4	83
+5	84
+SELECT a, b FROM t2 ORDER BY a;
+a	b
+51	1
+52	2
+53	3
+54	4
+55	5
+INSERT INTO t2 VALUES (56, 6);
+ERROR 23000: Cannot add or update a child row: a foreign key constraint fails (`test`.`t2`, CONSTRAINT `t2_ibfk_1` FOREIGN KEY (`b`) REFERENCES `t1` (`a`) ON DELETE CASCADE ON UPDATE CASCADE)
+ALTER TABLE t1 CHANGE a id INT;
+SELECT id, b FROM t1 ORDER BY id;
+id	b
+1	80
+2	81
+3	82
+4	83
+5	84
+SELECT a, b FROM t2 ORDER BY a;
+a	b
+51	1
+52	2
+53	3
+54	4
+55	5
+# Operations on child table
+INSERT INTO t2 VALUES (56, 6);
+ERROR 23000: Cannot add or update a child row: a foreign key constraint fails (`test`.`t2`, CONSTRAINT `t2_ibfk_1` FOREIGN KEY (`b`) REFERENCES `t1` (`id`) ON DELETE CASCADE ON UPDATE CASCADE)
+UPDATE t2 SET b = 99 WHERE a = 51;
+ERROR 23000: Cannot add or update a child row: a foreign key constraint fails (`test`.`t2`, CONSTRAINT `t2_ibfk_1` FOREIGN KEY (`b`) REFERENCES `t1` (`id`) ON DELETE CASCADE ON UPDATE CASCADE)
+DELETE FROM t2 WHERE a = 53;
+SELECT id, b FROM t1 ORDER BY id;
+id	b
+1	80
+2	81
+3	82
+4	83
+5	84
+SELECT a, b FROM t2 ORDER BY a;
+a	b
+51	1
+52	2
+54	4
+55	5
+# Operations on parent table
+DELETE FROM t1 WHERE id = 1;
+UPDATE t1 SET id = 50 WHERE id = 5;
+SELECT id, b FROM t1 ORDER BY id;
+id	b
+2	81
+3	82
+4	83
+50	84
+SELECT a, b FROM t2 ORDER BY a;
+a	b
+52	2
+54	4
+55	50
+DROP TABLE t2, t1;
+#
+# bug#25126722 FOREIGN KEY CONSTRAINT NAME IS NULL AFTER RESTART
+# base bug#24818604 [GR]
+#
+CREATE TABLE t1 (c1 INT PRIMARY KEY) ENGINE=InnoDB;
+CREATE TABLE t2 (c1 INT PRIMARY KEY, FOREIGN KEY (c1) REFERENCES t1(c1))
+ENGINE=InnoDB;
+INSERT INTO t1 VALUES (1);
+INSERT INTO t2 VALUES (1);
+SELECT unique_constraint_name FROM information_schema.referential_constraints
+WHERE table_name = 't2';
+unique_constraint_name
+PRIMARY
+SELECT unique_constraint_name FROM information_schema.referential_constraints
+WHERE table_name = 't2';
+unique_constraint_name
+PRIMARY
+SELECT * FROM t1;
+c1
+1
+SELECT unique_constraint_name FROM information_schema.referential_constraints
+WHERE table_name = 't2';
+unique_constraint_name
+PRIMARY
+DROP TABLE t2;
+DROP TABLE t1;
+SET FOREIGN_KEY_CHECKS=0;
+CREATE TABLE staff (
+staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+store_id TINYINT UNSIGNED NOT NULL,
+PRIMARY KEY  (staff_id),
+KEY idx_fk_store_id (store_id),
+CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+CREATE TABLE store (
+store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+manager_staff_id TINYINT UNSIGNED NOT NULL,
+PRIMARY KEY  (store_id),
+UNIQUE KEY idx_unique_manager (manager_staff_id),
+CONSTRAINT fk_store_staff FOREIGN KEY (manager_staff_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB;
+SET FOREIGN_KEY_CHECKS=DEFAULT;
+LOCK TABLE staff WRITE;
+UNLOCK TABLES;
+DROP TABLES staff, store;
+SET FOREIGN_KEY_CHECKS=1;
+#
+# MDEV-13246 Stale rows despite ON DELETE CASCADE constraint
+#
+CREATE TABLE users (
+id int unsigned AUTO_INCREMENT PRIMARY KEY,
+name varchar(32) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE matchmaking_groups (
+id bigint unsigned AUTO_INCREMENT PRIMARY KEY,
+host_user_id int unsigned NOT NULL UNIQUE,
+CONSTRAINT FOREIGN KEY (host_user_id) REFERENCES users (id)
+ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE matchmaking_group_users (
+matchmaking_group_id bigint unsigned NOT NULL,
+user_id int unsigned NOT NULL,
+PRIMARY KEY (matchmaking_group_id,user_id),
+UNIQUE KEY user_id (user_id),
+CONSTRAINT FOREIGN KEY (matchmaking_group_id)
+REFERENCES matchmaking_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+CONSTRAINT FOREIGN KEY (user_id)
+REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE matchmaking_group_maps (
+matchmaking_group_id bigint unsigned NOT NULL,
+map_id tinyint unsigned NOT NULL,
+PRIMARY KEY (matchmaking_group_id,map_id),
+CONSTRAINT FOREIGN KEY (matchmaking_group_id)
+REFERENCES matchmaking_groups (id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+INSERT INTO users VALUES (NULL,'foo'),(NULL,'bar');
+INSERT INTO matchmaking_groups VALUES (10,1),(11,2);
+INSERT INTO matchmaking_group_users VALUES (10,1),(11,2);
+INSERT INTO matchmaking_group_maps VALUES (10,55),(11,66);
+BEGIN;
+UPDATE users SET name = 'qux' WHERE id = 1;
+connect  con1,localhost,root,,;
+SET innodb_lock_wait_timeout= 1;
+DELETE FROM matchmaking_groups WHERE id = 10;
+connection default;
+COMMIT;
+SELECT * FROM matchmaking_group_users WHERE matchmaking_group_id NOT IN (SELECT id FROM matchmaking_groups);
+matchmaking_group_id	user_id
+SELECT * FROM matchmaking_group_maps WHERE matchmaking_group_id NOT IN (SELECT id FROM matchmaking_groups);
+matchmaking_group_id	map_id
+SELECT * FROM users;
+id	name
+1	qux
+2	bar
+DROP TABLE
+matchmaking_group_maps, matchmaking_group_users, matchmaking_groups, users;
+#
+# MDEV-13331 FK DELETE CASCADE does not honor innodb_lock_wait_timeout
+#
+CREATE TABLE t1 (id INT NOT NULL PRIMARY KEY) ENGINE=InnoDB;
+CREATE TABLE t2 (
+id INT NOT NULL PRIMARY KEY,
+ref_id INT NOT NULL DEFAULT 0,
+f INT NULL,
+FOREIGN KEY (ref_id) REFERENCES t1 (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+INSERT INTO t1 VALUES (1),(2);
+INSERT INTO t2 VALUES (1,1,10),(2,2,20);
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `ref_id` int(11) NOT NULL DEFAULT 0,
+  `f` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ref_id` (`ref_id`),
+  CONSTRAINT `t2_ibfk_1` FOREIGN KEY (`ref_id`) REFERENCES `t1` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+connection con1;
+BEGIN;
+UPDATE t2 SET f = 11 WHERE id = 1;
+connection default;
+SET innodb_lock_wait_timeout= 1;
+DELETE FROM t1 WHERE id = 1;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+connection con1;
+COMMIT;
+disconnect con1;
+connection default;
+SELECT * FROM t2;
+id	ref_id	f
+1	1	11
+2	2	20
+DELETE FROM t1 WHERE id = 1;
+SELECT * FROM t2;
+id	ref_id	f
+2	2	20
+DROP TABLE t2, t1;
+#
+# MDEV-15199 Referential integrity broken in ON DELETE CASCADE
+#
+CREATE TABLE member (id int AUTO_INCREMENT PRIMARY KEY) ENGINE=InnoDB;
+INSERT INTO member VALUES (1);
+CREATE TABLE address (
+id int AUTO_INCREMENT PRIMARY KEY,
+member_id int NOT NULL,
+KEY address_FI_1 (member_id),
+CONSTRAINT address_FK_1 FOREIGN KEY (member_id) REFERENCES member (id)
+ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+INSERT INTO address VALUES (2,1);
+CREATE TABLE payment_method (
+id int AUTO_INCREMENT PRIMARY KEY,
+member_id int NOT NULL,
+cardholder_address_id int DEFAULT NULL,
+KEY payment_method_FI_1 (member_id),
+KEY payment_method_FI_2 (cardholder_address_id),
+CONSTRAINT payment_method_FK_1 FOREIGN KEY (member_id) REFERENCES member (id) ON DELETE CASCADE ON UPDATE CASCADE,
+CONSTRAINT payment_method_FK_2 FOREIGN KEY (cardholder_address_id) REFERENCES address (id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB;
+INSERT INTO payment_method VALUES (3,1,2);
+BEGIN;
+UPDATE member SET id=42;
+SELECT * FROM member;
+id
+42
+SELECT * FROM address;
+id	member_id
+2	42
+SELECT * FROM payment_method;
+id	member_id	cardholder_address_id
+3	42	2
+DELETE FROM member;
+COMMIT;
+SELECT * FROM member;
+id
+SELECT * FROM address;
+id	member_id
+SELECT * FROM payment_method;
+id	member_id	cardholder_address_id
+DROP TABLE payment_method,address,member;
+#
+# Bug #26958695 INNODB NESTED STORED FIELD WITH CONSTRAINT KEY
+# PRODUCE BROKEN TABLE (no bug in MariaDB)
+#
+create table t1(f1 int,f2 int, primary key(f1), key(f2, f1))engine=innodb;
+create table t2(f1 int, f2 int as (2) stored, f3 int as (f2) stored,
+foreign key(f1) references t1(f2) on update set NULL)
+engine=innodb;
+insert into t1 values(1, 1);
+insert into t2(f1) values(1);
+drop table t2, t1;
