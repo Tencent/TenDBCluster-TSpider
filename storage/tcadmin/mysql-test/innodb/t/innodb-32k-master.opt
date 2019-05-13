@@ -1,4 +1,0 @@
---default_storage_engine=InnoDB
---innodb-page-size=32K
---innodb-log-file-size=32M
---innodb-buffer-pool-size=32M

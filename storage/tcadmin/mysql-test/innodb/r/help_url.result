@@ -1,2 +1,0 @@
-create table innodb_table_monitor (a int) engine=InnoDB;
-drop table innodb_table_monitor;
