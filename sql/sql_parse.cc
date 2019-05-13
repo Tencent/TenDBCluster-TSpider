@@ -10746,13 +10746,62 @@ bool tdbctl_conn_before_query(THD *thd, LEX *lex, MYSQL *mysql, String *sql_str)
     sql_str->append("set tc_admin=1;", 15);
 
     /* 4. append use database; */
-    if (tdbctl_need_current_db(thd, lex))
+    switch (lex->sql_command)
     {
-        TABLE_LIST* table_list = lex->query_tables;
-        db = table_list->db;
+    case SQLCOM_CREATE_EVENT:
+    case SQLCOM_ALTER_EVENT:
+    case SQLCOM_DROP_EVENT:
+    case SQLCOM_CREATE_PROCEDURE:
+    case SQLCOM_CREATE_SPFUNCTION:
+    case SQLCOM_ALTER_PROCEDURE:
+    case SQLCOM_DROP_PROCEDURE:
+    case SQLCOM_CREATE_FUNCTION:
+    case SQLCOM_ALTER_FUNCTION:
+    case SQLCOM_DROP_FUNCTION:
+    case SQLCOM_CREATE_TRIGGER:
+    case SQLCOM_DROP_TRIGGER:
+    {
+        if (thd->db.str)
+            db = thd->db;
+        else
+            db = lex->sphead->m_db;
         sql_str->append("use ", 4);
         sql_str->append(db.str, db.length);
         sql_str->append(";", 1);
+        break;
+    }
+    case SQLCOM_CREATE_VIEW:
+    case SQLCOM_DROP_VIEW:
+    {
+        /* create veiw is different from create table
+         use thd.db(current db) first
+        For example:  create view d1.v1 as select * from t1;  we must execute this query on current db;
+        May be query is: "create view d1.v1 as select * from d2.t1", and thd.db is null;  then  we must use d1 as current db
+        */
+        if (thd->db.str)
+            db = thd->db;
+        else
+            db = lex->query_tables->db;
+        sql_str->append("use ", 4);
+        sql_str->append(db.str, db.length);
+        sql_str->append(";", 1);
+        break;
+    }
+    case SQLCOM_CREATE_TABLE:
+    case SQLCOM_DROP_TABLE:
+    case SQLCOM_ALTER_TABLE:
+    case SQLCOM_RENAME_TABLE:
+    case SQLCOM_CREATE_INDEX:
+    case SQLCOM_DROP_INDEX:
+    {
+        db = lex->query_tables->db;
+        sql_str->append("use ", 4);
+        sql_str->append(db.str, db.length);
+        sql_str->append(";", 1);
+        break;
+    }
+    default:
+        break;
     }
 
     /* 5. append current query */
