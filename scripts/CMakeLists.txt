@@ -102,6 +102,7 @@ INSTALL(FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/install_spider.sql
   ${CMAKE_CURRENT_BINARY_DIR}/maria_add_gis_sp.sql
   ${CMAKE_CURRENT_BINARY_DIR}/maria_add_gis_sp_bootstrap.sql
+  ${CMAKE_CURRENT_BINARY_DIR}/install_spider.sql
   ${FIX_PRIVILEGES_SQL}
   DESTINATION ${INSTALL_MYSQLSHAREDIR} COMPONENT Server
 )
