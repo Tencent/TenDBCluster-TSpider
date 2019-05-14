@@ -1056,7 +1056,7 @@ TABLE_SHARE *mrn_create_tmp_table_share(TABLE_LIST *table_list, const char *path
   MRN_DBUG_ENTER_FUNCTION();
 #ifdef MRN_HAVE_GET_TABLE_DEF_KEY
   const char *key;
-  key_length = get_table_def_key(table_list, &key);
+  key_length = get_table_def_key(table_list, &key, thd->flush_no_block_version);
 #else
   char key[MAX_DBKEY_LENGTH];
   key_length = create_table_def_key(thd, key, table_list, FALSE);
