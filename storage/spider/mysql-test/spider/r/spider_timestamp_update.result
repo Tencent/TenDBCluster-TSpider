@@ -90,7 +90,7 @@ update tbl_a set c1 = 2 where id = 1;
 SELECT argument FROM mysql.general_log;
 argument
 update tbl_a set c1 = 2 where id = 1
-mysql localhost select `id`,`c1`,`update_time` from `auto_test_remote_2`.`tbl_a` where (`id` = 1) for update
+mysql localhost select `id`,`c1`,`update_time` from `auto_test_remote_2`.`tbl_a` where `id` = 1 and (`id` = 1) for update
 SELECT argument FROM mysql.general_log
 
 deinit

@@ -57,12 +57,10 @@ id
 3
 
 select for master
-SELECT argument FROM mysql.general_log WHERE argument LIKE '%mysql% replace %';
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%mysql% replace %' and  argument not like  "%load data%";
 argument
-load data local infile "/data/home/alexxing/TendbCluster3/bld/mysql-test/var/spider_load_data.dat"  replace into table tbl_a
 mysql localhost replace into `auto_test_remote`.`tbl_a`(`id`)values(4)
 mysql localhost replace into `auto_test_remote_2`.`tbl_a`(`id`)values(1),(2),(3)
-SELECT argument FROM mysql.general_log WHERE argument LIKE '%mysql% replace %'
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%replace %';
 argument
