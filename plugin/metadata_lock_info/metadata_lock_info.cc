@@ -34,6 +34,8 @@ static const LEX_STRING metadata_lock_info_lock_name[] = {
 };
 
 static const LEX_STRING metadata_lock_info_lock_mode[] = {
+  { C_STRING_WITH_LEN("MDL_S") },
+  { C_STRING_WITH_LEN("MDL_X") },
   { C_STRING_WITH_LEN("MDL_INTENTION_EXCLUSIVE") },
   { C_STRING_WITH_LEN("MDL_SHARED") },
   { C_STRING_WITH_LEN("MDL_SHARED_HIGH_PRIO") },

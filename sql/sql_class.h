@@ -1966,12 +1966,6 @@ private:
   MDL_ticket *m_mdl_blocks_commits_lock;
 };
 
-
-/**
-An instance of the global write lock in a connection.
-Implemented in lock.cc.
-*/
-
 class Global_write_lock
 {
 public:
@@ -1992,6 +1986,15 @@ public:
 	Check if this connection can acquire protection against GRL and
 	emit error if otherwise.
 	*/
+	bool can_acquire_protection() const
+	{
+		if (m_state)
+		{
+			my_error(ER_CANT_UPDATE_WITH_WRITELOCK, MYF(0));
+			return TRUE;
+		}
+		return FALSE;
+	}
 	bool is_acquired() const { return m_state != GRL_NONE; }
 private:
 	enum_grl_state m_state;
@@ -2003,8 +2006,36 @@ private:
 	MDL_ticket *m_mdl_global_exclusive_lock;
 };
 
+class Global_S_lock
+{
+public:
+	enum enum_grl_state
+	{
+		GRL_NONE,
+		GRL_ACQUIRED
+	};
 
-/*
+	Global_S_lock()
+		: m_state(GRL_NONE),
+		m_mdl_global_share_lock(NULL)
+	{}
+
+	bool lock_global_share_lock(THD *thd);
+	void unlock_global_share_lock(THD *thd);
+	/**
+	Check if this connection can acquire protection against GRL and
+	emit error if otherwise.
+	*/
+	bool is_acquired() const { return m_state != GRL_NONE; }
+private:
+	enum_grl_state m_state;
+	/**
+	In order to acquire the global read lock, the connection must
+	acquire shared metadata lock in GLOBAL namespace, to prohibit
+	all DDL.
+	*/
+	MDL_ticket *m_mdl_global_share_lock;
+};/*
   Class to facilitate the commit of one transactions waiting for the commit of
   another transaction to complete first.
 
@@ -2685,6 +2716,7 @@ public:
   } transaction;
   Global_read_lock global_read_lock;
   Global_write_lock global_write_lock;
+  Global_S_lock global_s_lock;
   Field      *dup_field;
 #ifndef __WIN__
   sigset_t signals;

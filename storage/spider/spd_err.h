@@ -144,7 +144,7 @@
 
 #define ER_SPIDER_XA_TIMEOUT_NUM 12728
 #define ER_SPIDER_XA_TIMEOUT_STR "transaction execute timeout, wait some seconds and see the results."
-#define ER_SPIDER_XA_TIMEOUT_LEN (sizeof(ER_SPIDER_XA_TIMEOUT_NUM) - 1)
+#define ER_SPIDER_XA_TIMEOUT_LEN (sizeof(ER_SPIDER_XA_TIMEOUT_STR) - 1)
 #define ER_SPIDER_XA_FAILED_NUM 12729
 #define ER_SPIDER_XA_FAILED_STR "transaction execute failed, please retry transaction"
 #define ER_SPIDER_XA_FAILED_LEN (sizeof(ER_SPIDER_XA_FAILED_STR) - 1)

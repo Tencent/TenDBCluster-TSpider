@@ -1602,9 +1602,11 @@ void THD::cleanup(void)
 
   /* Release the global read lock, if acquired. */
   if (global_read_lock.is_acquired())
-    global_read_lock.unlock_global_read_lock(this);
+      global_read_lock.unlock_global_read_lock(this);
   if (global_write_lock.is_acquired())
 	  global_write_lock.unlock_global_write_lock(this);
+  if (global_s_lock.is_acquired())
+	  global_s_lock.unlock_global_share_lock(this); 
   if (user_connect)
   {
     decrease_user_connections(user_connect);
@@ -1706,6 +1708,14 @@ THD::~THD()
   DBUG_ENTER("~THD()");
   /* Check that we have already called thd->unlink() */
   DBUG_ASSERT(prev == 0 && next == 0);
+  if (this->global_s_lock.is_acquired())
+  {
+	  this->global_s_lock.unlock_global_share_lock(this);
+  }
+  if (this->global_write_lock.is_acquired())
+  {
+	  this->global_write_lock.unlock_global_write_lock(this);
+  }
   /* This takes a long time so we should not do this under LOCK_thread_count */
   mysql_mutex_assert_not_owner(&LOCK_thread_count);
 

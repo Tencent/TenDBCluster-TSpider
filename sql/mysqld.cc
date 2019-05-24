@@ -431,6 +431,7 @@ uint opt_spider_status_least;
 my_bool opt_spider_not_convert_binary;
 my_bool opt_spider_parallel_group_order;
 my_bool opt_spider_parallel_limit;
+my_bool opt_spider_internal_xa;
 /*
   True if the bootstrap thread is running. Protected by LOCK_start_thread.
   Used in bootstrap() function to determine if the bootstrap thread
@@ -2870,7 +2871,10 @@ static void network_init(void)
 void close_connection(THD *thd, uint sql_errno)
 {
   DBUG_ENTER("close_connection");
-
+  if (thd->global_s_lock.is_acquired())
+  {
+	  thd->global_s_lock.unlock_global_share_lock(thd);
+  }
   if (sql_errno)
     net_send_error(thd, sql_errno, ER_DEFAULT(sql_errno), NULL);
 

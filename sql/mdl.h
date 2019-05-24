@@ -115,6 +115,9 @@ public:
 */
 
 enum enum_mdl_type {
+	/*a pair of lock for flush table with write lock*/
+	MDL_S=0,
+	MDL_X,
   /*
     An intention exclusive metadata lock. Used only for scoped locks.
     Owner of this type of lock can acquire upgradable exclusive locks on
@@ -122,7 +125,7 @@ enum enum_mdl_type {
     Compatible with other IX locks, but is incompatible with scoped S and
     X locks.
   */
-  MDL_INTENTION_EXCLUSIVE= 0,
+  MDL_INTENTION_EXCLUSIVE,
   /*
     A shared metadata lock.
     To be used in cases when we are interested in object metadata only

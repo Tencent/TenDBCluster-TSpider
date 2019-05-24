@@ -7927,3 +7927,5 @@ ER_ACCESS_DENIED_MULPARTITION_IN_QUERY
         eng "%-.16s across multiple partitions denied to user '%-.48s'@'%-.64s' for table '%-.192s' "
 ER_THREAD_IN_USING_OR_TRANSACTION
         eng "thread %lu is in using or in transaction, can't be killed safe"
+ER_CANT_UPDATE_WITH_WRITELOCK
+		eng "Can't execute the query because you have a conflicting write lock"

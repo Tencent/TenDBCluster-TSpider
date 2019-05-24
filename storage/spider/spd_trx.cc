@@ -3184,8 +3184,7 @@ int spider_start_consistent_snapshot(
     DBUG_RETURN(error_num);
   if (spider_param_use_consistent_snapshot(trx->thd))
   {
-    if (	trx->thd->variables.spider_internal_xa &&
-      spider_param_internal_xa_snapshot(trx->thd) == 1)
+    if (opt_spider_internal_xa && spider_param_internal_xa_snapshot(trx->thd) == 1)
     {
       error_num = ER_SPIDER_CANT_USE_BOTH_INNER_XA_AND_SNAPSHOT_NUM;
       my_message(error_num, ER_SPIDER_CANT_USE_BOTH_INNER_XA_AND_SNAPSHOT_STR,
@@ -3236,10 +3235,8 @@ int spider_start_consistent_snapshot(
           if ((error_num = spider_free_trx_another_conn(trx, TRUE)))
             goto error_free_trx_another_conn;
         }
-	  }
-	  else
-		  trx->internal_xa = trx->thd->variables.spider_internal_xa;
-    }
+      } else
+        trx->internal_xa = opt_spider_internal_xa;    }
   }
 
   DBUG_RETURN(0);

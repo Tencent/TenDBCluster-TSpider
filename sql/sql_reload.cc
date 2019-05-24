@@ -218,12 +218,11 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
 #endif /*HAVE_QUERY_CACHE*/
 
   DBUG_ASSERT(!thd || thd->locked_tables_mode ||
-	  !thd->mdl_context.has_locks() ||
-	  thd->handler_tables_hash.records ||
-	  thd->ull_hash.records ||
-	  thd->global_read_lock.is_acquired() ||
-	  thd->global_write_lock.is_acquired());
-
+              !thd->mdl_context.has_locks() ||
+              thd->handler_tables_hash.records ||
+              thd->ull_hash.records ||
+              thd->global_read_lock.is_acquired() ||
+			  thd->global_write_lock.is_acquired());
   /*
     Note that if REFRESH_READ_LOCK bit is set then REFRESH_TABLES is set too
     (see sql_yacc.yy)
@@ -243,8 +242,8 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
 			  return 1;
 		  }
 		  tmp_write_to_binlog = 0;
-		  if (thd->global_read_lock.is_acquired())
-			  thd->global_read_lock.unlock_global_read_lock(thd);
+		  if (thd->global_read_lock.can_acquire_protection())
+			  return 1;
 		  if (thd->global_write_lock.lock_global_write_lock(thd))
 			  return 1;                               // Killed
 		  if (close_cached_tables(thd, tables,
@@ -279,8 +278,10 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
 	UNLOCK TABLES
       */
       tmp_write_to_binlog= 0;
-      if (!(thd->global_write_lock.is_acquired()) && thd->global_read_lock.lock_global_read_lock(thd))
-	return 1;                               // Killed
+	  if (thd->global_write_lock.can_acquire_protection())
+		  return 1;
+      if (thd->global_read_lock.lock_global_read_lock(thd))	
+		  return 1;                               // Killed
       if (close_cached_tables(thd, tables,
                               ((options & REFRESH_FAST) ?  FALSE : TRUE),
                               thd->variables.lock_wait_timeout))

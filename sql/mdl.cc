@@ -1424,7 +1424,7 @@ void MDL_lock::reschedule_waiters()
 
 const MDL_lock::bitmap_t
 MDL_lock::MDL_scoped_lock::m_granted_incompatible[MDL_TYPE_END]=
-{
+{ MDL_BIT(MDL_X),MDL_BIT(MDL_S)| MDL_BIT(MDL_X),
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED),
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_INTENTION_EXCLUSIVE),
   0, 0, 0, 0, 0, 0, 0,
@@ -1435,6 +1435,7 @@ MDL_lock::MDL_scoped_lock::m_granted_incompatible[MDL_TYPE_END]=
 const MDL_lock::bitmap_t
 MDL_lock::MDL_scoped_lock::m_waiting_incompatible[MDL_TYPE_END]=
 {
+  MDL_BIT(MDL_X),0,
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED),
   MDL_BIT(MDL_EXCLUSIVE), 0, 0, 0, 0, 0, 0, 0, 0,MDL_BIT(MDL_EXCLUSIVE)
 };
@@ -1498,8 +1499,7 @@ MDL_lock::MDL_scoped_lock::m_waiting_incompatible[MDL_TYPE_END]=
 
 const MDL_lock::bitmap_t
 MDL_lock::MDL_object_lock::m_granted_incompatible[MDL_TYPE_END]=
-{
-  0,
+{0,0,0,
   MDL_BIT(MDL_EXCLUSIVE),
   MDL_BIT(MDL_EXCLUSIVE),
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE),
@@ -1526,8 +1526,7 @@ MDL_lock::MDL_object_lock::m_granted_incompatible[MDL_TYPE_END]=
 
 const MDL_lock::bitmap_t
 MDL_lock::MDL_object_lock::m_waiting_incompatible[MDL_TYPE_END]=
-{
-  0,
+{0,0,0,
   MDL_BIT(MDL_EXCLUSIVE),
   0,
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE),
@@ -1569,7 +1568,7 @@ MDL_lock::can_grant_lock(enum_mdl_type type_arg,
   bool  wsrep_can_grant= TRUE;
 
   /*
-    New lock request can be satisfied iff:
+    New lock request can be satisfied if:
     - There are no incompatible types of satisfied requests
     in other contexts
     - There are no waiting requests which have higher priority

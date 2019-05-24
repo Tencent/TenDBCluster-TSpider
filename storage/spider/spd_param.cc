@@ -357,9 +357,7 @@ bool spider_param_use_consistent_snapshot(
   DBUG_RETURN(THDVAR(thd, use_consistent_snapshot));
 }
 
-
-/*
-  0 :err when use a spider table
+/*  0 :err when use a spider table
   1 :err when start trx
   2 :start trx with snapshot on remote server(not use xa)
   3 :start xa on remote server(not use trx with snapshot)
