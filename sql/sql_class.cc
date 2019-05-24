@@ -1706,6 +1706,14 @@ THD::~THD()
   DBUG_ENTER("~THD()");
   /* Check that we have already called thd->unlink() */
   DBUG_ASSERT(prev == 0 && next == 0);
+  if (this->global_s_lock.is_acquired())
+  {
+	  this->global_s_lock.unlock_global_share_lock(this);
+  }
+  if (this->global_write_lock.is_acquired())
+  {
+	  this->global_write_lock.unlock_global_write_lock(this);
+  }
   /* This takes a long time so we should not do this under LOCK_thread_count */
   mysql_mutex_assert_not_owner(&LOCK_thread_count);
 

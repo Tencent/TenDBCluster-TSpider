@@ -4013,10 +4013,6 @@ static Sys_var_mybool Sys_slow_log_off(
 static Sys_var_mybool Sys_spider_ignore_xa_log(
 	"spider_ignore_xa_log", "spider_ignore_xa_log defaults is TRUE, do not log the spider_xa/spider_xa_member",
 	SESSION_VAR(spider_ignore_xa_log), NO_CMD_LINE, DEFAULT(TRUE));
-
-static Sys_var_mybool Sys_spider_internal_xa(
-	"spider_internal_xa", "spider_internal_xa defaults is FALSE, do not support xa transaction",
-	SESSION_VAR(spider_internal_xa), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
 /**
   This function sets the session variable thd->variables.sql_log_bin 
   to reflect changes to @@session.sql_log_bin.

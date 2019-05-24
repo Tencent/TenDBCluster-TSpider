@@ -3647,6 +3647,10 @@ mysql_execute_command(THD *thd)
 		  goto error;
     }
     thd->transaction.stmt.mark_trans_did_ddl();
+	if (thd->global_s_lock.is_acquired())
+	{
+		thd->global_s_lock.unlock_global_share_lock(thd);
+	}
   }
 
 #ifndef DBUG_OFF
