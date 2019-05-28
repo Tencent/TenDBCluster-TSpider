@@ -116,8 +116,8 @@ public:
 
 enum enum_mdl_type {
 	/*a pair of lock for flush table with write lock*/
-	MDL_S=0,
-	MDL_X,
+	MDL_USER_XA_SWITCH_S =0,
+	MDL_USER_XA_SWITCH_X,
   /*
     An intention exclusive metadata lock. Used only for scoped locks.
     Owner of this type of lock can acquire upgradable exclusive locks on
@@ -236,8 +236,6 @@ enum enum_mdl_type {
     certain phases of other DDL statements.
   */
   MDL_EXCLUSIVE,
-  /*scope lock_type add for select,when spider_internal_xa=ON*/
-  MDL_INTENTION_SHARED,
   /* This should be the last !!! */
   MDL_TYPE_END};
 

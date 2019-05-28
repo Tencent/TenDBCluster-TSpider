@@ -1424,20 +1424,21 @@ void MDL_lock::reschedule_waiters()
 
 const MDL_lock::bitmap_t
 MDL_lock::MDL_scoped_lock::m_granted_incompatible[MDL_TYPE_END]=
-{ MDL_BIT(MDL_X),MDL_BIT(MDL_S)| MDL_BIT(MDL_X),
+{ 0,
+  0,
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED),
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_INTENTION_EXCLUSIVE),
   0, 0, 0, 0, 0, 0, 0,
-  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED) | MDL_BIT(MDL_INTENTION_EXCLUSIVE) | MDL_BIT(MDL_INTENTION_SHARED),
-  MDL_BIT(MDL_EXCLUSIVE)
+  MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED) | MDL_BIT(MDL_INTENTION_EXCLUSIVE)
 };
 
 const MDL_lock::bitmap_t
 MDL_lock::MDL_scoped_lock::m_waiting_incompatible[MDL_TYPE_END]=
 {
-  MDL_BIT(MDL_X),0,
+  0,
+  0,
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED),
-  MDL_BIT(MDL_EXCLUSIVE), 0, 0, 0, 0, 0, 0, 0, 0,MDL_BIT(MDL_EXCLUSIVE)
+  MDL_BIT(MDL_EXCLUSIVE), 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 
@@ -1499,7 +1500,10 @@ MDL_lock::MDL_scoped_lock::m_waiting_incompatible[MDL_TYPE_END]=
 
 const MDL_lock::bitmap_t
 MDL_lock::MDL_object_lock::m_granted_incompatible[MDL_TYPE_END]=
-{0,0,0,
+{
+  MDL_BIT(MDL_USER_XA_SWITCH_X),
+  MDL_BIT(MDL_USER_XA_SWITCH_S) | MDL_BIT(MDL_USER_XA_SWITCH_X),
+  0,
   MDL_BIT(MDL_EXCLUSIVE),
   MDL_BIT(MDL_EXCLUSIVE),
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE),
@@ -1526,7 +1530,10 @@ MDL_lock::MDL_object_lock::m_granted_incompatible[MDL_TYPE_END]=
 
 const MDL_lock::bitmap_t
 MDL_lock::MDL_object_lock::m_waiting_incompatible[MDL_TYPE_END]=
-{0,0,0,
+{ 
+  MDL_BIT(MDL_USER_XA_SWITCH_X),
+  0,
+  0,
   MDL_BIT(MDL_EXCLUSIVE),
   0,
   MDL_BIT(MDL_EXCLUSIVE) | MDL_BIT(MDL_SHARED_NO_READ_WRITE),
@@ -1867,8 +1874,7 @@ MDL_context::try_acquire_lock_impl(MDL_request *mdl_request,
   enum_mdl_duration found_duration;
 
   DBUG_ASSERT(mdl_request->type != MDL_EXCLUSIVE ||
-              is_lock_owner(MDL_key::GLOBAL, "", "", MDL_INTENTION_EXCLUSIVE) ||
-			(mdl_request->duration== MDL_EXPLICIT));
+              is_lock_owner(MDL_key::GLOBAL, "", "", MDL_INTENTION_EXCLUSIVE));
   DBUG_ASSERT(mdl_request->ticket == NULL);
 
   /* Don't take chances in production. */

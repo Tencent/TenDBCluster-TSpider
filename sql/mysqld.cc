@@ -2871,10 +2871,6 @@ static void network_init(void)
 void close_connection(THD *thd, uint sql_errno)
 {
   DBUG_ENTER("close_connection");
-  if (thd->global_s_lock.is_acquired())
-  {
-	  thd->global_s_lock.unlock_global_share_lock(thd);
-  }
   if (sql_errno)
     net_send_error(thd, sql_errno, ER_DEFAULT(sql_errno), NULL);
 

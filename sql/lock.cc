@@ -1029,6 +1029,11 @@ bool Global_read_lock::lock_global_read_lock(THD *thd)
 
   if (!m_state)
   {
+	if (this->lock_user_xa_switch_lock(thd))
+	{
+		DBUG_RETURN(1);
+	}
+		  
     MDL_request mdl_request;
 
     DBUG_ASSERT(! thd->mdl_context.is_lock_owner(MDL_key::GLOBAL, "", "",
@@ -1051,6 +1056,23 @@ bool Global_read_lock::lock_global_read_lock(THD *thd)
     UPDATE and one does FLUSH TABLES WITH READ LOCK).
   */
   DBUG_RETURN(0);
+}
+
+bool Global_read_lock::lock_user_xa_switch_lock(THD *thd)
+{
+	DBUG_ENTER("lock_user_xa_switch_lock");
+	if (opt_spider_internal_xa)
+	{
+		char buf[1024] = "spider_switch_lock";
+		String   res(buf, sizeof(buf), system_charset_info);
+		MDL_request mdl_request;
+		mdl_request.init(MDL_key::USER_LOCK, res.c_ptr_safe(), "",
+			MDL_USER_XA_SWITCH_S, MDL_EXPLICIT);
+		if (thd->mdl_context.acquire_lock(&mdl_request, thd->variables.lock_wait_timeout))
+			DBUG_RETURN(1);
+		m_mdl_user_xa_switch_s_lock = mdl_request.ticket;
+	}
+	DBUG_RETURN(0);
 }
 
 
@@ -1104,108 +1126,64 @@ void Global_read_lock::unlock_global_read_lock(THD *thd)
   }
   thd->mdl_context.release_lock(m_mdl_global_shared_lock);
   m_mdl_global_shared_lock= NULL;
+  if (opt_spider_internal_xa)
+  {
+	  thd->mdl_context.release_lock(m_mdl_user_xa_switch_s_lock);
+	  m_mdl_user_xa_switch_s_lock = NULL;
+  }
   m_state= GRL_NONE;
 
   DBUG_VOID_RETURN;
 }
 
-bool Global_S_lock::lock_global_share_lock(THD *thd)
+
+bool User_write_lock::lock_user_write_lock(THD *thd)
 {
-	DBUG_ENTER("lock_global_share_lock");
-
-	if (!m_state)
+	DBUG_ENTER("lock_user_write_lock");
+	if (opt_spider_internal_xa)
 	{
-		MDL_request mdl_request;
-		mdl_request.init(MDL_key::GLOBAL, "", "", MDL_S, MDL_EXPLICIT);
-
-		if (thd->mdl_context.acquire_lock(&mdl_request,
-			thd->variables.lock_wait_timeout))
-			DBUG_RETURN(1);
-
-		m_mdl_global_share_lock = mdl_request.ticket;
-		m_state = GRL_ACQUIRED;
-	}
-	/*
-	We DON'T set global_read_lock_blocks_commit now, it will be set after
-	tables are flushed (as the present function serves for FLUSH TABLES WITH
-	READ LOCK only). Doing things in this order is necessary to avoid
-	deadlocks (we must allow COMMIT until all tables are closed; we should not
-	forbid it before, or we can have a 3-thread deadlock if 2 do SELECT FOR
-	UPDATE and one does FLUSH TABLES WITH READ LOCK).
-	*/
-	DBUG_RETURN(0);
-}
-
-void Global_S_lock::unlock_global_share_lock(THD *thd)
-{
-	DBUG_ENTER("unlock_global_share_lock");
-
-	DBUG_ASSERT(m_mdl_global_share_lock && m_state);
-
-	if (thd->global_disable_checkpoint)
-	{
-		thd->global_disable_checkpoint = 0;
-		if (!--global_disable_checkpoint)
+		char buf[1024] = "spider_switch_lock";
+		String   res(buf, sizeof(buf), system_charset_info);
+		if (!m_state)
 		{
-			ha_checkpoint_state(0);                   // Enable checkpoints
+			MDL_request mdl_request;
+
+			DBUG_ASSERT(!thd->mdl_context.is_lock_owner(MDL_key::GLOBAL, "", "",
+				MDL_SHARED));
+			mdl_request.init(MDL_key::USER_LOCK, res.c_ptr_safe(), "",
+				MDL_USER_XA_SWITCH_X, MDL_EXPLICIT);
+
+			if (thd->mdl_context.acquire_lock(&mdl_request,
+				thd->variables.lock_wait_timeout))
+				DBUG_RETURN(1);
+
+			m_mdl_user_exclusive_lock = mdl_request.ticket;
+			m_state = GRL_ACQUIRED;
 		}
 	}
-	thd->mdl_context.release_lock(m_mdl_global_share_lock);
-	m_mdl_global_share_lock = NULL;
-	m_state = GRL_NONE;
-
-	DBUG_VOID_RETURN;
-}
-
-bool Global_write_lock::lock_global_write_lock(THD *thd)
-{
-	DBUG_ENTER("lock_global_write_lock");
-
-	if (!m_state)
-	{
-		MDL_request mdl_request;
-
-		DBUG_ASSERT(!thd->mdl_context.is_lock_owner(MDL_key::GLOBAL, "", "",
-			MDL_SHARED));
-		mdl_request.init(MDL_key::GLOBAL, "", "", MDL_X, MDL_EXPLICIT);
-
-		if (thd->mdl_context.acquire_lock(&mdl_request,
-			thd->variables.lock_wait_timeout))
-			DBUG_RETURN(1);
-
-		m_mdl_global_exclusive_lock = mdl_request.ticket;
-		m_state = GRL_ACQUIRED;
-	}
-	/*
-	We DON'T set global_read_lock_blocks_commit now, it will be set after
-	tables are flushed (as the present function serves for FLUSH TABLES WITH
-	READ LOCK only). Doing things in this order is necessary to avoid
-	deadlocks (we must allow COMMIT until all tables are closed; we should not
-	forbid it before, or we can have a 3-thread deadlock if 2 do SELECT FOR
-	UPDATE and one does FLUSH TABLES WITH READ LOCK).
-	*/
 	DBUG_RETURN(0);
 }
 
 
-void Global_write_lock::unlock_global_write_lock(THD *thd)
+void User_write_lock::unlock_user_write_lock(THD *thd)
 {
-	DBUG_ENTER("unlock_global_write_lock");
-
-	DBUG_ASSERT(m_mdl_global_exclusive_lock && m_state);
-
-	if (thd->global_disable_checkpoint)
+	DBUG_ENTER("unlock_user_write_lock");
+	if (opt_spider_internal_xa)
 	{
-		thd->global_disable_checkpoint = 0;
-		if (!--global_disable_checkpoint)
-		{
-			ha_checkpoint_state(0);                   // Enable checkpoints
-		}
-	}
-	thd->mdl_context.release_lock(m_mdl_global_exclusive_lock);
-	m_mdl_global_exclusive_lock = NULL;
-	m_state = GRL_NONE;
+		DBUG_ASSERT(m_mdl_user_exclusive_lock && m_state);
 
+		if (thd->global_disable_checkpoint)
+		{
+			thd->global_disable_checkpoint = 0;
+			if (!--global_disable_checkpoint)
+			{
+				ha_checkpoint_state(0);                   // Enable checkpoints
+			}
+		}
+		thd->mdl_context.release_lock(m_mdl_user_exclusive_lock);
+		m_mdl_user_exclusive_lock = NULL;
+		m_state = GRL_NONE;
+	}
 	DBUG_VOID_RETURN;
 }
 

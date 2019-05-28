@@ -637,7 +637,6 @@ typedef struct system_variables
   my_bool sql_log_bin;
   my_bool sql_slow_log_off;
   my_bool spider_ignore_xa_log;
-  my_bool spider_internal_xa;
   /*
     A flag to help detect whether binary logging was temporarily disabled
     (see tmp_disable_binlog(A) macro).
@@ -1928,10 +1927,11 @@ public:
 
   Global_read_lock()
     : m_state(GRL_NONE),
+	  m_mdl_user_xa_switch_s_lock(NULL),
       m_mdl_global_shared_lock(NULL),
       m_mdl_blocks_commits_lock(NULL)
   {}
-
+  bool lock_user_xa_switch_lock(THD *thd);
   bool lock_global_read_lock(THD *thd);
   void unlock_global_read_lock(THD *thd);
   /**
@@ -1957,6 +1957,7 @@ private:
     acquire shared metadata lock in GLOBAL namespace, to prohibit
     all DDL.
   */
+  MDL_ticket *m_mdl_user_xa_switch_s_lock;
   MDL_ticket *m_mdl_global_shared_lock;
   /**
     Also in order to acquire the global read lock, the connection
@@ -1966,7 +1967,7 @@ private:
   MDL_ticket *m_mdl_blocks_commits_lock;
 };
 
-class Global_write_lock
+class User_write_lock
 {
 public:
 	enum enum_grl_state
@@ -1975,13 +1976,13 @@ public:
 		GRL_ACQUIRED
 	};
 
-	Global_write_lock()
+	User_write_lock()
 		: m_state(GRL_NONE),
-		m_mdl_global_exclusive_lock(NULL)
+		m_mdl_user_exclusive_lock(NULL)
 	{}
 
-	bool lock_global_write_lock(THD *thd);
-	void unlock_global_write_lock(THD *thd);
+	bool lock_user_write_lock(THD *thd);
+	void unlock_user_write_lock(THD *thd);
 	/**
 	Check if this connection can acquire protection against GRL and
 	emit error if otherwise.
@@ -2003,39 +2004,9 @@ private:
 	acquire shared metadata lock in GLOBAL namespace, to prohibit
 	all DDL.
 	*/
-	MDL_ticket *m_mdl_global_exclusive_lock;
+	MDL_ticket *m_mdl_user_exclusive_lock;
 };
-
-class Global_S_lock
-{
-public:
-	enum enum_grl_state
-	{
-		GRL_NONE,
-		GRL_ACQUIRED
-	};
-
-	Global_S_lock()
-		: m_state(GRL_NONE),
-		m_mdl_global_share_lock(NULL)
-	{}
-
-	bool lock_global_share_lock(THD *thd);
-	void unlock_global_share_lock(THD *thd);
-	/**
-	Check if this connection can acquire protection against GRL and
-	emit error if otherwise.
-	*/
-	bool is_acquired() const { return m_state != GRL_NONE; }
-private:
-	enum_grl_state m_state;
-	/**
-	In order to acquire the global read lock, the connection must
-	acquire shared metadata lock in GLOBAL namespace, to prohibit
-	all DDL.
-	*/
-	MDL_ticket *m_mdl_global_share_lock;
-};/*
+/*
   Class to facilitate the commit of one transactions waiting for the commit of
   another transaction to complete first.
 
@@ -2715,8 +2686,7 @@ public:
     }
   } transaction;
   Global_read_lock global_read_lock;
-  Global_write_lock global_write_lock;
-  Global_S_lock global_s_lock;
+  User_write_lock user_write_lock;
   Field      *dup_field;
 #ifndef __WIN__
   sigset_t signals;

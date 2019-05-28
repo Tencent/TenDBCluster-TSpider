@@ -34,8 +34,8 @@ static const LEX_STRING metadata_lock_info_lock_name[] = {
 };
 
 static const LEX_STRING metadata_lock_info_lock_mode[] = {
-  { C_STRING_WITH_LEN("MDL_S") },
-  { C_STRING_WITH_LEN("MDL_X") },
+  { C_STRING_WITH_LEN("MDL_USER_XA_SWITCH_S") },
+  { C_STRING_WITH_LEN("MDL_USER_XA_SWITCH_X") },
   { C_STRING_WITH_LEN("MDL_INTENTION_EXCLUSIVE") },
   { C_STRING_WITH_LEN("MDL_SHARED") },
   { C_STRING_WITH_LEN("MDL_SHARED_HIGH_PRIO") },
@@ -46,7 +46,6 @@ static const LEX_STRING metadata_lock_info_lock_mode[] = {
   { C_STRING_WITH_LEN("MDL_SHARED_NO_WRITE") },
   { C_STRING_WITH_LEN("MDL_SHARED_NO_READ_WRITE") },
   { C_STRING_WITH_LEN("MDL_EXCLUSIVE") },
-  { C_STRING_WITH_LEN("MDL_INTENTION_SHARED") }
 };
 
 static ST_FIELD_INFO i_s_metadata_lock_info_fields_info[] =

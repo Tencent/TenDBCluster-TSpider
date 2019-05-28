@@ -3283,9 +3283,9 @@ mysql_execute_command(THD *thd)
     dispatch_command()
   */
   thd->last_sql_command= lex->sql_command;
-  if (opt_spider_internal_xa && !(thd->server_status & SERVER_STATUS_IN_TRANS) && lex->sql_command != SQLCOM_UNLOCK_TABLES && lex->sql_command != SQLCOM_FLUSH)
+  if (opt_spider_internal_xa && !(thd->server_status & SERVER_STATUS_IN_TRANS) && lex->sql_command != SQLCOM_UNLOCK_TABLES)
   {
-	  if(thd->global_s_lock.lock_global_share_lock(thd))
+	  if (user_read_lock(thd, 0))
 		  goto error;
   }
   /*
@@ -3643,10 +3643,6 @@ mysql_execute_command(THD *thd)
       }
     }
     thd->transaction.stmt.mark_trans_did_ddl();
-	if (thd->global_s_lock.is_acquired())
-	{
-		thd->global_s_lock.unlock_global_share_lock(thd);
-	}
   }
 
 #ifndef DBUG_OFF
@@ -5187,8 +5183,8 @@ end_with_restore_list:
     }
     if (thd->global_read_lock.is_acquired())
       thd->global_read_lock.unlock_global_read_lock(thd);
-	if (thd->global_write_lock.is_acquired())
-		thd->global_write_lock.unlock_global_write_lock(thd);
+	if (thd->user_write_lock.is_acquired())
+		thd->user_write_lock.unlock_user_write_lock(thd);
     if (res)
       goto error;
     my_ok(thd);
@@ -6472,13 +6468,6 @@ finish:
     thd->mdl_context.release_transactional_locks();
   }
 #endif /* WITH_WSREP */
-  if (!(thd->in_active_multi_stmt_transaction()))
-  {
-	  if (thd->global_s_lock.is_acquired())
-	  {
-		  thd->global_s_lock.unlock_global_share_lock(thd);
-	  }
-	}
   DBUG_RETURN(res || thd->is_error());
 }
 

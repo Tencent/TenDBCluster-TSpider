@@ -1615,7 +1615,7 @@ int spider_internal_start_trx(
     {
       trx->use_consistent_snapshot =
         spider_param_use_consistent_snapshot(thd);
-	  trx->internal_xa = thd->variables.spider_internal_xa;
+	  trx->internal_xa = opt_spider_internal_xa;
       trx->internal_xa_snapshot = spider_param_internal_xa_snapshot(thd);
     }
   }

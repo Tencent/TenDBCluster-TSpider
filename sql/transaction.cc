@@ -24,6 +24,7 @@
 #include "debug_sync.h"         // DEBUG_SYNC
 #include "sql_acl.h"
 #include "semisync_master.h"
+#include "sql_base.h"
 
 #ifndef EMBEDDED_LIBRARY
 /**
@@ -261,6 +262,8 @@ bool trans_begin(THD *thd, uint flags)
 
   thd->variables.option_bits|= OPTION_BEGIN;
   thd->server_status|= SERVER_STATUS_IN_TRANS;
+  if (user_read_lock(thd, 1))
+	  DBUG_RETURN(TRUE);
   if (thd->tx_read_only)
     thd->server_status|= SERVER_STATUS_IN_TRANS_READONLY;
   DBUG_PRINT("info", ("setting SERVER_STATUS_IN_TRANS"));

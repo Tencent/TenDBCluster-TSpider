@@ -1139,6 +1139,8 @@ void trans_register_ha(THD *thd, bool all, handlerton *ht_arg)
   {
     trans= &thd->transaction.all;
     thd->server_status|= SERVER_STATUS_IN_TRANS;
+	if (user_read_lock(thd, 1))
+		DBUG_VOID_RETURN;
     if (thd->tx_read_only)
       thd->server_status|= SERVER_STATUS_IN_TRANS_READONLY;
     DBUG_PRINT("info", ("setting SERVER_STATUS_IN_TRANS"));
