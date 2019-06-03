@@ -2121,6 +2121,8 @@ bool dispatch_command(enum enum_server_command command, THD *thd,
     if (trans_commit_implicit(thd))
       break;
     thd->mdl_context.release_transactional_locks();
+	if (user_read_lock(thd))
+		break;
     if (check_global_access(thd,RELOAD_ACL))
       break;
     general_log_print(thd, command, NullS);
@@ -3283,10 +3285,10 @@ mysql_execute_command(THD *thd)
     dispatch_command()
   */
   thd->last_sql_command= lex->sql_command;
-  if (opt_spider_internal_xa && !(thd->server_status & SERVER_STATUS_IN_TRANS) && lex->sql_command != SQLCOM_UNLOCK_TABLES)
+  if (!(thd->server_status & SERVER_STATUS_IN_TRANS) && lex->sql_command != SQLCOM_UNLOCK_TABLES)
   {
-	  if (user_read_lock(thd, 0))
-		  goto error;
+	  if (user_read_lock(thd))
+		  DBUG_RETURN(1);
   }
   /*
     Reset warning count for each query that uses tables
@@ -3641,6 +3643,8 @@ mysql_execute_command(THD *thd)
                     (longlong) thd->thread_id);
         goto error;
       }
+	  if (user_read_lock(thd))
+		  goto error;
     }
     thd->transaction.stmt.mark_trans_did_ddl();
   }
@@ -5191,13 +5195,16 @@ end_with_restore_list:
     break;
   case SQLCOM_LOCK_TABLES:
     /* We must end the transaction first, regardless of anything */
+  if (thd->user_write_lock.can_acquire_protection())
+	  goto error;
     res= trans_commit_implicit(thd);
     thd->locked_tables_list.unlock_locked_tables(thd);
     /* Release transactional metadata locks. */
     thd->mdl_context.release_transactional_locks();
     if (res)
       goto error;
-
+	if (user_read_lock(thd))
+		goto error;
     /*
       Here we have to pre-open temporary tables for LOCK TABLES.
 

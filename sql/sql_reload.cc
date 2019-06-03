@@ -222,7 +222,8 @@ bool reload_acl_and_cache(THD *thd, unsigned long long options,
               thd->handler_tables_hash.records ||
               thd->ull_hash.records ||
               thd->global_read_lock.is_acquired() ||
-			  thd->user_write_lock.is_acquired());
+			  thd->user_write_lock.is_acquired() ||
+			  thd->mdl_context.is_lock_owner(MDL_key::USER_LOCK,"spider_switch_lock","",MDL_USER_XA_SWITCH_S));
   /*
     Note that if REFRESH_READ_LOCK bit is set then REFRESH_TABLES is set too
     (see sql_yacc.yy)

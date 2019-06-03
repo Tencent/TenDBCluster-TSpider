@@ -230,6 +230,11 @@ static void mysql_ha_close_table(SQL_HANDLER *handler)
       mysql_ha_close_childs(thd, current_table_list, &next_global);
     thd->mark_tmp_table_as_free_for_reuse(table);
   }
+  if (opt_spider_internal_xa)
+  {
+	  thd->mdl_context.release_lock(handler->mdl_user_share_lock);
+	  handler->mdl_user_share_lock = NULL;
+  }
   my_free(handler->lock);
   handler->init();
 }
@@ -417,7 +422,17 @@ bool mysql_ha_open(THD *thd, TABLE_LIST *tables, SQL_HANDLER *reopen)
   sql_handler->table= table;
   memcpy(&sql_handler->mdl_request, &tables->mdl_request,
          sizeof(tables->mdl_request));
-
+  if (opt_spider_internal_xa)
+  {
+	  char buf[1024] = "spider_switch_lock";
+	  String   res(buf, sizeof(buf), system_charset_info);
+	  MDL_request handle_mdl_request;
+	  handle_mdl_request.init(MDL_key::USER_LOCK, res.c_ptr_safe(), "",
+		  MDL_USER_XA_SWITCH_S, MDL_EXPLICIT);
+	  if (thd->mdl_context.acquire_lock(&handle_mdl_request, thd->variables.lock_wait_timeout))
+		  DBUG_RETURN(TRUE);
+	  sql_handler->mdl_user_share_lock = handle_mdl_request.ticket;
+  }
   if (!(sql_handler->lock= get_lock_data(thd, &sql_handler->table, 1,
                                          GET_LOCK_STORE_LOCKS)))
     goto err;

@@ -4065,6 +4065,19 @@ longlong Item_func_get_lock::val_int()
   {
     DBUG_RETURN(0);
   }
+  if(thd->user_write_lock.can_acquire_protection())
+	  DBUG_RETURN(0);
+  if (opt_spider_internal_xa)
+  {
+	  char buf[1024] = "spider_switch_lock";
+	  String   res(buf, sizeof(buf), system_charset_info);
+	  MDL_request mdl_request;
+	  mdl_request.init(MDL_key::USER_LOCK, res.c_ptr_safe(), "",
+		  MDL_USER_XA_SWITCH_S, MDL_EXPLICIT);
+	  if (thd->mdl_context.acquire_lock(&mdl_request, thd->variables.lock_wait_timeout))
+		  DBUG_RETURN(1);
+	  thd->mdl_user_share_lock = mdl_request.ticket;
+  }
 
   MDL_request ull_request;
   ull_request.init(MDL_key::USER_LOCK, res->c_ptr_safe(), "",
@@ -4157,6 +4170,11 @@ longlong Item_func_release_lock::val_int()
     my_hash_delete(&thd->ull_hash, (uchar*) ull);
     thd->mdl_context.release_lock(ull->lock);
     my_free(ull);
+  }
+  if (opt_spider_internal_xa)
+  {
+	  thd->mdl_context.release_lock(thd->mdl_user_share_lock);
+	  thd->mdl_user_share_lock = NULL;
   }
   DBUG_RETURN(1);
 }

@@ -37,7 +37,7 @@ public:
   MEM_ROOT mem_root;
   MYSQL_LOCK *lock;
   MDL_request mdl_request;
-
+  MDL_ticket *mdl_user_share_lock;
   key_part_map keypart_map;
   int keyno;                                    /* Used key */
   uint key_len;
@@ -57,6 +57,7 @@ public:
     table= 0;
     lock= 0;
     mdl_request.ticket= 0;
+	mdl_user_share_lock = NULL;
   }
   void reset();
 

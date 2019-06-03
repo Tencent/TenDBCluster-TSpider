@@ -262,7 +262,7 @@ bool trans_begin(THD *thd, uint flags)
 
   thd->variables.option_bits|= OPTION_BEGIN;
   thd->server_status|= SERVER_STATUS_IN_TRANS;
-  if (user_read_lock(thd, 1))
+  if (user_read_lock(thd))
 	  DBUG_RETURN(TRUE);
   if (thd->tx_read_only)
     thd->server_status|= SERVER_STATUS_IN_TRANS_READONLY;

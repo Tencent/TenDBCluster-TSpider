@@ -8997,7 +8997,7 @@ int dynamic_column_error_message(enum_dyncol_func_result rc)
   return rc;
 }
 
-int user_read_lock(THD *thd ,int type)
+int user_read_lock(THD *thd)
 {
 	if (opt_spider_internal_xa)
 	{
@@ -9007,24 +9007,14 @@ int user_read_lock(THD *thd ,int type)
 		char buf[1024] = "spider_switch_lock";
 		String   res(buf, sizeof(buf), system_charset_info);
 		MDL_request mdl_request;
-		if (type)
-		{
-			mdl_request.init(MDL_key::USER_LOCK, res.c_ptr_safe(), "",
-				MDL_USER_XA_SWITCH_S, MDL_TRANSACTION);
-		}
-		else
-		{
-			mdl_request.init(MDL_key::USER_LOCK, res.c_ptr_safe(), "",
-				MDL_USER_XA_SWITCH_S, MDL_STATEMENT);
-		}
+		mdl_request.init(MDL_key::USER_LOCK, res.c_ptr_safe(), "",
+			MDL_USER_XA_SWITCH_S, MDL_TRANSACTION);
 		/*
 		Install error handler which if possible will convert deadlock error
 		into request to back-off and restart process of opening tables.
 		*/
-		thd->push_internal_handler(&mdl_deadlock_handler);
 		if (thd->mdl_context.acquire_lock(&mdl_request, thd->variables.lock_wait_timeout))
 			return 1;
-		thd->pop_internal_handler();
 		ot_ctx.set_has_protection_against_grl();
 	}
 	return 0;

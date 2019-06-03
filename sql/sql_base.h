@@ -642,6 +642,6 @@ private:
   int m_handled_errors;
   int m_unhandled_errors;
 };
-int user_read_lock(THD *thd, int type);
+int user_read_lock(THD *thd);
 
 #endif /* SQL_BASE_INCLUDED */

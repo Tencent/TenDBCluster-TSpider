@@ -2687,6 +2687,7 @@ public:
   } transaction;
   Global_read_lock global_read_lock;
   User_write_lock user_write_lock;
+  MDL_ticket *mdl_user_share_lock;
   Field      *dup_field;
 #ifndef __WIN__
   sigset_t signals;
