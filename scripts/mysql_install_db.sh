@@ -351,6 +351,7 @@ create_system_tables2="$srcpkgdatadir/mysql_performance_tables.sql"
 fill_system_tables="$srcpkgdatadir/mysql_system_tables_data.sql"
 maria_add_gis_sp="$buildpkgdatadir/maria_add_gis_sp_bootstrap.sql"
 mysql_test_db="$srcpkgdatadir/mysql_test_db.sql"
+spider_install_sql="$srcpkgdatadir/install_spider.sql"
 
 for f in "$fill_help_tables" "$create_system_tables" "$create_system_tables2" "$fill_system_tables" "$maria_add_gis_sp" "$mysql_test_db"
 do
@@ -480,7 +481,7 @@ cat_sql()
       ;;
   esac
 
-  cat "$create_system_tables" "$create_system_tables2" "$fill_system_tables" "$fill_help_tables" "$maria_add_gis_sp"
+  cat "$create_system_tables" "$create_system_tables2" "$fill_system_tables" "$fill_help_tables" "$maria_add_gis_sp" "$spider_install_sql"
   if test "$skip_test_db" -eq 0
   then
     cat "$mysql_test_db"
