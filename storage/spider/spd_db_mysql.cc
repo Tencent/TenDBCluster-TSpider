@@ -4104,7 +4104,7 @@ int spider_db_mysql_util::open_item_func(
 #else
             if (str)
             {
-                if (str->reserve(func_name_length + SPIDER_SQL_OPEN_PAREN_LEN))
+                if (str->reserve(func_name_length + SPIDER_SQL_OPEN_PAREN_LEN + strlen(item_func->print_type()) + SPIDER_SQL_COMMA_LEN))
                     DBUG_RETURN(HA_ERR_OUT_OF_MEM);
                 str->q_append(func_name, func_name_length);
                 str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
