@@ -1,9 +1,3 @@
-DROP FUNCTION spider_direct_sql;
-DROP FUNCTION spider_bg_direct_sql;
-DROP FUNCTION spider_ping_table;
-DROP FUNCTION spider_copy_tables;
-DROP FUNCTION spider_flush_table_mon_cache;
-UNINSTALL PLUGIN spider;
 DROP TABLE IF EXISTS mysql.spider_xa;
 DROP TABLE IF EXISTS mysql.spider_xa_member;
 DROP TABLE IF EXISTS mysql.spider_xa_failed_log;

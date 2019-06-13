@@ -1,1 +1,6 @@
 --loose-innodb --loose-skip-performance-schema
+--loose-spider
+--loose-spider-alloc-mem
+--loose-spider-conns
+--loose-partition
+

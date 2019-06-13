@@ -53,12 +53,6 @@ if ($VERSION_COMPILE_OS_WIN)
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
-  INSTALL PLUGIN spider SONAME 'ha_spider.so';
-  CREATE FUNCTION spider_direct_sql RETURNS INT SONAME 'ha_spider.so';
-  CREATE AGGREGATE FUNCTION spider_bg_direct_sql RETURNS INT SONAME 'ha_spider.so';
-  CREATE FUNCTION spider_ping_table RETURNS INT SONAME 'ha_spider.so';
-  CREATE FUNCTION spider_copy_tables RETURNS INT SONAME 'ha_spider.so';
-  CREATE FUNCTION spider_flush_table_mon_cache RETURNS INT SONAME 'ha_spider.so';
   eval CREATE SERVER s_2_1 FOREIGN DATA WRAPPER mysql OPTIONS (
     HOST 'localhost',
     DATABASE 'auto_test_remote',
