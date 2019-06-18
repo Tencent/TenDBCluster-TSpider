@@ -122,7 +122,7 @@
 #if defined(MARIADB_BASE_VERSION) && MYSQL_VERSION_ID >= 100100
 #define SPIDER_FIELD_FIELDPTR_REQUIRES_THDPTR
 #define SPIDER_ENGINE_CONDITION_PUSHDOWN_IS_ALWAYS_ON
-#define SPIDER_XID_USES_xid_cache_iterate
+//#define SPIDER_XID_USES_xid_cache_iterate
 #else
 #define SPIDER_XID_STATE_HAS_in_thd
 #endif

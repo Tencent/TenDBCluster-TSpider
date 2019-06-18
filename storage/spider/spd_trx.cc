@@ -1476,6 +1476,7 @@ int spider_check_and_set_time_zone(
 int spider_xa_lock(
   XID_STATE *xid_state
 ) {
+	return 0;
   THD *thd = current_thd;
   int error_num;
   const char *old_proc_info;
@@ -1551,6 +1552,7 @@ error:
 int spider_xa_unlock(
   XID_STATE *xid_state
 ) {
+	return 0;
   THD *thd = current_thd;
   const char *old_proc_info;
   DBUG_ENTER("spider_xa_unlock");
@@ -1567,7 +1569,7 @@ int spider_xa_unlock(
 #ifdef XID_CACHE_IS_SPLITTED
   pthread_mutex_unlock(&spd_db_att_xid_cache_mutex+idx);
 #else
-  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex+idx);
+  pthread_mutex_unlock(&spd_db_att_xid_cache_mutex);
 #endif
 #endif
   thd_proc_info(thd, old_proc_info);
