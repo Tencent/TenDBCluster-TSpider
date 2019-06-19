@@ -1,0 +1,53 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+create table for master
+connection master_1;
+show grants;
+Grants for root@localhost
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION
+GRANT PROXY ON ''@'%' TO 'root'@'localhost' WITH GRANT OPTION
+select count(*) from mysql.servers;
+count(*)
+6
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, EXECUTE on *.* to alex@'localhost';
+connect  master_1_test, localhost, alex, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK;
+connection master_1_test;
+show grants;
+Grants for alex@localhost
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, EXECUTE ON *.* TO 'alex'@'localhost'
+select count(*) from mysql.servers;
+ERROR 28000: Access denied for user 'alex'@'localhost' (using password: NO)
+connection master_1;
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, SUPER, EXECUTE on *.* to alex1@'localhost';
+connect  master_1_test1, localhost, alex1, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK;
+connection master_1_test1;
+show grants;
+Grants for alex1@localhost
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, SUPER, EXECUTE ON *.* TO 'alex1'@'localhost'
+select count(*) from mysql.servers;
+count(*)
+6
+
+deinit
+connection master_1;
+revoke all privileges on *.* from alex@'localhost';
+revoke all privileges on *.* from alex1@'localhost';
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

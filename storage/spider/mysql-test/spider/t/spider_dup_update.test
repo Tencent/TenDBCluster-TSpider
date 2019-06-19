@@ -1,0 +1,223 @@
+#fix bug. dup_update_sql's charset is wrong
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+    SET @old_log_output = @@global.log_output;
+    SET @old_log_output1 = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE,FILE';
+    set global spider_general_log=1;
+    TRUNCATE TABLE mysql.general_log;
+}
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  CREATE DATABASE auto_test_remote_2;
+  USE auto_test_remote_2;
+}
+--enable_warnings
+
+
+
+--let $CHILD2_1_DROP_TABLES_BACKUP= $CHILD2_1_DROP_TABLES
+let $CHILD2_1_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl_a;
+--let $CHILD2_1_CREATE_TABLES_BACKUP= $CHILD2_1_CREATE_TABLES
+let $CHILD2_1_CREATE_TABLES=
+  CREATE TABLE  tbl_a (
+ `acct_name` char(128) NOT NULL DEFAULT '',
+  PRIMARY KEY (`acct_name`)
+)$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+
+
+--let $CHILD2_2_DROP_TABLES_BACKUP= $CHILD2_2_DROP_TABLES
+let $CHILD2_2_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl_a;
+--let $CHILD2_2_CREATE_TABLES_BACKUP= $CHILD2_2_CREATE_TABLES
+let $CHILD2_2_CREATE_TABLES=
+  CREATE TABLE  tbl_a (
+ `acct_name` char(128) NOT NULL DEFAULT '',
+  PRIMARY KEY (`acct_name`)
+)$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+
+
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if ($USE_GENERAL_LOG)
+  {
+    SET @old_log_output = @@global.log_output;
+    TRUNCATE TABLE mysql.general_log;
+    set global log_output = 'TABLE';
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if ($USE_GENERAL_LOG)
+  {
+    SET @old_log_output = @@global.log_output;
+    TRUNCATE TABLE mysql.general_log;
+    set global log_output = 'TABLE';
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+DROP TABLE IF EXISTS ta_l;
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+let $MASTER_1_CHARSET=DEFAULT CHARSET=utf8;
+
+eval CREATE TABLE tbl_a (
+ `acct_name` char(128) NOT NULL DEFAULT '',
+  PRIMARY KEY (`acct_name`)
+) $MASTER_1_ENGINE  PARTITION BY LIST (crc32(acct_name)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+ PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+show create table tbl_a;
+--echo
+--echo test for insert
+--enable_info
+insert into tbl_a values('abd') on duplicate key update acct_name='china';
+insert into tbl_a values('abd') on duplicate key update acct_name='china';
+--disable_info
+select * from tbl_a;
+--echo
+--echo select for master
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
+  }
+}
+
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+  SET GLOBAL log_output = @old_log_output;
+  SET GLOBAL spider_general_log = @old_log_output1;
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+  
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
+
+
+

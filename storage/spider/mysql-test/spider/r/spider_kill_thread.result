@@ -1,0 +1,62 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+connection master_1;
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, EXECUTE on *.* to alex@'localhost';
+connect  master_1_test, localhost, alex, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK;
+connection master_1_test;
+set autocommit=OFF;
+connection master_1;
+select USER from information_schema.processlist where COMMAND="Sleep";
+USER
+alex
+root
+select count(*) from information_schema.processlist;
+count(*)
+8
+
+kill thread safe fail, because in transantion
+SET @s:='';
+SELECT @s:=concat('kill ', id, ' safe;') from information_schema.processlist where command = 'Sleep' and user="alex";
+PREPARE stmt FROM @s;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+kill safe success
+SET @s:='';
+SELECT @s:=concat('kill ', id, ' safe;') from information_schema.processlist where command = 'Sleep' and user="root";
+PREPARE stmt FROM @s;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+select count(*) from information_schema.processlist;
+count(*)
+7
+connection master_1;
+kill threads all;
+kill threads all force;
+
+kill all thread include the commited_transantion
+select count(*) from information_schema.processlist;
+count(*)
+6
+
+deinit
+connection master_1;
+revoke all privileges on *.* from alex@'localhost';
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

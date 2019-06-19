@@ -1,0 +1,115 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS ta_l;
+CREATE TABLE tbl_a (
+id int not null auto_increment,
+name varchar(20) not null,
+age int,
+key idx_id (id),
+key idx_name (name)
+) ENGINE=Spider  PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0",shard_key "name"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1",shard_key "name"');
+show create table tbl_a;
+Table	Create Table
+tbl_a	CREATE TABLE `tbl_a` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) NOT NULL,
+  `age` int(11) DEFAULT NULL,
+  KEY `idx_id` (`id`),
+  KEY `idx_name` (`name`)
+) ENGINE=SPIDER DEFAULT CHARSET=latin1
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0",shard_key "name"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1",shard_key "name"' ENGINE = SPIDER)
+insert into tbl_a(age,name) values(1,"alex");
+insert into tbl_a(age,name) values(2,"ivy");
+select * from tbl_a;
+id	name	age
+1	alex	1
+18	ivy	2
+
+select for master
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
+argument
+insert into tbl_a(age,name) values(1,"alex")
+mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(1,'alex',1)
+insert into tbl_a(age,name) values(2,"ivy")
+mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(18,'ivy',2)
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%'
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
+argument
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%'
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
+argument
+insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(1,'alex',1)
+insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(18,'ivy',2)
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%'
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+SET GLOBAL log_output = @old_log_output;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

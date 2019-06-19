@@ -1,0 +1,250 @@
+# add variable:spider_query_one_shard, spider_transaction_one_shardi
+# the usage of config_table,specify config_table as true, the limit of spider_query_one_shard will be skipped, but the limit of spider_transaction_one_shard cannot be skipped.
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+    SET @old_spider_query_one_shard = @@global.spider_query_one_shard;
+    SET @old_spider_transaction_one_shard = @@global.spider_transaction_one_shard;
+    SET GLOBAL spider_query_one_shard = ON;
+    SET GLOBAL spider_transaction_one_shard = ON;
+}
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  CREATE DATABASE auto_test_remote_2;
+  USE auto_test_remote_2;
+}
+--enable_warnings
+
+
+--let $CHILD2_1_DROP_TABLES_BACKUP= $CHILD2_1_DROP_TABLES
+let $CHILD2_1_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl_a;
+--let $CHILD2_1_CREATE_TABLES_BACKUP= $CHILD2_1_CREATE_TABLES
+let $CHILD2_1_CREATE_TABLES=
+ CREATE TABLE tbl_a (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`))$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+
+
+--let $CHILD2_2_DROP_TABLES_BACKUP= $CHILD2_2_DROP_TABLES
+let $CHILD2_2_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl_a;
+--let $CHILD2_2_CREATE_TABLES_BACKUP= $CHILD2_2_CREATE_TABLES
+let $CHILD2_2_CREATE_TABLES=
+ CREATE TABLE tbl_a (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`))$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+DROP TABLE IF EXISTS tbl_a;
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+let $MASTER_1_CHARSET=DEFAULT CHARSET=utf8;
+eval  CREATE TABLE tbl_a (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`)
+) $MASTER_1_ENGINE  COMMENT='shard_key "id"' PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+ PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+
+insert into tbl_a(id,c1)
+VALUES(1,1),
+(2,2),
+(3,3),
+(4,4),
+(5,5);
+
+
+--echo
+--echo test for super
+--echo
+--echo test for spider_query_one_shard
+select *  from  tbl_a;
+
+--echo
+--echo test for spider_transaction_one_shard
+set autocommit=0;
+begin;
+update tbl_a set c1=4 where id=1; 
+update tbl_a set c1=4 where id=1;
+commit;
+
+
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, EXECUTE on *.* to alex@'localhost';
+--connect (master_1_test, localhost, alex, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK)
+--connection master_1_test
+USE test;
+eval  CREATE TABLE tbl_a (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`)
+) $MASTER_1_ENGINE  COMMENT='shard_key "id"' PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+ PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+
+
+--echo
+--echo test for no_super
+--echo
+--echo test for spider_query_one_shard
+--disable_result_log
+--error 4146
+select *  from  tbl_a where id>1;
+--enable_result_log
+
+--echo
+--echo test for spider_transaction_one_shard
+set autocommit=0;
+begin;
+update tbl_a set c1=4 where id=1;
+--error 4145 
+update tbl_a set c1=4 where id=4;
+commit;
+
+eval  CREATE TABLE tbl_a_2 (
+`id` int(11) NOT NULL,
+`c1` int(11) DEFAULT NULL,
+PRIMARY KEY (`id`)
+) $MASTER_1_ENGINE COMMENT='shard_key "id",config_table "true"' PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+ PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+
+--echo
+--echo test for config_table
+--echo
+--echo test for spider_query_one_shard
+set autocommit=1;
+select *  from  tbl_a_2 where id>1;
+
+--echo
+--echo test for spider_transaction_one_shard
+set autocommit=0;
+begin;
+update tbl_a_2 set c1=4 where id=1;
+--error 4145 
+update tbl_a_2 set c1=4 where id=4;
+commit;
+
+
+
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1_test
+drop table tbl_a;
+drop table tbl_a_2;
+--connection master_1
+revoke all privileges on *.* from alex@'localhost';
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+  SET GLOBAL spider_query_one_shard = @old_spider_query_one_shard;
+  SET GLOBAL spider_transaction_one_shard = @old_spider_transaction_one_shard;
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
+
+
+
+

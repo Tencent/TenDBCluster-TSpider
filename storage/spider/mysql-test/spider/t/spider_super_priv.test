@@ -1,0 +1,63 @@
+# only super permissions can query mysql.servers tables
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+
+
+
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+
+show grants;
+select count(*) from mysql.servers;
+
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, EXECUTE on *.* to alex@'localhost';
+--connect (master_1_test, localhost, alex, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK)
+--connection master_1_test
+show grants;
+--error 1045
+select count(*) from mysql.servers;
+
+--connection master_1
+GRANT SELECT, INSERT, UPDATE, DELETE, DROP, SUPER, EXECUTE on *.* to alex1@'localhost';
+--connect (master_1_test1, localhost, alex1, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK)
+--connection master_1_test1
+show grants;
+select count(*) from mysql.servers;
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+ revoke all privileges on *.* from alex@'localhost';
+ revoke all privileges on *.* from alex1@'localhost';
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
+
+
+
+
+
+
+
+

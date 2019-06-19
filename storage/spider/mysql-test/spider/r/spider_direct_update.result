@@ -1,0 +1,148 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS ta_l;
+CREATE TABLE tbl_a (
+`id` int(8) NOT NULL AUTO_INCREMENT,
+`t` int(11) NOT NULL DEFAULT '0',
+`name` char(24) DEFAULT NULL,
+PRIMARY KEY (`id`)
+) ENGINE=Spider  PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+insert into tbl_a(id,name) values(1,"alex");
+insert into tbl_a(id,name) values(2,"ivy");
+insert into tbl_a(id,name) values(3,"tom");
+insert into tbl_a(id,name) values(4,"jam");
+insert into tbl_a(id,name) values(5,"jim");
+insert into tbl_a(id,name) values(6,"alex1");
+insert into tbl_a(id,name) values(7,"ivy1");
+insert into tbl_a(id,name) values(8,"tom1");
+insert into tbl_a(id,name) values(9,"jam1");
+insert into tbl_a(id,name) values(10,"jim1");
+TRUNCATE TABLE mysql.general_log;
+
+bulk_update ,need to be fixed
+update tbl_a set name='x22' order by id desc limit 10;
+SELECT argument  FROM mysql.general_log;
+argument
+update tbl_a set name='x22' order by id desc limit 10
+mysql localhost select `id`,`name` from `auto_test_remote`.`tbl_a` order by `id` desc limit 10 for update
+mysql localhost select `id`,`name` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 10 for update
+mysql localhost update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 7 limit 1;update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 6 limit 1;update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 5 limit 1;update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 4 limit 1
+mysql localhost update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 10 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 9 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 8 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 3 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 2 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 1 limit 1
+SELECT argument  FROM mysql.general_log
+TRUNCATE TABLE mysql.general_log;
+
+direct_update
+update tbl_a set t = 1 where id > 0 limit 10;
+SELECT argument  FROM mysql.general_log;
+argument
+update tbl_a set t = 1 where id > 0 limit 10
+mysql localhost update `auto_test_remote`.`tbl_a` set `t` = 1 where (`id` > 0) limit 10
+mysql localhost update `auto_test_remote_2`.`tbl_a` set `t` = 1 where (`id` > 0) limit 6
+SELECT argument  FROM mysql.general_log
+TRUNCATE TABLE mysql.general_log;
+
+bulk_update
+set@i=10;
+set @i:=@i+1;
+update tbl_a  set id =(@i:=@i+1) where id > 0 limit 10;
+SELECT argument  FROM mysql.general_log;
+argument
+set@i=10
+set @i:=@i+1
+update tbl_a  set id =(@i:=@i+1) where id > 0 limit 10
+mysql localhost select `id` from `auto_test_remote`.`tbl_a` where (`id` > 0) order by `id` limit 10 for update
+mysql localhost select `id` from `auto_test_remote_2`.`tbl_a` where (`id` > 0) order by `id` limit 10 for update
+mysql localhost update `auto_test_remote_2`.`tbl_a` set `id` = 12 where `id` = 1 limit 1
+mysql localhost update `auto_test_remote_2`.`tbl_a` set `id` = 13 where `id` = 2 limit 1
+mysql localhost insert high_priority into `auto_test_remote`.`tbl_a`(`id`)values(14)
+mysql localhost delete from `auto_test_remote_2`.`tbl_a` where `id` = 3 limit 1
+mysql localhost update `auto_test_remote`.`tbl_a` set `id` = 15 where `id` = 4 limit 1
+mysql localhost update `auto_test_remote`.`tbl_a` set `id` = 16 where `id` = 5 limit 1
+mysql localhost update `auto_test_remote`.`tbl_a` set `id` = 17 where `id` = 6 limit 1
+mysql localhost insert high_priority into `auto_test_remote_2`.`tbl_a`(`id`)values(18)
+mysql localhost delete from `auto_test_remote`.`tbl_a` where `id` = 7 limit 1
+mysql localhost update `auto_test_remote_2`.`tbl_a` set `id` = 19 where `id` = 8 limit 1
+mysql localhost insert high_priority into `auto_test_remote`.`tbl_a`(`id`)values(20)
+mysql localhost delete from `auto_test_remote_2`.`tbl_a` where `id` = 9 limit 1
+mysql localhost insert high_priority into `auto_test_remote`.`tbl_a`(`id`)values(21)
+mysql localhost delete from `auto_test_remote_2`.`tbl_a` where `id` = 10 limit 1
+SELECT argument  FROM mysql.general_log
+TRUNCATE TABLE mysql.general_log;
+
+direct_update
+delete  from tbl_a where id > 0 limit 10;
+SELECT argument  FROM mysql.general_log;
+argument
+delete  from tbl_a where id > 0 limit 10
+mysql localhost delete from `auto_test_remote`.`tbl_a` where (`id` > 0) limit 10
+mysql localhost delete from `auto_test_remote_2`.`tbl_a` where (`id` > 0) limit 4
+SELECT argument  FROM mysql.general_log
+TRUNCATE TABLE mysql.general_log;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+SET GLOBAL log_output = @old_log_output;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
