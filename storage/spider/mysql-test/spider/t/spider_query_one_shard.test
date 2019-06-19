@@ -172,8 +172,10 @@ PRIMARY KEY (`id`)
 --echo test for no_super
 --echo
 --echo test for spider_query_one_shard
+--disable_result_log
 --error 4146
 select *  from  tbl_a where id>1;
+--enable_result_log
 
 --echo
 --echo test for spider_transaction_one_shard

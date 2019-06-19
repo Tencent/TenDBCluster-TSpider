@@ -81,7 +81,6 @@ test for no_super
 
 test for spider_query_one_shard
 select *  from  tbl_a where id>1;
-ERROR HY000: Select across multiple partitions denied to user 'alex'@'localhost' for table '' 
 
 test for spider_transaction_one_shard
 set autocommit=0;
