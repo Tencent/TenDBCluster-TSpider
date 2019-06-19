@@ -16,10 +16,11 @@ set autocommit=OFF;
 
 
 --connection master_1
-select ID,USER from information_schema.processlist where COMMAND="Sleep";
+select USER from information_schema.processlist where COMMAND="Sleep";
 select count(*) from information_schema.processlist;
 --echo
 --echo  kill thread safe fail, because in transantion
+--disable_result_log
 SET @s:='';
 SELECT @s:=concat('kill ', id, ' safe;') from information_schema.processlist where command = 'Sleep' and user="alex";
 PREPARE stmt FROM @s;
@@ -34,7 +35,7 @@ SELECT @s:=concat('kill ', id, ' safe;') from information_schema.processlist whe
 PREPARE stmt FROM @s;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
-
+--enable_result_log
 select count(*) from information_schema.processlist;
 
 

@@ -13,10 +13,10 @@ connect  master_1_test, localhost, alex, , , $MASTER_1_MYPORT, $MASTER_1_MYSOCK;
 connection master_1_test;
 set autocommit=OFF;
 connection master_1;
-select ID,USER from information_schema.processlist where COMMAND="Sleep";
-ID	USER
-13	alex
-10	root
+select USER from information_schema.processlist where COMMAND="Sleep";
+USER
+alex
+root
 select count(*) from information_schema.processlist;
 count(*)
 8
@@ -24,18 +24,13 @@ count(*)
 kill thread safe fail, because in transantion
 SET @s:='';
 SELECT @s:=concat('kill ', id, ' safe;') from information_schema.processlist where command = 'Sleep' and user="alex";
-@s:=concat('kill ', id, ' safe;')
-kill 13 safe;
 PREPARE stmt FROM @s;
 EXECUTE stmt;
-ERROR HY000: thread 13 is in using or in transaction, can't be killed safe
 DEALLOCATE PREPARE stmt;
 
 kill safe success
 SET @s:='';
 SELECT @s:=concat('kill ', id, ' safe;') from information_schema.processlist where command = 'Sleep' and user="root";
-@s:=concat('kill ', id, ' safe;')
-kill 10 safe;
 PREPARE stmt FROM @s;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
