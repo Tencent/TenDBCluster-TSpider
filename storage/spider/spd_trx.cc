@@ -1661,7 +1661,7 @@ int spider_internal_start_trx(
 
     if (
       !trx->trx_xa &&
-      trx->internal_xa && /*thd_test_options(thd,OPTION_NOT_AUTOCOMMIT) &&*/
+      trx->internal_xa && thd_test_options(thd,OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN) &&
       (!trx->trx_consistent_snapshot || trx->internal_xa_snapshot == 3) &&
       spider->sql_command != SQLCOM_LOCK_TABLES
     ) {
