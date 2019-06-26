@@ -2980,7 +2980,6 @@ my_bool spider_param_quick_mode_only_select()
     DBUG_RETURN(spider_quick_mode_only_select);
 }
 
-<<<<<<< HEAD
 static my_bool spider_enable_mem_calc;
 static MYSQL_SYSVAR_BOOL(
     enable_mem_calc,
