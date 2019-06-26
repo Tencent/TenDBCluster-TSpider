@@ -1356,9 +1356,7 @@ JOIN::prepare(TABLE_LIST *tables_init,
           This will only prune constant conditions, which will be used for
           lock pruning.
           */
-          if (prune_partitions(thd, tbl->table,
-              tbl->on_expr ? tbl->on_expr : conds))
-              DBUG_RETURN(-1); /* purecov: inspected */;
+          prune_partitions(thd, tbl->table, tbl->on_expr ? tbl->on_expr : conds);
       }
   }
 #endif
