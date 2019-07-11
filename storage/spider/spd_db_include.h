@@ -1600,7 +1600,8 @@ public:
 #endif
   virtual int set_sql_for_exec(
     ulong sql_type,
-    int link_idx
+    int link_idx,
+	bool copy = false
   ) = 0;
   virtual int set_sql_for_exec(
     spider_db_copy_table *tgt_ct,
@@ -1997,6 +1998,7 @@ typedef struct st_spider_result_list
   volatile int            bgs_error;
   bool                    bgs_error_with_message;
   char                    bgs_error_msg[MYSQL_ERRMSG_SIZE];
+  ulong                   sql_type;
   volatile bool           bgs_working;
   /* 0:not use bg 1:first read 2:second read 3:after second read */
   volatile int            bgs_phase;

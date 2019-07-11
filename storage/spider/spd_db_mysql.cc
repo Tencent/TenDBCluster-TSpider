@@ -10969,7 +10969,8 @@ int spider_mysql_handler::set_sql_for_exec(
 
 int spider_mysql_handler::set_sql_for_exec(
   ulong sql_type,
-  int link_idx
+  int link_idx,
+  bool copy
 ) {
   int error_num;
   uint tmp_pos;
@@ -10978,10 +10979,12 @@ int spider_mysql_handler::set_sql_for_exec(
   int all_link_idx = spider->conn_link_idx[link_idx];
   DBUG_ENTER("spider_mysql_handler::set_sql_for_exec");
   DBUG_PRINT("info",("spider this=%p", this));
+  DBUG_ASSERT(!copy || sql_type == SPIDER_SQL_TYPE_INSERT_SQL);
   if (sql_type & (SPIDER_SQL_TYPE_SELECT_SQL | SPIDER_SQL_TYPE_TMP_SQL))
   {
-    if (mysql_share->same_db_table_name || link_idx == first_link_idx)
-    {
+    if ((mysql_share->same_db_table_name || link_idx == first_link_idx) &&
+		!copy)
+	{
       if (sql_type & SPIDER_SQL_TYPE_SELECT_SQL)
         exec_sql = &sql;
       if (sql_type & SPIDER_SQL_TYPE_TMP_SQL)
@@ -11064,7 +11067,8 @@ int spider_mysql_handler::set_sql_for_exec(
   }
   if (sql_type & SPIDER_SQL_TYPE_INSERT_SQL)
   {
-    if (mysql_share->same_db_table_name || link_idx == first_link_idx)
+    if ((mysql_share->same_db_table_name || link_idx == first_link_idx) &&
+		!copy)
       exec_insert_sql = &insert_sql;
     else {
       exec_insert_sql = &result_list->insert_sqls[link_idx];

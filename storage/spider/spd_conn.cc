@@ -613,6 +613,7 @@ SPIDER_CONN *spider_create_conn(
     conn->tgt_port = share->tgt_ports[link_idx];
     conn->tgt_ssl_vsc = share->tgt_ssl_vscs[link_idx];
     conn->dbton_id = share->sql_dbton_ids[link_idx];
+	conn->bg_conn_working = false;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   } else if (conn_kind == SPIDER_CONN_KIND_HS_READ) {
     if (!(conn = (SPIDER_CONN *)
@@ -1017,6 +1018,7 @@ int spider_free_conn(
       ip_port_conn->ip_port_count--;
     pthread_mutex_unlock(&ip_port_conn->mutex);
   }
+  conn->bg_conn_working = false;
   spider_free_conn_alloc(conn);
   spider_free(spider_current_trx, conn, MYF(0));
   DBUG_RETURN(0);
@@ -1593,6 +1595,51 @@ int spider_set_conn_bg_param(
   DBUG_RETURN(0);
 }
 
+int spider_set_conn_bg_param_for_dml(
+	ha_spider *spider
+) {
+	int error_num, roop_count, dml_bgs_mode;
+	SPIDER_SHARE *share = spider->share;
+	SPIDER_RESULT_LIST *result_list = &spider->result_list;
+	THD *thd = spider->trx->thd;
+	DBUG_ENTER("spider_set_conn_bg_param");
+	/* dml_bgs_mode is determed by:
+	1. sql is INSERT (current only support insert)
+	2. spider_bgs_mode is 1;
+	3. spider_bgs_dml is 1;
+	4. total_inserted_rows must grater than 1 */
+	/* TODO  set dml_bgs_mode = 1 when involving multiple partitions */
+	if (thd &&
+		(thd->lex->sql_command == SQLCOM_INSERT ||
+			thd->lex->sql_command == SQLCOM_LOAD) &&
+		spider_param_bgs_mode(thd, share->bgs_mode) > 0) //  && spider->get_total_inserted_rows() > 1)
+		dml_bgs_mode = spider_param_bgs_dml(thd);
+	else
+		dml_bgs_mode = 0;
+
+	if (dml_bgs_mode)
+		result_list->bgs_phase = 1;
+
+	if (result_list->bgs_phase > 0)
+	{
+		for (
+			roop_count = spider_conn_link_idx_next(share->link_statuses,
+				spider->conn_link_idx, -1, share->link_count,
+				spider->lock_mode ?
+				SPIDER_LINK_STATUS_RECOVERY : SPIDER_LINK_STATUS_OK);
+			roop_count < (int)share->link_count;
+			roop_count = spider_conn_link_idx_next(share->link_statuses,
+				spider->conn_link_idx, roop_count, share->link_count,
+				spider->lock_mode ?
+				SPIDER_LINK_STATUS_RECOVERY : SPIDER_LINK_STATUS_OK)
+			) {
+			if ((error_num = spider_create_conn_thread(spider->spider_get_conn_by_idx(roop_count))))
+				DBUG_RETURN(error_num);
+		}
+	}
+	DBUG_RETURN(0);
+}
+
 int spider_create_conn_thread(
   SPIDER_CONN *conn
 ) {
@@ -1936,7 +1983,8 @@ int spider_bg_conn_search(
   int first_link_idx,
   bool first,
   bool pre_next,
-  bool discard_result
+  bool discard_result,
+  ulong sql_type
 ) {
   int error_num;
   SPIDER_CONN *conn, *first_conn = NULL;
@@ -1976,12 +2024,16 @@ int spider_bg_conn_search(
     } else {
       DBUG_PRINT("info",("spider bg first search"));
       pthread_mutex_lock(&conn->bg_conn_mutex);
+	  result_list->sql_type = sql_type;
       result_list->bgs_working = TRUE;
       conn->bg_search = TRUE;
       conn->bg_caller_wait = TRUE;
       conn->bg_target = spider;
       conn->link_idx = link_idx;
       conn->bg_discard_result = discard_result;
+	  if (sql_type != SPIDER_SQL_TYPE_SELECT_SQL)
+		  conn->bg_caller_sync_wait = TRUE;   // wait for sql ready only
+
       thd_proc_info(thd, "Waking up bg thread ");
       pthread_mutex_lock(&conn->bg_conn_sync_mutex); // 必须保证sinal前，后台线程是wait状态
       pthread_cond_signal(&conn->bg_conn_cond);
@@ -1997,11 +2049,15 @@ int spider_bg_conn_search(
         DBUG_RETURN(result_list->bgs_error);
       }
     }
-    if (result_list->bgs_working || !result_list->finish_flg)
+	if (sql_type == SPIDER_SQL_TYPE_SELECT_SQL &&
+     (result_list->bgs_working || !result_list->finish_flg || conn->bg_conn_working))
     {
+	//add by alex,may exist bug
       thd_proc_info(thd, "Waiting bg action");
       pthread_mutex_lock(&conn->bg_conn_mutex); /* 只有spider_bg_action在pthread_cond_wait时才会加锁成功：1,等query;2，等再次处理结果 */
-      if (!result_list->finish_flg)
+	  assert(!conn->bg_conn_working);
+	  result_list->sql_type = sql_type;
+	  if (!result_list->finish_flg)
       {
         DBUG_PRINT("info",("spider bg second search"));
         if (!spider->use_pre_call || pre_next)
@@ -2142,6 +2198,7 @@ int spider_bg_conn_search(
       DBUG_PRINT("info",("spider bg working wait"));
       thd_proc_info(thd, "Waiting bg action done");
       pthread_mutex_lock(&conn->bg_conn_mutex);
+	  result_list->sql_type = sql_type;
       pthread_mutex_unlock(&conn->bg_conn_mutex);
     }
     if (result_list->bgs_error)
@@ -2162,6 +2219,7 @@ int spider_bg_conn_search(
     result_list->current_row_num = 0;
     if (result_list->current == result_list->bgs_current)
     {
+	  assert(sql_type == SPIDER_SQL_TYPE_SELECT_SQL);
       DBUG_PRINT("info",("spider bg next search"));
       if (!result_list->current->finish_flg)
       {
@@ -2324,14 +2382,17 @@ void *spider_bg_conn_action(
 
   while (TRUE)
   {
+	bool set_sql = false;
     if (conn->bg_conn_chain_mutex_ptr)
     {
       pthread_mutex_unlock(conn->bg_conn_chain_mutex_ptr);
       conn->bg_conn_chain_mutex_ptr = NULL;
     }
     thd->clear_error();
+	conn->bg_conn_working = false;
     pthread_cond_wait(&conn->bg_conn_cond, &conn->bg_conn_mutex); /* 等待主线程query语句。 或者query执行完了，等主线和处理结果 */
-    DBUG_PRINT("info",("spider bg roop start"));
+	conn->bg_conn_working = true;
+	DBUG_PRINT("info",("spider bg roop start"));
 #ifndef DBUG_OFF
     DBUG_PRINT("info",("spider conn->thd=%p", conn->thd));
     if (conn->thd)
@@ -2340,7 +2401,27 @@ void *spider_bg_conn_action(
     }
 #endif
     if (conn->bg_caller_sync_wait)
-    { /* bg_serch发过signal信号后，告诉主线程子线程开始工作 */
+    { 
+		spider_db_handler *dbton_handler;
+		spider = (ha_spider*)conn->bg_target;
+		dbton_handler = spider->dbton_handler[conn->dbton_id];
+		result_list = &spider->result_list;
+
+		if (result_list->sql_type != SPIDER_SQL_TYPE_SELECT_SQL)
+		{
+			result_list->bgs_error = 0;
+			result_list->bgs_error_with_message = FALSE;
+			// sql should be set before signal 
+			if ((error_num = dbton_handler->set_sql_for_exec(result_list->sql_type,
+				conn->link_idx, true)))
+			{
+				result_list->bgs_error = error_num;
+				if ((result_list->bgs_error_with_message = thd->is_error()))
+					strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
+			}
+			set_sql = true;
+		}
+	  /* bg_serch发过signal信号后，告诉主线程子线程开始工作 */
       pthread_mutex_lock(&conn->bg_conn_sync_mutex);
       if (conn->bg_direct_sql)
         conn->bg_get_job_stack_off = TRUE;
@@ -2408,7 +2489,7 @@ void *spider_bg_conn_action(
 #endif
           if (spider->sql_kind[conn->link_idx] == SPIDER_SQL_KIND_SQL)
           {
-            sql_type = SPIDER_SQL_TYPE_SELECT_SQL | SPIDER_SQL_TYPE_TMP_SQL;
+            sql_type = result_list->sql_type | SPIDER_SQL_TYPE_TMP_SQL;
           } else {
             sql_type = SPIDER_SQL_TYPE_HANDLER;
           }
@@ -2423,7 +2504,7 @@ void *spider_bg_conn_action(
         }
         if (spider->use_fields)
         {
-          if ((error_num = dbton_handler->set_sql_for_exec(sql_type,
+          if (!set_sql && (error_num = dbton_handler->set_sql_for_exec(sql_type,
             conn->link_idx, conn->link_idx_chain)))
           {
             result_list->bgs_error = error_num;
@@ -2431,7 +2512,7 @@ void *spider_bg_conn_action(
               strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
           }
         } else {
-          if ((error_num = dbton_handler->set_sql_for_exec(sql_type,
+          if (!set_sql && (error_num = dbton_handler->set_sql_for_exec(sql_type,
             conn->link_idx)))
           {
             result_list->bgs_error = error_num;

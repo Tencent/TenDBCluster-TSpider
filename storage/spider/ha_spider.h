@@ -184,6 +184,7 @@ public:
   bool               auto_inc_temporary;
 #endif
   int                bulk_size;
+  ha_rows            total_inserted_rows;
   int                direct_dup_insert;
   int                store_error_num;
   uint               dup_key_idx;
@@ -556,6 +557,7 @@ public:
     ha_rows rows
   );
 #endif
+  int get_bg_result();
   int end_bulk_insert();
   int write_row(
     uchar *buf
@@ -860,6 +862,8 @@ public:
   int index_handler_init();
   int rnd_handler_init();
   void set_error_mode();
+  void set_total_inserted_rows(ha_rows rows);
+  ha_rows get_total_inserted_rows();
   void backup_error_status();
   int check_error_mode(
     int error_num

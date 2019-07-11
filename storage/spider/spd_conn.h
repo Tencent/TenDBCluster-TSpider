@@ -203,6 +203,10 @@ int spider_set_conn_bg_param(
   ha_spider *spider
 );
 
+int spider_set_conn_bg_param_for_dml(
+	ha_spider *spider
+);
+
 int spider_create_conn_thread(
   SPIDER_CONN *conn
 );
@@ -243,7 +247,8 @@ int spider_bg_conn_search(
   int first_link_idx,
   bool first,
   bool pre_next,
-  bool discard_result
+  bool discard_result,
+  ulong sql_type = SPIDER_SQL_TYPE_SELECT_SQL
 );
 
 void spider_bg_conn_simple_action(

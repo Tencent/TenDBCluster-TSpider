@@ -1288,7 +1288,8 @@ public:
 #endif
   int set_sql_for_exec(
     ulong sql_type,
-    int link_idx
+    int link_idx,
+	bool copy = false  // whether copy to exec_**_sql
   );
   int set_sql_for_exec(
     spider_db_copy_table *tgt_ct,

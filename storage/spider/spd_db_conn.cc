@@ -603,7 +603,7 @@ int spider_db_before_query(
     spider_mta_conn_mutex_lock(conn);
     conn->need_mon = need_mon;
   }
-  DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
+ // DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
   tmp_mta_conn_mutex_lock_already = conn->mta_conn_mutex_lock_already;
   conn->mta_conn_mutex_lock_already = TRUE;
   if ((error_num = spider_db_conn_queue_action(conn)))
@@ -896,7 +896,7 @@ int spider_db_set_names_internal(
       spider_mta_conn_mutex_lock(conn);
       conn->need_mon = need_mon;
     }
-    DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
+    //DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
     if (
       !conn->access_charset ||
       share->access_charset->cset != conn->access_charset->cset
@@ -5862,7 +5862,7 @@ int spider_db_bulk_insert(
   bool mta_conn_mutex_lock_already_backup;
   bool mta_conn_mutex_unlock_later_backup;
   DBUG_ENTER("spider_db_bulk_insert");
-
+ 
   if (!bulk_end)
   {
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
@@ -5888,6 +5888,10 @@ int spider_db_bulk_insert(
   {
     int roop_count2;
     SPIDER_CONN *conn, *first_insert_conn = NULL;
+
+	if ((error_num = spider_set_conn_bg_param_for_dml(spider)))
+		DBUG_RETURN(error_num);
+
     if ((error_num = spider->append_insert_terminator_sql_part(
       SPIDER_SQL_TYPE_INSERT_SQL)))
     {
@@ -5919,6 +5923,29 @@ int spider_db_bulk_insert(
               error_num = ER_SPIDER_CON_COUNT_ERROR;
               DBUG_RETURN(error_num);
           }
+#ifndef WITHOUT_SPIDER_BG_SEARCH
+		  //parallel
+		  if (spider->result_list.bgs_phase > 0)
+		  {
+			  if (error_num = spider_bg_conn_search(spider, roop_count2, roop_count2,
+				  TRUE, FALSE, FALSE /*(roop_count != link_ok)*/, SPIDER_SQL_TYPE_INSERT_SQL))
+			  {
+				  if (spider->sql_kinds & SPIDER_SQL_KIND_SQL)
+					  spider->set_insert_to_pos_sql(SPIDER_SQL_TYPE_INSERT_SQL);
+
+				  DBUG_PRINT("info", ("spider error_num 1=%d", error_num));
+				  DBUG_RETURN(error_num);
+			  }
+
+			  if (first_insert_link_idx == -1)
+			  {
+				  first_insert_link_idx = roop_count2;
+				  first_insert_conn = conn;
+			  }
+			  continue;
+		  }
+#endif
+		  // serial
           dbton_handler = spider->dbton_handler[conn->dbton_id];
           mta_conn_mutex_lock_already_backup =
             conn->mta_conn_mutex_lock_already;

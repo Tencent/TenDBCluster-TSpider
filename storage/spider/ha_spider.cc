@@ -150,6 +150,7 @@ ha_spider::ha_spider(
   result_list.insert_sqls = NULL;
   result_list.update_sqls = NULL;
   result_list.tmp_sqls = NULL;
+  result_list.sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   result_list.hs_result_buf = NULL;
 #endif
@@ -173,6 +174,8 @@ ha_spider::ha_spider(
   result_list.in_cmp_ref = FALSE;
   mem_calc_id = 0;
   conn_pins = NULL;
+  result_list.bgs_error = 0;
+  result_list.bgs_error_with_message = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -287,6 +290,9 @@ ha_spider::ha_spider(
   ref_length = sizeof(SPIDER_POSITION);
   mem_calc_id = 0;  /* may cause crash */
   conn_pins = NULL;
+  result_list.sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
+  result_list.bgs_error = 0;
+  result_list.bgs_error_with_message = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -1339,8 +1345,11 @@ int ha_spider::reset()
     }
     direct_aggregate_item_current = direct_aggregate_item_current->next;
   }
+  result_list.sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
   result_list.direct_aggregate = FALSE;
   result_list.snap_direct_aggregate = FALSE;
+  result_list.bgs_error = 0;
+  result_list.bgs_error_with_message = FALSE;
 #endif
   result_list.direct_distinct = FALSE;
   store_error_num = 0;
@@ -1475,6 +1484,7 @@ int ha_spider::reset()
   use_fields = FALSE;
 #endif
   error_mode = 0;
+  total_inserted_rows = 0;
 #ifdef HA_CAN_BULK_ACCESS
 #ifndef DBUG_OFF
   if (bulk_access_link_first)
@@ -8984,6 +8994,25 @@ void ha_spider::start_bulk_insert(
   DBUG_VOID_RETURN;
 }
 
+int ha_spider::get_bg_result()
+{
+	SPIDER_CONN* conn = this->spider_get_conn_by_idx(0);
+
+	if (conn->bg_conn_working)
+	{
+		// wait backgroud thread end
+		spider_bg_all_conn_break(this);
+	}
+
+	if (result_list.bgs_error == HA_ERR_END_OF_FILE)
+		result_list.bgs_error = 0;
+
+	if (result_list.bgs_error && result_list.bgs_error_with_message)
+		my_message(result_list.bgs_error, result_list.bgs_error_msg, MYF(0));
+
+	return result_list.bgs_error;
+}
+
 int ha_spider::end_bulk_insert()
 {
   int error_num;
@@ -12753,6 +12782,17 @@ int ha_spider::rnd_handler_init()
     }
   }
   DBUG_RETURN(0);
+}
+
+void ha_spider::set_total_inserted_rows(ha_rows rows)
+{
+	total_inserted_rows = rows;
+}
+
+ha_rows ha_spider::get_total_inserted_rows()
+{
+	DBUG_ENTER("ha_spider::get_total_inserted_rows");
+	DBUG_RETURN(total_inserted_rows);
 }
 
 void ha_spider::set_error_mode()

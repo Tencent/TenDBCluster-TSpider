@@ -474,6 +474,7 @@ typedef struct st_spider_conn
   volatile bool      bg_kill;
   volatile bool      bg_caller_wait;
   volatile bool      bg_caller_sync_wait;
+  volatile bool	     bg_conn_working;
   volatile bool      bg_search;
   volatile bool      bg_discard_result;
   volatile bool      bg_direct_sql;

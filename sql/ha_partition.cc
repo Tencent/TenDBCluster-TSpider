@@ -4829,19 +4829,39 @@ int ha_partition::end_bulk_insert()
        i= bitmap_get_next_set(&m_bulk_insert_started, i))
   {
     int tmp;
+	m_file[i]->set_total_inserted_rows(m_bulk_inserted_rows);
     if ((tmp = m_file[i]->ha_end_bulk_insert()))
     {
         error = tmp;
-        if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
-        {/* if error happened, set next_auto_inc_val = 0, then get max next time */
-            lock_auto_increment();
-            part_share->next_auto_inc_val = 0;
-            part_share->auto_inc_initialized = FALSE;
-            unlock_auto_increment();
-        }
     }
   }
+
+  for (i = bitmap_get_first_set(&m_bulk_insert_started);
+	  i < m_tot_parts;
+	  i = bitmap_get_next_set(&m_bulk_insert_started, i))
+  {
+	  int tmp;
+	  if (bitmap_is_set(&m_bulk_insert_started, i) &&
+		  (tmp = m_file[i]->ha_get_bg_result()))
+	  {
+		  error = tmp;
+	  }
+  }
   bitmap_clear_all(&m_bulk_insert_started);
+  if (error)
+  {
+	  /**
+	  if error happened, reset the next_auto_inc_val,
+	  get the max_value from the remotedb next time
+	  */
+	  if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+	  {/* if error happened, set next_auto_inc_val = 0, then get max next time */
+		  lock_auto_increment();
+		  part_share->next_auto_inc_val = 0;
+		  part_share->auto_inc_initialized = FALSE;
+		  unlock_auto_increment();
+	  }
+  } 
   DBUG_RETURN(error);
 }
 
