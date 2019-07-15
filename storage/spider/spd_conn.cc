@@ -1607,11 +1607,21 @@ int spider_set_conn_bg_param_for_dml(
 	1. sql is INSERT (current only support insert)
 	2. spider_bgs_mode is 1;
 	3. spider_bgs_dml is 1;
-	4. total_inserted_rows must grater than 1 */
+	4. total_inserted_rows must grater than 1 
+	5. not in transaction
+	6. spider_rone_shard_flag==FALSE
+	7. just one table included
+	8. don't support limit*/
 	/* TODO  set dml_bgs_mode = 1 when involving multiple partitions */
 	if (thd &&
+		thd->direct_limit <=0 &&
 		(thd->lex->sql_command == SQLCOM_INSERT ||
+			thd->lex->sql_command == SQLCOM_UPDATE ||
+			thd->lex->sql_command == SQLCOM_DELETE ||
 			thd->lex->sql_command == SQLCOM_LOAD) &&
+		(!(thd_test_options(thd, OPTION_NOT_AUTOCOMMIT) || thd_test_options(thd, OPTION_BEGIN))) &&
+		(!(thd->lex->spider_rone_shard_flag)) &&
+		thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) &&
 		spider_param_bgs_mode(thd, share->bgs_mode) > 0) //  && spider->get_total_inserted_rows() > 1)
 		dml_bgs_mode = spider_param_bgs_dml(thd);
 	else
@@ -2407,7 +2417,7 @@ void *spider_bg_conn_action(
 		dbton_handler = spider->dbton_handler[conn->dbton_id];
 		result_list = &spider->result_list;
 
-		if (result_list->sql_type != SPIDER_SQL_TYPE_SELECT_SQL)
+		if (result_list->sql_type == SPIDER_SQL_TYPE_INSERT_SQL)
 		{
 			result_list->bgs_error = 0;
 			result_list->bgs_error_with_message = FALSE;

@@ -7228,8 +7228,9 @@ int spider_db_direct_update(
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
   } else {
     if (
-      (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL) &&
-      (error_num = spider->append_direct_update_set_sql_part())
+	  (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL) &&
+      ((error_num = spider->append_direct_update_set_sql_part()) ||
+		(error_num = spider_set_conn_bg_param_for_dml(spider)))
     ) {
       DBUG_RETURN(error_num);
     }
@@ -7291,6 +7292,20 @@ int spider_db_direct_update(
         DBUG_RETURN(error_num);
     }
     sql_type = SPIDER_SQL_TYPE_UPDATE_SQL;
+#ifndef WITHOUT_SPIDER_BG_SEARCH
+	if (spider->result_list.bgs_phase > 0)
+	{
+		if (error_num = spider_bg_conn_search(spider, roop_count, roop_count,
+			TRUE, FALSE, FALSE /*(roop_count != link_ok)*/, SPIDER_SQL_TYPE_UPDATE_SQL))
+		{
+			DBUG_PRINT("info", ("spider error_num 1=%d", error_num));
+			DBUG_RETURN(error_num);
+		}
+		continue;
+	}
+	//parallel
+#endif
+	// serial
     spider_db_handler *dbton_hdl = spider->dbton_handler[conn->dbton_id];
     if (dbton_hdl->need_lock_before_set_sql_for_exec(sql_type))
     {
@@ -7397,7 +7412,11 @@ int spider_db_direct_update(
     conn->mta_conn_mutex_unlock_later = FALSE;
     spider_mta_conn_mutex_unlock(conn);
   }
-  spider->reset_sql_sql(SPIDER_SQL_TYPE_UPDATE_SQL);
+  //if start multi_update , reset may clear query_string,before sql exe
+  if (spider->result_list.bgs_phase <= 0)
+  {
+	  spider->reset_sql_sql(SPIDER_SQL_TYPE_UPDATE_SQL);
+  }
   DBUG_RETURN(0);
 }
 #endif
