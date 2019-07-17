@@ -9053,6 +9053,45 @@ int ha_spider::get_bg_result(ha_rows* update_rows,ha_rows* found_rows)
 	}
 	DBUG_RETURN(result_list.bgs_error);
 }
+int ha_spider::get_bg_result(ha_rows* delete_rows)
+{
+	SPIDER_CONN* conn = this->spider_get_conn_by_idx(0);
+	SPIDER_SHARE *share = this->share;
+	int roop_count;
+	DBUG_ENTER("get_bg_result");
+	bool counted = FALSE;
+	if (conn->bg_conn_working)
+	{
+		// wait backgroud thread end
+		spider_bg_all_conn_break(this);
+	}
+
+	if (result_list.bgs_error == HA_ERR_END_OF_FILE)
+		result_list.bgs_error = 0;
+
+	if (result_list.bgs_error && result_list.bgs_error_with_message)
+		my_message(result_list.bgs_error, result_list.bgs_error_msg, MYF(0));
+
+	for (
+		roop_count = spider_conn_link_idx_next(share->link_statuses,
+			this->conn_link_idx, -1, share->link_count,
+			SPIDER_LINK_STATUS_RECOVERY);
+		roop_count < (int)share->link_count;
+		roop_count = spider_conn_link_idx_next(share->link_statuses,
+			this->conn_link_idx, roop_count, share->link_count,
+			SPIDER_LINK_STATUS_RECOVERY)
+		)
+	{
+		if (!counted)
+		{
+			*delete_rows += this->conns[roop_count]->db_conn->affected_rows();
+			DBUG_PRINT("info", ("spider delete_rows = %llu", delete_rows));
+			counted = TRUE;
+		}
+	}
+	DBUG_RETURN(result_list.bgs_error);
+}
+
 
 int ha_spider::end_bulk_insert()
 {

@@ -559,6 +559,7 @@ public:
 #endif
   int get_bg_result();
   int get_bg_result(ha_rows* update_rows, ha_rows* found_rows);
+  int get_bg_result(ha_rows* delete_rows);
   int end_bulk_insert();
   int write_row(
     uchar *buf

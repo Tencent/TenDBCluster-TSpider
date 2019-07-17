@@ -11610,9 +11610,10 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
                   file->ha_rnd_end();
               DBUG_RETURN(error);
           }
-          *delete_rows_result += delete_rows;
+         
           if (thd && thd->direct_limit > 0)
           {
+			  *delete_rows_result += delete_rows;
               thd->direct_limit -= delete_rows;
               if (thd->direct_limit <= 0)
                   finish_flag = true;
@@ -11627,6 +11628,21 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
         DBUG_RETURN(error);
     }
   }
+  if (finish_flag == false)
+  {
+	  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+		  i < m_tot_parts;
+		  i = bitmap_get_next_set(&m_part_info->read_partitions, i))
+	  {
+		  file = m_file[i];
+		  if (bitmap_is_set(&(m_part_info->lock_partitions), i) &&
+			  (error = m_file[i]->ha_get_bg_result(delete_rows_result)))
+		  {
+			  DBUG_RETURN(error);
+		  }
+	  }
+  }
+  bitmap_clear_all(&(m_part_info->lock_partitions));
   DBUG_RETURN(0);
 }
 

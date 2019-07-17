@@ -4204,6 +4204,7 @@ wait and get the result of background thread
 */
 virtual int ha_get_bg_result() { return get_bg_result(); }
 virtual int ha_get_bg_result(ha_rows* update_rows,ha_rows* found_rows) { return get_bg_result(update_rows, found_rows); }
+virtual int ha_get_bg_result(ha_rows* delete_rows) { return get_bg_result(delete_rows); }
 protected:
  /**
     Allows the storage engine to update internal structures with concurrent
@@ -4479,6 +4480,7 @@ private:
   */
   virtual int get_bg_result() { return 0; }
   virtual int get_bg_result(ha_rows* update_rows,ha_rows* found_rows) { return 0; }
+  virtual int get_bg_result(ha_rows* delete_rows) { return 0; }
   /**
     Reset state of file to after 'open'.
     This function is called after every statement for all tables used
