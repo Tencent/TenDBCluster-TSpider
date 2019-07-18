@@ -3453,7 +3453,7 @@ int spider_xa_prepare(
   TABLE *table_xa = NULL;
   TABLE *table_xa_member = NULL;
   DBUG_ENTER("spider_xa_prepare");
-
+  DBUG_RETURN(0);
   if (all || (!thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN)))
   {
     if (!(trx = (SPIDER_TRX*) thd_get_ha_data(thd, spider_hton_ptr)))
@@ -3471,8 +3471,7 @@ int spider_xa_prepare(
       trx->trx_xa_prepared = TRUE;
     }
   }
-
-  DBUG_RETURN(0);
+ 
 
 error:
   DBUG_RETURN(error_num);
