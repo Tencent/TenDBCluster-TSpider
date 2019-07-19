@@ -155,9 +155,10 @@ VALUES('1983-01-01', '1990-01-01'),
 ('1983-01-01', '1985-03-02'),
 ('1983-01-01', '1992-05-05'),
 ('1983-01-01', '1995-12-01');
+set spider_init_sql_alloc_size=-1;
 select * from tbl_a where  TIMESTAMPDIFF(YEAR, start_time, end_time)>10;
-
-
+set spider_init_sql_alloc_size=1024;
+select * from tbl_a where  TIMESTAMPDIFF(YEAR, start_time, end_time)>10;
 --echo
 --echo deinit
 --disable_warnings

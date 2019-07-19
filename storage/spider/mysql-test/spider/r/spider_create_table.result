@@ -17,10 +17,6 @@ connection child2_1;
 DROP DATABASE IF EXISTS auto_test_remote;
 CREATE DATABASE auto_test_remote;
 USE auto_test_remote;
-connection child2_2;
-DROP DATABASE IF EXISTS auto_test_remote2;
-CREATE DATABASE auto_test_remote2;
-USE auto_test_remote2;
 
 create table select test
 connection master_1;
@@ -31,17 +27,7 @@ b CHAR(1),
 c DATETIME,
 PRIMARY KEY(a)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_2_1
-INSERT INTO ta_l (a, b, c) VALUES
-(1, 'a', '2018-11-01 10:21:39'),
-(2, 'b', '2015-06-30 23:59:59'),
-(3, 'c', '2013-11-01 01:01:01');
-
-spider not like bug fix test
-connection master_1;
-select * from ta_l where b not like 'a%';
-a	b	c
-2	b	2015-06-30 23:59:59
-3	c	2013-11-01 01:01:01
+ERROR HY000: The connect info 'host "localhost"' is invalid
 
 deinit
 connection master_1;
