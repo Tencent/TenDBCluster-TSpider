@@ -7492,6 +7492,29 @@ bool TABLE_LIST::process_index_hints(TABLE *tbl)
           tbl->keys_in_use_for_group_by.clear_all();
       }
   }
+  if (opt_spider_ignore_single_select_index &&  tbl->file && tbl->file->is_spider_storage_engine())
+  {
+	  KEY *key_info;
+	  KEY_PART_INFO *key_part;
+	  for (uint i = 0; i < tbl->s->keys; i++)
+	  {
+		  key_info = tbl->key_info + i;
+		  key_part = key_info->key_part;
+		  for (uint j = 0; j < key_info->user_defined_key_parts; j++, key_part++)
+		  {
+			  if (!(key_info->flags & HA_FULLTEXT) &&
+				  (key_part->field &&
+					  key_part->length !=
+					  tbl->s->field[key_part->fieldnr - 1]->key_length()))
+			  {
+				  tbl->keys_in_use_for_query.clear_bit(i);
+				  tbl->keys_in_use_for_order_by.clear_bit(i);
+				  tbl->keys_in_use_for_group_by.clear_bit(i);
+				  break;
+			  }
+		  }
+	  }
+  }
 
   /* make sure covering_keys don't include indexes disabled with a hint */
   tbl->covering_keys.intersect(tbl->keys_in_use_for_query);

@@ -3787,7 +3787,13 @@ int spider_db_mysql_util::open_item_func(
         last_str = SPIDER_SQL_IS_TRUE_STR;
         last_str_length = SPIDER_SQL_IS_TRUE_LEN;
         break;
-      } else if (func_name_length == 7)
+      }
+	  else if (func_name_length == 6 &&
+		  !strncasecmp("regexp", func_name, func_name_length)
+		  ) {
+		  break;
+	  }
+	  else if (func_name_length == 7)
       {
         if (!strncasecmp("isfalse", func_name, func_name_length))
         {
