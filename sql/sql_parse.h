@@ -18,9 +18,6 @@
 
 #include "sql_acl.h"                            /* GLOBAL_ACLS */
 
-#define SERVER_NAME_PRE "SPT"
-#define SERVER_SPIDER_NAME_PRE "SPIDER"
-#define SERVER_TDBCTL_NAME_PRE "TDBCTL"
 
 class Comp_creator;
 class Item;

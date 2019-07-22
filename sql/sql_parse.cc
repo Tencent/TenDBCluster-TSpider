@@ -10662,24 +10662,25 @@ bool tdbctl_need_current_db(THD *thd, LEX *lex)
 
 bool tdbctl_get_ctl_info(THD *thd, char *host, int *port, char *user, char *passwd)
 {
-    ulong records = get_servers_count();
     MEM_ROOT *mem = thd->mem_root;
-    FOREIGN_SERVER *server, server_buffer;
+    FOREIGN_SERVER *server ;
+    List<FOREIGN_SERVER> server_list;
 
-    for (ulong i = 0; i < records; i++)
+    get_server_by_wrapper(&server_list, mem,  SERVER_TDBCTL_NAME_PRE);
+
+    if (server_list.is_empty())
     {
-        if (server = get_server_by_idx(mem, i, &server_buffer))
-        {
-            if (!strcasecmp(server->scheme, SERVER_TDBCTL_NAME_PRE))
-            {
-                strcpy(host, server->host);
-                strcpy(user, server->username);
-                strcpy(passwd, server->password);
-                *port = server->port;
-                break;
-            }
-        }
+        return TRUE;
     }
+    else
+    {
+        server = server_list.pop();
+        strcpy(host, server->host);
+        strcpy(user, server->username);
+        strcpy(passwd, server->password);
+        *port = server->port;
+    }
+
     return FALSE;
 }
 

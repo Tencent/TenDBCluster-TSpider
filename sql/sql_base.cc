@@ -4954,6 +4954,13 @@ bool open_and_lock_tables(THD *thd, const DDL_options_st &options,
   DBUG_ENTER("open_and_lock_tables");
   DBUG_PRINT("enter", ("derived handling: %d", derived));
 
+  if (tables && tables->db.str && tables->table_name.str &&
+      !strcmp(tables->db.str, "mysql") &&
+      !strcmp(tables->table_name.str, "servers"))
+  {
+      flags = flags | MYSQL_OPEN_IGNORE_GLOBAL_READ_LOCK 
+                    | MYSQL_LOCK_IGNORE_GLOBAL_READ_ONLY;
+  }
   if (open_tables(thd, options, &tables, &counter, flags, prelocking_strategy))
     goto err;
 

@@ -276,7 +276,9 @@ bool servers_reload(THD *thd)
   tables[0].init_one_table(&MYSQL_SCHEMA_NAME, &MYSQL_SERVERS_NAME, 0, TL_READ);
 
   if (unlikely(open_and_lock_tables(thd, tables, FALSE,
-                                    MYSQL_LOCK_IGNORE_TIMEOUT)))
+                                    MYSQL_LOCK_IGNORE_TIMEOUT | 
+                                    MYSQL_OPEN_IGNORE_GLOBAL_READ_LOCK | 
+                                    MYSQL_LOCK_IGNORE_GLOBAL_READ_ONLY)))
   {
     /*
       Execution might have been interrupted; only print the error message
@@ -1477,6 +1479,31 @@ FOREIGN_SERVER *get_server_by_idx(MEM_ROOT *mem, int idx, FOREIGN_SERVER *buff)
     mysql_rwlock_unlock(&THR_LOCK_servers);
     DBUG_RETURN(server);
 }
+
+void get_server_by_wrapper(List<FOREIGN_SERVER>* server_list, MEM_ROOT* mem, const char* wrapper_name)
+{
+    ulong records = 0;
+    FOREIGN_SERVER* server;
+    mysql_rwlock_rdlock(&THR_LOCK_servers);
+    records = servers_cache.records;
+    for (ulong i = 0; i < records; i++)
+    {
+        if (!(server = (FOREIGN_SERVER*)my_hash_element(&servers_cache, i)))
+        {
+            server = (FOREIGN_SERVER*)NULL;
+        }
+        else
+        {
+            if (!strcasecmp(server->scheme, wrapper_name))
+            {
+                server = clone_server(mem, server, NULL);
+                server_list->push_back(server);
+            }
+        }
+    }
+    mysql_rwlock_unlock(&THR_LOCK_servers);
+}
+
 
 ulong get_servers_count()
 {
