@@ -2051,7 +2051,9 @@ int spider_bg_conn_search(
       pthread_cond_wait(&conn->bg_conn_sync_cond, &conn->bg_conn_sync_mutex); // 如果不wait，也没影响 ？  相当于一次握手 ？
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
       conn->bg_caller_wait = FALSE;
-      if (result_list->bgs_error)
+	  if (sql_type != SPIDER_SQL_TYPE_SELECT_SQL)
+		  conn->bg_caller_sync_wait = FALSE;   // reset bg_caller_sync_wait,in case of spider_conn_recycle
+      if (result_list->bgs_error && result_list->bgs_error != HA_ERR_END_OF_FILE)
       {
         if (result_list->bgs_error_with_message)
           my_message(result_list->bgs_error,

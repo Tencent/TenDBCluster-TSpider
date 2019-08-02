@@ -5862,7 +5862,10 @@ int spider_db_bulk_insert(
   bool mta_conn_mutex_lock_already_backup;
   bool mta_conn_mutex_unlock_later_backup;
   DBUG_ENTER("spider_db_bulk_insert");
- 
+
+  if ((error_num = spider_set_conn_bg_param_for_dml(spider)))
+	  DBUG_RETURN(error_num);
+
   if (!bulk_end)
   {
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
@@ -5888,9 +5891,6 @@ int spider_db_bulk_insert(
   {
     int roop_count2;
     SPIDER_CONN *conn, *first_insert_conn = NULL;
-
-	if ((error_num = spider_set_conn_bg_param_for_dml(spider)))
-		DBUG_RETURN(error_num);
 
     if ((error_num = spider->append_insert_terminator_sql_part(
       SPIDER_SQL_TYPE_INSERT_SQL)))

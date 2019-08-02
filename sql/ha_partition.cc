@@ -4830,7 +4830,8 @@ int ha_partition::end_bulk_insert()
   {
     int tmp;
 	m_file[i]->set_total_inserted_rows(m_bulk_inserted_rows);
-    if ((tmp = m_file[i]->ha_end_bulk_insert()))
+    if (bitmap_is_set(&m_bulk_insert_started, i) &&
+		(tmp = m_file[i]->ha_end_bulk_insert()))
     {
         error = tmp;
     }
@@ -8179,7 +8180,6 @@ int ha_partition::info(uint flag)
                    ("checking all partitions for auto_increment_value"));
         do
         {
-          file= *file_array;
           /* get the max auto_increment_value from each partition shard */
           file = *file_array;
           if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())

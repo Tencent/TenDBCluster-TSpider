@@ -1017,7 +1017,7 @@ bool mysql_insert(THD *thd,TABLE_LIST *table_list,
       same table in the same connection.
     */
     if (thd->locked_tables_mode <= LTM_LOCK_TABLES &&
-       values_list.elements > 1)
+       values_list.elements >= 1)
     {
       using_bulk_insert= 1;
       table->file->ha_start_bulk_insert(values_list.elements);
