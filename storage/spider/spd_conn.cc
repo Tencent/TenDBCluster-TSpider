@@ -4890,8 +4890,8 @@ static void *spider_get_status_action(void *arg)
         time_t to_tm_time = (time_t)time((time_t*)0);
         struct tm lt;
         struct tm *l_time = localtime_r(&to_tm_time, &lt);
-
-
+		my_hrtime_t current_time = my_hrtime();
+		long usec = hrtime_sec_part(current_time);
         pthread_mutex_lock(&spider_tbl_mutex);
         share_records = spider_open_tables.records;
         pthread_mutex_unlock(&spider_tbl_mutex);
@@ -5023,9 +5023,9 @@ static void *spider_get_status_action(void *arg)
                             }
                             else
                             {
-                                fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+                                fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
                                     "record = %lu, i = %lu, tb_name = %s,  failed to fetch row\n",
-                                    l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+                                    l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
                                     share_records, i, db_tb);
                             }
                             mysql_free_result(res);
@@ -5033,18 +5033,18 @@ static void *spider_get_status_action(void *arg)
                     }
                     else
                     {
-                        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+                        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld  [WARN SPIDER RESULT] "
                             "record = %lu, i = %lu, tb_name = %s,  failed to do real query\n",
-                            l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+                            l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
                             share_records, i, db_tb);
                         my_hash_delete(&spider_for_sts_conns, (uchar*)sts_conn);
                     }
                 }
                 else
                 {
-                    fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+                    fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
                         "record = %lu, i = %lu,  tb_name = %s, failed to get conn\n",
-                        l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+                        l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday, l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
                         share_records, i, db_tb);
                     if (sts_conn)
                         my_hash_delete(&spider_for_sts_conns, (uchar*)sts_conn);

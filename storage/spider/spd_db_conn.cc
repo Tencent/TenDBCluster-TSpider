@@ -78,6 +78,18 @@ extern HASH spider_open_connections;
 pthread_mutex_t spider_open_conn_mutex;
 const char spider_dig_upper[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+
+tm * spider_get_time(ulong& u_sec)
+{
+	my_hrtime_t current_time;
+	current_time = my_hrtime();
+	time_t cur_time = (time_t)time((time_t*)0);
+	struct tm lt;
+	struct tm *l_time = localtime_r(&cur_time, &lt);
+	u_sec = hrtime_sec_part(current_time);
+	return l_time;
+}
+
 int spider_db_connect(
   const SPIDER_SHARE *share,
   SPIDER_CONN *conn,
@@ -195,9 +207,10 @@ int spider_db_connect(
     (char*)share->server_names[link_idx],
     connect_retry_count, connect_retry_interval)))
   {
-      time_t cur_time = (time_t)time((time_t*)0);
-      struct tm lt;
-      struct tm *l_time = localtime_r(&cur_time, &lt);
+	  ulong usec;
+	  struct tm *l_time = spider_get_time(usec);
+
+
       if (conn->thd)
       {
           conn->connect_error_thd = conn->thd;
@@ -207,10 +220,10 @@ int spider_db_connect(
           if ((conn->connect_error_with_message = thd->is_error()))
               strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
       }
-      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld  [WARN SPIDER RESULT] "
           "failed to connect the hosts: %s, port: %ld, error_num:%d\n",
           l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-          l_time->tm_hour, l_time->tm_min, l_time->tm_sec, share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
+          l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec, share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
       DBUG_RETURN(error_num);
   }
   conn->connect_error = 0;
@@ -770,13 +783,12 @@ int spider_db_errorno(
           error_num, conn->db_conn->get_error());
         if (spider_param_log_result_errors() >= 3)
         {
-          time_t cur_time = (time_t) time((time_t*) 0);
-          struct tm lt;
-          struct tm *l_time = localtime_r(&cur_time, &lt);
-          fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+	    ulong usec;
+	    struct tm *l_time = spider_get_time(usec);
+          fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
             "to %lld: %d %s\n",
             l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-            l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+            l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
             (long long int) current_thd->thread_id, error_num,
             conn->db_conn->get_error());
         }
@@ -801,13 +813,12 @@ int spider_db_errorno(
       my_message(error_num, conn->db_conn->get_error(), MYF(0));
       if (spider_param_log_result_errors() >= 1)
       {
-        time_t cur_time = (time_t) time((time_t*) 0);
-        struct tm lt;
-        struct tm *l_time = localtime_r(&cur_time, &lt);
-        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [ERROR SPIDER RESULT] "
+	    ulong usec;
+	    struct tm *l_time = spider_get_time(usec);
+        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [ERROR SPIDER RESULT] "
           "to %lld: %d %s\n",
           l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-          l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+          l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
           (long long int) current_thd->thread_id, error_num,
           conn->db_conn->get_error());
       }
@@ -844,13 +855,12 @@ int spider_db_errorno(
       conn->db_conn->get_errno(), conn->db_conn->get_error());
     if (spider_param_log_result_errors() >= 1)
     {
-      time_t cur_time = (time_t) time((time_t*) 0);
-      struct tm lt;
-      struct tm *l_time = localtime_r(&cur_time, &lt);
-      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [ERROR SPIDER RESULT] "
+	  ulong usec;
+	  struct tm *l_time = spider_get_time(usec);
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [ERROR SPIDER RESULT] "
         "to %ld: %d %s\n",
         l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-        l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+        l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
         (ulong) current_thd->thread_id, conn->db_conn->get_errno(),
         conn->db_conn->get_error());
     }

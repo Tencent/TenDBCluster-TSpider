@@ -1205,3 +1205,4 @@ CHARSET_INFO* spider_get_item_field_charset(
     Item* item,
     ha_spider* spider
 );
+tm * spider_get_time(ulong& u_sec);
