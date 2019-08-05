@@ -1812,16 +1812,22 @@ int spider_db_mysql::exec_query(
   {
     const char *tgt_str = conn->tgt_host;
     uint32 tgt_len = conn->tgt_host_length;
+	long tgt_port = conn->tgt_port;
+	char tgt_port_str[64];
+	sprintf(tgt_port_str, "%ld", tgt_port);
+	uint32 tgt_port_len = strlen(tgt_port_str);
     spider_string tmp_query_str;
     tmp_query_str.init_calc_mem(230);
     if (tmp_query_str.reserve(
       length + conn->tgt_wrapper_length +
-      tgt_len + (SPIDER_SQL_SPACE_LEN * 2)))
+      tgt_len + (SPIDER_SQL_SPACE_LEN * 3)+ tgt_port_len))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
     tmp_query_str.q_append(conn->tgt_wrapper, conn->tgt_wrapper_length);
     tmp_query_str.q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
     tmp_query_str.q_append(tgt_str, tgt_len);
     tmp_query_str.q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
+	tmp_query_str.q_append(tgt_port_str, tgt_port_len);
+	tmp_query_str.q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
     tmp_query_str.q_append(query, length);
     general_log_write(current_thd, COM_QUERY, tmp_query_str.ptr(),
       tmp_query_str.length());
