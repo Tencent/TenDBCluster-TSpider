@@ -2659,8 +2659,17 @@ int spider_db_fetch_for_item_sum_func(
         Item_sum_count *item_sum_count = (Item_sum_count *) item_sum;
         if (!row->is_null())
           item_sum_count->direct_add(row->val_int());
-        else
-          DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		else
+		{
+			ulong usec;
+			struct tm *l_time = spider_get_time(usec);
+			fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+				" from  %s\n",
+				l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+				l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+				"spider_db_fetch_for_item_sum_func");
+			DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		}
         row->next();
       }
       break;
@@ -2810,8 +2819,17 @@ int spider_db_append_match_fetch(
       DBUG_PRINT("info",("spider ft_info=%p", ft_info));
       if (!row->is_null())
         ft_info->score = (float) row->val_real();
-      else
-        DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	  else
+	  {
+		  ulong usec;
+		  struct tm *l_time = spider_get_time(usec);
+		  fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			  " from  %s\n",
+			  l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			  l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			  "spider_db_append_match_fetch");
+		  DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	  }
       row->next();
       if (ft_info == ft_current)
         break;
@@ -3016,8 +3034,17 @@ int spider_db_fetch_table(
           DBUG_RETURN(HA_ERR_END_OF_FILE);
         }
 #endif
-        else
-          DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		else
+		{
+			ulong usec;
+			struct tm *l_time = spider_get_time(usec);
+			fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+				" from  %s\n",
+				l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+				l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+				"spider_db_fetch_table");
+			DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		}
         row->next();
       } else {
         spider->multi_range_hit_point = 0;
@@ -3123,6 +3150,13 @@ int spider_db_fetch_table(
         DBUG_PRINT("info", ("spider different field_num %zu %u",
           spider->hs_pushed_lcl_fields_num,
           result_list->hs_result->num_fields()));
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			" from  %s\n",
+			l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			"spider_db_fetch_table");
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       for (roop_count = 0; roop_count < (int) field_idxs_num;
@@ -3212,8 +3246,17 @@ int spider_db_fetch_key(
       DBUG_RETURN(HA_ERR_END_OF_FILE);
     }
 #endif
-    else
-      DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	else
+	{
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			" from  %s\n",
+			l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			"spider_db_fetch_key");
+		DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	}
     row->next();
   }
 
@@ -3323,8 +3366,17 @@ int spider_db_fetch_minimum_columns(
       DBUG_RETURN(HA_ERR_END_OF_FILE);
     }
 #endif
-    else
-      DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	else
+	{
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			" from  %s\n",
+			l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			"spider_db_fetch_minimum_columns");
+		DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	}
     row->next();
   }
 

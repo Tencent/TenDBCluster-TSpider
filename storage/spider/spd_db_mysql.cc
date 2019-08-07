@@ -1068,6 +1068,13 @@ int spider_db_mysql_result::fetch_table_mon_status(
   {
     DBUG_PRINT("info",("spider num_fields != 1"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_table_mon_status");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   if (mysql_row[0])
@@ -1197,6 +1204,13 @@ int spider_db_mysql_result::fetch_columns_for_discover_table_structure(
   {
     DBUG_PRINT("info",("spider num_fields != 7"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		" spider_db_mysql_result::fetch_columns_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   do {
@@ -1322,6 +1336,13 @@ int spider_db_mysql_result::fetch_index_for_discover_table_structure(
   {
     DBUG_PRINT("info",("spider num_fields != 13"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_index_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   bool first = TRUE;
@@ -1527,12 +1548,26 @@ int spider_db_mysql_result::fetch_table_for_discover_table_structure(
   {
     DBUG_PRINT("info",("spider num_fields != 18"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_table_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   if (!mysql_row[14])
   {
     DBUG_PRINT("info",("spider mysql_row[14] is null"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_table_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   DBUG_PRINT("info",("spider mysql_row[14]=%s", mysql_row[14]));
@@ -2133,6 +2168,13 @@ int spider_db_mysql::next_result()
   if (!db_conn || db_conn->status != MYSQL_STATUS_READY)
   {
     my_message(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql::next_result");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
 

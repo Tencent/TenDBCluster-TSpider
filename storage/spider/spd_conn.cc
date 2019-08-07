@@ -2064,7 +2064,6 @@ int spider_bg_conn_search(
 	if (sql_type == SPIDER_SQL_TYPE_SELECT_SQL &&
      (result_list->bgs_working || !result_list->finish_flg || conn->bg_conn_working))
     {
-	//add by alex,may exist bug
       thd_proc_info(thd, "Waiting bg action");
       pthread_mutex_lock(&conn->bg_conn_mutex); /* 只有spider_bg_action在pthread_cond_wait时才会加锁成功：1,等query;2，等再次处理结果 */
 	  assert(!conn->bg_conn_working);
