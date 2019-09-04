@@ -11391,7 +11391,7 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found
               }
               DBUG_RETURN(error);
           }
-          if (thd && thd->direct_limit > 0)
+          if (thd && thd->direct_limit > 0 && (file->ha_get_result_list_bg_phase()<=0))
           {
 			  *update_rows_result += update_rows;
 			  *found_rows_result += found_rows;
@@ -11610,8 +11610,7 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
                   file->ha_rnd_end();
               DBUG_RETURN(error);
           }
-         
-          if (thd && thd->direct_limit > 0)
+          if (thd && thd->direct_limit > 0 && (file->ha_get_result_list_bg_phase()<=0))
           {
 			  *delete_rows_result += delete_rows;
               thd->direct_limit -= delete_rows;

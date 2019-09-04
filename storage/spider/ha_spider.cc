@@ -9051,6 +9051,10 @@ int ha_spider::get_bg_result(ha_rows* update_rows,ha_rows* found_rows)
 			counted = TRUE;
 		}
 	}
+	if (this->result_list.bgs_phase > 0)
+	{
+		this->reset_sql_sql(SPIDER_SQL_TYPE_UPDATE_SQL);
+	}
 	DBUG_RETURN(result_list.bgs_error);
 }
 int ha_spider::get_bg_result(ha_rows* delete_rows)
@@ -9089,10 +9093,18 @@ int ha_spider::get_bg_result(ha_rows* delete_rows)
 			counted = TRUE;
 		}
 	}
+	if ((this->direct_update_kinds & SPIDER_SQL_KIND_SQL) && this->result_list.bgs_phase > 0)
+	{
+		this->reset_sql_sql(SPIDER_SQL_TYPE_DELETE_SQL);
+	}
 	DBUG_RETURN(result_list.bgs_error);
 }
 
-
+int ha_spider::get_result_list_bg_phase()
+{
+	DBUG_ENTER("ha_spider::get_result_list_bg_phase");
+	DBUG_RETURN(result_list.bgs_phase);
+}
 int ha_spider::end_bulk_insert()
 {
   int error_num;

@@ -1603,6 +1603,8 @@ int spider_set_conn_bg_param_for_dml(
 	SPIDER_RESULT_LIST *result_list = &spider->result_list;
 	THD *thd = spider->trx->thd;
 	DBUG_ENTER("spider_set_conn_bg_param");
+	st_select_lex *select_lex;
+	select_lex = spider_get_select_lex(spider);
 	/* dml_bgs_mode is determed by:
 	1. sql is INSERT (current only support insert)
 	2. spider_bgs_mode is 1;
@@ -1614,7 +1616,10 @@ int spider_set_conn_bg_param_for_dml(
 	8. don't support limit*/
 	/* TODO  set dml_bgs_mode = 1 when involving multiple partitions */
 	if (thd &&
-		thd->direct_limit <=0 &&
+		select_lex && 
+		(!(select_lex->explicit_limit || 
+			select_lex->offset_limit || 
+			select_lex->select_limit))  &&
 		(thd->lex->sql_command == SQLCOM_INSERT ||
 			thd->lex->sql_command == SQLCOM_UPDATE ||
 			thd->lex->sql_command == SQLCOM_DELETE ||
