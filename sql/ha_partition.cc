@@ -4829,19 +4829,40 @@ int ha_partition::end_bulk_insert()
        i= bitmap_get_next_set(&m_bulk_insert_started, i))
   {
     int tmp;
-    if ((tmp = m_file[i]->ha_end_bulk_insert()))
+	m_file[i]->set_total_inserted_rows(m_bulk_inserted_rows);
+    if (bitmap_is_set(&m_bulk_insert_started, i) &&
+		(tmp = m_file[i]->ha_end_bulk_insert()))
     {
         error = tmp;
-        if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
-        {/* if error happened, set next_auto_inc_val = 0, then get max next time */
-            lock_auto_increment();
-            part_share->next_auto_inc_val = 0;
-            part_share->auto_inc_initialized = FALSE;
-            unlock_auto_increment();
-        }
     }
   }
+
+  for (i = bitmap_get_first_set(&m_bulk_insert_started);
+	  i < m_tot_parts;
+	  i = bitmap_get_next_set(&m_bulk_insert_started, i))
+  {
+	  int tmp;
+	  if (bitmap_is_set(&m_bulk_insert_started, i) &&
+		  (tmp = m_file[i]->ha_get_bg_result()))
+	  {
+		  error = tmp;
+	  }
+  }
   bitmap_clear_all(&m_bulk_insert_started);
+  if (error)
+  {
+	  /**
+	  if error happened, reset the next_auto_inc_val,
+	  get the max_value from the remotedb next time
+	  */
+	  if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
+	  {/* if error happened, set next_auto_inc_val = 0, then get max next time */
+		  lock_auto_increment();
+		  part_share->next_auto_inc_val = 0;
+		  part_share->auto_inc_initialized = FALSE;
+		  unlock_auto_increment();
+	  }
+  } 
   DBUG_RETURN(error);
 }
 
@@ -8159,7 +8180,6 @@ int ha_partition::info(uint flag)
                    ("checking all partitions for auto_increment_value"));
         do
         {
-          file= *file_array;
           /* get the max auto_increment_value from each partition shard */
           file = *file_array;
           if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
@@ -11371,10 +11391,10 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found
               }
               DBUG_RETURN(error);
           }
-          *update_rows_result += update_rows;
-          *found_rows_result += found_rows;
           if (thd && thd->direct_limit > 0)
           {
+			  *update_rows_result += update_rows;
+			  *found_rows_result += found_rows;
               thd->direct_limit -= found_rows;
               if (thd->direct_limit <= 0)
                   finish_flag = true;
@@ -11389,6 +11409,21 @@ int ha_partition::direct_update_rows(ha_rows *update_rows_result, ha_rows *found
         DBUG_RETURN(error);
     }
   }
+  if (finish_flag == false)
+  {
+	  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+		  i < m_tot_parts;
+		  i = bitmap_get_next_set(&m_part_info->read_partitions, i))
+	  {
+		  file = m_file[i];
+		  if (bitmap_is_set(&(m_part_info->lock_partitions), i) &&
+			  (error = m_file[i]->ha_get_bg_result(update_rows_result, found_rows_result)))
+		  {
+			  DBUG_RETURN(error);
+		  }
+	  }
+  }
+  bitmap_clear_all(&(m_part_info->lock_partitions));
   DBUG_RETURN(0);
 }
 
@@ -11575,9 +11610,10 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
                   file->ha_rnd_end();
               DBUG_RETURN(error);
           }
-          *delete_rows_result += delete_rows;
+         
           if (thd && thd->direct_limit > 0)
           {
+			  *delete_rows_result += delete_rows;
               thd->direct_limit -= delete_rows;
               if (thd->direct_limit <= 0)
                   finish_flag = true;
@@ -11592,6 +11628,21 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result)
         DBUG_RETURN(error);
     }
   }
+  if (finish_flag == false)
+  {
+	  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
+		  i < m_tot_parts;
+		  i = bitmap_get_next_set(&m_part_info->read_partitions, i))
+	  {
+		  file = m_file[i];
+		  if (bitmap_is_set(&(m_part_info->lock_partitions), i) &&
+			  (error = m_file[i]->ha_get_bg_result(delete_rows_result)))
+		  {
+			  DBUG_RETURN(error);
+		  }
+	  }
+  }
+  bitmap_clear_all(&(m_part_info->lock_partitions));
   DBUG_RETURN(0);
 }
 

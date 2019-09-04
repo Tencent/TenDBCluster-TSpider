@@ -1449,6 +1449,32 @@ int spider_param_bgs_mode(
 }
 
 /*
+spider_bgs_dml is effective only when spider_bgs_mode >0
+current support dml sql type is insert
+0 :background dml is disabled
+1 :background dml is used if search with no lock
+*/
+static MYSQL_THDVAR_INT(
+	bgs_dml, /* name */
+	PLUGIN_VAR_RQCMDARG, /* opt */
+	"Mode of background dml", /* comment */
+	NULL, /* check */
+	NULL, /* update */
+	0, /* def */
+	0, /* min */
+	1, /* max */
+	0 /* blk */
+);
+
+int spider_param_bgs_dml(
+	THD *thd
+) {
+	DBUG_ENTER("spider_param_bgs_dml");
+	DBUG_RETURN(THDVAR(thd, bgs_dml));
+}
+
+
+/*
  -1 :use table parameter
   0 :records is gotten usually
   1-:number of records
@@ -3567,6 +3593,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(select_column_mode),
 #ifndef WITHOUT_SPIDER_BG_SEARCH
   MYSQL_SYSVAR(bgs_mode),
+  MYSQL_SYSVAR(bgs_dml),
   MYSQL_SYSVAR(bgs_first_read),
   MYSQL_SYSVAR(bgs_second_read),
 #endif

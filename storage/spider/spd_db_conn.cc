@@ -78,6 +78,18 @@ extern HASH spider_open_connections;
 pthread_mutex_t spider_open_conn_mutex;
 const char spider_dig_upper[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+
+tm * spider_get_time(ulong& u_sec)
+{
+	my_hrtime_t current_time;
+	current_time = my_hrtime();
+	time_t cur_time = (time_t)time((time_t*)0);
+	struct tm lt;
+	struct tm *l_time = localtime_r(&cur_time, &lt);
+	u_sec = hrtime_sec_part(current_time);
+	return l_time;
+}
+
 int spider_db_connect(
   const SPIDER_SHARE *share,
   SPIDER_CONN *conn,
@@ -195,9 +207,10 @@ int spider_db_connect(
     (char*)share->server_names[link_idx],
     connect_retry_count, connect_retry_interval)))
   {
-      time_t cur_time = (time_t)time((time_t*)0);
-      struct tm lt;
-      struct tm *l_time = localtime_r(&cur_time, &lt);
+	  ulong usec;
+	  struct tm *l_time = spider_get_time(usec);
+
+
       if (conn->thd)
       {
           conn->connect_error_thd = conn->thd;
@@ -207,10 +220,10 @@ int spider_db_connect(
           if ((conn->connect_error_with_message = thd->is_error()))
               strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
       }
-      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld  [WARN SPIDER RESULT] "
           "failed to connect the hosts: %s, port: %ld, error_num:%d\n",
           l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-          l_time->tm_hour, l_time->tm_min, l_time->tm_sec, share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
+          l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec, share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
       DBUG_RETURN(error_num);
   }
   conn->connect_error = 0;
@@ -603,7 +616,7 @@ int spider_db_before_query(
     spider_mta_conn_mutex_lock(conn);
     conn->need_mon = need_mon;
   }
-  DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
+ // DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
   tmp_mta_conn_mutex_lock_already = conn->mta_conn_mutex_lock_already;
   conn->mta_conn_mutex_lock_already = TRUE;
   if ((error_num = spider_db_conn_queue_action(conn)))
@@ -770,13 +783,12 @@ int spider_db_errorno(
           error_num, conn->db_conn->get_error());
         if (spider_param_log_result_errors() >= 3)
         {
-          time_t cur_time = (time_t) time((time_t*) 0);
-          struct tm lt;
-          struct tm *l_time = localtime_r(&cur_time, &lt);
-          fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+	    ulong usec;
+	    struct tm *l_time = spider_get_time(usec);
+          fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
             "to %lld: %d %s\n",
             l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-            l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+            l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
             (long long int) current_thd->thread_id, error_num,
             conn->db_conn->get_error());
         }
@@ -801,13 +813,12 @@ int spider_db_errorno(
       my_message(error_num, conn->db_conn->get_error(), MYF(0));
       if (spider_param_log_result_errors() >= 1)
       {
-        time_t cur_time = (time_t) time((time_t*) 0);
-        struct tm lt;
-        struct tm *l_time = localtime_r(&cur_time, &lt);
-        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [ERROR SPIDER RESULT] "
+	    ulong usec;
+	    struct tm *l_time = spider_get_time(usec);
+        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [ERROR SPIDER RESULT] "
           "to %lld: %d %s\n",
           l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-          l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+          l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
           (long long int) current_thd->thread_id, error_num,
           conn->db_conn->get_error());
       }
@@ -844,13 +855,12 @@ int spider_db_errorno(
       conn->db_conn->get_errno(), conn->db_conn->get_error());
     if (spider_param_log_result_errors() >= 1)
     {
-      time_t cur_time = (time_t) time((time_t*) 0);
-      struct tm lt;
-      struct tm *l_time = localtime_r(&cur_time, &lt);
-      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [ERROR SPIDER RESULT] "
+	  ulong usec;
+	  struct tm *l_time = spider_get_time(usec);
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [ERROR SPIDER RESULT] "
         "to %ld: %d %s\n",
         l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-        l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+        l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
         (ulong) current_thd->thread_id, conn->db_conn->get_errno(),
         conn->db_conn->get_error());
     }
@@ -896,7 +906,7 @@ int spider_db_set_names_internal(
       spider_mta_conn_mutex_lock(conn);
       conn->need_mon = need_mon;
     }
-    DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
+    //DBUG_ASSERT(conn->mta_conn_mutex_file_pos.file_name);
     if (
       !conn->access_charset ||
       share->access_charset->cset != conn->access_charset->cset
@@ -2649,8 +2659,17 @@ int spider_db_fetch_for_item_sum_func(
         Item_sum_count *item_sum_count = (Item_sum_count *) item_sum;
         if (!row->is_null())
           item_sum_count->direct_add(row->val_int());
-        else
-          DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		else
+		{
+			ulong usec;
+			struct tm *l_time = spider_get_time(usec);
+			fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+				" from  %s\n",
+				l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+				l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+				"spider_db_fetch_for_item_sum_func");
+			DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		}
         row->next();
       }
       break;
@@ -2800,8 +2819,17 @@ int spider_db_append_match_fetch(
       DBUG_PRINT("info",("spider ft_info=%p", ft_info));
       if (!row->is_null())
         ft_info->score = (float) row->val_real();
-      else
-        DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	  else
+	  {
+		  ulong usec;
+		  struct tm *l_time = spider_get_time(usec);
+		  fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			  " from  %s\n",
+			  l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			  l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			  "spider_db_append_match_fetch");
+		  DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	  }
       row->next();
       if (ft_info == ft_current)
         break;
@@ -3006,8 +3034,17 @@ int spider_db_fetch_table(
           DBUG_RETURN(HA_ERR_END_OF_FILE);
         }
 #endif
-        else
-          DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		else
+		{
+			ulong usec;
+			struct tm *l_time = spider_get_time(usec);
+			fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+				" from  %s\n",
+				l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+				l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+				"spider_db_fetch_table");
+			DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+		}
         row->next();
       } else {
         spider->multi_range_hit_point = 0;
@@ -3113,6 +3150,13 @@ int spider_db_fetch_table(
         DBUG_PRINT("info", ("spider different field_num %zu %u",
           spider->hs_pushed_lcl_fields_num,
           result_list->hs_result->num_fields()));
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			" from  %s\n",
+			l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			"spider_db_fetch_table");
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       for (roop_count = 0; roop_count < (int) field_idxs_num;
@@ -3202,8 +3246,17 @@ int spider_db_fetch_key(
       DBUG_RETURN(HA_ERR_END_OF_FILE);
     }
 #endif
-    else
-      DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	else
+	{
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			" from  %s\n",
+			l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			"spider_db_fetch_key");
+		DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	}
     row->next();
   }
 
@@ -3313,8 +3366,17 @@ int spider_db_fetch_minimum_columns(
       DBUG_RETURN(HA_ERR_END_OF_FILE);
     }
 #endif
-    else
-      DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	else
+	{
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+			" from  %s\n",
+			l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+			l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+			"spider_db_fetch_minimum_columns");
+		DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
+	}
     row->next();
   }
 
@@ -5863,6 +5925,9 @@ int spider_db_bulk_insert(
   bool mta_conn_mutex_unlock_later_backup;
   DBUG_ENTER("spider_db_bulk_insert");
 
+  if ((error_num = spider_set_conn_bg_param_for_dml(spider)))
+	  DBUG_RETURN(error_num);
+
   if (!bulk_end)
   {
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
@@ -5888,6 +5953,7 @@ int spider_db_bulk_insert(
   {
     int roop_count2;
     SPIDER_CONN *conn, *first_insert_conn = NULL;
+
     if ((error_num = spider->append_insert_terminator_sql_part(
       SPIDER_SQL_TYPE_INSERT_SQL)))
     {
@@ -5919,6 +5985,29 @@ int spider_db_bulk_insert(
               error_num = ER_SPIDER_CON_COUNT_ERROR;
               DBUG_RETURN(error_num);
           }
+#ifndef WITHOUT_SPIDER_BG_SEARCH
+		  //parallel
+		  if (spider->result_list.bgs_phase > 0)
+		  {
+			  if (error_num = spider_bg_conn_search(spider, roop_count2, roop_count2,
+				  TRUE, FALSE, FALSE /*(roop_count != link_ok)*/, SPIDER_SQL_TYPE_INSERT_SQL))
+			  {
+				  if (spider->sql_kinds & SPIDER_SQL_KIND_SQL)
+					  spider->set_insert_to_pos_sql(SPIDER_SQL_TYPE_INSERT_SQL);
+
+				  DBUG_PRINT("info", ("spider error_num 1=%d", error_num));
+				  DBUG_RETURN(error_num);
+			  }
+
+			  if (first_insert_link_idx == -1)
+			  {
+				  first_insert_link_idx = roop_count2;
+				  first_insert_conn = conn;
+			  }
+			  continue;
+		  }
+#endif
+		  // serial
           dbton_handler = spider->dbton_handler[conn->dbton_id];
           mta_conn_mutex_lock_already_backup =
             conn->mta_conn_mutex_lock_already;
@@ -7201,8 +7290,9 @@ int spider_db_direct_update(
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
   } else {
     if (
-      (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL) &&
-      (error_num = spider->append_direct_update_set_sql_part())
+	  (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL) &&
+      ((error_num = spider->append_direct_update_set_sql_part()) ||
+		(error_num = spider_set_conn_bg_param_for_dml(spider)))
     ) {
       DBUG_RETURN(error_num);
     }
@@ -7264,6 +7354,20 @@ int spider_db_direct_update(
         DBUG_RETURN(error_num);
     }
     sql_type = SPIDER_SQL_TYPE_UPDATE_SQL;
+#ifndef WITHOUT_SPIDER_BG_SEARCH
+	if (spider->result_list.bgs_phase > 0)
+	{
+		if (error_num = spider_bg_conn_search(spider, roop_count, roop_count,
+			TRUE, FALSE, FALSE /*(roop_count != link_ok)*/, SPIDER_SQL_TYPE_UPDATE_SQL))
+		{
+			DBUG_PRINT("info", ("spider error_num 1=%d", error_num));
+			DBUG_RETURN(error_num);
+		}
+		continue;
+	}
+	//parallel
+#endif
+	// serial
     spider_db_handler *dbton_hdl = spider->dbton_handler[conn->dbton_id];
     if (dbton_hdl->need_lock_before_set_sql_for_exec(sql_type))
     {
@@ -7370,7 +7474,11 @@ int spider_db_direct_update(
     conn->mta_conn_mutex_unlock_later = FALSE;
     spider_mta_conn_mutex_unlock(conn);
   }
-  spider->reset_sql_sql(SPIDER_SQL_TYPE_UPDATE_SQL);
+  //if start multi_update , reset may clear query_string,before sql exe
+  if (spider->result_list.bgs_phase <= 0)
+  {
+	  spider->reset_sql_sql(SPIDER_SQL_TYPE_UPDATE_SQL);
+  }
   DBUG_RETURN(0);
 }
 #endif
@@ -7864,7 +7972,8 @@ int spider_db_direct_delete(
   {
     if (
       (error_num = spider->append_delete_sql_part()) ||
-      (error_num = spider->append_from_sql_part(SPIDER_SQL_TYPE_DELETE_SQL))
+      (error_num = spider->append_from_sql_part(SPIDER_SQL_TYPE_DELETE_SQL)) ||
+	  (error_num = spider_set_conn_bg_param_for_dml(spider))
     ) {
       DBUG_RETURN(error_num);
     }
@@ -7903,6 +8012,20 @@ int spider_db_direct_delete(
         DBUG_RETURN(error_num);
     }
     sql_type = SPIDER_SQL_TYPE_DELETE_SQL;
+#ifndef WITHOUT_SPIDER_BG_SEARCH
+	if (spider->result_list.bgs_phase > 0)
+	{
+		if (error_num = spider_bg_conn_search(spider, roop_count, roop_count,
+			TRUE, FALSE, FALSE /*(roop_count != link_ok)*/, SPIDER_SQL_TYPE_DELETE_SQL))
+		{
+			DBUG_PRINT("info", ("spider error_num 1=%d", error_num));
+			DBUG_RETURN(error_num);
+		}
+		continue;
+	}
+	//parallel
+#endif
+
     spider_db_handler *dbton_hdl = spider->dbton_handler[conn->dbton_id];
     if (dbton_hdl->need_lock_before_set_sql_for_exec(sql_type))
     {
@@ -8002,7 +8125,7 @@ int spider_db_direct_delete(
     spider_mta_conn_mutex_unlock(conn);
   }
   int error_num2 = 0;
-  if (spider->direct_update_kinds & SPIDER_SQL_KIND_SQL)
+  if ((spider->direct_update_kinds & SPIDER_SQL_KIND_SQL) && spider->result_list.bgs_phase <=0)
   {
     if ((error_num = spider->reset_sql_sql(SPIDER_SQL_TYPE_DELETE_SQL)))
       error_num2 = error_num;

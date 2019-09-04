@@ -1068,6 +1068,13 @@ int spider_db_mysql_result::fetch_table_mon_status(
   {
     DBUG_PRINT("info",("spider num_fields != 1"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_table_mon_status");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   if (mysql_row[0])
@@ -1197,6 +1204,13 @@ int spider_db_mysql_result::fetch_columns_for_discover_table_structure(
   {
     DBUG_PRINT("info",("spider num_fields != 7"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		" spider_db_mysql_result::fetch_columns_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   do {
@@ -1322,6 +1336,13 @@ int spider_db_mysql_result::fetch_index_for_discover_table_structure(
   {
     DBUG_PRINT("info",("spider num_fields != 13"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_index_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   bool first = TRUE;
@@ -1527,12 +1548,26 @@ int spider_db_mysql_result::fetch_table_for_discover_table_structure(
   {
     DBUG_PRINT("info",("spider num_fields != 18"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_table_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   if (!mysql_row[14])
   {
     DBUG_PRINT("info",("spider mysql_row[14] is null"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql_result::fetch_table_for_discover_table_structure");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   DBUG_PRINT("info",("spider mysql_row[14]=%s", mysql_row[14]));
@@ -1812,16 +1847,22 @@ int spider_db_mysql::exec_query(
   {
     const char *tgt_str = conn->tgt_host;
     uint32 tgt_len = conn->tgt_host_length;
+	long tgt_port = conn->tgt_port;
+	char tgt_port_str[64];
+	sprintf(tgt_port_str, "%ld", tgt_port);
+	uint32 tgt_port_len = strlen(tgt_port_str);
     spider_string tmp_query_str;
     tmp_query_str.init_calc_mem(230);
     if (tmp_query_str.reserve(
       length + conn->tgt_wrapper_length +
-      tgt_len + (SPIDER_SQL_SPACE_LEN * 2)))
+      tgt_len + (SPIDER_SQL_SPACE_LEN * 3)+ tgt_port_len))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
     tmp_query_str.q_append(conn->tgt_wrapper, conn->tgt_wrapper_length);
     tmp_query_str.q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
     tmp_query_str.q_append(tgt_str, tgt_len);
     tmp_query_str.q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
+	tmp_query_str.q_append(tgt_port_str, tgt_port_len);
+	tmp_query_str.q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
     tmp_query_str.q_append(query, length);
     general_log_write(current_thd, COM_QUERY, tmp_query_str.ptr(),
       tmp_query_str.length());
@@ -1859,13 +1900,10 @@ int spider_db_mysql::exec_query(
     THD *thd = current_thd;
     uint log_result_error_with_sql = spider_param_log_result_error_with_sql();
     if (log_result_error_with_sql)
-    {
-      time_t cur_time = (time_t) time((time_t*) 0);
-      struct tm lt;
-      struct tm *l_time = localtime_r(&cur_time, &lt);
-      spider_string tmp_query_str;
-      tmp_query_str.init_calc_mem(243);
-      uint query_length = thd->query_length();
+    { 
+	  spider_string tmp_query_str;
+	  tmp_query_str.init_calc_mem(243);
+	  uint query_length = thd->query_length();
       if ((log_result_error_with_sql & 2) && query_length)
       {
         Security_context *security_ctx = thd->security_ctx;
@@ -1873,11 +1911,13 @@ int spider_db_mysql::exec_query(
         if (tmp_query_str.reserve(query_length + 1))
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
         tmp_query_str.q_append(thd->query(), query_length);
-        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [RECV SPIDER SQL] "
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [RECV SPIDER SQL] "
           "from [%s][%s] to %ld:  "
           "sql: %s\n",
-          l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-          l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+		   l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		   l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
           security_ctx->user ? security_ctx->user : "system user",
           security_ctx->host_or_ip,
           (ulong) thd->thread_id,
@@ -1889,25 +1929,26 @@ int spider_db_mysql::exec_query(
         if (tmp_query_str.reserve(length + 1))
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
         tmp_query_str.q_append(query, length);
-        fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [SEND SPIDER SQL] "
+		ulong usec;
+		struct tm *l_time = spider_get_time(usec);
+		fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [SEND SPIDER SQL] "
           "from %ld to [%s] %ld:  "
           "sql: %s\n",
-          l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-          l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+		  l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		  l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
           (ulong) thd->thread_id, conn->tgt_host, (ulong) db_conn->thread_id,
           tmp_query_str.c_ptr_safe());
       }
     }
     if (log_result_errors >= 2 && db_conn->warning_count > 0)
     {
-      time_t cur_time = (time_t) time((time_t*) 0);
-      struct tm lt;
-      struct tm *l_time = localtime_r(&cur_time, &lt);
-      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+	  ulong usec;
+	  struct tm *l_time = spider_get_time(usec);
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
         "from [%s] %ld to %ld:  "
         "affected_rows: %llu  id: %llu  status: %u  warning_count: %u\n",
         l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-        l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+        l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
         conn->tgt_host, (ulong) db_conn->thread_id, (ulong) thd->thread_id,
         db_conn->affected_rows, db_conn->insert_id,
         db_conn->server_status, db_conn->warning_count);
@@ -1915,14 +1956,13 @@ int spider_db_mysql::exec_query(
         print_warnings(l_time);
     } else if (log_result_errors >= 4)
     {
-      time_t cur_time = (time_t) time((time_t*) 0);
-      struct tm lt;
-      struct tm *l_time = localtime_r(&cur_time, &lt);
-      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [INFO SPIDER RESULT] "
+	  ulong usec;
+	  struct tm *l_time = spider_get_time(usec);
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [INFO SPIDER RESULT] "
         "from [%s] %ld to %ld:  "
         "affected_rows: %llu  id: %llu  status: %u  warning_count: %u\n",
         l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-        l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+        l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
         conn->tgt_host, (ulong) db_conn->thread_id, (ulong) thd->thread_id,
         db_conn->affected_rows, db_conn->insert_id,
         db_conn->server_status, db_conn->warning_count);
@@ -2043,12 +2083,14 @@ void spider_db_mysql::print_warnings(
           mysql_free_result(res);
           DBUG_VOID_RETURN;
         }
+		my_hrtime_t current_time;
+		current_time = my_hrtime();
         while (row)
         {
-          fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d [WARN SPIDER RESULT] "
+          fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld  [WARN SPIDER RESULT] "
             "from [%s] %ld to %ld: %s %s %s\n",
             l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-            l_time->tm_hour, l_time->tm_min, l_time->tm_sec,
+            l_time->tm_hour, l_time->tm_min, l_time->tm_sec, hrtime_sec_part(current_time),
             conn->tgt_host, (ulong) db_conn->thread_id,
             (ulong) current_thd->thread_id, row[0], row[1], row[2]);
           row = mysql_fetch_row(res);
@@ -2126,6 +2168,13 @@ int spider_db_mysql::next_result()
   if (!db_conn || db_conn->status != MYSQL_STATUS_READY)
   {
     my_message(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
+	ulong usec;
+	struct tm *l_time = spider_get_time(usec);
+	fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
+		" from  %s\n",
+		l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
+		l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
+		"spider_db_mysql::next_result");
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
 
@@ -3863,7 +3912,13 @@ int spider_db_mysql_util::open_item_func(
         last_str = SPIDER_SQL_IS_TRUE_STR;
         last_str_length = SPIDER_SQL_IS_TRUE_LEN;
         break;
-      } else if (func_name_length == 7)
+      }
+	  else if (func_name_length == 6 &&
+		  !strncasecmp("regexp", func_name, func_name_length)
+		  ) {
+		  break;
+	  }
+	  else if (func_name_length == 7)
       {
         if (!strncasecmp("isfalse", func_name, func_name_length))
         {
@@ -10969,7 +11024,8 @@ int spider_mysql_handler::set_sql_for_exec(
 
 int spider_mysql_handler::set_sql_for_exec(
   ulong sql_type,
-  int link_idx
+  int link_idx,
+  bool copy
 ) {
   int error_num;
   uint tmp_pos;
@@ -10978,10 +11034,12 @@ int spider_mysql_handler::set_sql_for_exec(
   int all_link_idx = spider->conn_link_idx[link_idx];
   DBUG_ENTER("spider_mysql_handler::set_sql_for_exec");
   DBUG_PRINT("info",("spider this=%p", this));
+  DBUG_ASSERT(!copy || sql_type == SPIDER_SQL_TYPE_INSERT_SQL);
   if (sql_type & (SPIDER_SQL_TYPE_SELECT_SQL | SPIDER_SQL_TYPE_TMP_SQL))
   {
-    if (mysql_share->same_db_table_name || link_idx == first_link_idx)
-    {
+    if ((mysql_share->same_db_table_name || link_idx == first_link_idx) &&
+		!copy)
+	{
       if (sql_type & SPIDER_SQL_TYPE_SELECT_SQL)
         exec_sql = &sql;
       if (sql_type & SPIDER_SQL_TYPE_TMP_SQL)
@@ -11064,7 +11122,8 @@ int spider_mysql_handler::set_sql_for_exec(
   }
   if (sql_type & SPIDER_SQL_TYPE_INSERT_SQL)
   {
-    if (mysql_share->same_db_table_name || link_idx == first_link_idx)
+    if ((mysql_share->same_db_table_name || link_idx == first_link_idx) &&
+		!copy)
       exec_insert_sql = &insert_sql;
     else {
       exec_insert_sql = &result_list->insert_sqls[link_idx];
