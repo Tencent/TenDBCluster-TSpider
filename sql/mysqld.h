@@ -208,6 +208,7 @@ enum vers_alter_history_enum
 /* System Versioning end */
 
 extern char *mysql_home_ptr, *pidfile_name_ptr;
+extern char *tdbctl_wrapper_name;
 extern MYSQL_PLUGIN_IMPORT char glob_hostname[FN_REFLEN];
 extern char mysql_home[FN_REFLEN];
 extern char pidfile_name[FN_REFLEN], system_time_zone[30], *opt_init_file;

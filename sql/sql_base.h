@@ -24,10 +24,6 @@
 #include "table_cache.h"
 
 
-#define SERVER_NAME_PRE "SPT"
-#define SERVER_SPIDER_NAME_PRE "SPIDER"
-#define SERVER_TDBCTL_NAME_PRE "TDBCTL"
-
 class Item_ident;
 struct Name_resolution_context;
 class Open_table_context;

@@ -10660,32 +10660,15 @@ bool tdbctl_need_current_db(THD *thd, LEX *lex)
     return FALSE;
 }
 
-bool tdbctl_get_ctl_info(THD *thd, char *host, int *port, char *user, char *passwd)
+void tdbctl_get_ctl_server_list(THD *thd, List<FOREIGN_SERVER> *server_list)
 {
-    MEM_ROOT *mem = thd->mem_root;
-    FOREIGN_SERVER *server ;
-    List<FOREIGN_SERVER> server_list;
-
-    get_server_by_wrapper(&server_list, mem,  SERVER_TDBCTL_NAME_PRE);
-
-    if (server_list.is_empty())
-    {
-        return TRUE;
-    }
-    else
-    {
-        server = server_list.pop();
-        strcpy(host, server->host);
-        strcpy(user, server->username);
-        strcpy(passwd, server->password);
-        *port = server->port;
-    }
-
-    return FALSE;
+  MEM_ROOT* mem = thd->mem_root;
+  const char* wrapper_name = tdbctl_wrapper_name;
+  get_server_by_wrapper(server_list, mem, wrapper_name);
 }
 
 
-bool tdbctl_conn_connect(THD *thd, MYSQL *mysql, char *host, int port, char *user, char *passwd)
+MYSQL* tdbctl_conn_connect(THD *thd, char *host, int port, char *user, char *passwd)
 {
     int read_timeout = 600;
     int write_timeout = 600;
@@ -10693,24 +10676,27 @@ bool tdbctl_conn_connect(THD *thd, MYSQL *mysql, char *host, int port, char *use
     uint connect_retry_count = 3;
     ulong connect_retry_interval = 1000;
     uint real_connect_option = 0;
+    MYSQL *mysql;
 
     while (connect_retry_count-- > 0)
     {
-        mysql_init(mysql);
+        mysql = mysql_init(NULL);
         mysql_options(mysql, MYSQL_OPT_READ_TIMEOUT, &read_timeout);
         mysql_options(mysql, MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
         mysql_options(mysql, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
         real_connect_option = CLIENT_INTERACTIVE | CLIENT_MULTI_STATEMENTS;
         if (!mysql_real_connect(mysql, host, user, passwd, "", port, NULL, real_connect_option))
         {
+          sql_print_warning("tdbctl connnect fail: error code is %d, error message: %s", mysql_errno(mysql), mysql_error(mysql));
+          if (mysql)
             mysql_close(mysql);
-            if (!connect_retry_count)
-                return TRUE;
+          if (!connect_retry_count)
+            return NULL;
         }
         else
             break;
     }
-    return FALSE;
+    return mysql;
 }
 
 void tdbctl_conn_close(THD *thd, MYSQL *mysql)
@@ -10827,42 +10813,55 @@ bool tbdctl_conn_exec_query(THD *thd, MYSQL *mysql, String *sql)
 }
 
 
-bool tdbctl_execute_command(THD *thd, LEX *lex)
+bool tdbctl_execute_command(THD* thd, LEX* lex)
 {
-    MYSQL mysql;
-    String sql_str;
-    char host[64] = "";
-    char user[64] = "";
-    char passwd[64] = "";
-    int port = 0;
+  List<FOREIGN_SERVER> server_list;
+  FOREIGN_SERVER* server;
+  MYSQL *mysql = NULL;
+  String sql_str;
+  char host[64] = "";
+  char user[64] = "";
+  char passwd[64] = "";
+  int port = 0;
+  bool conn_ret = FALSE;
 
-    if (tdbctl_get_ctl_info(thd, host, &port, user, passwd))
-    {
-        my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "get ctl info", "");
-        return TRUE;
-    }
-    if (tdbctl_conn_connect(thd, &mysql, host, port, user, passwd))
-    {
-        const char *err_msg = mysql_error(&mysql);
-        my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "connect to tdbctl, ", err_msg);
-        return TRUE;
-    }
-    if (tdbctl_conn_before_query(thd, lex, &mysql, &sql_str))
-    {
-        my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "append sql before query", "");
-        return TRUE;
-    }
 
-    if (tbdctl_conn_exec_query(thd, &mysql, &sql_str))
+  tdbctl_get_ctl_server_list(thd, &server_list);
+  while (!server_list.is_empty())
+  {
+    server = server_list.pop();
+    strcpy(host, server->host);
+    strcpy(user, server->username);
+    strcpy(passwd, server->password);
+    port = server->port;
+    if (mysql = tdbctl_conn_connect(thd, host, port, user, passwd))
     {
-        int err_code = mysql_errno(&mysql);
-        const char *err_msg = mysql_error(&mysql);
-        my_error(ER_EXECUTE_DDL_FAILED_IN_CTL, MYF(0), err_code, err_msg);
-        tdbctl_conn_close(thd, &mysql);
-        return TRUE;
+      break;
     }
+  }
 
-    tdbctl_conn_close(thd, &mysql);
-    my_ok(thd);
-    return FALSE;
+  if (!mysql)
+  {
+    my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "connect to tdbctl, ", host, port);
+    return TRUE;
+  }
+
+  if (tdbctl_conn_before_query(thd, lex, mysql, &sql_str))
+  {
+    my_error(ER_BEFORE_EXEC_DDL_IN_CTL, MYF(0), "append sql before query", "", 0);
+    return TRUE;
+  }
+
+  if (tbdctl_conn_exec_query(thd, mysql, &sql_str))
+  {
+    int err_code = mysql_errno(mysql);
+    const char* err_msg = mysql_error(mysql);
+    my_error(ER_EXECUTE_DDL_FAILED_IN_CTL, MYF(0), err_code, err_msg);
+    tdbctl_conn_close(thd, mysql);
+    return TRUE;
+  }
+
+  tdbctl_conn_close(thd, mysql);
+  my_ok(thd);
+  return FALSE;
 }

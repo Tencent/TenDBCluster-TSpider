@@ -7932,6 +7932,6 @@ ER_CANT_UPDATE_WITH_WRITELOCK
 ER_UNSUPPORT_SQL_IN_DDL_CTL
         eng "SQL TYPE: %s ,can not be supported when set ddl_execute_by_ctl"
 ER_BEFORE_EXEC_DDL_IN_CTL
-        eng "Error happened before execute ddl in tdbctl when %s %s"
+        eng "Error happened before execute ddl in tdbctl when %s %d"
 ER_EXECUTE_DDL_FAILED_IN_CTL
         eng "Failed to execute ddl, Error code: %d, Detail Error Messages: %s"

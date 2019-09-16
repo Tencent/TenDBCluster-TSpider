@@ -832,6 +832,7 @@ static int cleanup_done;
 static ulong opt_specialflag;
 static char *opt_binlog_index_name;
 char *mysql_home_ptr, *pidfile_name_ptr;
+char *tdbctl_wrapper_name;
 /** Initial command line arguments (count), after load_defaults().*/
 static int defaults_argc;
 /**

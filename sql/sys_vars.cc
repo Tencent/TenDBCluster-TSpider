@@ -6199,3 +6199,8 @@ static Sys_var_mybool Sys_ddl_execute_by_ctl(
     "use tdbctl to process ddl query",
     SESSION_VAR(ddl_execute_by_ctl), CMD_LINE(OPT_ARG),
     DEFAULT(FALSE));
+
+static Sys_var_charptr Sys_tdbctl_wrapper_name(
+  "tdbctl_wrapper_name", "wrapper name of tdbctl server",
+  READ_ONLY GLOBAL_VAR(tdbctl_wrapper_name),
+  CMD_LINE(REQUIRED_ARG), IN_FS_CHARSET, DEFAULT("TDBCTL"));
