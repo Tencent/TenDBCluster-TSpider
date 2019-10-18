@@ -833,6 +833,7 @@ static ulong opt_specialflag;
 static char *opt_binlog_index_name;
 char *mysql_home_ptr, *pidfile_name_ptr;
 char *tdbctl_wrapper_name;
+char *tdbctl_skip_ddl_convert_db;
 /** Initial command line arguments (count), after load_defaults().*/
 static int defaults_argc;
 /**
@@ -1869,8 +1870,8 @@ static void close_connections(void)
   /* All threads has now been aborted */
   DBUG_PRINT("quit",("Waiting for threads to die (count=%u)",thread_count));
   mysql_mutex_lock(&LOCK_thread_count);
-  while (thread_count || service_thread_count)
-  {
+  while (service_thread_count)
+  {/* ignore thread_count and shutdown fast (mainly spider) */
     mysql_cond_wait(&COND_thread_count, &LOCK_thread_count);
     DBUG_PRINT("quit",("One thread died (count=%u)",thread_count));
   }

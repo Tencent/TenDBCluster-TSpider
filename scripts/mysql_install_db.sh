@@ -463,7 +463,8 @@ mysqld_install_cmd_line()
   "$mysqld_bootstrap" $defaults $defaults_group_suffix "$mysqld_opt" --bootstrap $silent_startup\
   "--basedir=$basedir" "--datadir=$ldata" --log-warnings=0 --enforce-storage-engine="" \
   $args --max_allowed_packet=8M \
-  --net_buffer_length=16K
+  --net_buffer_length=16K \
+  --ddl_execute_by_ctl=0
 }
 
 cat_sql()

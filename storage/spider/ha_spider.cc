@@ -983,6 +983,12 @@ int ha_spider::additional_lock(
 }
 #endif
 
+uint ha_spider::lock_count(void) const
+/*===============================*/
+{
+  return 0;
+}
+
 THR_LOCK_DATA **ha_spider::store_lock(
   THD *thd,
   THR_LOCK_DATA **to,
@@ -993,7 +999,6 @@ THR_LOCK_DATA **ha_spider::store_lock(
   DBUG_PRINT("info",("spider this=%p", this));
   if (lock_type == TL_IGNORE)
   {
-    *to++ = &lock;
     DBUG_RETURN(to);
   }
   if ((error_num = check_access_kind(thd,
@@ -1213,7 +1218,6 @@ THR_LOCK_DATA **ha_spider::store_lock(
     }
     lock.type = lock_type;
   }
-  *to++ = &lock;
   DBUG_RETURN(to);
 }
 

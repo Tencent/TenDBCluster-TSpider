@@ -288,6 +288,7 @@ public:
     enum thr_lock_type lock_type
   );
 #endif
+  uint lock_count(void) const;
   THR_LOCK_DATA **store_lock(
     THD *thd,
     THR_LOCK_DATA **to,

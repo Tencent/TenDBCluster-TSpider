@@ -3978,11 +3978,21 @@ bool open_tables(THD *thd, const DDL_options_st &options,
   TABLE_LIST **table_to_open;
   Sroutine_hash_entry **sroutine_to_open;
   TABLE_LIST *tables;
-  Open_table_context ot_ctx(thd, flags);
   bool error= FALSE;
   bool some_routine_modifies_data= FALSE;
   bool has_prelocking_list;
   DBUG_ENTER("open_tables");
+
+  TABLE_LIST *start_table = *start;
+  if (start_table && !start_table->next_global &&
+    start_table->db.str && start_table->table_name.str &&
+    !strcmp(start_table->db.str, "mysql") &&
+    !strcmp(start_table->table_name.str, "servers"))
+  {
+    flags = flags | MYSQL_OPEN_IGNORE_GLOBAL_READ_LOCK
+      | MYSQL_LOCK_IGNORE_GLOBAL_READ_ONLY;
+  }
+  Open_table_context ot_ctx(thd, flags);
 
   /* Accessing data in XA_IDLE or XA_PREPARED is not allowed. */
   enum xa_states xa_state= thd->transaction.xid_state.xa_state;
@@ -4954,13 +4964,6 @@ bool open_and_lock_tables(THD *thd, const DDL_options_st &options,
   DBUG_ENTER("open_and_lock_tables");
   DBUG_PRINT("enter", ("derived handling: %d", derived));
 
-  if (tables && tables->db.str && tables->table_name.str &&
-      !strcmp(tables->db.str, "mysql") &&
-      !strcmp(tables->table_name.str, "servers"))
-  {
-      flags = flags | MYSQL_OPEN_IGNORE_GLOBAL_READ_LOCK 
-                    | MYSQL_LOCK_IGNORE_GLOBAL_READ_ONLY;
-  }
   if (open_tables(thd, options, &tables, &counter, flags, prelocking_strategy))
     goto err;
 

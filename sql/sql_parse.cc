@@ -10584,48 +10584,150 @@ bool tdbctl_is_forbid_type_in_ctl(THD *thd, LEX *lex)
     return FALSE;
 }
 
-bool tdbctl_is_ddl_by_ctl(THD *thd, LEX *lex)
+
+char* tdbctl_strtok_r(char* str, const char* delim, char** saveptr)
 {
-    if (thd->variables.ddl_execute_by_ctl)
-    {
-        switch (lex->sql_command)
-        {
-        case SQLCOM_CREATE_USER:
-        case SQLCOM_DROP_USER:
-        case SQLCOM_ALTER_USER:
-        case SQLCOM_RENAME_USER:
-        case SQLCOM_REVOKE_ALL:
-        case SQLCOM_REVOKE:
-        case SQLCOM_GRANT:
-        case SQLCOM_CREATE_EVENT:
-        case SQLCOM_ALTER_EVENT:
-        case SQLCOM_DROP_EVENT:
-        case SQLCOM_CREATE_PROCEDURE:
-        case SQLCOM_CREATE_SPFUNCTION:
-        case SQLCOM_ALTER_PROCEDURE:
-        case SQLCOM_DROP_PROCEDURE:
-        case SQLCOM_CREATE_FUNCTION:
-        case SQLCOM_ALTER_FUNCTION:
-        case SQLCOM_DROP_FUNCTION:
-        case SQLCOM_CREATE_TRIGGER:
-        case SQLCOM_DROP_TRIGGER:
-        case SQLCOM_CREATE_VIEW:
-        case SQLCOM_DROP_VIEW:
-        case SQLCOM_CREATE_TABLE:
-        case SQLCOM_DROP_TABLE:
-        case SQLCOM_ALTER_TABLE:
-        case SQLCOM_RENAME_TABLE:
-        case SQLCOM_CREATE_INDEX:
-        case SQLCOM_DROP_INDEX:
-        case SQLCOM_CREATE_DB:
-        case SQLCOM_DROP_DB:
-        case SQLCOM_ALTER_DB:
-            return TRUE;
-        default:
-            return FALSE;
-        }
-    }
+#if defined _WIN32
+  return strtok_s(str, delim, saveptr);
+#else
+  return strtok_r(str, delim, saveptr);
+#endif
+}
+
+LEX_CSTRING tdbctl_get_current_db(THD* thd, LEX* lex)
+{
+  LEX_CSTRING db;
+  switch (lex->sql_command)
+  {
+  case SQLCOM_CREATE_EVENT:
+  case SQLCOM_ALTER_EVENT:
+  case SQLCOM_DROP_EVENT:
+  case SQLCOM_CREATE_PROCEDURE:
+  case SQLCOM_CREATE_SPFUNCTION:
+  case SQLCOM_ALTER_PROCEDURE:
+  case SQLCOM_DROP_PROCEDURE:
+  case SQLCOM_CREATE_FUNCTION:
+  case SQLCOM_ALTER_FUNCTION:
+  case SQLCOM_DROP_FUNCTION:
+  case SQLCOM_CREATE_TRIGGER:
+  case SQLCOM_DROP_TRIGGER:
+  {
+    if (thd->db.str)
+      db = thd->db;
+    else
+      db = lex->sphead->m_db;
+    break;
+  }
+  case SQLCOM_CREATE_DB:
+  case SQLCOM_DROP_DB:
+  {
+    db = lex->name;
+    break;
+  }
+  case SQLCOM_CREATE_VIEW:
+  case SQLCOM_DROP_VIEW:
+  {
+    /* create veiw is different from create table
+     use thd.db(current db) first
+    For example:  create view d1.v1 as select * from t1;  we must execute this query on current db;
+    May be query is: "create view d1.v1 as select * from d2.t1", and thd.db is null;  then  we must use d1 as current db
+    */
+    if (thd->db.str)
+      db = thd->db;
+    else
+      db = lex->query_tables->db;
+    break;
+  }
+  case SQLCOM_CREATE_TABLE:
+  case SQLCOM_DROP_TABLE:
+  case SQLCOM_ALTER_TABLE:
+  case SQLCOM_RENAME_TABLE:
+  case SQLCOM_CREATE_INDEX:
+  case SQLCOM_DROP_INDEX:
+  {
+    db = lex->query_tables->db;
+    break;
+  }
+  default:
+    db.str = 0;
+    db.length = 0;
+    break;
+  }
+  return db;
+}
+
+bool tdbctl_is_ignore_db(char* db_list, LEX_CSTRING current_db)
+{
+  char* ptr;
+  char* next_ptr;
+  char *delim = ",";
+  if (current_db.str == "" || current_db.length == 0)
     return FALSE;
+
+  char* strtmp = new char[strlen(db_list) + 1];
+  strcpy(strtmp, db_list);
+  ptr = strtok_r(strtmp, delim, &next_ptr);
+  while (ptr != NULL) {
+    char* cur_head = next_ptr;
+    if (!strcasecmp(current_db.str, ptr))
+    {
+      delete strtmp;
+      return TRUE;
+    }
+    ptr = tdbctl_strtok_r(cur_head, delim, &next_ptr);
+  }
+  delete strtmp;
+  return FALSE;
+}
+
+bool tdbctl_is_ddl_by_ctl(THD* thd, LEX* lex)
+{
+  if (thd->variables.ddl_execute_by_ctl)
+  {
+    switch (lex->sql_command)
+    {
+    case SQLCOM_CREATE_USER:
+    case SQLCOM_DROP_USER:
+    case SQLCOM_ALTER_USER:
+    case SQLCOM_RENAME_USER:
+    case SQLCOM_REVOKE_ALL:
+    case SQLCOM_REVOKE:
+    case SQLCOM_GRANT:
+    case SQLCOM_CREATE_EVENT:
+    case SQLCOM_ALTER_EVENT:
+    case SQLCOM_DROP_EVENT:
+    case SQLCOM_CREATE_PROCEDURE:
+    case SQLCOM_CREATE_SPFUNCTION:
+    case SQLCOM_ALTER_PROCEDURE:
+    case SQLCOM_DROP_PROCEDURE:
+    case SQLCOM_CREATE_FUNCTION:
+    case SQLCOM_ALTER_FUNCTION:
+    case SQLCOM_DROP_FUNCTION:
+    case SQLCOM_CREATE_TRIGGER:
+    case SQLCOM_DROP_TRIGGER:
+    case SQLCOM_CREATE_VIEW:
+    case SQLCOM_DROP_VIEW:
+    case SQLCOM_CREATE_TABLE:
+    case SQLCOM_DROP_TABLE:
+    case SQLCOM_ALTER_TABLE:
+    case SQLCOM_RENAME_TABLE:
+    case SQLCOM_CREATE_INDEX:
+    case SQLCOM_DROP_INDEX:
+    case SQLCOM_CREATE_DB:
+    case SQLCOM_DROP_DB:
+    case SQLCOM_ALTER_DB:
+    {
+      LEX_CSTRING db = tdbctl_get_current_db(thd, lex);
+      char* db_ignore = tdbctl_skip_ddl_convert_db;
+      if (tdbctl_is_ignore_db(db_ignore, db))
+        return FALSE;
+      return TRUE;
+    }
+    default:
+      return FALSE;
+    }
+  }
+  return FALSE;
 }
 
 
@@ -10703,6 +10805,9 @@ void tdbctl_conn_close(THD *thd, MYSQL *mysql)
 {
     mysql_close(mysql);
 }
+
+
+
 
 bool tdbctl_conn_before_query(THD *thd, LEX *lex, MYSQL *mysql, String *sql_str)
 {
