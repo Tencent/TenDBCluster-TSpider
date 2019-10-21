@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_link_failed_log` (
   `table_name` char(199) COLLATE utf8_bin NOT NULL DEFAULT '',
   `link_id` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',
   `failed_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_link_mon_servers` (
   `db_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_link_mon_servers` (
   `default_file` text COLLATE utf8_bin DEFAULT NULL,
   `default_group` char(64) COLLATE utf8_bin DEFAULT NULL,
   PRIMARY KEY (`db_name`,`table_name`,`link_id`,`sid`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_crd` (
   `db_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_crd` (
   `key_seq` int(10) unsigned NOT NULL DEFAULT 0,
   `cardinality` bigint(20) NOT NULL DEFAULT 0,
   PRIMARY KEY (`db_name`,`table_name`,`key_seq`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_position_for_recovery` (
   `db_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_position_for_recovery` (
   `position` text COLLATE utf8_bin DEFAULT NULL,
   `gtid` text COLLATE utf8_bin DEFAULT NULL,
   PRIMARY KEY (`db_name`,`table_name`,`failed_link_id`,`source_link_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
  CREATE TABLE IF NOT EXISTS `mysql`.`spider_tables` (
   `db_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_position_for_recovery` (
   PRIMARY KEY (`db_name`,`table_name`,`link_id`),
   UNIQUE KEY `uidx1` (`db_name`,`table_name`,`static_link_id`),
   KEY `idx1` (`priority`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_xa` (
   `format_id` int(11) NOT NULL DEFAULT 0,
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_xa` (
   `status` char(8) COLLATE utf8_bin NOT NULL DEFAULT '',
   PRIMARY KEY (`data`,`format_id`,`gtrid_length`),
   KEY `idx1` (`status`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_xa_failed_log` (
   `format_id` int(11) NOT NULL DEFAULT 0,
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_xa_failed_log` (
   `status` char(8) COLLATE utf8_bin NOT NULL DEFAULT '',
   `failed_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY `idx1` (`data`,`format_id`,`gtrid_length`,`host`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_xa_member` (
   `format_id` int(11) NOT NULL DEFAULT 0,
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_xa_member` (
   `default_file` text COLLATE utf8_bin DEFAULT NULL,
   `default_group` char(64) COLLATE utf8_bin DEFAULT NULL,
   KEY `idx1` (`data`,`format_id`,`gtrid_length`,`host`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_status` (
   `db_name` char(64) NOT NULL DEFAULT '',
@@ -153,4 +153,4 @@ CREATE TABLE IF NOT EXISTS `mysql`.`spider_table_status` (
   `create_time` datetime DEFAULT NULL,
   `modify_time` datetime DEFAULT NULL,
   PRIMARY KEY (`db_name`,`table_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
