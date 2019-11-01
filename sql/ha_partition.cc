@@ -11058,18 +11058,20 @@ void ha_partition::cond_pop()
 
 bool ha_partition::start_bulk_update()
 {
-  handler **file= m_file;
+  uint32 i = 0;
   DBUG_ENTER("ha_partition::start_bulk_update");
 
   if (bitmap_is_overlapping(&m_part_info->full_part_field_set,
                             table->write_set))
     DBUG_RETURN(TRUE);
 
-  do
+  for (i = bitmap_get_first_set(&(m_part_info->lock_partitions));
+    i < m_tot_parts;
+    i = bitmap_get_next_set(&m_part_info->lock_partitions, i))
   {
-    if ((*file)->start_bulk_update())
+    if (m_file[i]->start_bulk_update())
       DBUG_RETURN(TRUE);
-  } while (*(++file));
+  }
   DBUG_RETURN(FALSE);
 }
 
@@ -11090,14 +11092,17 @@ bool ha_partition::start_bulk_update()
 int ha_partition::exec_bulk_update(ha_rows *dup_key_found)
 {
   int error;
-  handler **file= m_file;
+  uint32 i;
   DBUG_ENTER("ha_partition::exec_bulk_update");
 
-  do
+  for (i = bitmap_get_first_set(&(m_part_info->lock_partitions));
+    i < m_tot_parts;
+    i = bitmap_get_next_set(&m_part_info->lock_partitions, i))
   {
-    if (unlikely((error= (*file)->exec_bulk_update(dup_key_found))))
+    if (unlikely((error = m_file[i]->exec_bulk_update(dup_key_found))))
       DBUG_RETURN(error);
-  } while (*(++file));
+  }
+
   DBUG_RETURN(0);
 }
 
@@ -11115,15 +11120,18 @@ int ha_partition::exec_bulk_update(ha_rows *dup_key_found)
 int ha_partition::end_bulk_update()
 {
   int error= 0;
-  handler **file= m_file;
+  uint32 i = 0;
   DBUG_ENTER("ha_partition::end_bulk_update");
 
-  do
+  for (i = bitmap_get_first_set(&(m_part_info->lock_partitions));
+    i < m_tot_parts;
+    i = bitmap_get_next_set(&m_part_info->lock_partitions, i))
   {
     int tmp;
-    if ((tmp= (*file)->end_bulk_update()))
-      error= tmp;
-  } while (*(++file));
+    if ((tmp = m_file[i]->end_bulk_update()))
+      error = tmp;
+  }
+
   DBUG_RETURN(error);
 }
 
@@ -11185,14 +11193,17 @@ end:
 
 bool ha_partition::start_bulk_delete()
 {
-  handler **file= m_file;
+  uint32 i = 0;
   DBUG_ENTER("ha_partition::start_bulk_delete");
 
-  do
+  for (i = bitmap_get_first_set(&(m_part_info->lock_partitions));
+    i < m_tot_parts;
+    i = bitmap_get_next_set(&m_part_info->lock_partitions, i))
   {
-    if ((*file)->start_bulk_delete())
+    if (m_file[i]->start_bulk_delete())
       DBUG_RETURN(TRUE);
-  } while (*(++file));
+  }
+
   DBUG_RETURN(FALSE);
 }
 
@@ -11211,15 +11222,18 @@ bool ha_partition::start_bulk_delete()
 int ha_partition::end_bulk_delete()
 {
   int error= 0;
-  handler **file= m_file;
+  uint32 i = 0;
   DBUG_ENTER("ha_partition::end_bulk_delete");
 
-  do
+  for (i = bitmap_get_first_set(&(m_part_info->lock_partitions));
+    i < m_tot_parts;
+    i = bitmap_get_next_set(&m_part_info->lock_partitions, i))
   {
     int tmp;
-    if ((tmp= (*file)->end_bulk_delete()))
-      error= tmp;
-  } while (*(++file));
+    if ((tmp = m_file[i]->end_bulk_delete()))
+      error = tmp;
+  }
+
   DBUG_RETURN(error);
 }
 
