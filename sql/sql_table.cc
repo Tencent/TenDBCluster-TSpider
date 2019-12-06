@@ -4760,10 +4760,13 @@ handler *mysql_create_frm_image(THD *thd,
                                  create_table_mode))
     goto err;
 
-  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  if (create_table_mode != C_ALTER_TABLE_FRM_ONLY)
   {
+    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    {
       thd->do_ddl_by_ctl = TRUE;
       goto err;
+    }
   }
 
   create_info->table_options=db_options;
@@ -5008,6 +5011,15 @@ int create_table_impl(THD *thd,
       my_error(ER_GET_ERRNO, MYF(0), ha_err, hton_name(hton)->str);
       goto err;
     }
+
+    if (create_table_mode != C_ALTER_TABLE_FRM_ONLY)
+    {
+      if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+      {
+        thd->do_ddl_by_ctl = TRUE;
+        goto err;
+      }
+    }
   }
   else
   {
@@ -5024,11 +5036,16 @@ int create_table_impl(THD *thd,
   create_info->table= 0;
   if (!frm_only && create_info->tmp_table())
   {
+    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    {
+      thd->do_ddl_by_ctl = TRUE;
+      goto err;
+    }
+
     TABLE *table= thd->create_and_open_tmp_table(create_info->db_type, frm,
                                                  path, db->str,
                                                  table_name->str, true,
                                                  false);
-
     if (!table)
     {
       (void) thd->rm_temporary_table(create_info->db_type, path);
@@ -5067,6 +5084,12 @@ int create_table_impl(THD *thd,
 
     free_table_share(&share);
 
+    if (!result && tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    {
+      thd->do_ddl_by_ctl = TRUE;
+      result = 1;
+    }
+
     if (result)
     {
       char frm_name[FN_REFLEN];
@@ -5078,6 +5101,12 @@ int create_table_impl(THD *thd,
   }
 #endif
   
+  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  {
+    thd->do_ddl_by_ctl = TRUE;
+    goto err;
+  }
+
   error= 0;
 err:
   THD_STAGE_INFO(thd, stage_after_create);
@@ -9365,12 +9394,6 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
     DBUG_RETURN(false);
   }
 
-  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
-  {
-      thd->do_ddl_by_ctl = TRUE;
-      DBUG_RETURN(true);
-  }
-
   /*
      Test if we are only doing RENAME or KEYS ON/OFF. This works
      as we are testing if flags == 0 above.
@@ -9381,6 +9404,12 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
       Alter_info::ALTER_TABLE_ALGORITHM_COPY)   // No need to touch frm.
   {
     bool res;
+
+    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    {
+      thd->do_ddl_by_ctl = TRUE;
+      DBUG_RETURN(true);
+    }
 
     if (!table->s->tmp_table)
     {
@@ -9467,6 +9496,12 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
              thd->variables.lock_wait_timeout)) ||
         lock_tables(thd, table_list, alter_ctx.tables_opened, 0))
     {
+      DBUG_RETURN(true);
+    }
+
+    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    {
+      thd->do_ddl_by_ctl = TRUE;
       DBUG_RETURN(true);
     }
 
