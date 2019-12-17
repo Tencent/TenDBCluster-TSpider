@@ -3470,6 +3470,7 @@ bool prune_partitions(THD *thd, TABLE *table, Item *pprune_cond)
     mark_all_partitions_as_used(part_info);
     set_rone_shard_part(thd, table, part_info);
     get_num_of_usedparts(thd, table, part_info);
+    part_info->is_pruning_completed = true;
     DBUG_RETURN(FALSE);
   }
   

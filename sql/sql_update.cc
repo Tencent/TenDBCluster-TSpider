@@ -469,10 +469,12 @@ int mysql_update(THD *thd,
 
   if (!(thd->security_ctx->master_access & SUPER_ACL))
   {
-      if (opt_spider_transaction_one_shard && thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+      if (opt_spider_transaction_one_shard && 
+        thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
       {/* transaction */
           if (table->sql_use_partition_count > 1 ||
-              (thd->spider_last_partition_num != 0 && (thd->spider_current_partition_num != thd->spider_last_partition_num))
+              (thd->spider_last_partition_num != 0 && 
+            (thd->spider_current_partition_num != thd->spider_last_partition_num))
               )
           {
               my_error(ER_ACCESS_DENIED_MULPARTITION_IN_TRANSACTION,
@@ -683,11 +685,12 @@ int mysql_update(THD *thd,
         !table->file->direct_update_rows_init())
     {
       do_direct_update= TRUE;
-
       /* Direct update is not using_filesort and is not using_io_buffer */
       goto update_begin;
     }
   }
+  // not direct update, must be query multiply partition
+  thd->sql_use_partition_count++;
 
   if (query_plan.using_filesort || query_plan.using_io_buffer)
   {

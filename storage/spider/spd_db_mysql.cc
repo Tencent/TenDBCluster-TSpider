@@ -103,6 +103,8 @@ static const char *name_quote_str = SPIDER_SQL_NAME_QUOTE_STR;
 #define SPIDER_SQL_XA_COMMIT_LEN sizeof(SPIDER_SQL_XA_COMMIT_STR) - 1
 #define SPIDER_SQL_XA_ONE_PHASE_STR " one phase "
 #define SPIDER_SQL_XA_ONE_PHASE_LEN sizeof(SPIDER_SQL_XA_ONE_PHASE_STR) - 1
+#define SPIDER_SQL_TMYSQL32_WITH_LOG_HINT "/*!99302 with log */"
+#define SPIDER_SQL_TMYSQL32_WITH_LOG_HINT_LEN sizeof(SPIDER_SQL_TMYSQL32_WITH_LOG_HINT) - 1
 #define SPIDER_SQL_XA_ROLLBACK_STR "xa rollback "
 #define SPIDER_SQL_XA_ROLLBACK_LEN sizeof(SPIDER_SQL_XA_ROLLBACK_STR) - 1
 
@@ -2511,7 +2513,9 @@ int spider_db_mysql::xa_commit_one_phase(
 	int error_num = 0;
 	int error_num1 = 0;
 	int error_num2 = 0;
-	char sql_buf[SPIDER_SQL_XA_COMMIT_LEN + XIDDATASIZE + sizeof(long) + 9];
+	char sql_buf[SPIDER_SQL_XA_END_LEN + 1 + SPIDER_SQL_XA_COMMIT_LEN + 
+	             XIDDATASIZE + XIDDATASIZE + SPIDER_SQL_XA_ONE_PHASE_LEN + 
+                 SPIDER_SQL_TMYSQL32_WITH_LOG_HINT_LEN + sizeof(long) + 12];
 	spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
 	DBUG_ENTER("spider_db_mysql::xa_commit_one_phase");
 	DBUG_PRINT("info", ("spider this=%p", this));
@@ -2525,6 +2529,7 @@ int spider_db_mysql::xa_commit_one_phase(
 	sql_str.q_append(SPIDER_SQL_XA_COMMIT_STR, SPIDER_SQL_XA_COMMIT_LEN);
 	spider_db_append_xid_str(&sql_str, xid);
 	sql_str.q_append(SPIDER_SQL_XA_ONE_PHASE_STR, SPIDER_SQL_XA_ONE_PHASE_LEN);
+	sql_str.q_append(SPIDER_SQL_TMYSQL32_WITH_LOG_HINT, SPIDER_SQL_TMYSQL32_WITH_LOG_HINT_LEN);
 
 	if (spider_db_query(
 		conn,

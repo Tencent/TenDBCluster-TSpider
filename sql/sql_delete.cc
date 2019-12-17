@@ -670,6 +670,8 @@ bool mysql_delete(THD *thd, TABLE_LIST *table_list, COND *conds,
       }
     }
   }
+  // not direct update, must be query multiply partition
+  thd->sql_use_partition_count++;
 
   if (query_plan.using_filesort)
   {

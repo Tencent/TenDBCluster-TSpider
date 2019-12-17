@@ -21942,6 +21942,28 @@ void compute_part_of_sort_key_for_equals(JOIN *join, TABLE *table,
 }
 
 
+bool is_perfix_index(TABLE* table, int key, uint key_parts)
+{
+  if (!table || !table->key_info)
+  {
+    return false;
+  }
+  KEY_PART_INFO* key_part = table->key_info[key].key_part;
+  KEY* key_info = table->key_info;
+
+  for (uint i = 0; i < key_parts; i++, key_parts++)
+  {
+    if (key_part->field &&
+      (key_part->length !=
+        table->field[key_part->fieldnr - 1]->key_length() &&
+        !(key_info->flags & (HA_FULLTEXT | HA_SPATIAL))))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
   Test if we can skip the ORDER BY by using an index.
 
@@ -22064,6 +22086,12 @@ test_if_skip_sort_order(JOIN_TAB *tab,ORDER *order,ha_rows select_limit,
       ref_key_parts= select->quick->used_key_parts;
     }
   }
+
+  //if ( is_perfix_index(table, ref_key, ref_key_parts) &&
+  //  table && table->part_info && order)
+  //{
+  //  DBUG_RETURN(0);
+  //}
 
   if (ref_key >= 0 && ref_key != MAX_KEY)
   {
