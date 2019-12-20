@@ -531,7 +531,7 @@ helper=`find_in_bin mysqld_safe_helper`
 print_defaults=`find_in_bin my_print_defaults`
 
 # Check if helper exists
-$helper --help >/dev/null 2>&1 || helper=""
+$helper --help >/dev/null 2>&1 && helper=""
 
 #
 # Second, try to find the data directory
