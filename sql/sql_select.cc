@@ -21942,16 +21942,17 @@ void compute_part_of_sort_key_for_equals(JOIN *join, TABLE *table,
 }
 
 
-bool is_perfix_index(TABLE* table, int key, uint key_parts)
+bool is_perfix_index(TABLE* table, int key)
 {
   if (!table || !table->key_info)
   {
     return false;
   }
   KEY_PART_INFO* key_part = table->key_info[key].key_part;
-  KEY* key_info = table->key_info;
+  KEY* key_info = table->key_info + key;
+  uint key_parts = key_info[key].user_defined_key_parts;
 
-  for (uint i = 0; i < key_parts; i++, key_parts++)
+  for (uint i = 0; i < key_parts; i++, key_part++)
   {
     if (key_part->field &&
       (key_part->length !=
