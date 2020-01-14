@@ -220,7 +220,7 @@ int spider_db_connect(
           if ((conn->connect_error_with_message = thd->is_error()))
               strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
       }
-      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld  [WARN SPIDER RESULT] "
+      fprintf(stderr, "%04d%02d%02d %02d:%02d:%02d.%ld  [ERROR SPIDER RESULT] "
           "failed to connect the hosts: %s, port: %ld, error_num:%d\n",
           l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
           l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec, share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
