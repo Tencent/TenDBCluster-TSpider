@@ -1,4 +1,5 @@
-/* Copyright (C) 2008-2017 Kentoku Shiba
+/* Copyright (C) 2008-2019 Kentoku Shiba
+   Copyright (C) 2019 MariaDB corp
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -140,8 +141,8 @@ int spider_fields::make_link_idx_chain(
   int link_status
 ) {
   uint roop_count, roop_count2;
-  int error_num;
   SPIDER_CONN *conn;
+  int error_num;
   SPIDER_CONN_HOLDER *conn_holder;
   SPIDER_TABLE_LINK_IDX_HOLDER *table_link_idx_holder;
   SPIDER_LINK_IDX_HOLDER *link_idx_holder, *add_link_idx_holder,
@@ -173,6 +174,7 @@ int spider_fields::make_link_idx_chain(
           add_link_idx_holder->table_link_idx_holder =
             dup_link_idx_holder->table_link_idx_holder;
           add_link_idx_holder->link_idx = dup_link_idx_holder->link_idx;
+          add_link_idx_holder->link_status = dup_link_idx_holder->link_status;
           link_idx_holder->next = add_link_idx_holder;
         }
         link_idx_holder = link_idx_holder->next;
@@ -457,6 +459,8 @@ bool spider_fields::check_link_ok_chain(
   for (current_link_idx_chain = first_link_idx_chain; current_link_idx_chain;
     current_link_idx_chain = current_link_idx_chain->next)
   {
+    DBUG_PRINT("info",("spider current_link_idx_chain=%p", current_link_idx_chain));
+    DBUG_PRINT("info",("spider current_link_idx_chain->link_status=%d", current_link_idx_chain->link_status));
     if (current_link_idx_chain->link_status == SPIDER_LINK_STATUS_OK)
     {
       first_ok_link_idx_chain = current_link_idx_chain;
@@ -645,9 +649,9 @@ SPIDER_CONN_HOLDER *spider_fields::create_conn_holder(
   DBUG_PRINT("info",("spider this=%p", this));
   return_conn_holder = (SPIDER_CONN_HOLDER *)
     spider_bulk_malloc(spider_current_trx, 252, MYF(MY_WME | MY_ZEROFILL),
-      &return_conn_holder, sizeof(SPIDER_CONN_HOLDER),
+      &return_conn_holder, (uint) (sizeof(SPIDER_CONN_HOLDER)),
       &table_link_idx_holder,
-        table_count * sizeof(SPIDER_TABLE_LINK_IDX_HOLDER),
+        (uint) (table_count * sizeof(SPIDER_TABLE_LINK_IDX_HOLDER)),
       NullS
     );
   if (!return_conn_holder)
@@ -921,6 +925,37 @@ SPIDER_TABLE_HOLDER *spider_fields::add_table(
   }
   DBUG_RETURN(return_table_holder);
 }
+
+
+/**
+  Verify that all fields in the query are members of tables that are in the
+  query.
+
+  @return TRUE              All fields in the query are members of tables
+                            that are in the query.
+          FALSE             At least one field in the query is not a
+                            member of a table that is in the query.
+*/
+
+bool spider_fields::all_query_fields_are_query_table_members()
+{
+  SPIDER_FIELD_HOLDER* field_holder;
+  DBUG_ENTER("spider_fields::all_fields_are_query_table_fields");
+  DBUG_PRINT("info", ("spider this=%p", this));
+
+  set_pos_to_first_field_holder();
+  while ((field_holder = get_next_field_holder()))
+  {
+    if (!field_holder->spider)
+    {
+      DBUG_PRINT("info", ("spider field is not a member of a query table"));
+      DBUG_RETURN(FALSE);
+    }
+  }
+
+  DBUG_RETURN(TRUE);
+}
+
 
 int spider_fields::create_table_holder(
   uint table_count_arg
@@ -1594,21 +1629,18 @@ group_by_handler *spider_create_group_by_handler(
     if (from->table->part_info)
     {
       DBUG_PRINT("info",("spider partition handler"));
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
-      ha_partition *partition = (ha_partition *) from->table->file;
-      part_id_range *part_spec = partition->get_part_spec();
-      DBUG_PRINT("info",("spider part_spec->start_part=%u", part_spec->start_part));
-      DBUG_PRINT("info",("spider part_spec->end_part=%u", part_spec->end_part));
-      if (
-        part_spec->start_part == partition->get_no_current_part_id() ||
-        part_spec->start_part != part_spec->end_part
-      ) {
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
+      partition_info *part_info = from->table->part_info;
+      uint bits = bitmap_bits_set(&part_info->read_partitions);
+      DBUG_PRINT("info",("spider bits=%u", bits));
+      if (bits != 1)
+      {
         DBUG_PRINT("info",("spider using multiple partitions is not supported by this feature yet"));
 #else
         DBUG_PRINT("info",("spider partition is not supported by this feature yet"));
 #endif
         DBUG_RETURN(NULL);
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
       }
 #endif
     }
@@ -1626,17 +1658,18 @@ group_by_handler *spider_create_group_by_handler(
     /* all tables are const_table */
     DBUG_RETURN(NULL);
   }
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
   if (from->table->part_info)
   {
+    partition_info *part_info = from->table->part_info;
+    uint part = bitmap_get_first_set(&part_info->read_partitions);
     ha_partition *partition = (ha_partition *) from->table->file;
-    part_id_range *part_spec = partition->get_part_spec();
     handler **handlers = partition->get_child_handlers();
-    spider = (ha_spider *) handlers[part_spec->start_part];
+    spider = (ha_spider *) handlers[part];
   } else {
 #endif
     spider = (ha_spider *) from->table->file;
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
   }
 #endif
   share = spider->share;
@@ -1657,17 +1690,18 @@ group_by_handler *spider_create_group_by_handler(
   {
     if (from->table->const_table)
       continue;
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
     if (from->table->part_info)
     {
+      partition_info *part_info = from->table->part_info;
+      uint part = bitmap_get_first_set(&part_info->read_partitions);
       ha_partition *partition = (ha_partition *) from->table->file;
-      part_id_range *part_spec = partition->get_part_spec();
       handler **handlers = partition->get_child_handlers();
-      spider = (ha_spider *) handlers[part_spec->start_part];
+      spider = (ha_spider *) handlers[part];
     } else {
 #endif
       spider = (ha_spider *) from->table->file;
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
     }
 #endif
     share = spider->share;
@@ -1695,17 +1729,18 @@ group_by_handler *spider_create_group_by_handler(
   do {
     if (from->table->const_table)
       continue;
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
     if (from->table->part_info)
     {
+      partition_info *part_info = from->table->part_info;
+      uint part = bitmap_get_first_set(&part_info->read_partitions);
       ha_partition *partition = (ha_partition *) from->table->file;
-      part_id_range *part_spec = partition->get_part_spec();
       handler **handlers = partition->get_child_handlers();
-      spider = (ha_spider *) handlers[part_spec->start_part];
+      spider = (ha_spider *) handlers[part];
     } else {
 #endif
       spider = (ha_spider *) from->table->file;
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
     }
 #endif
     share = spider->share;
@@ -1833,17 +1868,18 @@ group_by_handler *spider_create_group_by_handler(
   {
     from = from->next_local;
   }
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
   if (from->table->part_info)
   {
+    partition_info *part_info = from->table->part_info;
+    uint part = bitmap_get_first_set(&part_info->read_partitions);
     ha_partition *partition = (ha_partition *) from->table->file;
-    part_id_range *part_spec = partition->get_part_spec();
     handler **handlers = partition->get_child_handlers();
-    spider = (ha_spider *) handlers[part_spec->start_part];
+    spider = (ha_spider *) handlers[part];
   } else {
 #endif
     spider = (ha_spider *) from->table->file;
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
   }
 #endif
   share = spider->share;
@@ -1925,17 +1961,18 @@ group_by_handler *spider_create_group_by_handler(
       continue;
     fields->clear_conn_holder_from_conn();
 
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
     if (from->table->part_info)
     {
+      partition_info *part_info = from->table->part_info;
+      uint part = bitmap_get_first_set(&part_info->read_partitions);
       ha_partition *partition = (ha_partition *) from->table->file;
-      part_id_range *part_spec = partition->get_part_spec();
       handler **handlers = partition->get_child_handlers();
-      spider = (ha_spider *) handlers[part_spec->start_part];
+      spider = (ha_spider *) handlers[part];
     } else {
 #endif
       spider = (ha_spider *) from->table->file;
-#if defined(PARTITION_HAS_GET_CHILD_HANDLERS) && defined(PARTITION_HAS_GET_PART_SPEC)
+#if defined(PARTITION_HAS_GET_CHILD_HANDLERS)
     }
 #endif
     share = spider->share;
@@ -2007,6 +2044,14 @@ group_by_handler *spider_create_group_by_handler(
       DBUG_RETURN(NULL);
     }
   }
+
+  if (!fields->all_query_fields_are_query_table_members())
+  {
+    DBUG_PRINT("info", ("spider found a query field that is not a query table member"));
+    delete fields;
+    DBUG_RETURN(NULL);
+  }
+
 
   fields->check_support_dbton(dbton_bitmap);
   if (!fields->has_conn_holder())
