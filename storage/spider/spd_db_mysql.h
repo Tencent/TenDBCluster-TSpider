@@ -121,20 +121,57 @@ public:
     String *from
   );
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
+  int append_table(
+    ha_spider* spider,
+    spider_fields* fields,
+    spider_string* str,
+    TABLE_LIST* table_list,
+    TABLE_LIST** used_table_list,
+    uint* current_pos,
+    TABLE_LIST** cond_table_list_ptr,
+    bool top_down,
+    bool first
+  );
+  int append_tables_top_down(
+    ha_spider* spider,
+    spider_fields* fields,
+    spider_string* str,
+    TABLE_LIST* table_list,
+    TABLE_LIST** used_table_list,
+    uint* current_pos,
+    TABLE_LIST** cond_table_list_ptr
+  );
+  int append_tables_top_down_check(
+    TABLE_LIST* table_list,
+    TABLE_LIST** used_table_list,
+    uint* current_pos
+  );
+  int append_embedding_tables(
+    ha_spider* spider,
+    spider_fields* fields,
+    spider_string* str,
+    TABLE_LIST* table_list,
+    TABLE_LIST** used_table_list,
+    uint* current_pos,
+    TABLE_LIST** cond_table_list_ptr
+  );
   int append_from_and_tables(
-    spider_fields *fields,
-    spider_string *str
+    ha_spider* spider,
+    spider_fields* fields,
+    spider_string* str,
+    TABLE_LIST* table_list,
+    uint table_count
   );
   int reappend_tables(
-    spider_fields *fields,
-    SPIDER_LINK_IDX_CHAIN *link_idx_chain,
-    spider_string *str
+    spider_fields* fields,
+    SPIDER_LINK_IDX_CHAIN* link_idx_chain,
+    spider_string* str
   );
   int append_where(
-    spider_string *str
+    spider_string* str
   );
   int append_having(
-    spider_string *str
+    spider_string* str
   );
 #endif
 };

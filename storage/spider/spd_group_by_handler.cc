@@ -994,6 +994,26 @@ SPIDER_TABLE_HOLDER *spider_fields::get_next_table_holder(
   DBUG_RETURN(return_table_holder);
 }
 
+SPIDER_TABLE_HOLDER* spider_fields::get_table_holder(TABLE* table)
+{
+  uint table_num;
+  DBUG_ENTER("spider_fields::get_table_holder");
+  DBUG_PRINT("info", ("spider this=%p", this));
+  for (table_num = 0; table_num < table_count; ++table_num)
+  {
+    if (table_holder[table_num].table == table)
+      DBUG_RETURN(&table_holder[table_num]);
+  }
+  DBUG_RETURN(NULL);
+}
+
+uint spider_fields::get_table_count()
+{
+  DBUG_ENTER("spider_fields::get_table_count");
+  DBUG_RETURN(table_count);
+}
+
+
 int spider_fields::add_field(
   Field *field_arg
 ) {
@@ -1776,6 +1796,16 @@ group_by_handler *spider_create_group_by_handler(
           spider_clear_bit(dbton_bitmap, roop_count);
           keep_going = FALSE;
           break;
+        }
+      }
+      if (keep_going)
+      {
+        if (spider_dbton[roop_count].db_util->append_from_and_tables(
+          spider, fields_arg, NULL, query->from, table_idx))
+        {
+          DBUG_PRINT("info", ("spider dbton_id=%d can't create from", roop_count));
+          spider_clear_bit(dbton_bitmap, roop_count);
+          keep_going = FALSE;
         }
       }
       if (keep_going)

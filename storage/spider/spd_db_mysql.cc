@@ -155,6 +155,15 @@ static const char *name_quote_str = SPIDER_SQL_NAME_QUOTE_STR;
 #define SPIDER_SQL_NEGINTERVAL_STR " - interval "
 #define SPIDER_SQL_NEGINTERVAL_LEN (sizeof(SPIDER_SQL_NEGINTERVAL_STR) - 1)
 
+#define SPIDER_SQL_LEFT_JOIN_STR " left join "
+#define SPIDER_SQL_LEFT_JOIN_LEN (sizeof(SPIDER_SQL_LEFT_JOIN_STR) - 1)
+#define SPIDER_SQL_RIGHT_JOIN_STR " right join "
+#define SPIDER_SQL_RIGHT_JOIN_LEN (sizeof(SPIDER_SQL_RIGHT_JOIN_STR) - 1)
+#define SPIDER_SQL_JOIN_STR " join "
+#define SPIDER_SQL_JOIN_LEN (sizeof(SPIDER_SQL_JOIN_STR) - 1)
+#define SPIDER_SQL_ON_STR " on "
+#define SPIDER_SQL_ON_LEN (sizeof(SPIDER_SQL_ON_STR) - 1)
+
 static uchar SPIDER_SQL_LINESTRING_HEAD_STR[] =
   {0x00,0x00,0x00,0x00,0x01,0x02,0x00,0x00,0x00,0x02,0x00,0x00,0x00};
 #define SPIDER_SQL_LINESTRING_HEAD_LEN sizeof(SPIDER_SQL_LINESTRING_HEAD_STR)
@@ -4964,61 +4973,545 @@ int spider_db_mysql_util::append_escaped_util(
 }
 
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
-int spider_db_mysql_util::append_from_and_tables(
-  spider_fields *fields,
-  spider_string *str
+int spider_db_mysql_util::append_table(
+  ha_spider* spider,
+  spider_fields* fields,
+  spider_string* str,
+  TABLE_LIST* table_list,
+  TABLE_LIST** used_table_list,
+  uint* current_pos,
+  TABLE_LIST** cond_table_list_ptr,
+  bool top_down,
+  bool first
 ) {
-  SPIDER_TABLE_HOLDER *table_holder;
   int error_num;
-  uint dbton_id = spider_dbton_mysql.dbton_id, from_length;
-  spider_mysql_share *db_share;
-  spider_mysql_handler *dbton_hdl;
-  ha_spider *spider;
-  DBUG_ENTER("spider_db_mysql_util::append_from_and_tables");
-  DBUG_PRINT("info",("spider this=%p", this));
-
-  /* calculate from size */
-  from_length = SPIDER_SQL_FROM_LEN;
-  fields->set_pos_to_first_table_holder();
-  while ((table_holder = fields->get_next_table_holder()))
+  bool use_cond_table_list = FALSE;
+  spider_mysql_share* db_share;
+  spider_mysql_handler* dbton_hdl;
+  SPIDER_TABLE_HOLDER* table_holder;
+  uint dbton_id = spider_dbton_mysql.dbton_id;
+  TABLE_LIST* cond_table_list = *cond_table_list_ptr;
+  ha_spider* spd;
+  DBUG_ENTER("spider_db_mysql_util::append_table");
+  DBUG_PRINT("info", ("spider table_list=%p", table_list));
+  DBUG_PRINT("info", ("spider table_list->outer_join=%u",
+    table_list->outer_join));
+  DBUG_PRINT("info", ("spider table_list->on_expr=%p",
+    table_list->on_expr));
+  DBUG_PRINT("info", ("spider table_list->join_using_fields=%p",
+    table_list->join_using_fields));
+  DBUG_PRINT("info", ("spider table_list->table=%p",
+    table_list->table));
+  if (!top_down && table_list->embedding)
   {
-    spider = table_holder->spider;
-    db_share = (spider_mysql_share *)
-      spider->share->dbton_share[dbton_id];
-    from_length +=
-      db_share->db_nm_max_length +
-      SPIDER_SQL_DOT_LEN + /* SPIDER_SQL_NAME_QUOTE_LEN */ 4 +
-      db_share->table_nm_max_length +
-      SPIDER_SQL_SPACE_LEN + SPIDER_SQL_COMMA_LEN +
-      table_holder->alias->length() - SPIDER_SQL_DOT_LEN;
-  }
-
-  if (str->reserve(from_length))
-    DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-  str->q_append(SPIDER_SQL_FROM_STR, SPIDER_SQL_FROM_LEN);
-
-  fields->set_pos_to_first_table_holder();
-  while ((table_holder = fields->get_next_table_holder()))
-  {
-    spider = table_holder->spider;
-    db_share = (spider_mysql_share *)
-      spider->share->dbton_share[dbton_id];
-    dbton_hdl = (spider_mysql_handler *)
-      spider->dbton_handler[dbton_id];
-    dbton_hdl->table_name_pos = str->length();
-    if ((error_num = db_share->append_table_name_with_adjusting(str,
-      spider->conn_link_idx[dbton_hdl->first_link_idx])))
-    {
+    if ((error_num = append_embedding_tables(spider, fields, str,
+      table_list->embedding, used_table_list, current_pos,
+      cond_table_list_ptr)))
       DBUG_RETURN(error_num);
-    }
-    str->q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
-    str->q_append(table_holder->alias->ptr(),
-      table_holder->alias->length() - SPIDER_SQL_DOT_LEN);
-    str->q_append(SPIDER_SQL_COMMA_STR, SPIDER_SQL_COMMA_LEN);
   }
-  str->length(str->length() - SPIDER_SQL_COMMA_LEN);
+  else if (!table_list->table)
+  {
+    if ((error_num = append_tables_top_down(spider, fields, str, table_list,
+      used_table_list, current_pos, cond_table_list_ptr)))
+      DBUG_RETURN(error_num);
+  }
+  else {
+    if (
+      table_list->outer_join ||
+      table_list->on_expr ||
+      table_list->join_using_fields
+      ) {
+      DBUG_PRINT("info", ("spider use table_list"));
+      if (table_list->outer_join & JOIN_TYPE_LEFT)
+      {
+        if (str)
+        {
+          if (str->reserve(SPIDER_SQL_LEFT_JOIN_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(SPIDER_SQL_LEFT_JOIN_STR, SPIDER_SQL_LEFT_JOIN_LEN);
+        }
+      }
+      else {
+        if (str)
+        {
+          if (str->reserve(SPIDER_SQL_JOIN_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(SPIDER_SQL_JOIN_STR, SPIDER_SQL_JOIN_LEN);
+        }
+      }
+    }
+    else if (
+      cond_table_list &&
+      (
+        cond_table_list->outer_join ||
+        cond_table_list->on_expr ||
+        cond_table_list->join_using_fields
+        )
+      ) {
+      DBUG_PRINT("info", ("spider use cond_table_list"));
+      if (cond_table_list->outer_join & (JOIN_TYPE_LEFT | JOIN_TYPE_RIGHT))
+      {
+        if (str)
+        {
+          if (str->reserve(SPIDER_SQL_LEFT_JOIN_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(SPIDER_SQL_LEFT_JOIN_STR, SPIDER_SQL_LEFT_JOIN_LEN);
+        }
+      }
+      else {
+        if (str)
+        {
+          if (str->reserve(SPIDER_SQL_JOIN_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(SPIDER_SQL_JOIN_STR, SPIDER_SQL_JOIN_LEN);
+        }
+      }
+      use_cond_table_list = TRUE;
+    }
+    else if (*current_pos > 0 && !first)
+    {
+      DBUG_PRINT("info", ("spider no condition"));
+      if (top_down)
+      {
+        if (str)
+        {
+          if (str->reserve(SPIDER_SQL_JOIN_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(SPIDER_SQL_JOIN_STR, SPIDER_SQL_JOIN_LEN);
+        }
+      }
+      else {
+        if (str)
+        {
+          if (str->reserve(SPIDER_SQL_COMMA_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(SPIDER_SQL_COMMA_STR, SPIDER_SQL_COMMA_LEN);
+        }
+      }
+    }
+
+    if (str)
+    {
+      table_holder = fields->get_table_holder(table_list->table);
+      spd = table_holder->spider;
+      db_share = (spider_mysql_share*)
+        spd->share->dbton_share[dbton_id];
+      dbton_hdl = (spider_mysql_handler*)
+        spd->dbton_handler[dbton_id];
+
+      dbton_hdl->table_name_pos = str->length();
+
+      if (str->reserve(
+        db_share->db_nm_max_length +
+        SPIDER_SQL_DOT_LEN + /* SPIDER_SQL_NAME_QUOTE_LEN */ 4 +
+        db_share->table_nm_max_length + SPIDER_SQL_SPACE_LEN +
+        table_holder->alias->length() - SPIDER_SQL_DOT_LEN
+      )) {
+        DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+      }
+
+      if ((error_num = db_share->append_table_name_with_adjusting(str,
+        spd->conn_link_idx[dbton_hdl->first_link_idx])))
+      {
+        DBUG_RETURN(error_num);
+      }
+      str->q_append(SPIDER_SQL_SPACE_STR, SPIDER_SQL_SPACE_LEN);
+      str->q_append(table_holder->alias->ptr(),
+        table_holder->alias->length() - SPIDER_SQL_DOT_LEN);
+    }
+    used_table_list[(*current_pos)++] = table_list;
+
+    if (str)
+    {
+      List<String>* join_using_fields = table_list->join_using_fields;
+      if (!join_using_fields && cond_table_list)
+      {
+        join_using_fields = cond_table_list->join_using_fields;
+      }
+
+      if (join_using_fields)
+      {
+        if (str->reserve(SPIDER_SQL_USING_LEN + SPIDER_SQL_OPEN_PAREN_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_USING_STR, SPIDER_SQL_USING_LEN);
+        str->q_append(SPIDER_SQL_OPEN_PAREN_STR,
+          SPIDER_SQL_OPEN_PAREN_LEN);
+        List_iterator_fast<String> it2(*join_using_fields);
+        String* ptr;
+        while ((ptr = it2++))
+        {
+          if (str->reserve(ptr->length() + SPIDER_SQL_COMMA_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(ptr->ptr(), ptr->length());
+          str->q_append(SPIDER_SQL_COMMA_STR, SPIDER_SQL_COMMA_LEN);
+        }
+        str->length(str->length() - SPIDER_SQL_COMMA_LEN);
+        if (str->reserve(SPIDER_SQL_CLOSE_PAREN_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_CLOSE_PAREN_STR,
+          SPIDER_SQL_CLOSE_PAREN_LEN);
+      }
+    }
+
+    Item* on_expr = table_list->on_expr;
+    if (!on_expr && cond_table_list)
+    {
+      on_expr = cond_table_list->on_expr;
+    }
+
+    if (on_expr)
+    {
+      if (str)
+      {
+        if (str->reserve(SPIDER_SQL_ON_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_ON_STR, SPIDER_SQL_ON_LEN);
+      }
+      if ((error_num = spider_db_print_item_type(on_expr, 
+        spider, str, NULL, 0, dbton_id, TRUE, fields)))
+      {
+        DBUG_RETURN(error_num);
+      }
+    }
+
+    if (use_cond_table_list)
+    {
+      (*cond_table_list_ptr) = NULL;
+      DBUG_PRINT("info", ("spider cond_table_list=%p", (*cond_table_list_ptr)));
+    }
+  }
   DBUG_RETURN(0);
 }
+
+int spider_db_mysql_util::append_tables_top_down(
+  ha_spider* spider,
+  spider_fields* fields,
+  spider_string* str,
+  TABLE_LIST* table_list,
+  TABLE_LIST** used_table_list,
+  uint* current_pos,
+  TABLE_LIST** cond_table_list_ptr
+) {
+  int error_num;
+  uint outer_join_backup;
+  TABLE_LIST* cur_table_list, * prev_table_list = NULL, * cond_table_list = NULL;
+  bool first;
+  DBUG_ENTER("spider_db_mysql_util::append_tables_top_down");
+  DBUG_PRINT("info", ("spider this=%p", this));
+  if (
+    table_list->outer_join ||
+    table_list->on_expr ||
+    table_list->join_using_fields
+    ) {
+    DBUG_ASSERT(!(*cond_table_list_ptr));
+    (*cond_table_list_ptr) = table_list;
+    DBUG_PRINT("info", ("spider cond_table_list=%p", table_list));
+  }
+  List_iterator_fast<TABLE_LIST> it1(table_list->nested_join->join_list);
+  cur_table_list = it1++;
+  if (cur_table_list->outer_join & JOIN_TYPE_RIGHT)
+  {
+    first = FALSE;
+    prev_table_list = cur_table_list;
+    cur_table_list = it1++;
+  }
+  else if (*cond_table_list_ptr)
+  {
+    first = TRUE;
+    cond_table_list = (*cond_table_list_ptr);
+    (*cond_table_list_ptr) = NULL;
+    if (cond_table_list->outer_join & JOIN_TYPE_LEFT)
+    {
+      if (str)
+      {
+        if (str->reserve(SPIDER_SQL_LEFT_JOIN_LEN + SPIDER_SQL_OPEN_PAREN_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_LEFT_JOIN_STR, SPIDER_SQL_LEFT_JOIN_LEN);
+        str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
+      }
+    }
+    else {
+      if (str)
+      {
+        if (str->reserve(SPIDER_SQL_JOIN_LEN + SPIDER_SQL_OPEN_PAREN_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_JOIN_STR, SPIDER_SQL_JOIN_LEN);
+        str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
+      }
+    }
+  }
+
+  do {
+    if (cur_table_list->outer_join & JOIN_TYPE_RIGHT)
+    {
+      prev_table_list = cur_table_list;
+    }
+    else {
+      if ((error_num = append_table(spider, fields, str, cur_table_list,
+        used_table_list, current_pos, cond_table_list_ptr, TRUE, first)))
+        DBUG_RETURN(error_num);
+      first = FALSE;
+      if (prev_table_list)
+      {
+        outer_join_backup = prev_table_list->outer_join;
+        prev_table_list->outer_join = JOIN_TYPE_LEFT;
+        if ((error_num = append_table(spider, fields, str, prev_table_list,
+          used_table_list, current_pos, cond_table_list_ptr, TRUE, FALSE)))
+        {
+          prev_table_list->outer_join = outer_join_backup;
+          DBUG_RETURN(error_num);
+        }
+        prev_table_list->outer_join = outer_join_backup;
+        prev_table_list = NULL;
+      }
+    }
+  } while ((cur_table_list = it1++));
+
+  if (cond_table_list)
+  {
+    if (str)
+    {
+      if (str->reserve(SPIDER_SQL_CLOSE_PAREN_LEN))
+      {
+        DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+      }
+      str->q_append(SPIDER_SQL_CLOSE_PAREN_STR,
+        SPIDER_SQL_CLOSE_PAREN_LEN);
+
+      List<String>* join_using_fields = cond_table_list->join_using_fields;
+      if (join_using_fields)
+      {
+        if (str->reserve(SPIDER_SQL_USING_LEN + SPIDER_SQL_OPEN_PAREN_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_USING_STR, SPIDER_SQL_USING_LEN);
+        str->q_append(SPIDER_SQL_OPEN_PAREN_STR,
+          SPIDER_SQL_OPEN_PAREN_LEN);
+        List_iterator_fast<String> it2(*join_using_fields);
+        String* ptr;
+        while ((ptr = it2++))
+        {
+          if (str->reserve(ptr->length() + SPIDER_SQL_COMMA_LEN))
+          {
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+          }
+          str->q_append(ptr->ptr(), ptr->length());
+          str->q_append(SPIDER_SQL_COMMA_STR, SPIDER_SQL_COMMA_LEN);
+        }
+        str->length(str->length() - SPIDER_SQL_COMMA_LEN);
+        if (str->reserve(SPIDER_SQL_CLOSE_PAREN_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_CLOSE_PAREN_STR,
+          SPIDER_SQL_CLOSE_PAREN_LEN);
+      }
+    }
+
+    Item* on_expr = cond_table_list->on_expr;
+    if (on_expr)
+    {
+      if (str)
+      {
+        if (str->reserve(SPIDER_SQL_ON_LEN))
+        {
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        }
+        str->q_append(SPIDER_SQL_ON_STR, SPIDER_SQL_ON_LEN);
+      }
+      if ((error_num = spider_db_print_item_type(on_expr,
+        spider, str, NULL, 0, spider_dbton_mysql.dbton_id, TRUE, fields)))
+      {
+        DBUG_RETURN(error_num);
+      }
+    }
+  }
+  DBUG_RETURN(0);
+}
+
+int spider_db_mysql_util::append_tables_top_down_check(
+  TABLE_LIST* table_list,
+  TABLE_LIST** used_table_list,
+  uint* current_pos
+) {
+  int error_num;
+  TABLE_LIST* cur_table_list;
+  DBUG_ENTER("spider_db_mysql_util::append_tables_top_down_check");
+  DBUG_PRINT("info", ("spider this=%p", this));
+  List_iterator_fast<TABLE_LIST> it1(table_list->nested_join->join_list);
+  while ((cur_table_list = it1++))
+  {
+    if (!cur_table_list->table)
+    {
+      if ((error_num = append_tables_top_down_check(
+        cur_table_list, used_table_list, current_pos)))
+        DBUG_RETURN(error_num);
+    }
+    else {
+      used_table_list[(*current_pos)++] = cur_table_list;
+    }
+  }
+  DBUG_RETURN(0);
+}
+
+int spider_db_mysql_util::append_embedding_tables(
+  ha_spider* spider,
+  spider_fields* fields,
+  spider_string* str,
+  TABLE_LIST* table_list,
+  TABLE_LIST** used_table_list,
+  uint* current_pos,
+  TABLE_LIST** cond_table_list_ptr
+) {
+  int error_num;
+  TABLE_LIST* embedding = table_list->embedding;
+  DBUG_ENTER("spider_db_mysql_util::append_embedding_tables");
+  DBUG_PRINT("info", ("spider this=%p", this));
+  if (embedding)
+  {
+    DBUG_PRINT("info", ("spider embedding=%p", embedding));
+    DBUG_PRINT("info", ("spider embedding->outer_join=%u",
+      embedding->outer_join));
+    DBUG_PRINT("info", ("spider embedding->on_expr=%p",
+      embedding->on_expr));
+    DBUG_PRINT("info", ("spider embedding->join_using_fields=%p",
+      embedding->join_using_fields));
+    DBUG_PRINT("info", ("spider embedding->table=%p",
+      embedding->table));
+    if ((error_num = append_embedding_tables(spider, fields, str, embedding,
+      used_table_list, current_pos, cond_table_list_ptr)))
+      DBUG_RETURN(error_num);
+  }
+  else {
+    DBUG_PRINT("info", ("spider table_list=%p", table_list));
+    DBUG_PRINT("info", ("spider table_list->outer_join=%u",
+      table_list->outer_join));
+    DBUG_PRINT("info", ("spider table_list->on_expr=%p",
+      table_list->on_expr));
+    DBUG_PRINT("info", ("spider table_list->join_using_fields=%p",
+      table_list->join_using_fields));
+    DBUG_PRINT("info", ("spider table_list->table=%p",
+      table_list->table));
+    if (table_list->outer_join & JOIN_TYPE_RIGHT)
+    {
+      if ((error_num = append_tables_top_down_check(table_list,
+        used_table_list, current_pos)))
+        DBUG_RETURN(error_num);
+      DBUG_ASSERT(!(*cond_table_list_ptr));
+      (*cond_table_list_ptr) = table_list;
+      DBUG_PRINT("info", ("spider cond_table_list=%p", table_list));
+    }
+    else {
+      if ((error_num = append_tables_top_down(spider, fields, str, table_list,
+        used_table_list, current_pos, cond_table_list_ptr)))
+        DBUG_RETURN(error_num);
+    }
+  }
+  DBUG_RETURN(0);
+}
+
+int spider_db_mysql_util::append_from_and_tables(
+  ha_spider* spider,
+  spider_fields* fields,
+  spider_string* str,
+  TABLE_LIST* table_list,
+  uint table_count
+) {
+  int error_num;
+  uint current_pos = 0, roop_count, backup_pos, outer_join_backup;
+  TABLE* table;
+  TABLE_LIST** used_table_list, * prev_table_list = NULL,
+    * cond_table_list = NULL;
+  DBUG_ENTER("spider_db_mysql_util::append_from_and_tables");
+  DBUG_PRINT("info", ("spider this=%p", this));
+  used_table_list = (TABLE_LIST * *)
+    my_alloca(sizeof(TABLE_LIST*) * table_count);
+  if (!used_table_list)
+    DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+
+  if (str)
+  {
+    if (str->reserve(SPIDER_SQL_FROM_LEN))
+    {
+      my_afree(used_table_list);
+      DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+    }
+    str->q_append(SPIDER_SQL_FROM_STR, SPIDER_SQL_FROM_LEN);
+  }
+
+  do {
+    table = table_list->table;
+    if (table->const_table)
+      continue;
+
+    for (roop_count = 0; roop_count < current_pos; ++roop_count)
+    {
+      if (used_table_list[roop_count] == table_list)
+        break;
+    }
+    if (roop_count < current_pos)
+      continue;
+
+    if (prev_table_list)
+      current_pos = backup_pos;
+    else
+      backup_pos = current_pos;
+    if ((error_num = append_table(spider, fields, str, table_list, used_table_list,
+      &current_pos, &cond_table_list, FALSE, FALSE)))
+    {
+      my_afree(used_table_list);
+      DBUG_RETURN(error_num);
+    }
+    if (prev_table_list)
+    {
+      outer_join_backup = prev_table_list->outer_join;
+      prev_table_list->outer_join = JOIN_TYPE_LEFT;
+      if ((error_num = append_table(spider, fields, str, prev_table_list,
+        used_table_list, &current_pos, &cond_table_list, FALSE, FALSE)))
+      {
+        prev_table_list->outer_join = outer_join_backup;
+        my_afree(used_table_list);
+        DBUG_RETURN(error_num);
+      }
+      prev_table_list->outer_join = outer_join_backup;
+      prev_table_list = NULL;
+    }
+    if (cond_table_list && (cond_table_list->outer_join & JOIN_TYPE_RIGHT))
+    {
+      prev_table_list = cond_table_list;
+      cond_table_list = NULL;
+      DBUG_PRINT("info", ("spider cond_table_list=%p", cond_table_list));
+    }
+  } while ((table_list = table_list->next_local));
+  my_afree(used_table_list);
+  DBUG_RETURN(0);
+}
+
 
 int spider_db_mysql_util::reappend_tables(
   spider_fields *fields,
@@ -5764,6 +6257,10 @@ int spider_mysql_share::append_table_select()
   spider_string *str = table_select;
   TABLE_SHARE *table_share = spider_share->table_share;
   DBUG_ENTER("spider_mysql_share::append_table_select");
+
+  if (!*table_share->field)
+    DBUG_RETURN(0);
+
   for (field = table_share->field; *field; field++)
   {
     field_length = column_name_str[(*field)->field_index].length();
@@ -5788,6 +6285,10 @@ int spider_mysql_share::append_key_select(
   TABLE_SHARE *table_share = spider_share->table_share;
   const KEY *key_info = &table_share->key_info[idx];
   DBUG_ENTER("spider_mysql_share::append_key_select");
+
+  if (!spider_user_defined_key_parts(key_info))
+    DBUG_RETURN(0);
+
   for (key_part = key_info->key_part, part_num = 0;
     part_num < spider_user_defined_key_parts(key_info); key_part++, part_num++)
   {
@@ -12833,20 +13334,28 @@ int spider_mysql_handler::append_from_and_tables_part(
   ulong sql_type
 ) {
   int error_num;
-  spider_string *str;
+  spider_string* str;
+  SPIDER_TABLE_HOLDER* table_holder;
+  TABLE_LIST* table_list;
   DBUG_ENTER("spider_mysql_handler::append_from_and_tables_part");
-  DBUG_PRINT("info",("spider this=%p", this));
+  DBUG_PRINT("info", ("spider this=%p", this));
   switch (sql_type)
   {
-    case SPIDER_SQL_TYPE_SELECT_SQL:
-      str = &sql;
-      break;
-    default:
-      DBUG_RETURN(0);
+  case SPIDER_SQL_TYPE_SELECT_SQL:
+    str = &sql;
+    break;
+  default:
+    DBUG_RETURN(0);
   }
-  error_num = spider_db_mysql_utility.append_from_and_tables(fields, str);
+  fields->set_pos_to_first_table_holder();
+  table_holder = fields->get_next_table_holder();
+  table_list = table_holder->table->pos_in_table_list;
+  error_num = spider_db_mysql_utility.append_from_and_tables(
+    table_holder->spider, fields, str,
+    table_list, fields->get_table_count());
   DBUG_RETURN(error_num);
 }
+
 
 int spider_mysql_handler::reappend_tables_part(
   spider_fields *fields,
