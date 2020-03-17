@@ -1728,7 +1728,6 @@ int spider_internal_start_trx(
   }
 
   DBUG_PRINT("info",("spider sync_autocommit = %d", sync_autocommit));
-  DBUG_PRINT("info",("spider conn->semi_trx_chk = %d", conn->semi_trx_chk));
   DBUG_PRINT("info",("spider conn->table_lock = %d", conn->table_lock));
   DBUG_PRINT("info",("spider conn->autocommit = %d", conn->autocommit));
   DBUG_PRINT("info",("spider semi_trx = %d", spider_param_semi_trx(thd)));
@@ -1742,7 +1741,6 @@ int spider_internal_start_trx(
     DBUG_PRINT("info",("spider trx->trx_xa"));
     if (
       sync_autocommit &&
-      conn->semi_trx_chk &&
       !conn->table_lock &&
       (
         (!conn->queued_autocommit && conn->autocommit == 1) ||
@@ -1759,7 +1757,6 @@ int spider_internal_start_trx(
     !trx->trx_consistent_snapshot &&
     !thd_test_options(thd, OPTION_BEGIN) &&
     sync_autocommit &&
-    conn->semi_trx_chk &&
     !conn->table_lock &&
     (
       (!conn->queued_autocommit && conn->autocommit == 1) ||
@@ -3604,7 +3601,6 @@ int spider_end_trx(
   }
   conn->semi_trx_isolation = -2;
   conn->semi_trx_isolation_chk = FALSE;
-  conn->semi_trx_chk = FALSE;
   DBUG_RETURN(error_num);
 }
 

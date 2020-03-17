@@ -1032,13 +1032,7 @@ THR_LOCK_DATA **ha_spider::store_lock(
   this->lock_type = lock_type;
   selupd_lock_mode = spider_param_selupd_lock_mode(thd,
     share->selupd_lock_mode);
-  if (
-    sql_command != SQLCOM_DROP_TABLE &&
-    sql_command != SQLCOM_ALTER_TABLE
-  ) {
-    SPIDER_SET_CONNS_PARAM(semi_trx_chk, FALSE, conns, share->link_statuses,
-      conn_link_idx, (int) share->link_count, SPIDER_LINK_STATUS_RECOVERY);
-  }
+
   switch (sql_command)
   {
     case SQLCOM_SELECT:
@@ -1056,8 +1050,6 @@ THR_LOCK_DATA **ha_spider::store_lock(
           SPIDER_LINK_STATUS_RECOVERY);
       } else
         lock_mode = -1;
-      SPIDER_SET_CONNS_PARAM(semi_trx_chk, TRUE, conns, share->link_statuses,
-        conn_link_idx, (int) share->link_count, SPIDER_LINK_STATUS_RECOVERY);
       break;
     case SQLCOM_UPDATE:
     case SQLCOM_UPDATE_MULTI:
@@ -1084,9 +1076,7 @@ THR_LOCK_DATA **ha_spider::store_lock(
           SPIDER_LINK_STATUS_RECOVERY);
       } else
         lock_mode = -1;
-      SPIDER_SET_CONNS_PARAM(semi_trx_chk, TRUE, conns, share->link_statuses,
-        conn_link_idx, (int) share->link_count, SPIDER_LINK_STATUS_RECOVERY);
-      break;
+       break;
     default:
         lock_mode = -1;
   }

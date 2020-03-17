@@ -556,7 +556,6 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
   conn->table_lock = 0;
   conn->semi_trx_isolation = -2;
   conn->semi_trx_isolation_chk = FALSE;
-  conn->semi_trx_chk = FALSE;
 #if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
   if (direct_sql->access_mode == 0)
   {

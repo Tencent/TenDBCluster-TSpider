@@ -737,7 +737,6 @@ SPIDER_CONN *spider_create_conn(
   conn->table_lock = 0;
   conn->semi_trx_isolation = -2;
   conn->semi_trx_isolation_chk = FALSE;
-  conn->semi_trx_chk = FALSE;
   conn->link_idx = base_link_idx;
   conn->conn_kind = conn_kind;
   conn->conn_need_mon = need_mon;

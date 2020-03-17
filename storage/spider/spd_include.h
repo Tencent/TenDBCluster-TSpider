@@ -398,7 +398,6 @@ typedef struct st_spider_conn
   int                trx_isolation;
   bool               semi_trx_isolation_chk;
   int                semi_trx_isolation;
-  bool               semi_trx_chk;
   bool               semi_trx;
   bool               trx_start;
   bool               table_locked;
