@@ -1827,7 +1827,7 @@ int spider_internal_xa_commit(
 		  gtrid_length = xid->gtrid_length and
 		  data = xid->data
 	  */
-	  if (!thd->variables.spider_ignore_xa_log)
+	  if (!spider_param_ignore_xa_log(thd))
 	  {
 		  if (
 			  !(table_xa = spider_open_sys_table(
@@ -1942,7 +1942,7 @@ int spider_internal_xa_commit(
 		  gtrid_length = xid->gtrid_length and
 		  data = xid->data
 	  */
-	  if (!thd->variables.spider_ignore_xa_log)
+	  if (!spider_param_ignore_xa_log(thd))
 	  {
 		  if (
 			  !(table_xa_member = spider_open_sys_table(
@@ -1983,7 +1983,7 @@ int spider_internal_xa_commit(
   DBUG_RETURN(0);
 
 error:
-  if (!thd->variables.spider_ignore_xa_log)
+  if (!spider_param_ignore_xa_log(thd))
   {
 	  if (table_xa_opened)
 		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
@@ -2070,7 +2070,7 @@ int spider_internal_xa_rollback(
   DBUG_ENTER("spider_internal_xa_rollback");
 
   if (
-    trx->trx_xa_prepared && !thd->variables.spider_ignore_xa_log &&
+    trx->trx_xa_prepared && !spider_param_ignore_xa_log(thd) &&
     (
       trx->updated_in_this_trx ||
       spider_param_xa_register_mode(thd) == 0
@@ -2224,7 +2224,7 @@ int spider_internal_xa_rollback(
     goto error_in_rollback;
 
   if (
-    trx->trx_xa_prepared && !thd->variables.spider_ignore_xa_log && 
+    trx->trx_xa_prepared && !spider_param_ignore_xa_log(thd) &&
     !server_lost &&
     (
       trx->updated_in_this_trx ||
@@ -2277,7 +2277,7 @@ int spider_internal_xa_rollback(
   DBUG_RETURN(0);
 
 error:
-  if (!thd->variables.spider_ignore_xa_log)
+  if (!spider_param_ignore_xa_log(thd))
   {
 	  if (table_xa_opened)
 		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);
@@ -2341,7 +2341,7 @@ int spider_internal_xa_prepare(
 		  (trx->xid.format_id, trx->xid.gtrid_length, trx->xid.bqual_length,
 		  trx->xid.data, 'NOT YET')
 	  */
-	  if (!thd->variables.spider_ignore_xa_log)
+	  if (!spider_param_ignore_xa_log(thd))
 	  {
 		  if (
 			  !(table_xa = spider_open_sys_table(
@@ -2493,7 +2493,7 @@ int spider_internal_xa_prepare(
 		  gtrid_length = trx->xid.gtrid_length and
 		  data = trx->xid.data
 	  */
-	  if (!thd->variables.spider_ignore_xa_log)
+	  if (!spider_param_ignore_xa_log(thd))
 	  {
 		  if (
 			  !(table_xa = spider_open_sys_table(
@@ -2516,7 +2516,7 @@ int spider_internal_xa_prepare(
   DBUG_RETURN(0);
 
 error:
-  if (!thd->variables.spider_ignore_xa_log)
+  if (!spider_param_ignore_xa_log(thd))
   {
 	  if (table_xa_opened)
 		  spider_close_sys_table(thd, table_xa, &open_tables_backup, TRUE);

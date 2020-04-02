@@ -3593,11 +3593,11 @@ int spider_get_table_status_for_share(
     DBUG_ENTER("spider_get_sys_tables_link_status");
 
     if (difftime(tmp_time, share->sts_read_time) < spider_param_sts_interval(thd, share->sts_interval))
-    { /* 每sts_interval(86400s) 从tb_spider_table_status中获取统计信息 */
+    { /* get statistics from tb_spider_table_status every sts_interval (86400s) */
         DBUG_RETURN(error_num);
     }
     srand((unsigned)time(NULL));
-    share->sts_read_time = tmp_time + rand() % 600; /* 适当避免同时读表tb_spider_table_status */
+    share->sts_read_time = tmp_time + rand() % 600; /* avoid reading tables at the same time tb_spider_table_status  */
     if (
         !(table = spider_open_sys_table(
             thd, SPIDER_SYS_TABLE_STATUS_NAME_STR,

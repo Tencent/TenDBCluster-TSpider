@@ -163,11 +163,11 @@ extern bool throw_bounds_warning(THD *thd, const char *name, bool fixed,
   bool is_unsignd, longlong v);
 #endif
 
-static my_bool spider_support_xa;
+static my_bool spider_support_xa = 0;
 static MYSQL_SYSVAR_BOOL(
   support_xa,
   spider_support_xa,
-  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
   "XA support",
   NULL,
   NULL,
@@ -184,7 +184,7 @@ static my_bool spider_connect_mutex;
 static MYSQL_SYSVAR_BOOL(
   connect_mutex,
   spider_connect_mutex,
-  PLUGIN_VAR_OPCMDARG,
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Use mutex at connecting",
   NULL,
   NULL,
@@ -204,7 +204,7 @@ static uint spider_connect_error_interval;
 static MYSQL_SYSVAR_UINT(
   connect_error_interval,
   spider_connect_error_interval,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Return same error code until interval passes if connection is failed",
   NULL,
   NULL,
@@ -220,14 +220,14 @@ uint spider_param_connect_error_interval()
   DBUG_RETURN(spider_connect_error_interval);
 }
 
-static uint spider_table_init_error_interval;
+static uint spider_table_init_error_interval = 1;
 /*
   0-: interval
  */
 static MYSQL_SYSVAR_UINT(
   table_init_error_interval,
   spider_table_init_error_interval,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Return same error code until interval passes if table init is failed",
   NULL,
   NULL,
@@ -243,7 +243,7 @@ uint spider_param_table_init_error_interval()
   DBUG_RETURN(spider_table_init_error_interval);
 }
 
-static int spider_use_table_charset;
+static int spider_use_table_charset = 1;
 /*
  -1 :use table parameter
   0 :use utf8
@@ -252,11 +252,11 @@ static int spider_use_table_charset;
 static MYSQL_SYSVAR_INT(
   use_table_charset,
   spider_use_table_charset,
-  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
   "Use table charset for remote access",
   NULL,
   NULL,
-  -1,
+  1,
   -1,
   1,
   0
@@ -300,7 +300,7 @@ uint spider_param_conn_recycle_mode(
  */
 static MYSQL_THDVAR_UINT(
   conn_recycle_strict, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Strict connection recycle", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -439,7 +439,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Internal offset", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -464,7 +464,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Internal limit", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  9223372036854775807LL, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -489,7 +489,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Number of rows at a select", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  9223372036854775807LL, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -540,7 +540,7 @@ static MYSQL_THDVAR_LONGLONG(
   "The limit value for semi_split_read", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  9223372036854775807LL, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -562,11 +562,11 @@ longlong spider_param_semi_split_read_limit(
  */
 static MYSQL_THDVAR_INT(
   init_sql_alloc_size, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Initial sql string alloc size", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1024, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -588,11 +588,11 @@ int spider_param_init_sql_alloc_size(
  */
 static MYSQL_THDVAR_INT(
   reset_sql_alloc, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Reset sql string alloc after execute", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -614,11 +614,11 @@ int spider_param_reset_sql_alloc(
  */
 static MYSQL_THDVAR_LONGLONG(
   hs_result_free_size, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Result free size for handlersocket", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1048576, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -641,11 +641,11 @@ longlong spider_param_hs_result_free_size(
  */
 static MYSQL_THDVAR_INT(
   multi_split_read, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Sprit read mode for multi range", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -670,7 +670,7 @@ static MYSQL_THDVAR_INT(
   "Max columns for order by", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  32767, /* def */
   -1, /* min */
   32767, /* max */
   0 /* blk */
@@ -757,7 +757,7 @@ static int spider_param_semi_table_lock_check(
  */
 static MYSQL_THDVAR_INT(
   semi_table_lock, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Table lock during execute a sql", /* comment */
   &spider_param_semi_table_lock_check, /* check */
   NULL, /* update */
@@ -823,11 +823,11 @@ static int spider_param_semi_table_lock_connection_check(
  */
 static MYSQL_THDVAR_INT(
   semi_table_lock_connection, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Use different connection if semi_table_lock is enabled", /* comment */
   &spider_param_semi_table_lock_connection_check, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -847,7 +847,7 @@ int spider_param_semi_table_lock_connection(
  */
 static MYSQL_THDVAR_UINT(
   block_size, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Index block size", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -872,11 +872,11 @@ uint spider_param_block_size(
  */
 static MYSQL_THDVAR_INT(
   selupd_lock_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Lock for select with update", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -937,7 +937,7 @@ bool spider_param_sync_time_zone(
  */
 static MYSQL_THDVAR_BOOL(
   use_default_database, /* name */
-  PLUGIN_VAR_OPCMDARG, /* opt */
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Use default database", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -957,15 +957,15 @@ bool spider_param_use_default_database(
  1 :do send 'SET SQL_LOG_OFF 1' statement to data nodes
 */
 static MYSQL_THDVAR_INT(
-  internal_sql_log_off,                                  /* name */
-  PLUGIN_VAR_RQCMDARG,                                   /* opt */
+  internal_sql_log_off, /* name */
+  PLUGIN_VAR_RQCMDARG, /* opt */
   "Manage SQL_LOG_OFF mode statement to the data nodes", /* comment */
-  NULL,                                                  /* check */
-  NULL,                                                  /* update */
-  -1,                                                    /* default */
-  -1,                                                    /* min */
-  1,                                                     /* max */
-  0                                                      /* blk */
+  NULL, /* check */
+  NULL, /* update */
+  0, /* default */
+  -1,/* min */
+  1, /* max */
+  0  /* blk */
 );
 
 int spider_param_internal_sql_log_off(
@@ -985,7 +985,7 @@ static MYSQL_THDVAR_INT(
   "Bulk insert size", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  16000, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -1061,11 +1061,11 @@ int spider_param_bulk_update_size(
  */
 static MYSQL_THDVAR_INT(
   internal_optimize, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Execute optimize to remote server", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -1087,11 +1087,11 @@ int spider_param_internal_optimize(
  */
 static MYSQL_THDVAR_INT(
   internal_optimize_local, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Execute optimize to remote server with local", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -1112,7 +1112,7 @@ int spider_param_internal_optimize_local(
  */
 static MYSQL_THDVAR_BOOL(
   use_flash_logs, /* name */
-  PLUGIN_VAR_OPCMDARG, /* opt */
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Execute flush logs to remote server", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1133,7 +1133,7 @@ bool spider_param_use_flash_logs(
  */
 static MYSQL_THDVAR_INT(
   use_snapshot_with_flush_tables, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Execute optimize to remote server with local", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1176,7 +1176,7 @@ bool spider_param_use_all_conns_snapshot(
  */
 static MYSQL_THDVAR_BOOL(
   lock_exchange, /* name */
-  PLUGIN_VAR_OPCMDARG, /* opt */
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Exchange select lock to lock tables", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1196,7 +1196,7 @@ bool spider_param_lock_exchange(
  */
 static MYSQL_THDVAR_BOOL(
   internal_unlock, /* name */
-  PLUGIN_VAR_OPCMDARG, /* opt */
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Unlock tables for using connections in sql", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1240,7 +1240,7 @@ static MYSQL_THDVAR_INT(
   "Wait timeout of connecting to remote server", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  6, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -1343,7 +1343,7 @@ int spider_param_quick_mode(
 /*
  -1 :use table parameter
   0-:number of records
-  1000, default.   一次多取些记录，减少取多次
+  1000, default. 
  */
 static MYSQL_THDVAR_LONGLONG(
   quick_page_size, /* name */
@@ -1377,7 +1377,7 @@ static MYSQL_THDVAR_INT(
   "Use low memory mode when SQL(SELECT) internally issued to a remote server is executed and get a result list", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -1400,11 +1400,11 @@ int spider_param_low_mem_read(
  */
 static MYSQL_THDVAR_INT(
   select_column_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "The mode of using columns at select clause", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -1474,6 +1474,22 @@ int spider_param_bgs_dml(
 }
 
 
+static MYSQL_THDVAR_BOOL(
+  ignore_xa_log, /* name */
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
+  "spider_ignore_xa_log defaults is TRUE, do not log the spider_xa/spider_xa_member", /* comment */
+  NULL, /* check */
+  NULL, /* update */
+  TRUE/* def */
+);
+
+bool spider_param_ignore_xa_log(
+  THD* thd
+) {
+  DBUG_ENTER("spider_param_ignore_xa_log");
+  DBUG_RETURN(THDVAR(thd, ignore_xa_log));
+}
+
 /*
  -1 :use table parameter
   0 :records is gotten usually
@@ -1485,7 +1501,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Number of first read records when background search is used", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  2, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -1511,7 +1527,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Number of second read records when background search is used", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  100, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -1538,7 +1554,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Number of first read records", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -1586,7 +1602,7 @@ longlong spider_param_second_read(
  */
 static MYSQL_THDVAR_INT(
   crd_interval, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Interval of cardinality confirmation.(second)", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1614,11 +1630,11 @@ double spider_param_crd_interval(
  */
 static MYSQL_THDVAR_INT(
   crd_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Mode of cardinality confirmation.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   3, /* max */
   0 /* blk */
@@ -1643,11 +1659,11 @@ int spider_param_crd_mode(
  */
 static MYSQL_THDVAR_INT(
   crd_sync, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Cardinality synchronization in partitioned table.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -1671,11 +1687,11 @@ int spider_param_crd_sync(
  */
 static MYSQL_THDVAR_INT(
   crd_type, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Type of cardinality calculation.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  2, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -1696,11 +1712,11 @@ int spider_param_crd_type(
  */
 static MYSQL_THDVAR_INT(
   crd_weight, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Weight coefficient to calculate effectiveness of index from cardinality of column.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  2, /* def */
   -1, /* min */
   2147483647, /* max */
   0 /* blk */
@@ -1724,11 +1740,11 @@ double spider_param_crd_weight(
  */
 static MYSQL_THDVAR_INT(
   crd_bg_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Mode of cardinality confirmation at background.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -1751,7 +1767,7 @@ int spider_param_crd_bg_mode(
  */
 static MYSQL_THDVAR_INT(
   sts_interval, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Interval of table state confirmation.(second)", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1778,11 +1794,11 @@ double spider_param_sts_interval(
  */
 static MYSQL_THDVAR_INT(
   sts_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Mode of table state confirmation.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  1, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -1807,11 +1823,11 @@ int spider_param_sts_mode(
  */
 static MYSQL_THDVAR_INT(
   sts_sync, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Table state synchronization in partitioned table.", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -1836,7 +1852,7 @@ int spider_param_sts_sync(
  */
 static MYSQL_THDVAR_INT(
   sts_bg_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Mode of table state confirmation at background.", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1862,7 +1878,7 @@ int spider_param_sts_bg_mode(
  */
 static MYSQL_THDVAR_INT(
   ping_interval_at_trx_start, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Ping interval at transaction start", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1886,7 +1902,7 @@ double spider_param_ping_interval_at_trx_start(
  */
 static MYSQL_THDVAR_INT(
   hs_ping_interval, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Ping interval for handlersocket", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1937,7 +1953,7 @@ int spider_param_auto_increment_mode(
  */
 static MYSQL_THDVAR_BOOL(
   same_server_link, /* name */
-  PLUGIN_VAR_OPCMDARG, /* opt */
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Permit one to link same server's table", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -1978,7 +1994,7 @@ FALSE: get conn when spider_get_share
 */
 static MYSQL_THDVAR_BOOL(
 	get_conn_from_idx, /* name */
-	PLUGIN_VAR_OPCMDARG, /* opt */
+	PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
 	"get conn by using spider_get_conn_idx during the execution process.", /* comment */
 	NULL, /* check */
 	NULL, /* update */
@@ -1994,7 +2010,7 @@ bool spider_param_get_conn_from_idx(
 
 static MYSQL_THDVAR_BOOL(
     client_found_rows, /* name */
-    PLUGIN_VAR_OPCMDARG, /* opt */
+    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
     "return the matched row when use mysql_affected_rows", /* comment */
     NULL, /* check */
     NULL, /* update */
@@ -2036,7 +2052,7 @@ bool spider_param_get_sts_or_crd()
  */
 static MYSQL_THDVAR_BOOL(
   local_lock_table, /* name */
-  PLUGIN_VAR_OPCMDARG, /* opt */
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Remote server transmission when lock tables is executed at local",
     /* comment */
   NULL, /* check */
@@ -2058,7 +2074,7 @@ bool spider_param_local_lock_table(
  */
 static MYSQL_THDVAR_INT(
   use_pushdown_udf, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Remote server transmission existence when UDF is used at condition and \"engine_condition_pushdown=1\"", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2103,14 +2119,14 @@ int spider_param_direct_dup_insert(
     direct_dup_insert : THDVAR(thd, direct_dup_insert));
 }
 
-static uint spider_udf_table_lock_mutex_count;
+static uint spider_udf_table_lock_mutex_count = 20;
 /*
   1-: mutex count
  */
 static MYSQL_SYSVAR_UINT(
   udf_table_lock_mutex_count,
   spider_udf_table_lock_mutex_count,
-  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
   "Mutex count of table lock for Spider UDFs",
   NULL,
   NULL,
@@ -2126,14 +2142,14 @@ uint spider_param_udf_table_lock_mutex_count()
   DBUG_RETURN(spider_udf_table_lock_mutex_count);
 }
 
-static uint spider_udf_table_mon_mutex_count;
+static uint spider_udf_table_mon_mutex_count = 20;
 /*
   1-: mutex count
  */
 static MYSQL_SYSVAR_UINT(
   udf_table_mon_mutex_count,
   spider_udf_table_mon_mutex_count,
-  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
   "Mutex count of table mon for Spider UDFs",
   NULL,
   NULL,
@@ -2154,11 +2170,11 @@ uint spider_param_udf_table_mon_mutex_count()
  */
 static MYSQL_THDVAR_LONGLONG(
   udf_ds_bulk_insert_rows, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Number of rows for bulk inserting", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  3000, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -2181,11 +2197,11 @@ longlong spider_param_udf_ds_bulk_insert_rows(
  */
 static MYSQL_THDVAR_INT(
   udf_ds_table_loop_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Table loop mode if the number of tables in table list are less than the number of result sets", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   2, /* max */
   0 /* blk */
@@ -2208,7 +2224,7 @@ static MYSQL_SYSVAR_STR(
   remote_access_charset,
   spider_remote_access_charset,
   PLUGIN_VAR_MEMALLOC |
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Set remote access charset at connecting for improvement performance of connection if you know",
   NULL,
   NULL,
@@ -2220,7 +2236,7 @@ static MYSQL_SYSVAR_STR(
   remote_access_charset,
   spider_remote_access_charset,
   PLUGIN_VAR_MEMALLOC |
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Set remote access charset at connecting for improvement performance of connection if you know",
   NULL,
   NULL,
@@ -2230,7 +2246,7 @@ static MYSQL_SYSVAR_STR(
 static MYSQL_SYSVAR_STR(
   remote_access_charset,
   spider_remote_access_charset,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Set remote access charset at connecting for improvement performance of connection if you know",
   NULL,
   NULL,
@@ -2278,7 +2294,7 @@ static MYSQL_SYSVAR_STR(
   remote_time_zone,
   spider_remote_time_zone,
   PLUGIN_VAR_MEMALLOC |
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Set remote time_zone at connecting for improvement performance of connection if you know",
   NULL,
   NULL,
@@ -2466,7 +2482,7 @@ int spider_param_connect_retry_count(
 static MYSQL_THDVAR_STR(
   bka_engine, /* name */
   PLUGIN_VAR_MEMALLOC |
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Temporary table's engine for BKA", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2477,7 +2493,7 @@ static MYSQL_THDVAR_STR(
 static MYSQL_THDVAR_STR(
   bka_engine, /* name */
   PLUGIN_VAR_MEMALLOC |
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Temporary table's engine for BKA", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2486,7 +2502,7 @@ static MYSQL_THDVAR_STR(
 #else
 static MYSQL_THDVAR_STR(
   bka_engine, /* name */
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Temporary table's engine for BKA", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2511,7 +2527,7 @@ char *spider_param_bka_engine(
  */
 static MYSQL_THDVAR_INT(
   bka_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Mode of BKA for Spider", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2530,7 +2546,7 @@ int spider_param_bka_mode(
     bka_mode : THDVAR(thd, bka_mode));
 }
 
-static int spider_udf_ct_bulk_insert_interval;
+static int spider_udf_ct_bulk_insert_interval = 10;
 /*
  -1         : The UDF parameter is adopted.
   0 or more : Milliseconds.
@@ -2538,11 +2554,11 @@ static int spider_udf_ct_bulk_insert_interval;
 static MYSQL_SYSVAR_INT(
   udf_ct_bulk_insert_interval,
   spider_udf_ct_bulk_insert_interval,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "The interval time between bulk insert and next bulk insert at coping",
   NULL,
   NULL,
-  -1,
+  10,
   -1,
   2147483647,
   0
@@ -2556,7 +2572,7 @@ int spider_param_udf_ct_bulk_insert_interval(
     udf_ct_bulk_insert_interval : spider_udf_ct_bulk_insert_interval);
 }
 
-static longlong spider_udf_ct_bulk_insert_rows;
+static longlong spider_udf_ct_bulk_insert_rows = 0;
 /*
  -1,0       : The UDF parameter is adopted.
   1 or more : Number of rows.
@@ -2564,11 +2580,11 @@ static longlong spider_udf_ct_bulk_insert_rows;
 static MYSQL_SYSVAR_LONGLONG(
   udf_ct_bulk_insert_rows,
   spider_udf_ct_bulk_insert_rows,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "The number of rows inserted with bulk insert of one time at coping",
   NULL,
   NULL,
-  -1,
+  0,
   -1,
   9223372036854775807LL,
   0
@@ -2590,7 +2606,7 @@ longlong spider_param_udf_ct_bulk_insert_rows(
  */
 static MYSQL_THDVAR_UINT(
   hs_r_conn_recycle_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Handlersocket connection recycle mode", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2613,7 +2629,7 @@ uint spider_param_hs_r_conn_recycle_mode(
  */
 static MYSQL_THDVAR_UINT(
   hs_r_conn_recycle_strict, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Strict handlersocket connection recycle", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2637,7 +2653,7 @@ uint spider_param_hs_r_conn_recycle_strict(
  */
 static MYSQL_THDVAR_UINT(
   hs_w_conn_recycle_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Handlersocket connection recycle mode", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2660,7 +2676,7 @@ uint spider_param_hs_w_conn_recycle_mode(
  */
 static MYSQL_THDVAR_UINT(
   hs_w_conn_recycle_strict, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Strict handlersocket connection recycle", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2684,7 +2700,7 @@ uint spider_param_hs_w_conn_recycle_strict(
  */
 static MYSQL_THDVAR_INT(
   use_hs_read, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Use handlersocket for reading", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2710,7 +2726,7 @@ int spider_param_use_hs_read(
  */
 static MYSQL_THDVAR_INT(
   use_hs_write, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Use handlersocket for writing", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2737,11 +2753,11 @@ int spider_param_use_hs_write(
  */
 static MYSQL_THDVAR_INT(
   use_handler, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Use handler for reading", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   3, /* max */
   0 /* blk */
@@ -2763,11 +2779,11 @@ int spider_param_use_handler(
  */
 static MYSQL_THDVAR_INT(
   error_read_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Read error mode if error", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -2789,11 +2805,11 @@ int spider_param_error_read_mode(
  */
 static MYSQL_THDVAR_INT(
   error_write_mode, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Write error mode if error", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -2815,11 +2831,11 @@ int spider_param_error_write_mode(
  */
 static MYSQL_THDVAR_INT(
   skip_default_condition, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Skip generating internal default condition", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -2843,7 +2859,7 @@ int spider_param_skip_default_condition(
  */
 static MYSQL_THDVAR_INT(
   skip_parallel_search, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Skip parallel search by specific conditions", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -2873,7 +2889,7 @@ static MYSQL_THDVAR_LONGLONG(
   "Send 'ORDER BY' and 'LIMIT' to remote server directly", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  9223372036854775807LL, /* def */
   -1, /* min */
   9223372036854775807LL, /* max */
   0 /* blk */
@@ -2899,7 +2915,7 @@ static MYSQL_THDVAR_INT(
   "Read only", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -2952,11 +2968,11 @@ int spider_param_bulk_access_free(
  */
 static MYSQL_THDVAR_INT(
   udf_ds_use_real_table, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Use real table for temporary table list", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -3010,7 +3026,7 @@ static my_bool spider_enable_mem_calc;
 static MYSQL_SYSVAR_BOOL(
     enable_mem_calc,
     spider_enable_mem_calc,
-    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
     "enable SPIDER_ALLOC_MEM to collect memory malloc information in spider",
     NULL,
     NULL,
@@ -3027,7 +3043,7 @@ static my_bool spider_enable_trx_ha;
 static MYSQL_SYSVAR_BOOL(
     enable_trx_ha,
     spider_enable_trx_ha,
-    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
     "enable trx_ha",
     NULL,
     NULL,
@@ -3086,7 +3102,7 @@ static int spider_conn_meta_max_invalid_duration;
 static MYSQL_SYSVAR_INT(
 	conn_meta_max_invalid_duration,
 	spider_conn_meta_max_invalid_duration,
-	PLUGIN_VAR_OPCMDARG,
+	PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR,
 	"Max duration for conn-meta record within INVALID status in SPIDER_CONNS information_schema",
 	NULL,
 	NULL,
@@ -3113,7 +3129,7 @@ static MYSQL_THDVAR_BOOL(
   "switch to control if push down index hint, like force_index", /* comment */
   NULL, /* check */
   NULL, /* update */
-  FALSE /* def */
+  TRUE/* def */
 );
 
 my_bool spider_param_index_hint_pushdown(
@@ -3164,7 +3180,6 @@ uint spider_param_conn_wait_timeout()
 }
 
 
-/* 临时加该参数控制，出现问题可以快速回退  */
 static my_bool spider_fetch_minimum_columns;
 static MYSQL_SYSVAR_BOOL(
     fetch_minimum_columns,
@@ -3294,11 +3309,11 @@ uint spider_param_internal_xa_id_type(
  */
 static MYSQL_THDVAR_INT(
   casual_read, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "Read casually if it is possible", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   63, /* max */
   0 /* blk */
@@ -3337,7 +3352,7 @@ my_bool spider_param_dry_access()
  */
 static MYSQL_THDVAR_INT(
   delete_all_rows_type, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "The type of delete_all_rows", /* comment */
   NULL, /* check */
   NULL, /* update */
@@ -3363,11 +3378,11 @@ int spider_param_delete_all_rows_type(
  */
 static MYSQL_THDVAR_INT(
   bka_table_name_type, /* name */
-  PLUGIN_VAR_RQCMDARG, /* opt */
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
   "The type of temporary table name for bka", /* comment */
   NULL, /* check */
   NULL, /* update */
-  -1, /* def */
+  0, /* def */
   -1, /* min */
   1, /* max */
   0 /* blk */
@@ -3382,7 +3397,7 @@ int spider_param_bka_table_name_type(
     bka_table_name_type : THDVAR(thd, bka_table_name_type));
 }
 
-static int spider_store_last_sts;
+static int spider_store_last_sts = 0;
 /*
  -1 : use table parameter
   0 : do not store
@@ -3391,11 +3406,11 @@ static int spider_store_last_sts;
 static MYSQL_SYSVAR_INT(
   store_last_sts,
   spider_store_last_sts,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Store last sts result into system table",
   NULL,
   NULL,
-  -1,
+  0,
   -1,
   1,
   0
@@ -3409,7 +3424,7 @@ int spider_param_store_last_sts(
     store_last_sts : spider_store_last_sts);
 }
 
-static int spider_store_last_crd;
+static int spider_store_last_crd = 0;
 /*
  -1 : use table parameter
   0 : do not store
@@ -3418,7 +3433,7 @@ static int spider_store_last_crd;
 static MYSQL_SYSVAR_INT(
   store_last_crd,
   spider_store_last_crd,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Store last crd result into system table",
   NULL,
   NULL,
@@ -3436,7 +3451,7 @@ int spider_param_store_last_crd(
     store_last_crd : spider_store_last_crd);
 }
 
-static int spider_load_sts_at_startup;
+static int spider_load_sts_at_startup = 0;
 /*
  -1 : use table parameter
   0 : do not load
@@ -3445,11 +3460,11 @@ static int spider_load_sts_at_startup;
 static MYSQL_SYSVAR_INT(
   load_sts_at_startup,
   spider_load_sts_at_startup,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Load sts from system table at startup",
   NULL,
   NULL,
-  -1,
+  0,
   -1,
   1,
   0
@@ -3463,7 +3478,7 @@ int spider_param_load_sts_at_startup(
     load_sts_at_startup : spider_load_sts_at_startup);
 }
 
-static int spider_load_crd_at_startup;
+static int spider_load_crd_at_startup = 0;
 /*
  -1 : use table parameter
   0 : do not load
@@ -3472,11 +3487,11 @@ static int spider_load_crd_at_startup;
 static MYSQL_SYSVAR_INT(
   load_crd_at_startup,
   spider_load_crd_at_startup,
-  PLUGIN_VAR_RQCMDARG,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
   "Load crd from system table at startup",
   NULL,
   NULL,
-  -1,
+  0,
   -1,
   1,
   0
@@ -3491,14 +3506,14 @@ int spider_param_load_crd_at_startup(
 }
 
 #ifndef WITHOUT_SPIDER_BG_SEARCH
-static uint spider_table_sts_thread_count;
+static uint spider_table_sts_thread_count = 10;
 /*
   1-: thread count
  */
 static MYSQL_SYSVAR_UINT(
   table_sts_thread_count,
   spider_table_sts_thread_count,
-  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
   "Static thread count of table sts",
   NULL,
   NULL,
@@ -3514,14 +3529,14 @@ uint spider_param_table_sts_thread_count()
   DBUG_RETURN(spider_table_sts_thread_count);
 }
 
-static uint spider_table_crd_thread_count;
+static uint spider_table_crd_thread_count = 10;
 /*
   1-: thread count
  */
 static MYSQL_SYSVAR_UINT(
   table_crd_thread_count,
   spider_table_crd_thread_count,
-  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY,
+  PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
   "Static thread count of table crd",
   NULL,
   NULL,
@@ -3597,6 +3612,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(bgs_first_read),
   MYSQL_SYSVAR(bgs_second_read),
 #endif
+  MYSQL_SYSVAR(ignore_xa_log),
   MYSQL_SYSVAR(first_read),
   MYSQL_SYSVAR(second_read),
   MYSQL_SYSVAR(crd_interval),

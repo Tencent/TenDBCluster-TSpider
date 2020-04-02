@@ -4010,9 +4010,6 @@ static Sys_var_mybool Sys_slow_log_off(
     "sql_slow_log_off", "sql_slow_log_off",
     SESSION_VAR(sql_slow_log_off), NO_CMD_LINE, DEFAULT(TRUE));
 
-static Sys_var_mybool Sys_spider_ignore_xa_log(
-	"spider_ignore_xa_log", "spider_ignore_xa_log defaults is TRUE, do not log the spider_xa/spider_xa_member",
-	SESSION_VAR(spider_ignore_xa_log), NO_CMD_LINE, DEFAULT(TRUE));
 /**
   This function sets the session variable thd->variables.sql_log_bin 
   to reflect changes to @@session.sql_log_bin.

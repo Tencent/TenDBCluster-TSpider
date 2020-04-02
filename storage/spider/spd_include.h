@@ -13,8 +13,8 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#define SPIDER_DETAIL_VERSION "3.3.13"
-#define SPIDER_HEX_VERSION 0x0303
+#define SPIDER_DETAIL_VERSION "3.5.0"
+#define SPIDER_HEX_VERSION 0x030500
 
 #if MYSQL_VERSION_ID < 50500
 #define spider_my_free(A,B) my_free(A,B)

@@ -3823,7 +3823,7 @@ int spider_set_connect_info_default(
     share->sts_bg_mode = 2;
 #endif
   if (share->sts_interval == -1)
-    share->sts_interval = 10;
+    share->sts_interval = 3600;
   if (share->sts_mode == -1)
     share->sts_mode = 1;
 #ifdef WITH_PARTITION_STORAGE_ENGINE
@@ -3836,7 +3836,7 @@ int spider_set_connect_info_default(
     share->load_sts_at_startup = 1;
 #ifndef WITHOUT_SPIDER_BG_SEARCH
   if (share->crd_bg_mode == -1)
-    share->crd_bg_mode = 2;
+    share->crd_bg_mode = 0;
 #endif
   if (share->crd_interval == -1)
     share->crd_interval = 51;

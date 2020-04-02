@@ -190,6 +190,7 @@ int spider_param_bgs_mode(
 int spider_param_bgs_dml(
 	THD *thd
 );
+bool spider_param_ignore_xa_log(THD *thd);
 longlong spider_param_bgs_first_read(
   THD *thd,
   longlong bgs_first_read
