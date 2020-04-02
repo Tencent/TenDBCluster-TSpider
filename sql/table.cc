@@ -7470,6 +7470,7 @@ bool TABLE_LIST::process_index_hints(TABLE *tbl)
       thd && thd->lex &&
       thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
       /* !thd->lex->describe &&  // not describe/explain types */
+     !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
       thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
       tbl->file && tbl->file->is_spider_storage_engine()  /* only for spider */
       )
