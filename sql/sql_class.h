@@ -2435,6 +2435,7 @@ public:
   int32 spider_current_partition_num;
   int32 spider_last_partition_num;
   ulong spider_features_type;
+  ulong current_global_server_version;
   bool do_ddl_by_ctl;
 
   // Process indicator

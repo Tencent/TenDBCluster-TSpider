@@ -3005,6 +3005,23 @@ my_bool spider_param_general_log()
   DBUG_RETURN(spider_general_log);
 }
 
+static my_bool spider_error_when_flush_server;
+static MYSQL_SYSVAR_BOOL(
+  error_when_flush_server,
+  spider_error_when_flush_server,
+  PLUGIN_VAR_OPCMDARG,
+  "error 12701 when server changed force (without FLWR) ",
+  NULL,
+  NULL,
+  FALSE
+);
+
+my_bool spider_param_error_when_flush_server()
+{
+  DBUG_ENTER("spider_param_error_when_flush_server");
+  DBUG_RETURN(spider_error_when_flush_server);
+}
+
 static my_bool spider_quick_mode_only_select;
 static MYSQL_SYSVAR_BOOL(
     quick_mode_only_select,
@@ -3332,7 +3349,7 @@ static my_bool spider_dry_access;
 static MYSQL_SYSVAR_BOOL(
   dry_access,
   spider_dry_access,
-  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+  PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY | PLUGIN_VAR_NOSYSVAR,
   "dry access",
   NULL,
   NULL,
@@ -3691,6 +3708,7 @@ static struct st_mysql_sys_var* spider_system_variables[] = {
   MYSQL_SYSVAR(udf_ds_use_real_table),
 #endif
   MYSQL_SYSVAR(general_log),
+  MYSQL_SYSVAR(error_when_flush_server),
   MYSQL_SYSVAR(index_hint_pushdown),
   MYSQL_SYSVAR(max_connections),
   MYSQL_SYSVAR(conn_wait_timeout),

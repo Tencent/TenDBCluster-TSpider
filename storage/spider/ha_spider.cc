@@ -47,6 +47,7 @@
 #include "spd_db_conn.h"
 #include "spd_ping_table.h"
 #include "spd_malloc.h"
+#include "sql_servers.h"
 
 #if defined(MARIADB_BASE_VERSION) && MYSQL_VERSION_ID >= 100002
 #define SPIDER_CAN_BG_SEARCH (1LL << 37)
@@ -10605,6 +10606,11 @@ bool ha_spider::get_error_message(
 			DBUG_RETURN(TRUE);
 		buf->q_append(ER_SPIDER_XA_TIMEOUT_STR,
 			ER_SPIDER_XA_TIMEOUT_LEN);
+  case ER_SPIDER_DRY_NUM:
+    if (buf->reserve(ER_SPIDER_DRY_LEN))
+      DBUG_RETURN(TRUE);
+    buf->q_append(ER_SPIDER_DRY_STR,
+      ER_SPIDER_DRY_LEN);
 		break;
     default:
       if (buf->reserve(ER_SPIDER_UNKNOWN_LEN))

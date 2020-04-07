@@ -51,6 +51,7 @@
 #include "spd_ping_table.h"
 #include "spd_copy_tables.h"
 #include "spd_malloc.h"
+#include "spd_err.h"
 
 extern handlerton *spider_hton_ptr;
 extern SPIDER_DBTON spider_dbton[SPIDER_DBTON_SIZE];
@@ -4358,6 +4359,10 @@ int spider_db_fetch(
   int error_num;
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   DBUG_ENTER("spider_db_fetch");
+
+  if(spider_param_dry_access())
+    DBUG_RETURN(ER_SPIDER_DRY_NUM);
+
   if (spider->sql_kind[spider->result_link_idx] == SPIDER_SQL_KIND_SQL)
   {
     if (!spider->select_column_mode) {

@@ -1898,7 +1898,7 @@ int spider_db_mysql::exec_query(
   *******************************/
 
   if (!spider_param_dry_access())
-  {
+  {// TODO.  if the conn if changed, do dry access
     error_num = mysql_real_query(db_conn, query, length);
 	this->conn->last_visited = (time_t)time((time_t *)0);
 	spider_update_conn_meta_info(this->conn, SPIDER_CONN_ACTIVE_STATUS);

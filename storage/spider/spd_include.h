@@ -427,6 +427,7 @@ typedef struct st_spider_conn
   int                error_mode;
   spider_string      default_database;
 
+  char               *server_name;
   char               *tgt_host;
   char               *tgt_username;
   char               *tgt_password;
@@ -446,6 +447,7 @@ typedef struct st_spider_conn
   long               hs_port;
 #endif
 
+  uint               server_names_length;
   uint               tgt_host_length;
   uint               tgt_username_length;
   uint               tgt_password_length;
@@ -553,6 +555,7 @@ typedef struct st_spider_conn
 #endif
   SPIDER_IP_PORT_CONN *ip_port_conn;
   time_t            last_visited;
+  ulong             current_key_version;
 } SPIDER_CONN;
 
 typedef struct st_spider_lgtm_tblhnd_share

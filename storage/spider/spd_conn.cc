@@ -271,10 +271,22 @@ void spider_free_conn_from_trx(
   spider_conn_clear_queue(conn);
   conn->use_for_active_standby = FALSE;
   conn->error_mode = 1;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  if (conn->conn_kind == SPIDER_CONN_KIND_MYSQL)
-  {
-#endif
+
+  if (thd->current_global_server_version != get_modify_server_version())
+  {// global server version changed
+    ulong server_version = get_server_version_by_name(conn->server_name);
+    ulong current_verion = conn->current_key_version;
+    if (server_version != current_verion)
+    {// conn->server_version is different from share->server_version (old conn)
+      conn->server_lost = TRUE; // server version changed, free old version conn
+      if (spider_param_error_when_flush_server())
+      {// flush server force, report error 12701
+        my_message(ER_SPIDER_REMOTE_SERVER_GONE_AWAY_NUM,
+          ER_SPIDER_REMOTE_SERVER_GONE_AWAY_STR, MYF(0));
+      }
+    }
+  }
+
     if (
       trx_free ||
       (
@@ -310,7 +322,7 @@ void spider_free_conn_from_trx(
       if (
         !trx_free &&
         !conn->server_lost &&
-        /* !conn->queued_connect &&*/ /* 连接未成功建立，也不释放 */
+        /* !conn->queued_connect &&*/ /*  failed to create conn, don't need to free */
         spider_param_conn_recycle_mode(trx->thd) == 1 &&
 		  !(thd->is_error())   /*if thd->is_error，must be free,not recycle in the connect pool*/
       ) {
@@ -362,114 +374,6 @@ void spider_free_conn_from_trx(
       }
     } else if (roop_count)
       (*roop_count)++;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  } else if (conn->conn_kind == SPIDER_CONN_KIND_HS_READ)
-  {
-    spider_db_hs_request_buf_reset(conn);
-    if (
-      trx_free ||
-      (
-        (
-          conn->server_lost ||
-          spider_param_hs_r_conn_recycle_mode(trx->thd) != 2
-        ) &&
-        !conn->opened_handlers
-      )
-    ) {
-      conn->thd = NULL;
-      my_hash_delete(&trx->trx_hs_r_conn_hash, (uchar*) conn);
-
-      DBUG_ASSERT(conn->opened_handlers ==
-        conn->db_conn->get_opened_handler_count());
-      if (conn->db_conn->get_opened_handler_count())
-      {
-        conn->db_conn->reset_opened_handler();
-      }
-
-      if (
-        !trx_free &&
-        !conn->server_lost &&
-        !conn->queued_connect &&
-        spider_param_hs_r_conn_recycle_mode(trx->thd) == 1
-      ) {
-        /* conn_recycle_mode == 1 */
-        *conn->conn_key = '0';
-        pthread_mutex_lock(&spider_hs_r_conn_mutex);
-        uint old_elements = spider_hs_r_conn_hash.array.max_element;
-        if (my_hash_insert(&spider_hs_r_conn_hash, (uchar*) conn))
-        {
-          pthread_mutex_unlock(&spider_hs_r_conn_mutex);
-          spider_free_conn(conn);
-        } else {
-          if (spider_hs_r_conn_hash.array.max_element > old_elements)
-          {
-            spider_alloc_calc_mem(spider_current_trx,
-              spider_hs_r_conn_hash,
-              (spider_hs_r_conn_hash.array.max_element - old_elements) *
-              spider_hs_r_conn_hash.array.size_of_element);
-          }
-          pthread_mutex_unlock(&spider_hs_r_conn_mutex);
-        }
-      } else {
-        /* conn_recycle_mode == 0 */
-        spider_free_conn(conn);
-      }
-    } else if (roop_count)
-      (*roop_count)++;
-  } else {
-    spider_db_hs_request_buf_reset(conn);
-    if (
-      trx_free ||
-      (
-        (
-          conn->server_lost ||
-          spider_param_hs_w_conn_recycle_mode(trx->thd) != 2
-        ) &&
-        !conn->opened_handlers
-      )
-    ) {
-      conn->thd = NULL;
-      my_hash_delete(&trx->trx_hs_w_conn_hash, (uchar*) conn);
-
-      DBUG_ASSERT(conn->opened_handlers ==
-        conn->db_conn->get_opened_handler_count());
-      if (conn->db_conn->get_opened_handler_count())
-      {
-        conn->db_conn->reset_opened_handler();
-      }
-
-      if (
-        !trx_free &&
-        !conn->server_lost &&
-        !conn->queued_connect &&
-        spider_param_hs_w_conn_recycle_mode(trx->thd) == 1
-      ) {
-        /* conn_recycle_mode == 1 */
-        *conn->conn_key = '0';
-        pthread_mutex_lock(&spider_hs_w_conn_mutex);
-        uint old_elements = spider_hs_w_conn_hash.array.max_element;
-        if (my_hash_insert(&spider_hs_w_conn_hash, (uchar*) conn))
-        {
-          pthread_mutex_unlock(&spider_hs_w_conn_mutex);
-          spider_free_conn(conn);
-        } else {
-          if (spider_hs_w_conn_hash.array.max_element > old_elements)
-          {
-            spider_alloc_calc_mem(spider_current_trx,
-              spider_hs_w_conn_hash,
-              (spider_hs_w_conn_hash.array.max_element - old_elements) *
-              spider_hs_w_conn_hash.array.size_of_element);
-          }
-          pthread_mutex_unlock(&spider_hs_w_conn_mutex);
-        }
-      } else {
-        /* conn_recycle_mode == 0 */
-        spider_free_conn(conn);
-      }
-    } else if (roop_count)
-      (*roop_count)++;
-  }
-#endif
   DBUG_VOID_RETURN;
 }
 
@@ -484,7 +388,7 @@ SPIDER_CONN *spider_create_conn(
   int *need_mon;
   SPIDER_CONN *conn;
   SPIDER_IP_PORT_CONN *ip_port_conn;
-  char *tmp_name, *tmp_host, *tmp_username, *tmp_password, *tmp_socket;
+  char *tmp_name, *tmp_server_name, *tmp_host, *tmp_username, *tmp_password, *tmp_socket;
   char *tmp_wrapper, *tmp_ssl_ca, *tmp_ssl_capath, *tmp_ssl_cert;
   char *tmp_ssl_cipher, *tmp_ssl_key, *tmp_default_file, *tmp_default_group;
   DBUG_ENTER("spider_create_conn");
@@ -497,6 +401,7 @@ SPIDER_CONN *spider_create_conn(
       spider_bulk_malloc(spider_current_trx, 18, MYF(MY_WME | MY_ZEROFILL),
         &conn, sizeof(*conn),
         &tmp_name, share->conn_keys_lengths[link_idx] + 1,
+        &tmp_server_name, share->server_names_lengths[link_idx] + 1,
         &tmp_host, share->tgt_hosts_lengths[link_idx] + 1,
         &tmp_username,
           share->tgt_usernames_lengths[link_idx] + 1,
@@ -537,6 +442,10 @@ SPIDER_CONN *spider_create_conn(
     conn->tgt_host = tmp_host;
     memcpy(conn->tgt_host, share->tgt_hosts[link_idx],
       share->tgt_hosts_lengths[link_idx]);
+    conn->server_names_length = share->server_names_lengths[link_idx];
+    conn->server_name = tmp_server_name;
+    memcpy(conn->server_name, share->server_names[link_idx],
+      share->server_names_lengths[link_idx]);
     conn->tgt_username_length = share->tgt_usernames_lengths[link_idx];
     conn->tgt_username = tmp_username;
     memcpy(conn->tgt_username, share->tgt_usernames[link_idx],
@@ -614,113 +523,13 @@ SPIDER_CONN *spider_create_conn(
     conn->tgt_ssl_vsc = share->tgt_ssl_vscs[link_idx];
     conn->dbton_id = share->sql_dbton_ids[link_idx];
 	conn->bg_conn_working = false;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  } else if (conn_kind == SPIDER_CONN_KIND_HS_READ) {
-    if (!(conn = (SPIDER_CONN *)
-      spider_bulk_malloc(spider_current_trx, 19, MYF(MY_WME | MY_ZEROFILL),
-        &conn, sizeof(*conn),
-        &tmp_name, share->hs_read_conn_keys_lengths[link_idx] + 1,
-        &tmp_host, share->tgt_hosts_lengths[link_idx] + 1,
-        &tmp_socket, share->hs_read_socks_lengths[link_idx] + 1,
-        &tmp_wrapper,
-          share->tgt_wrappers_lengths[link_idx] + 1,
-        &need_mon, sizeof(int),
-        NullS))
-    ) {
-      *error_num = HA_ERR_OUT_OF_MEM;
-      goto error_alloc_conn;
-    }
-
-    conn->default_database.init_calc_mem(76);
-    conn->conn_key_length = share->hs_read_conn_keys_lengths[link_idx];
-    conn->conn_key = tmp_name;
-    memcpy(conn->conn_key, share->hs_read_conn_keys[link_idx],
-      share->hs_read_conn_keys_lengths[link_idx]);
-#ifdef SPIDER_HAS_HASH_VALUE_TYPE
-    conn->conn_key_hash_value = share->hs_read_conn_keys_hash_value[link_idx];
-#endif
-    conn->tgt_host_length = share->tgt_hosts_lengths[link_idx];
-    conn->tgt_host = tmp_host;
-    memcpy(conn->tgt_host, share->tgt_hosts[link_idx],
-      share->tgt_hosts_lengths[link_idx]);
-    conn->hs_sock_length = share->hs_read_socks_lengths[link_idx];
-    if (conn->hs_sock_length)
-    {
-      conn->hs_sock = tmp_socket;
-      memcpy(conn->hs_sock, share->hs_read_socks[link_idx],
-        share->hs_read_socks_lengths[link_idx]);
-    } else
-      conn->hs_sock = NULL;
-    conn->tgt_wrapper_length = share->tgt_wrappers_lengths[link_idx];
-    conn->tgt_wrapper = tmp_wrapper;
-    memcpy(conn->tgt_wrapper, share->tgt_wrappers[link_idx],
-      share->tgt_wrappers_lengths[link_idx]);
-    conn->hs_port = share->hs_read_ports[link_idx];
-    conn->dbton_id = share->hs_dbton_ids[link_idx];
-  } else {
-    if (!(conn = (SPIDER_CONN *)
-      spider_bulk_malloc(spider_current_trx, 20, MYF(MY_WME | MY_ZEROFILL),
-        &conn, sizeof(*conn),
-        &tmp_name, share->hs_write_conn_keys_lengths[link_idx] + 1,
-        &tmp_host, share->tgt_hosts_lengths[link_idx] + 1,
-        &tmp_socket, share->hs_write_socks_lengths[link_idx] + 1,
-        &tmp_wrapper,
-          share->tgt_wrappers_lengths[link_idx] + 1,
-        &need_mon, sizeof(int),
-        NullS))
-    ) {
-      *error_num = HA_ERR_OUT_OF_MEM;
-      goto error_alloc_conn;
-    }
-
-    conn->default_database.init_calc_mem(77);
-    conn->conn_key_length = share->hs_write_conn_keys_lengths[link_idx];
-    conn->conn_key = tmp_name;
-    memcpy(conn->conn_key, share->hs_write_conn_keys[link_idx],
-      share->hs_write_conn_keys_lengths[link_idx]);
-#ifdef SPIDER_HAS_HASH_VALUE_TYPE
-    conn->conn_key_hash_value = share->hs_write_conn_keys_hash_value[link_idx];
-#endif
-    conn->tgt_host_length = share->tgt_hosts_lengths[link_idx];
-    conn->tgt_host = tmp_host;
-    memcpy(conn->tgt_host, share->tgt_hosts[link_idx],
-      share->tgt_hosts_lengths[link_idx]);
-    conn->hs_sock_length = share->hs_write_socks_lengths[link_idx];
-    if (conn->hs_sock_length)
-    {
-      conn->hs_sock = tmp_socket;
-      memcpy(conn->hs_sock, share->hs_write_socks[link_idx],
-        share->hs_write_socks_lengths[link_idx]);
-    } else
-      conn->hs_sock = NULL;
-    conn->tgt_wrapper_length = share->tgt_wrappers_lengths[link_idx];
-    conn->tgt_wrapper = tmp_wrapper;
-    memcpy(conn->tgt_wrapper, share->tgt_wrappers[link_idx],
-      share->tgt_wrappers_lengths[link_idx]);
-    conn->hs_port = share->hs_write_ports[link_idx];
-    conn->dbton_id = share->hs_dbton_ids[link_idx];
-  }
-#endif
   if (conn->dbton_id == SPIDER_DBTON_SIZE)
   {
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-    if (conn->conn_kind == SPIDER_CONN_KIND_MYSQL)
-    {
-#endif
       my_printf_error(
         ER_SPIDER_SQL_WRAPPER_IS_INVALID_NUM,
         ER_SPIDER_SQL_WRAPPER_IS_INVALID_STR,
         MYF(0), conn->tgt_wrapper);
       *error_num = ER_SPIDER_SQL_WRAPPER_IS_INVALID_NUM;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-    } else {
-      my_printf_error(
-        ER_SPIDER_NOSQL_WRAPPER_IS_INVALID_NUM,
-        ER_SPIDER_NOSQL_WRAPPER_IS_INVALID_STR,
-        MYF(0), conn->tgt_wrapper);
-      *error_num = ER_SPIDER_NOSQL_WRAPPER_IS_INVALID_NUM;
-    }
-#endif
     goto error_invalid_wrapper;
   }
   if (!(conn->db_conn = spider_dbton[conn->dbton_id].create_db_conn(conn)))
@@ -803,6 +612,7 @@ SPIDER_CONN *spider_create_conn(
     }
     pthread_mutex_unlock(&spider_ipport_conn_mutex);
   }
+  conn->current_key_version = share->conn_key_version;
   conn->ip_port_conn = ip_port_conn;
   conn->last_visited = time(NULL);
   if (!spider_add_conn_meta_info(conn)) {
@@ -2385,7 +2195,6 @@ void *spider_bg_conn_action(
     my_thread_end();
     DBUG_RETURN(NULL);
   }
-  thread_safe_decrement32(&thread_count);  /* for shutdonw, don't wait this thread */
   /* lex_start(thd); */
   conn->bg_thd = thd;
   pthread_mutex_lock(&conn->bg_conn_mutex);
@@ -2634,7 +2443,7 @@ void *spider_bg_conn_action(
         } else {
           spider_mta_conn_mutex_unlock(conn);
         }
-      } else {/* 一次没取完结果，继续fetch走此逻辑 */
+      } else {/* fetch result next time */
         spider->connection_ids[conn->link_idx] = conn->connection_id;
         conn->mta_conn_mutex_unlock_later = TRUE;
         result_list->bgs_error =
@@ -4848,7 +4657,6 @@ static void *spider_get_status_action(void *arg)
     SPIDER_set_next_thread_id(thd);
     thd->thread_stack = (char*)&thd;
     thd->store_globals();
-    thread_safe_decrement32(&thread_count);  /* for shutdonw, don't wait this thread */
 
     while (get_status_init)
     {

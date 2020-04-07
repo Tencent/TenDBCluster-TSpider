@@ -140,14 +140,16 @@
 #define ER_SPIDER_SHARE_INVALID_NUM 12727
 #define ER_SPIDER_SHARE_INVALID_STR "may duplicate error after flush with no block"
 #define ER_SPIDER_SHARE_INVALID_LEN (sizeof(ER_SPIDER_SHARE_INVALID_STR) - 1)
-#define ER_SPIDER_COND_SKIP_NUM 12801
-
 #define ER_SPIDER_XA_TIMEOUT_NUM 12728
 #define ER_SPIDER_XA_TIMEOUT_STR "transaction execute timeout, wait some seconds and see the results."
 #define ER_SPIDER_XA_TIMEOUT_LEN (sizeof(ER_SPIDER_XA_TIMEOUT_STR) - 1)
 #define ER_SPIDER_XA_FAILED_NUM 12729
 #define ER_SPIDER_XA_FAILED_STR "transaction execute failed, please retry transaction"
 #define ER_SPIDER_XA_FAILED_LEN (sizeof(ER_SPIDER_XA_FAILED_STR) - 1)
+#define ER_SPIDER_DRY_NUM 12730
+#define ER_SPIDER_DRY_STR "spider dry access"
+#define ER_SPIDER_DRY_LEN (sizeof(ER_SPIDER_DRY_STR) - 1)
+#define ER_SPIDER_COND_SKIP_NUM 12801
 
 
 #define ER_SPIDER_UNKNOWN_NUM 12500
