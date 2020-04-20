@@ -74,7 +74,7 @@
     * [XA Transaction Optimization](tendb/xafeatures-en.md)
 	* [Grammar Check Tools](tendb/tmysqlparse-en.md)
 * [TenDB Cluster in Kubernetes](kubernetes/cluster-in-k8s-en.md)
-    * [TenDB Cluster Operator简介](kubernetes/cluster-operator-en.md)
+    * [TenDB Cluster Operator](kubernetes/cluster-operator-en.md)
     * [Deployment]
     * [Configuration]
     * [Monitoring]
