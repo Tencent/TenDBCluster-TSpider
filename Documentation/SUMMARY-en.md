@@ -22,7 +22,7 @@
         * [Account Management](op-guide/grant-operator-en.md)
         * [Backup](op-guide/backup-en.md)
         * [Monitor](op-guide/monitor-en.md)
-        * Tools
+        * [Checksum](op-guide/checksum-en.md)
     * [Scaling](op-guide/scale-up-down-en.md)
         * [Proxy Layer Scaling](op-guide/TSpider-scale-en.md)
         * [Data Layer Scaling](op-guide/TenDB-scale-en.md)
