@@ -96,4 +96,5 @@
 * 贡献
     * [源码贡献](contribution/contribute.md)
     * [问题反馈](contribution/contribute.md#jump2)
+* [致谢](acknowledgements.md)
 

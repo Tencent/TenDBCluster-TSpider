@@ -96,3 +96,4 @@
 * Contribution
     * [Source Code Contribution](contribution/contribute-en.md)
     * [Feedback](contribution/contribute-en.md#jump2)
+* [Acknowledgements](acknowledgements-en.md)
