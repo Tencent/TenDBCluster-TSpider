@@ -1481,10 +1481,10 @@ int ha_spider::reset()
   error_mode = 0;
   total_inserted_rows = 0;
 
-  for (roop_count = 0; roop_count < (int)share->link_count; roop_count++)
-  {
-      conns[roop_count] = NULL;
-  }
+  //for (roop_count = 0; roop_count < (int)share->link_count; roop_count++)
+  //{
+  //    conns[roop_count] = NULL;
+  //}
 #ifdef HA_CAN_BULK_ACCESS
 #ifndef DBUG_OFF
   if (bulk_access_link_first)
