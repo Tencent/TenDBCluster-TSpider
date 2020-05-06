@@ -3560,6 +3560,23 @@ void spider_db_free_one_result(
   DBUG_VOID_RETURN;
 }
 
+
+void spider_db_free_one_quick_result(
+  SPIDER_RESULT* result
+) {
+  DBUG_ENTER("spider_db_free_one_quick_result");
+  if (result && result->result)
+  {
+    result->result->free_result();
+    if (!result->result_tmp_tbl)
+    {
+      delete result->result;
+      result->result = NULL;
+    }
+  }
+  DBUG_VOID_RETURN;
+}
+
 int spider_db_free_result(
   ha_spider *spider,
   bool final
