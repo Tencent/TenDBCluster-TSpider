@@ -177,6 +177,7 @@ ha_spider::ha_spider(
   conn_pins = NULL;
   result_list.bgs_error = 0;
   result_list.bgs_error_with_message = FALSE;
+  result_list.is_get_increment = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -294,6 +295,7 @@ ha_spider::ha_spider(
   result_list.sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
   result_list.bgs_error = 0;
   result_list.bgs_error_with_message = FALSE;
+  result_list.is_get_increment = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -1345,6 +1347,7 @@ int ha_spider::reset()
   result_list.snap_direct_aggregate = FALSE;
   result_list.bgs_error = 0;
   result_list.bgs_error_with_message = FALSE;
+  result_list.is_get_increment = FALSE;
 #endif
   result_list.direct_distinct = FALSE;
   store_error_num = 0;
@@ -3214,6 +3217,7 @@ int ha_spider::index_last_internal(
         DBUG_RETURN(error_num);
       }
       if (
+        !(result_list.is_get_increment) &&
         (error_num = append_select_lock_sql_part(
           SPIDER_SQL_TYPE_SELECT_SQL))
       ) {
@@ -8911,6 +8915,7 @@ void ha_spider::get_auto_increment(
     if (index_init(table_share->next_number_index, TRUE))
       goto error_index_init;
     result_list.internal_limit = 1;
+    result_list.is_get_increment = TRUE;
     if (table_share->next_number_keypart)
     {
       uchar key[MAX_KEY_LENGTH];
@@ -8922,6 +8927,7 @@ void ha_spider::get_auto_increment(
     } else
       error_num = index_last(table->record[1]);
 
+    result_list.is_get_increment = FALSE;
     if (error_num)
       *first_value = 1;
     else

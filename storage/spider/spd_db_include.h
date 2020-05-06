@@ -1958,6 +1958,7 @@ typedef struct st_spider_result_list
   longlong                current_row_num;
   longlong                record_num;
   bool                    finish_flg;
+  bool                    is_get_increment;
   longlong                limit_num;
   longlong                internal_offset;
   longlong                internal_limit;
