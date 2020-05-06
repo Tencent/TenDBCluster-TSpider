@@ -10361,9 +10361,7 @@ bool ha_partition::need_info_for_auto_inc()
     if ((*file)->need_info_for_auto_inc())
     {
       /* We have to get new auto_increment values from handler */
-        /* 如何获取自增值逻辑不需要此处判断， 只有第一次获取自增值时，initialized才为false。
-           让各session分别获取auto_inc, 会产生冲突，crash */
-      /*part_share->auto_inc_initialized= FALSE;*/
+      //  part_share->auto_inc_initialized= FALSE;
         m_need_info_for_auto_inc = TRUE;
       DBUG_RETURN(TRUE);
     }
@@ -10508,16 +10506,8 @@ void ha_partition::get_auto_increment(ulonglong offset, ulonglong increment,
     }
 
     /* this gets corrected (for offset/increment) in update_auto_increment */
-    /****************************************
-    特殊处理获取的auto_increment_value值
-    1，如上，只有table_share->ha_part_data->next_auto_inc_val == 0，即重启过mysql或有过flush tables，这个值会被置0，
-    则需要重新从remote db获取最大值;
-    2，如果table_share->ha_part_data->next_auto_inc_val不为0，则auto_increment_value为table_share->ha_part_data->next_auto_inc_val。
-    3，对上述的auto_increment_value值进行处理。需要auto_increment_value的值满足: auto_increment_value%spider_auto_increment_step = spider_auto_increment_mode_value。
-    且auto_increment_value不能出现过。
-    ***************************************/
     if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine())
-    {/* 打开开头，默认打开的。也是read only。  大于或者等于当前值的符合条件的值。 */
+    { 
         part_share->next_auto_inc_val = (part_share->next_auto_inc_val + opt_spider_auto_increment_step - opt_spider_auto_increment_mode_value - 1) / opt_spider_auto_increment_step*opt_spider_auto_increment_step
             + opt_spider_auto_increment_mode_value;
     }

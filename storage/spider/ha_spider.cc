@@ -15391,13 +15391,8 @@ SPIDER_CONN* ha_spider::spider_get_conn_by_idx(int link_idx)
 			FALSE, TRUE, SPIDER_CONN_KIND_MYSQL, &error_num);
 		if (!this->conns[link_idx])
 		{/* failed to create conn */
-		 /*
-		 1. 分配连接失败，此处释放share对象会导致下次访问异常
-		 2. 分配连接失败，share不应该释放(可能share在它处在使用中）
-
-		 */
 		 //			share->init_error = TRUE;
-		 //			share->init_error_time = (time_t) time((time_t*) 0); /* 不存在左值，无意义 */
+		 //			share->init_error_time = (time_t) time((time_t*) 0); 
 		 //			share->init = TRUE;
 		 //			spider_free_share(share);
 			return this->conns[link_idx]; /* return NULL if failed  to get_conn */
