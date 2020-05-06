@@ -1,6 +1,6 @@
 # Summary [中文文档](SUMMARY.md)
 
-* [Introduction](README-en.md)
+* [Introduction](../README.md)
 * Main Concepts
     * [Architecture](architecture-en.md)
     * [Key Features](key-features-en.md)
