@@ -3102,7 +3102,7 @@ static MYSQL_SYSVAR_INT(
 	"Max interval in seconds to be judged as idle connection",
 	NULL, /* check */
 	NULL, /* update */
-	3600, /* default */
+	300, /* default */
 	8,    /* min */
 	86400, /* max */
 	0     /* blk */
