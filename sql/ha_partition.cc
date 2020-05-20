@@ -8175,6 +8175,7 @@ int ha_partition::info(uint flag)
         */
         handler *file, **file_array;
         ulonglong auto_increment_value= 0;
+        uint32 i = 0;
         file_array= m_file;
         DBUG_PRINT("info",
                    ("checking all partitions for auto_increment_value"));
@@ -8188,6 +8189,8 @@ int ha_partition::info(uint flag)
               { /* part_share->next_auto_inc_val  would be 0 after flush table/restart mysqld , then get this value from remote db */
                   file->info(HA_STATUS_AUTO | no_lock_flag);
                   set_if_bigger(auto_increment_value, file->stats.auto_increment_value);
+                  /* Add partition to be called in reset(). */
+                  bitmap_set_bit(&m_partitions_to_reset, i);
               }
               else
               {
@@ -8198,7 +8201,10 @@ int ha_partition::info(uint flag)
           {/* not spider auto_increment */
               file->info(HA_STATUS_AUTO | no_lock_flag);
               set_if_bigger(auto_increment_value, file->stats.auto_increment_value);
+              /* Add partition to be called in reset(). */
+              bitmap_set_bit(&m_partitions_to_reset, i);
           }
+          i++;
         } while (*(++file_array));
 
        /* DBUG_ASSERT(auto_increment_value);*/
@@ -11003,9 +11009,9 @@ const COND *ha_partition::cond_push(const COND *cond)
     file= m_file;
   }
 
-  for (i = bitmap_get_first_set(&m_partitions_to_reset);
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
       i < m_tot_parts;
-      i = bitmap_get_next_set(&m_partitions_to_reset, i))
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
       if (m_file[i]->pushed_cond != cond)
       {
@@ -11024,9 +11030,9 @@ void ha_partition::cond_pop()
   uint i = 0;
   DBUG_ENTER("ha_partition::cond_push");
 
-  for (i = bitmap_get_first_set(&m_partitions_to_reset);
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
       i < m_tot_parts;
-      i = bitmap_get_next_set(&m_partitions_to_reset, i))
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
           m_file[i]->cond_pop();
   }
@@ -11694,9 +11700,9 @@ int ha_partition::info_push(uint info_type, void *info)
   uint i = 0;
   DBUG_ENTER("ha_partition::info_push");
 
-  for (i = bitmap_get_first_set(&m_partitions_to_reset);
+  for (i = bitmap_get_first_set(&m_part_info->read_partitions);
       i < m_tot_parts;
-      i = bitmap_get_next_set(&m_partitions_to_reset, i))
+      i = bitmap_get_next_set(&m_part_info->read_partitions, i))
   {
           int tmp;
           if ((tmp = m_file[i]->info_push(info_type, info)))

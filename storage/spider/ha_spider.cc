@@ -1484,10 +1484,10 @@ int ha_spider::reset()
   error_mode = 0;
   total_inserted_rows = 0;
 
-  //for (roop_count = 0; roop_count < (int)share->link_count; roop_count++)
-  //{
-  //    conns[roop_count] = NULL;
-  //}
+  for (roop_count = 0; roop_count < (int)share->link_count; roop_count++)
+  {
+    conns[roop_count] = NULL;
+  }
 #ifdef HA_CAN_BULK_ACCESS
 #ifndef DBUG_OFF
   if (bulk_access_link_first)
@@ -8152,7 +8152,7 @@ int ha_spider::info(
 #endif
     }
 
-    /* 从tb_spider_table_status中获取统计信息,若已存在记录则share->modify_time > 0 */
+    /* get table table status from tb_spider_table_status */
     if (spider_param_get_sts_or_crd())
     {
         spider_get_table_status_for_share(share);
@@ -8197,6 +8197,12 @@ int ha_spider::info(
               thd->variables.sql_mode & MODE_NO_AUTO_VALUE_ON_ZERO)
           )
         ) {
+          int tmp_num = 0;
+          if (!(trx = spider_get_trx(thd, TRUE, &tmp_num)))
+          {
+            my_error(ER_OUT_OF_RESOURCES, MYF(0), HA_ERR_OUT_OF_MEM);
+            DBUG_RETURN(tmp_num);
+          }
           get_auto_increment(0, 0, 0, &first_value, &nb_reserved_values);
           share->lgtm_tblhnd_share->auto_increment_value = first_value;
           share->lgtm_tblhnd_share->auto_increment_lclval = first_value;

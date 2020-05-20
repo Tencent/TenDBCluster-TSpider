@@ -323,8 +323,8 @@ void spider_free_conn_from_trx(
         !trx_free &&
         !conn->server_lost &&
         /* !conn->queued_connect &&*/ /*  failed to create conn, don't need to free */
-        spider_param_conn_recycle_mode(trx->thd) == 1 &&
-		  !(thd->is_error())   /*if thd->is_error£¬must be free,not recycle in the connect pool*/
+        spider_param_conn_recycle_mode(trx->thd) == 1  &&
+		   !(thd->is_error())   /*if thd->is_error£¬must be free,not recycle in the connect pool*/
       ) {
         /* conn_recycle_mode == 1 */
         *conn->conn_key = '0';

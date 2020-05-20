@@ -364,14 +364,14 @@ bool partition_info::can_prune_insert(THD* thd,
     if (table->s->db_type()->partition_flags() & HA_USE_AUTO_PARTITION)
         DBUG_RETURN(false); /* Should not insert prune NDB tables */
 
-                            /*
-                            If under LOCK TABLES pruning will skip start_stmt instead of external_lock
-                            for unused partitions.
+ /*
+     If under LOCK TABLES pruning will skip start_stmt instead of external_lock
+     for unused partitions.
 
-                            Cannot prune if there are BEFORE INSERT triggers that changes any
-                            partitioning column, since they may change the row to be in another
-                            partition.
-                            */
+     Cannot prune if there are BEFORE INSERT triggers that changes any
+     partitioning column, since they may change the row to be in another
+     partition.
+ */
     if (table->triggers &&
         table->triggers->has_triggers(TRG_EVENT_INSERT, TRG_ACTION_BEFORE) &&
         table->triggers->is_fields_updated_in_trigger(&full_part_field_set,

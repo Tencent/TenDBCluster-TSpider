@@ -1109,7 +1109,7 @@ SPIDER_TRX *spider_get_trx(
     }
 
     if (
-      my_hash_init(&trx->trx_conn_hash, spd_charset_utf8_bin, 32, 0, 0,
+      my_hash_init(&trx->trx_conn_hash, spd_charset_utf8_bin, 128, 0, 0,
                    (my_hash_get_key) spider_conn_get_key, 0, 0)
     )
       goto error_init_hash;
