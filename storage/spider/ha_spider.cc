@@ -8197,6 +8197,12 @@ int ha_spider::info(
               thd->variables.sql_mode & MODE_NO_AUTO_VALUE_ON_ZERO)
           )
         ) {
+          int tmp_num = 0;
+          if (!(trx = spider_get_trx(thd, TRUE, &tmp_num)))
+          {
+            my_error(ER_OUT_OF_RESOURCES, MYF(0), HA_ERR_OUT_OF_MEM);
+            DBUG_RETURN(tmp_num);
+          }
           get_auto_increment(0, 0, 0, &first_value, &nb_reserved_values);
           share->lgtm_tblhnd_share->auto_increment_value = first_value;
           share->lgtm_tblhnd_share->auto_increment_lclval = first_value;
