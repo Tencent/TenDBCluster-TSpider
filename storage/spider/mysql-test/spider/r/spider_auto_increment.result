@@ -48,7 +48,7 @@ show variables like "%spider_auto_increment%";
 Variable_name	Value
 spider_auto_increment_mode	0
 spider_auto_increment_mode_switch	ON
-spider_auto_increment_mode_value	1
+spider_auto_increment_mode_value	12
 spider_auto_increment_step	17
 CREATE TABLE tbl_a (
 id int not null auto_increment,
@@ -75,26 +75,26 @@ insert into tbl_a(age,name) values(1,"alex");
 insert into tbl_a(age,name) values(2,"ivy");
 select * from tbl_a;
 id	name	age
-1	alex	1
-18	ivy	2
+29	ivy	2
+12	alex	1
 
 select for master
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
 argument
 insert into tbl_a(age,name) values(1,"alex")
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(1,'alex',1)
+mysql localhost 3306 insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(12,'alex',1)
 insert into tbl_a(age,name) values(2,"ivy")
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(18,'ivy',2)
+mysql localhost 3306 insert into `auto_test_remote`.`tbl_a`(`id`,`name`,`age`)values(29,'ivy',2)
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%'
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
 argument
+insert into `auto_test_remote`.`tbl_a`(`id`,`name`,`age`)values(29,'ivy',2)
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%'
 connection child2_2;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
 argument
-insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(1,'alex',1)
-insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(18,'ivy',2)
+insert into `auto_test_remote_2`.`tbl_a`(`id`,`name`,`age`)values(12,'alex',1)
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%'
 
 deinit

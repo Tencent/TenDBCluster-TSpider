@@ -62,11 +62,11 @@ insert into tbl_a(age,name) values(4,"ivyman");
 insert into tbl_a(age,name) values(5,"ivyting");
 select * from tbl_a;
 id	name	age
-35	ivywu	3
-69	ivyting	5
-1	alex	1
-18	ivy	2
-52	ivyman	4
+29	ivy	2
+63	ivyman	4
+80	ivyting	5
+12	alex	1
+46	ivywu	3
 select sql_text  from mysql.slow_log;
 sql_text
 select * from tbl_a

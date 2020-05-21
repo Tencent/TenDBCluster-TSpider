@@ -56,7 +56,7 @@ auto_increment_increment	1
 auto_increment_offset	1
 spider_auto_increment_mode	0
 spider_auto_increment_mode_switch	ON
-spider_auto_increment_mode_value	1
+spider_auto_increment_mode_value	12
 spider_auto_increment_step	17
 flush table with no block;
 affected rows: 0
@@ -66,7 +66,7 @@ auto_increment_increment	1
 auto_increment_offset	1
 spider_auto_increment_mode	0
 spider_auto_increment_mode_switch	ON
-spider_auto_increment_mode_value	1
+spider_auto_increment_mode_value	12
 spider_auto_increment_step	17
 INSERT INTO tbl_a(start_time, end_time)
 VALUES('1983-01-01', '1990-01-01'),

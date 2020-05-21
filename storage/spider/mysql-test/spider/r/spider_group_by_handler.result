@@ -113,21 +113,21 @@ test for master
 SELECT argument FROM mysql.general_log;
 argument
 select isvisible, prename,  name, publicip as ip,  port, tbl_a1.zone as zone, maxonline, onlinenum from tbl_a2,tbl_a1 where tbl_a2.zone=tbl_a1.zone and isvisible  = 1 and account = 'o110W5yqygj8LeFHXT2FEr-Ft_Zc'
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_0` where `account` = 'o110W5yqygj8LeFHXT2FEr-Ft_Zc'
-mysql localhost select `zone`,`prename`,`name`,`publicip`,`port`,`isvisible`,`maxonline`,`onlinenum` from `auto_test_remote`.`tbl_a1_11` where `zone` = 1
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_0` where `account` = 'o110W5yqygj8LeFHXT2FEr-Ft_Zc'
+mysql localhost 3306 select `zone`,`prename`,`name`,`publicip`,`port`,`isvisible`,`maxonline`,`onlinenum` from `auto_test_remote`.`tbl_a1_11` where `zone` = 1
 select * from tbl_a2
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_0`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_1`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_2`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_3`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_4`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_5`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_6`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_7`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_8`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_9`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_10`
-mysql localhost select `account`,`zone` from `auto_test_remote`.`tbl_a2_11`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_0`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_1`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_2`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_3`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_4`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_5`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_6`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_7`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_8`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_9`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_10`
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_11`
 SELECT argument FROM mysql.general_log
 connection child2_1;
 SELECT argument FROM mysql.general_log;

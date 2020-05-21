@@ -67,13 +67,13 @@ echo CREATE TABLE tb_l (
   b CHAR(1),
   c DATETIME,
   PRIMARY KEY(a)
-) MASTER_1_ENGINE2 MASTER_1_CHARSET4;
+) MASTER_1_ENGINE2 MASTER_1_CHARSET2;
 eval CREATE TABLE tb_l (
   a INT,
   b CHAR(1),
   c DATETIME,
   PRIMARY KEY(a)
-) $MASTER_1_ENGINE2 $MASTER_1_CHARSET4;
+) $MASTER_1_ENGINE2 $MASTER_1_CHARSET2;
 --enable_query_log
 INSERT INTO tb_l (a, b, c) VALUES
   (1, 'f', '2008-07-01 10:21:39'),
@@ -158,13 +158,6 @@ if ($HAVE_PARTITION)
     ) $MASTER_1_ENGINE $MASTER_1_COMMENT_P_2_1;
     INSERT INTO ta_l2 SELECT a, b, c FROM tb_l;
   }
-  if (!$MASTER_1_MERGE)
-  {
-    eval CREATE TABLE ta_l2 (
-      PRIMARY KEY(a)
-    ) $MASTER_1_ENGINE $MASTER_1_COMMENT_P_2_1
-    SELECT a, b, c FROM tb_l;
-  }
   --enable_query_log
   if ($USE_CHILD_GROUP2)
   {
@@ -191,8 +184,6 @@ if ($HAVE_PARTITION)
       --enable_result_log
     }
   }
-  --connection master_1
-  SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l2 ORDER BY a;
 }
 
 --echo
@@ -223,8 +214,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  SELECT a.a, a.b, date_format(a.c, '%Y-%m-%d %H:%i:%s') FROM ta_l2 a WHERE
-  a.b = 'g' ORDER BY a.a;
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -278,8 +267,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  SELECT a.a, a.b, date_format(a.c, '%Y-%m-%d %H:%i:%s') FROM ta_l2 a WHERE
-  a.a > 0 AND a.b = 'g' ORDER BY a.a;
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -333,7 +320,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  UPDATE ta_l2 SET b = 'e', c = '2009-03-03 03:03:03' WHERE b = 'j';
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -362,7 +348,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l2 ORDER BY a;
 }
 
 --echo
@@ -393,7 +378,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  UPDATE ta_l2 SET b = 'j', c = '2009-03-03 03:03:03' WHERE a > 0 AND b = 'e';
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -422,15 +406,12 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l2 ORDER BY a;
 }
 
 --echo
 --echo delete partition pushdown
 if ($HAVE_PARTITION)
 {
-  TRUNCATE TABLE ta_l2;
-  INSERT INTO ta_l2 SELECT a, b, c FROM tb_l;
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -455,7 +436,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  DELETE FROM ta_l2 WHERE b = 'g';
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -484,15 +464,12 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l2 ORDER BY a;
 }
 
 --echo
 --echo delete partition index pushdown
 if ($HAVE_PARTITION)
 {
-  TRUNCATE TABLE ta_l2;
-  INSERT INTO ta_l2 SELECT a, b, c FROM tb_l;
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -517,7 +494,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  DELETE FROM ta_l2 WHERE a > 0 AND b = 'g';
   if ($USE_CHILD_GROUP2)
   {
     if (!$OUTPUT_CHILD_GROUP2)
@@ -546,7 +522,6 @@ if ($HAVE_PARTITION)
     }
   }
   --connection master_1
-  SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l2 ORDER BY a;
 }
 
 --echo

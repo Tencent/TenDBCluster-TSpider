@@ -4,16 +4,12 @@ SET spider_use_handler= 3;
 if ($VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r"'
-    CONNECTION='host "localhost", port "$CHILD2_1_MYPORT", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r", srv "s_2_1"';
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r"'
-    CONNECTION='host "localhost", socket "$CHILD2_1_MYSOCK", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r", srv "s_2_1"';
 }
 if ($VERSION_COMPILE_OS_WIN)
 {
@@ -156,31 +152,25 @@ let $MASTER_1_CHECK_DIRECT_ORDER_LIMIT_STATUS=
   SHOW STATUS LIKE 'Spider_direct_order_limit';
 let $MASTER_1_CHECK_DIRECT_AGGREGATE_STATUS=
   SHOW STATUS LIKE 'Spider_direct_aggregate';
-let $MASTER_1_AUTO_INCREMENT_INCREMENT1=
   SET SESSION AUTO_INCREMENT_INCREMENT = 1 $STR_SEMICOLON
   SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 1', '',
     'srv "s_2_1"') $STR_SEMICOLON
   SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 1', '',
     'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_INCREMENT2=
   SET SESSION AUTO_INCREMENT_INCREMENT = 777 $STR_SEMICOLON
   SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 4', '',
     'srv "s_2_1"') $STR_SEMICOLON
   SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 4', '',
     'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_OFFSET1=
   SET SESSION AUTO_INCREMENT_OFFSET = 1 $STR_SEMICOLON
   SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 1', '',
     'srv "s_2_1"') $STR_SEMICOLON
   SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 1', '',
     'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_OFFSET2=
   SET SESSION AUTO_INCREMENT_OFFSET = 777 $STR_SEMICOLON
   SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 2', '',
     'srv "s_2_1"') $STR_SEMICOLON
   SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 3', '',
     'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_OFFSET3=
   SET SESSION AUTO_INCREMENT_OFFSET = 1;
-let $MASTER_1_AUTO_INCREMENT_OFFSET4=
   SET SESSION AUTO_INCREMENT_OFFSET = 777;

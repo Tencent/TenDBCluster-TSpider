@@ -10119,7 +10119,6 @@ end_inplace:
 end_temporary:
   if (write_to_alter_log)
   {
-      /* 记录在线加字段的信息，同时忽略其返回值,可能产生告警 */
       alter_log_print(thd, thd->query(), thd->query_length(), thd->current_utime(), alter_ctx.new_db.str, strlen(alter_ctx.new_db.str),
            alter_ctx.new_alias.str, strlen(alter_ctx.new_alias.str), engine_str, row_format_str, is_partitioned, copied + deleted, data_len, index_len, free_len, n_records);
   }

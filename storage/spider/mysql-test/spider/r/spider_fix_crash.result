@@ -115,27 +115,25 @@ VALUES(1,'1983-01-01', '1990-01-01'),
 (9,'1984-01-01', '1995-12-01');
 select * from tbl_a;
 id	t	start_time	end_time
-103	7	1984-01-01	1985-03-02
-52	4	1983-01-01	1992-05-05
-120	8	1984-01-01	1992-05-05
-137	9	1984-01-01	1995-12-01
-18	2	1983-01-01	1989-06-06
-86	6	1984-01-01	1989-06-06
-35	3	1983-01-01	1985-03-02
-69	5	1983-01-01	1995-12-01
-1	1	1983-01-01	1990-01-01
+63	4	1983-01-01	1992-05-05
+80	5	1983-01-01	1995-12-01
+97	6	1984-01-01	1989-06-06
+114	7	1984-01-01	1985-03-02
+29	2	1983-01-01	1989-06-06
+12	1	1983-01-01	1990-01-01
+46	3	1983-01-01	1985-03-02
+131	8	1984-01-01	1992-05-05
+148	9	1984-01-01	1995-12-01
 connection child2_1;
 truncate table mysql.general_log;
 connection child2_2;
 select * from tbl_a;
 id	t	start_time	end_time
-52	4	1983-01-01	1992-05-05
 truncate table mysql.general_log;
 connection child2_3;
 select * from tbl_a;
 id	t	start_time	end_time
-120	8	1984-01-01	1992-05-05
-137	9	1984-01-01	1995-12-01
+29	2	1983-01-01	1989-06-06
 truncate table mysql.general_log;
 connection child3_1;
 truncate table mysql.general_log;
@@ -147,15 +145,16 @@ connection master_1;
 truncate table mysql.general_log;
 select * from  tbl_a where t > 7 limit 1;
 id	t	start_time	end_time
-120	8	1984-01-01	1992-05-05
+131	8	1984-01-01	1992-05-05
 
 select for master
 SELECT argument FROM mysql.general_log;
 argument
 select * from  tbl_a where t > 7 limit 1
-mysql localhost select `id`,`t`,`start_time`,`end_time` from `auto_test_remote`.`tbl_a` where (`t` > 7) limit 1
-mysql localhost select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_2`.`tbl_a` where (`t` > 7) limit 1
-mysql localhost select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_3`.`tbl_a` where (`t` > 7) limit 1
+mysql localhost 3306 select `id`,`t`,`start_time`,`end_time` from `auto_test_remote`.`tbl_a` where (`t` > 7) limit 1
+mysql localhost 3306 select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_2`.`tbl_a` where (`t` > 7) limit 1
+mysql localhost 3306 select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_3`.`tbl_a` where (`t` > 7) limit 1
+mysql localhost 3306 select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_4`.`tbl_a` where (`t` > 7) limit 1
 SELECT argument FROM mysql.general_log
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
@@ -175,6 +174,7 @@ SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 connection child3_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 argument
+select `id`,`t`,`start_time`,`end_time` from `auto_test_remote_4`.`tbl_a` where (`t` > 7) limit 1
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 connection child3_2;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';

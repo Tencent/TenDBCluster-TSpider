@@ -70,8 +70,8 @@ update tbl_a  set c1 = 2 where id = 1;
 SELECT argument FROM mysql.general_log;
 argument
 update tbl_a  set c1 = 2 where id = 1
-mysql localhost set session transaction isolation level repeatable read;set session autocommit = 1;set session time_zone = 'SYSTEM'
-mysql localhost update `auto_test_remote_2`.`tbl_a` set `c1` = 2 where (`id` = 1)
+mysql localhost 3306 set session transaction isolation level repeatable read;set session autocommit = 1;set session time_zone = 'SYSTEM'
+mysql localhost 3306 update `auto_test_remote_2`.`tbl_a` set `c1` = 2 where (`id` = 1)
 SELECT argument FROM mysql.general_log
 set timestamp=unix_timestamp('2001-02-03 10:20:30');
 TRUNCATE TABLE mysql.general_log;
@@ -81,7 +81,7 @@ replace into tbl_a(id, c1) values(1,2);
 SELECT argument FROM mysql.general_log;
 argument
 replace into tbl_a(id, c1) values(1,2)
-mysql localhost replace into `auto_test_remote_2`.`tbl_a`(`id`,`c1`,`update_time`)values(1,2,'2001-02-03 10:20:30')
+mysql localhost 3306 replace into `auto_test_remote_2`.`tbl_a`(`id`,`c1`,`update_time`)values(1,2,'2001-02-03 10:20:30')
 SELECT argument FROM mysql.general_log
 TRUNCATE TABLE mysql.general_log;
 
@@ -90,7 +90,7 @@ update tbl_a set c1 = 2 where id = 1;
 SELECT argument FROM mysql.general_log;
 argument
 update tbl_a set c1 = 2 where id = 1
-mysql localhost select `id`,`c1`,`update_time` from `auto_test_remote_2`.`tbl_a` where `id` = 1 and (`id` = 1) for update
+mysql localhost 3306 select `id`,`c1`,`update_time` from `auto_test_remote_2`.`tbl_a` where (`id` = 1) for update
 SELECT argument FROM mysql.general_log
 
 deinit

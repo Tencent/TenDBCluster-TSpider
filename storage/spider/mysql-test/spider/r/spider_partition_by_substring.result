@@ -69,11 +69,11 @@ VALUES('1983-01-01', '1990-01-01'),
 ('1983-01-01', '1995-12-01');
 select * from tbl_a;
 id	start_time	end_time
-18	1983-01-01	1989-06-06
-52	1983-01-01	1992-05-05
-1	1983-01-01	1990-01-01
-35	1983-01-01	1985-03-02
-69	1983-01-01	1995-12-01
+12	1983-01-01	1990-01-01
+46	1983-01-01	1985-03-02
+80	1983-01-01	1995-12-01
+29	1983-01-01	1989-06-06
+63	1983-01-01	1992-05-05
 
 select for master
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
@@ -84,18 +84,18 @@ VALUES('1983-01-01', '1990-01-01'),
 ('1983-01-01', '1985-03-02'),
 ('1983-01-01', '1992-05-05'),
 ('1983-01-01', '1995-12-01')
-mysql localhost insert into `auto_test_remote`.`tbl_a`(`id`,`start_time`,`end_time`)values(18,'1983-01-01','1989-06-06'),(52,'1983-01-01','1992-05-05')
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`start_time`,`end_time`)values(1,'1983-01-01','1990-01-01'),(35,'1983-01-01','1985-03-02'),(69,'1983-01-01','1995-12-01')
+mysql localhost 3306 insert into `auto_test_remote`.`tbl_a`(`id`,`start_time`,`end_time`)values(12,'1983-01-01','1990-01-01'),(46,'1983-01-01','1985-03-02'),(80,'1983-01-01','1995-12-01')
+mysql localhost 3306 insert into `auto_test_remote_2`.`tbl_a`(`id`,`start_time`,`end_time`)values(29,'1983-01-01','1989-06-06'),(63,'1983-01-01','1992-05-05')
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %'
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
 argument
-insert into `auto_test_remote`.`tbl_a`(`id`,`start_time`,`end_time`)values(18,'1983-01-01','1989-06-06'),(52,'1983-01-01','1992-05-05')
+insert into `auto_test_remote`.`tbl_a`(`id`,`start_time`,`end_time`)values(12,'1983-01-01','1990-01-01'),(46,'1983-01-01','1985-03-02'),(80,'1983-01-01','1995-12-01')
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %'
 connection child2_2;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
 argument
-insert into `auto_test_remote_2`.`tbl_a`(`id`,`start_time`,`end_time`)values(1,'1983-01-01','1990-01-01'),(35,'1983-01-01','1985-03-02'),(69,'1983-01-01','1995-12-01')
+insert into `auto_test_remote_2`.`tbl_a`(`id`,`start_time`,`end_time`)values(29,'1983-01-01','1989-06-06'),(63,'1983-01-01','1992-05-05')
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %'
 
 deinit

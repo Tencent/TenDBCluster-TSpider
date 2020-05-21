@@ -1321,7 +1321,6 @@ int spider_set_conn_bg_param(
   bgs_mode =
     spider_param_bgs_mode(thd, share->bgs_mode);
 
-  /* 如果不使用pre call, 则没必要让子线程来执行，增加线程切换代价，让bgs_mode=0 */
   if (!spider->use_pre_call)
       bgs_mode = 0;
   if (bgs_mode == 0)

@@ -72,24 +72,24 @@ argument
 set autocommit=OFF
 begin
 insert into tbl_a(t,name) values(1,"alex")
-mysql localhost set session transaction isolation level repeatable read;set session autocommit = 0;set session time_zone = 'SYSTEM';start transaction
-mysql localhost select `id`,`t`,`name` from `auto_test_remote`.`tbl_a` order by `id` desc limit 1 for update
-mysql localhost set session transaction isolation level repeatable read;set session autocommit = 0;set session time_zone = 'SYSTEM';start transaction
-mysql localhost select `id`,`t`,`name` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 1 for update
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(1,1,'alex')
+mysql localhost 3306 set session transaction isolation level repeatable read;set session autocommit = 0;set session time_zone = 'SYSTEM';start transaction
+mysql localhost 3306 select `id`,`t`,`name` from `auto_test_remote`.`tbl_a` order by `id` desc limit 1
+mysql localhost 3306 set session transaction isolation level repeatable read;set session autocommit = 0;set session time_zone = 'SYSTEM';start transaction
+mysql localhost 3306 select `id`,`t`,`name` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 1
+mysql localhost 3306 insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(12,1,'alex')
 insert into tbl_a(t,name) values(2,"ivy")
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(18,2,'ivy')
+mysql localhost 3306 insert into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(29,2,'ivy')
 commit
-mysql localhost commit
-mysql localhost commit
+mysql localhost 3306 commit
+mysql localhost 3306 commit
 SET @old_spider_ignore_autocommit = @@global.spider_ignore_autocommit
 SET GLOBAL spider_ignore_autocommit=ON
 insert into tbl_a(t,name) values(3,"tom")
-mysql localhost set session autocommit = 1
-mysql localhost insert into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(35,3,'tom')
+mysql localhost 3306 set session autocommit = 1
+mysql localhost 3306 insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(46,3,'tom')
 insert into tbl_a(t,name) values(4,"jam")
-mysql localhost set session autocommit = 1
-mysql localhost insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(52,4,'jam')
+mysql localhost 3306 set session autocommit = 1
+mysql localhost 3306 insert into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(63,4,'jam')
 SELECT argument FROM mysql.general_log
 connection child2_1;
 SELECT argument FROM mysql.general_log;
@@ -98,10 +98,11 @@ root@localhost as anonymous on
 set session transaction isolation level repeatable read;set session autocommit = 0;set session time_zone = 'SYSTEM';start transaction
 SET NAMES latin1
 auto_test_remote
-select `id`,`t`,`name` from `auto_test_remote`.`tbl_a` order by `id` desc limit 1 for update
+select `id`,`t`,`name` from `auto_test_remote`.`tbl_a` order by `id` desc limit 1
+insert into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(29,2,'ivy')
 commit
 set session autocommit = 1
-insert into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(35,3,'tom')
+insert into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(63,4,'jam')
 SELECT argument FROM mysql.general_log
 connection child2_2;
 SELECT argument FROM mysql.general_log;
@@ -110,12 +111,11 @@ root@localhost as anonymous on
 set session transaction isolation level repeatable read;set session autocommit = 0;set session time_zone = 'SYSTEM';start transaction
 SET NAMES latin1
 auto_test_remote_2
-select `id`,`t`,`name` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 1 for update
-insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(1,1,'alex')
-insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(18,2,'ivy')
+select `id`,`t`,`name` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 1
+insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(12,1,'alex')
 commit
 set session autocommit = 1
-insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(52,4,'jam')
+insert into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(46,3,'tom')
 SELECT argument FROM mysql.general_log
 
 deinit

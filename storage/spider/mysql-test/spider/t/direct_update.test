@@ -80,39 +80,6 @@ if ($USE_CHILD_GROUP2)
     --enable_result_log
   }
 }
-
-if ($USE_CHILD_GROUP2)
-{
-  if (!$OUTPUT_CHILD_GROUP2)
-  {
-    --disable_query_log
-    --disable_result_log
-  }
-  --connection child2_2
-  if ($OUTPUT_CHILD_GROUP2)
-  {
-    --disable_query_log
-    echo CHILD2_1_DROP_TABLES2;
-    echo CHILD2_1_CREATE_TABLES2;
-  }
-  --disable_warnings
-  eval $CHILD2_1_DROP_TABLES2;
-  --enable_warnings
-  eval $CHILD2_1_CREATE_TABLES2;
-  if ($OUTPUT_CHILD_GROUP2)
-  {
-    --enable_query_log
-  }
-  if ($USE_GENERAL_LOG)
-  {
-    TRUNCATE TABLE mysql.general_log;
-  }
-  if (!$OUTPUT_CHILD_GROUP2)
-  {
-    --enable_query_log
-    --enable_result_log
-  }
-}
 --connection master_1
 --disable_warnings
 DROP TABLE IF EXISTS ta_l;
@@ -129,10 +96,7 @@ eval CREATE TABLE ta_l (
   b CHAR(1),
   c DATETIME,
   PRIMARY KEY(a)
-) $MASTER_1_ENGINE $MASTER_1_CHARSET
-PARTITION BY LIST (crc32(a)%2)  
-(PARTITION pt0  VALUES IN (0) COMMENT = 'database "auto_test_remote", table "ta_r", srv "s_2_1",aim "0"',
- PARTITION pt1  VALUES IN (1) COMMENT = 'database "auto_test_remote2", table "ta_r2", srv "s_2_2",aim "1"');
+) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_2_1;
 --enable_query_log
 INSERT INTO ta_l (a, b, c) VALUES
   (1, 'a', '2008-08-01 10:21:39'),
@@ -232,5 +196,3 @@ if ($USE_CHILD_GROUP2)
 --enable_warnings
 --echo
 --echo end of test
-
-

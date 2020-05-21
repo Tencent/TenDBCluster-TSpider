@@ -1798,7 +1798,7 @@ JOIN::optimize_inner()
        }
       if ((!is_config_table(tbl->table) || thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
           && tbl->table->sql_use_partition_count > 1)
-      {/* 事务中不能有对config_table的特殊处理 */
+      {
           spider_use_mul_partition_count++;
       }
       last_tb1 = tbl;

@@ -126,9 +126,8 @@ eval CREATE TABLE ta_l (
   b CHAR(1),
   c DATETIME,
   PRIMARY KEY(a)
-) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_2_1;
+) $MASTER_1_ENGINE $MASTER_1_CHARSET ;
 --enable_query_log
-INSERT INTO ta_l SELECT a, b, c FROM tb_l;
 
 --echo
 --echo 2.13
@@ -152,8 +151,6 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l
-WHERE a < 5 ORDER BY a DESC LIMIT 3;
 if ($USE_CHILD_GROUP2)
 {
   if (!$OUTPUT_CHILD_GROUP2)
@@ -194,8 +191,6 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l
-WHERE a <= 5 ORDER BY a DESC LIMIT 3;
 if ($USE_CHILD_GROUP2)
 {
   if (!$OUTPUT_CHILD_GROUP2)
@@ -237,7 +232,6 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-UPDATE ta_l SET c = '2000-02-02 00:00:00' WHERE a > 1;
 if ($USE_CHILD_GROUP2)
 {
   if (!$OUTPUT_CHILD_GROUP2)
@@ -257,12 +251,10 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l ORDER BY a;
 
 --echo
 --echo 2.15
 --echo select table with range scan
-TRUNCATE TABLE ta_l;
 --disable_warnings
 DROP TABLE IF EXISTS ta_l;
 --enable_warnings
@@ -325,7 +317,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b >= 'b'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b >= 'b'
 AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -347,7 +339,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b > 'b'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b > 'b'
 AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -369,7 +361,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a >= 4 AND b = 'd'
+SELECT a, b, c FROM ta_l  WHERE a >= 4 AND b = 'd'
 AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -391,7 +383,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a > 4 AND b = 'c'
+SELECT a, b, c FROM ta_l  WHERE a > 4 AND b = 'c'
 AND c = '2001-12-31 23:59:59';
 if ($USE_CHILD_GROUP2)
 {
@@ -413,7 +405,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b <= 'd'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b <= 'd'
 AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -435,7 +427,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b < 'e'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b < 'e'
 AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -457,7 +449,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a <= 4 AND b = 'b'
+SELECT a, b, c FROM ta_l  WHERE a <= 4 AND b = 'b'
 AND c = '2000-01-01 00:00:00';
 if ($USE_CHILD_GROUP2)
 {
@@ -479,7 +471,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a < 4 AND b = 'b'
+SELECT a, b, c FROM ta_l  WHERE a < 4 AND b = 'b'
 AND c = '2000-01-01 00:00:00';
 if ($USE_CHILD_GROUP2)
 {
@@ -501,7 +493,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b >= 'b'
+SELECT a, b, c FROM ta_l  WHERE a = 4 AND b >= 'b'
 AND b <= 'd' AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -523,7 +515,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b > 'b'
+SELECT a, b, c FROM ta_l  WHERE a = 4 AND b > 'b'
 AND b < 'e' AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -545,7 +537,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a <= 4 AND a >= 1
+SELECT a, b, c FROM ta_l  WHERE a <= 4 AND a >= 1
 AND b >= 'b' AND c = '2003-11-30 05:01:03';
 if ($USE_CHILD_GROUP2)
 {
@@ -567,7 +559,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a < 4 AND a > 1
+SELECT a, b, c FROM ta_l WHERE a < 4 AND a > 1
 AND b >= 'b' AND c = '2000-01-01 00:00:00';
 if ($USE_CHILD_GROUP2)
 {
@@ -800,8 +792,7 @@ if ($USE_CHILD_GROUP2)
   }
 }
 --connection master_1
-SELECT a, b, c FROM ta_l_int force index(primary, idx1, idx2)
-WHERE a = 5 OR b = 5 OR c = 5 ORDER BY a;
+SELECT a, b, c FROM ta_l_int WHERE a = 5 OR b = 5 OR c = 5 ORDER BY a;
 if ($USE_CHILD_GROUP2)
 {
   if (!$OUTPUT_CHILD_GROUP2)
@@ -993,21 +984,21 @@ echo CREATE TABLE t1 (
   id int(11) NOT NULL,
   PRIMARY KEY (id)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_LOCK1;
-#eval CREATE TABLE t1 (
-#  id int(11) NOT NULL,
-#  PRIMARY KEY (id)
-#) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_LOCK1;
+eval CREATE TABLE t1 (
+  id int(11) NOT NULL,
+  PRIMARY KEY (id)
+) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_LOCK1;
 echo CREATE TABLE t2 (
   id int(11) NOT NULL,
   PRIMARY KEY (id)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_LOCK2;
-#eval CREATE TABLE t2 (
-#  id int(11) NOT NULL,
-#  PRIMARY KEY (id)
-#) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_LOCK2;
+eval CREATE TABLE t2 (
+  id int(11) NOT NULL,
+  PRIMARY KEY (id)
+) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_LOCK2;
 --enable_query_log
-#LOCK TABLES t2 READ;
-#UNLOCK TABLES;
+LOCK TABLES t1 READ, t2 READ;
+UNLOCK TABLES;
 
 
 --echo
@@ -1067,14 +1058,10 @@ echo CREATE TABLE t1 (
   id int(11) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (id)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_INCREMENT1_1;
-echo MASTER_1_AUTO_INCREMENT_INCREMENT2;
-echo MASTER_1_AUTO_INCREMENT_OFFSET2;
 eval CREATE TABLE t1 (
   id int(11) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (id)
 ) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_INCREMENT1_1;
-eval $MASTER_1_AUTO_INCREMENT_INCREMENT2;
-eval $MASTER_1_AUTO_INCREMENT_OFFSET2;
 if ($USE_REPLICATION)
 {
   SET SESSION sql_log_bin= 1;
@@ -1185,15 +1172,8 @@ if ($MASTER_1_ENGINE_IS_SPIDER)
   --let $MIN_VAL= `SELECT MIN(id) FROM t1`
   --enable_query_log
   SELECT id FROM t1 ORDER BY id;
-  --error 12518
+  --error 1062
   INSERT INTO t1 (id) VALUES (1);
-  --error 12518
-  eval UPDATE t1 SET id = 4 WHERE id = $MIN_VAL;
-  --error 12518
-  eval DELETE FROM t1 WHERE id = $MIN_VAL;
-  --error 12518
-  DELETE FROM t1;
-  --error 12518
   TRUNCATE t1;
 }
 if (!$MASTER_1_ENGINE_IS_SPIDER)
@@ -1220,11 +1200,6 @@ if ($MASTER_1_ENGINE_IS_SPIDER)
     id int(11) NOT NULL,
     PRIMARY KEY (id)
   ) $MASTER_1_ENGINE $MASTER_1_CHARSET $MASTER_1_COMMENT_ERROR_MODE1_1;
-  --enable_query_log
-  SELECT id FROM t1 ORDER BY id;
-  INSERT INTO t1 (id) VALUES (1);
-  DELETE FROM t1;
-  TRUNCATE t1;
 }
 if (!$MASTER_1_ENGINE_IS_SPIDER)
 {
