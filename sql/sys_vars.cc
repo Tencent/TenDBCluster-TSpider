@@ -6206,3 +6206,8 @@ static Sys_var_charptr Sys_tdbctl_skip_ddl_convert_db(
   "tdbctl_skip_ddl_convert_db", "the list of database will ignore ddl_execute_by_ctl ",
   READ_ONLY GLOBAL_VAR(tdbctl_skip_ddl_convert_db),
   CMD_LINE(REQUIRED_ARG), IN_FS_CHARSET, DEFAULT("performance_schema,information_schema,mysql,test,db_infobase"));
+
+static Sys_var_mybool Sys_spider_not_show_partition(
+  "spider_not_show_partition",
+  "show create table for spider without partition information",
+  SESSION_VAR(spider_not_show_partition), CMD_LINE(OPT_ARG), DEFAULT(FALSE));

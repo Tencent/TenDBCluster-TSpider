@@ -692,6 +692,7 @@ typedef struct system_variables
   my_bool session_track_schema;
   my_bool session_track_state_change;
   my_bool ddl_execute_by_ctl;
+  my_bool spider_not_show_partition;
 
   ulong threadpool_priority;
 
