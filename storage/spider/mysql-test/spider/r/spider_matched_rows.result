@@ -40,7 +40,7 @@ info: Rows matched: 1  Changed: 1  Warnings: 0
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%';
 argument
 update ta_l set b='d' where a=3
-mysql localhost update `auto_test_remote`.`ta_r` set `b` = 'd' where (`a` = 3)
+mysql localhost 3306 update `auto_test_remote`.`ta_r` set `b` = 'd' where (`a` = 3)
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%'
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%';

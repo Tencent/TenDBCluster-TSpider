@@ -59,8 +59,8 @@ id
 select for master
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%mysql% replace %' and  argument not like  "%load data%";
 argument
-mysql localhost replace into `auto_test_remote`.`tbl_a`(`id`)values(4)
-mysql localhost replace into `auto_test_remote_2`.`tbl_a`(`id`)values(1),(2),(3)
+mysql localhost 3306 replace into `auto_test_remote`.`tbl_a`(`id`)values(4)
+mysql localhost 3306 replace into `auto_test_remote_2`.`tbl_a`(`id`)values(1),(2),(3)
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%replace %';
 argument

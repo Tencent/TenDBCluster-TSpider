@@ -108,7 +108,36 @@ connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 argument
 select `pkey` from `auto_test_remote`.`tbl_a` order by `pkey`
-(select 0,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 0)union all(select 1,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 1)union all(select 2,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 2)union all(select 3,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 3)union all(select 4,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 4)union all(select 5,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 5)union all(select 6,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 6)union all(select 7,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 7)union all(select 8,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 8)union all(select 9,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 9)union all(select 10,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 10)union all(select 11,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 11)union all(select 12,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 12)union all(select 13,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 13)union all(select 14,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 14)union all(select 15,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 15)union all(select 16,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 16)union all(select 17,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 17)union all(select 18,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 18)union all(select 19,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 19)union all(select 20,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 20)union all(select 21,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 21)union all(select 22,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 22)union all(select 23,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 23)union all(select 24,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 24)union all(select 25,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 25)union all(select 26,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 26)union all(select 27,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 27)union all(select 28,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 28)union all(select 29,`pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 29)
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 0
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 1
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 2
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 3
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 4
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 5
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 6
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 7
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 8
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 9
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 10
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 11
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 12
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 13
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 14
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 15
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 16
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 17
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 18
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 19
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 20
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 21
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 22
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 23
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 24
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 25
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 26
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 27
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 28
+select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 29
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 SELECT pkey FROM tbl_a ORDER BY pkey ;
 SELECT pkey FROM tbl_b ORDER BY pkey;
@@ -138,7 +167,36 @@ connection child2_2;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 argument
 select `pkey` from `auto_test_remote2`.`tbl_a` order by `pkey`
-(select 0,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 0)union all(select 1,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 1)union all(select 2,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 2)union all(select 3,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 3)union all(select 4,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 4)union all(select 5,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 5)union all(select 6,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 6)union all(select 7,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 7)union all(select 8,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 8)union all(select 9,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 9)union all(select 10,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 10)union all(select 11,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 11)union all(select 12,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 12)union all(select 13,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 13)union all(select 14,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 14)union all(select 15,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 15)union all(select 16,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 16)union all(select 17,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 17)union all(select 18,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 18)union all(select 19,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 19)union all(select 20,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 20)union all(select 21,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 21)union all(select 22,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 22)union all(select 23,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 23)union all(select 24,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 24)union all(select 25,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 25)union all(select 26,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 26)union all(select 27,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 27)union all(select 28,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 28)union all(select 29,`pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 29)
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 0
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 1
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 2
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 3
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 4
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 5
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 6
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 7
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 8
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 9
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 10
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 11
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 12
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 13
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 14
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 15
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 16
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 17
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 18
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 19
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 20
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 21
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 22
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 23
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 24
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 25
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 26
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 27
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 28
+select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 29
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 SELECT pkey FROM tbl_a ORDER BY pkey ;
 SELECT pkey FROM tbl_b ORDER BY pkey;
@@ -168,7 +226,36 @@ connection child2_3;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 argument
 select `pkey` from `auto_test_remote3`.`tbl_a` order by `pkey`
-(select 0,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 0)union all(select 1,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 1)union all(select 2,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 2)union all(select 3,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 3)union all(select 4,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 4)union all(select 5,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 5)union all(select 6,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 6)union all(select 7,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 7)union all(select 8,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 8)union all(select 9,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 9)union all(select 10,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 10)union all(select 11,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 11)union all(select 12,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 12)union all(select 13,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 13)union all(select 14,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 14)union all(select 15,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 15)union all(select 16,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 16)union all(select 17,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 17)union all(select 18,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 18)union all(select 19,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 19)union all(select 20,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 20)union all(select 21,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 21)union all(select 22,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 22)union all(select 23,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 23)union all(select 24,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 24)union all(select 25,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 25)union all(select 26,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 26)union all(select 27,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 27)union all(select 28,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 28)union all(select 29,`pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 29)
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 0
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 1
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 2
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 3
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 4
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 5
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 6
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 7
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 8
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 9
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 10
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 11
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 12
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 13
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 14
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 15
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 16
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 17
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 18
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 19
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 20
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 21
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 22
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 23
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 24
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 25
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 26
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 27
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 28
+select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 29
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 SELECT pkey FROM tbl_a ORDER BY pkey ;
 SELECT pkey FROM tbl_b ORDER BY pkey;

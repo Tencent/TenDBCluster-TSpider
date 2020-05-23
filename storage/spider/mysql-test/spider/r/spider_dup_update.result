@@ -73,9 +73,9 @@ select for master
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';
 argument
 insert into tbl_a values('abd') on duplicate key update acct_name='china'
-mysql localhost insert high_priority into `auto_test_remote_2`.`tbl_a`(`acct_name`)values('abd') on duplicate key update `acct_name` = 'china'
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`acct_name`)values('abd') on duplicate key update `acct_name` = 'china'
 insert into tbl_a values('abd') on duplicate key update acct_name='china'
-mysql localhost insert high_priority into `auto_test_remote_2`.`tbl_a`(`acct_name`)values('abd') on duplicate key update `acct_name` = 'china'
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`acct_name`)values('abd') on duplicate key update `acct_name` = 'china'
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%'
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert%';

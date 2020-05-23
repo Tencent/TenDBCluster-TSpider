@@ -58,7 +58,7 @@ tbl_a	CREATE TABLE `tbl_a` (
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 explain select count(distinct v1) from tbl_a;
 id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
-1	SIMPLE	tbl_a	ALL	NULL	NULL	NULL	NULL	4	
+1	SIMPLE	tbl_a	index	NULL	v1_v2_v3	12	NULL	4	Using index
 connection child2_1;
 explain select count(distinct v1) from tbl_a;
 id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra

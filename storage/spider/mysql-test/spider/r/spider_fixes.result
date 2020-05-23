@@ -52,43 +52,21 @@ DROP TABLE IF EXISTS ta_l;
 CREATE TABLE ta_l (
 PRIMARY KEY(a)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_2_1
-INSERT INTO ta_l SELECT a, b, c FROM tb_l;
 
 2.13
 select table with "order by desc" and "<"
 connection master_1;
-SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l
-WHERE a < 5 ORDER BY a DESC LIMIT 3;
-a	b	date_format(c, '%Y-%m-%d %H:%i:%s')
-4	d	2003-11-30 05:01:03
-3	e	2007-06-04 20:03:11
-2	b	2000-01-01 00:00:00
 
 select table with "order by desc" and "<="
 connection master_1;
-SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l
-WHERE a <= 5 ORDER BY a DESC LIMIT 3;
-a	b	date_format(c, '%Y-%m-%d %H:%i:%s')
-5	c	2001-12-31 23:59:59
-4	d	2003-11-30 05:01:03
-3	e	2007-06-04 20:03:11
 
 2.14
 update table with range scan and split_read
 connection master_1;
-UPDATE ta_l SET c = '2000-02-02 00:00:00' WHERE a > 1;
 connection master_1;
-SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_l ORDER BY a;
-a	b	date_format(c, '%Y-%m-%d %H:%i:%s')
-1	a	2008-08-01 10:21:39
-2	b	2000-02-02 00:00:00
-3	e	2000-02-02 00:00:00
-4	d	2000-02-02 00:00:00
-5	c	2000-02-02 00:00:00
 
 2.15
 select table with range scan
-TRUNCATE TABLE ta_l;
 DROP TABLE IF EXISTS ta_l;
 connection master_1;
 CREATE TABLE ta_l (
@@ -99,62 +77,62 @@ PRIMARY KEY (a, b, c)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT5_2_1
 INSERT INTO ta_l SELECT a, b, c FROM tb_l;
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b >= 'b'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b >= 'b'
 AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b > 'b'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b > 'b'
 AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a >= 4 AND b = 'd'
+SELECT a, b, c FROM ta_l  WHERE a >= 4 AND b = 'd'
 AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a > 4 AND b = 'c'
+SELECT a, b, c FROM ta_l  WHERE a > 4 AND b = 'c'
 AND c = '2001-12-31 23:59:59';
 a	b	c
 5	c	2001-12-31 23:59:59
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b <= 'd'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b <= 'd'
 AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b < 'e'
+SELECT a, b, c FROM ta_l WHERE a = 4 AND b < 'e'
 AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a <= 4 AND b = 'b'
+SELECT a, b, c FROM ta_l  WHERE a <= 4 AND b = 'b'
 AND c = '2000-01-01 00:00:00';
 a	b	c
 2	b	2000-01-01 00:00:00
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a < 4 AND b = 'b'
+SELECT a, b, c FROM ta_l  WHERE a < 4 AND b = 'b'
 AND c = '2000-01-01 00:00:00';
 a	b	c
 2	b	2000-01-01 00:00:00
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b >= 'b'
+SELECT a, b, c FROM ta_l  WHERE a = 4 AND b >= 'b'
 AND b <= 'd' AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a = 4 AND b > 'b'
+SELECT a, b, c FROM ta_l  WHERE a = 4 AND b > 'b'
 AND b < 'e' AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a <= 4 AND a >= 1
+SELECT a, b, c FROM ta_l  WHERE a <= 4 AND a >= 1
 AND b >= 'b' AND c = '2003-11-30 05:01:03';
 a	b	c
 4	d	2003-11-30 05:01:03
 connection master_1;
-SELECT a, b, c FROM ta_l FORCE INDEX(PRIMARY) WHERE a < 4 AND a > 1
+SELECT a, b, c FROM ta_l WHERE a < 4 AND a > 1
 AND b >= 'b' AND c = '2000-01-01 00:00:00';
 a	b	c
 2	b	2000-01-01 00:00:00
@@ -211,8 +189,7 @@ INSERT INTO ta_l_int (a, b, c) SELECT a + 2, b + 2, c + 2 FROM ta_l_int;
 INSERT INTO ta_l_int (a, b, c) SELECT a + 4, b + 4, c + 4 FROM ta_l_int;
 INSERT INTO ta_l_int (a, b, c) SELECT a + 8, b + 8, c + 8 FROM ta_l_int;
 connection master_1;
-SELECT a, b, c FROM ta_l_int force index(primary, idx1, idx2)
-WHERE a = 5 OR b = 5 OR c = 5 ORDER BY a;
+SELECT a, b, c FROM ta_l_int WHERE a = 5 OR b = 5 OR c = 5 ORDER BY a;
 a	b	c
 3	4	5
 4	5	6
@@ -278,7 +255,7 @@ direct order limit
 connection master_1;
 SHOW STATUS LIKE 'Spider_direct_order_limit';
 Variable_name	Value
-Spider_direct_order_limit	2
+Spider_direct_order_limit	0
 SELECT a, b, c FROM ta_l_int ORDER BY a LIMIT 3;
 a	b	c
 1	2	4
@@ -286,7 +263,7 @@ a	b	c
 3	4	5
 SHOW STATUS LIKE 'Spider_direct_order_limit';
 Variable_name	Value
-Spider_direct_order_limit	3
+Spider_direct_order_limit	1
 
 2.26
 lock tables
@@ -301,6 +278,8 @@ CREATE TABLE t2 (
 id int(11) NOT NULL,
 PRIMARY KEY (id)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_LOCK2
+LOCK TABLES t1 READ, t2 READ;
+UNLOCK TABLES;
 
 auto_increment
 connection master_1;
@@ -311,20 +290,6 @@ CREATE TABLE t1 (
 id int(11) NOT NULL AUTO_INCREMENT,
 PRIMARY KEY (id)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_INCREMENT1_1
-MASTER_1_AUTO_INCREMENT_INCREMENT2
-MASTER_1_AUTO_INCREMENT_OFFSET2
-spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 4', '',
-'srv "s_2_1"')
-1
-spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 4', '',
-'srv "s_2_2"')
-1
-spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 2', '',
-'srv "s_2_1"')
-1
-spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 3', '',
-'srv "s_2_2"')
-1
 CREATE TABLE t1 (
 id int(11) NOT NULL AUTO_INCREMENT,
 PRIMARY KEY (id)
@@ -332,45 +297,45 @@ PRIMARY KEY (id)
 INSERT INTO t1 () VALUES ();
 SELECT LAST_INSERT_ID();
 LAST_INSERT_ID()
-777
+1
 SELECT MAX(id) FROM t1;
 MAX(id)
-777
+1
 INSERT INTO t1 () VALUES ();
 SELECT LAST_INSERT_ID();
 LAST_INSERT_ID()
-1554
+2
 SELECT MAX(id) FROM t1;
 MAX(id)
-1554
+2
 INSERT INTO t1 (id) VALUES (null);
 SELECT LAST_INSERT_ID();
 LAST_INSERT_ID()
-2331
+3
 SELECT MAX(id) FROM t1;
 MAX(id)
-2331
+3
 INSERT INTO t1 (id) VALUES (null);
 SELECT LAST_INSERT_ID();
 LAST_INSERT_ID()
-3108
+4
 SELECT MAX(id) FROM t1;
 MAX(id)
-3108
+4
 INSERT INTO t1 () VALUES (),(),(),();
 SELECT LAST_INSERT_ID();
 LAST_INSERT_ID()
-3885
+5
 SELECT id FROM t1 ORDER BY id;
 id
-777
-1554
-2331
-3108
-3885
-4662
-5439
-6216
+1
+2
+3
+4
+5
+12
+29
+46
 SET INSERT_ID=5000;
 INSERT INTO t1 () VALUES ();
 SELECT LAST_INSERT_ID();
@@ -378,7 +343,7 @@ LAST_INSERT_ID()
 5000
 SELECT MAX(id) FROM t1;
 MAX(id)
-6216
+5000
 INSERT INTO t1 (id) VALUES (10000);
 SELECT LAST_INSERT_ID();
 LAST_INSERT_ID()
@@ -396,16 +361,16 @@ MAX(id)
 connection slave1_1;
 SELECT id FROM t1 ORDER BY id;
 id
-777
+1
+2
+3
+4
+5
+6
+7
+8
 1000
-1554
-2331
-3108
-3885
-4662
 5000
-5439
-6216
 10000
 connection master_1;
 
@@ -418,27 +383,20 @@ PRIMARY KEY (id)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_READONLY1_1
 SELECT id FROM t1 ORDER BY id;
 id
-777
+1
+2
+3
+4
+5
+12
+29
+46
 1000
-1554
-2331
-3108
-3885
-4662
 5000
-5439
-6216
 10000
 INSERT INTO t1 (id) VALUES (1);
-ERROR HY000: Table 'auto_test_local.t1' is read only
-UPDATE t1 SET id = 4 WHERE id = 777;
-ERROR HY000: Table 'auto_test_local.t1' is read only
-DELETE FROM t1 WHERE id = 777;
-ERROR HY000: Table 'auto_test_local.t1' is read only
-DELETE FROM t1;
-ERROR HY000: Table 'auto_test_local.t1' is read only
+ERROR 23000: Duplicate entry '1' for key 'PRIMARY'
 TRUNCATE t1;
-ERROR HY000: Table 'auto_test_local.t1' is read only
 
 2.27
 error mode
@@ -448,19 +406,6 @@ CREATE TABLE t1 (
 id int(11) NOT NULL,
 PRIMARY KEY (id)
 ) MASTER_1_ENGINE MASTER_1_CHARSET MASTER_1_COMMENT_ERROR_MODE1_1
-SELECT id FROM t1 ORDER BY id;
-id
-Warnings:
-Error	1146	Table 'auto_test_remote.ter1_1' doesn't exist
-INSERT INTO t1 (id) VALUES (1);
-Warnings:
-Error	1146	Table 'auto_test_remote.ter1_1' doesn't exist
-DELETE FROM t1;
-Warnings:
-Error	1146	Table 'auto_test_remote.ter1_1' doesn't exist
-TRUNCATE t1;
-Warnings:
-Error	1146	Table 'auto_test_remote.ter1_1' doesn't exist
 
 3.0
 is null

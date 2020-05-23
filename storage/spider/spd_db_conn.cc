@@ -301,8 +301,8 @@ int spider_db_ping(
   int link_idx
 ) {
   DBUG_ENTER("spider_db_ping");
-  /* 去掉ping的行为,可能导致异常crash */
-      DBUG_RETURN(0);
+  /* ignore spider db ping */
+  DBUG_RETURN(0);
 
 #ifndef DBUG_OFF
   if (spider->trx->thd)
@@ -458,7 +458,6 @@ int spider_db_conn_queue_action(
         DBUG_RETURN(error_num);
     }
 
-    /* oracle/handler socket才会走的逻辑 */
     /***********************************************
     if (
       conn->queued_autocommit &&

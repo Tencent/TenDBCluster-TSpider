@@ -118,7 +118,7 @@ select for master
 SELECT left(argument,70) FROM mysql.general_log;
 left(argument,70)
 select spider_rone_shard  * from  tbl_a order by  id limit 1
-mysql localhost select `id`,`t`,`start_time`,`end_time` from `auto_tes
+mysql localhost 3306 select `id`,`t`,`start_time`,`end_time` from `aut
 SELECT left(argument,70) FROM mysql.general_log
 
 deinit

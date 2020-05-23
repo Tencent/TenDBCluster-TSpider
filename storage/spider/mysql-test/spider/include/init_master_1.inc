@@ -1,33 +1,24 @@
 --source ../include/init_spider.inc
 SET spider_direct_order_limit= 10000;
-SET spider_init_sql_alloc_size= 1;
 if ($VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r"'
-    CONNECTION='host "localhost", port "$CHILD2_1_MYPORT", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r", srv "s_2_1"';
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r"'
-    CONNECTION='host "localhost", socket "$CHILD2_1_MYSOCK", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r", srv "s_2_1"';
 }
 if ($VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT2_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_no_idx"'
-    CONNECTION='host "localhost", port "$CHILD2_1_MYPORT", user "root",
-    password "", prt "2000000"';
+    COMMENT='database "auto_test_remote", table "ta_r_no_idx", srv "s_2_1"';
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT2_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_no_idx"'
-    CONNECTION='host "localhost", socket "$CHILD2_1_MYSOCK", user "root",
-    password "", prt "2000000"';
+    COMMENT='database "auto_test_remote", table "ta_r_no_idx", srv "s_2_1"';
 }
 let $MASTER_1_COMMENT_P_2_1=
   COMMENT='table "ta_r3"'
@@ -47,16 +38,12 @@ let $MASTER_1_COMMENT2_P_2_1=
 if ($VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT3_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_auto_inc"'
-    CONNECTION='host "localhost", port "$CHILD2_1_MYPORT", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r_auto_inc", srv "s_2_1"';
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT3_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_auto_inc"'
-    CONNECTION='host "localhost", socket "$CHILD2_1_MYSOCK", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r_auto_inc", srv "s_2_1"';
 }
 let $MASTER_1_COMMENT3_P_2_1=
   COMMENT='table "ta_r_int"'
@@ -69,44 +56,36 @@ let $MASTER_1_COMMENT3_P_2_1=
 if ($VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT4_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_int"'
-    CONNECTION='host "localhost", port "$CHILD2_1_MYPORT", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r_int", srv "s_2_1"';
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT4_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_int"'
-    CONNECTION='host "localhost", socket "$CHILD2_1_MYSOCK", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r_int", srv "s_2_1"';
 }
 if ($VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT5_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_3"'
-    CONNECTION='host "localhost", port "$CHILD2_1_MYPORT", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r_3", srv "s_2_1"';
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT5_2_1=
-    COMMENT='database "auto_test_remote", table "ta_r_3"'
-    CONNECTION='host "localhost", socket "$CHILD2_1_MYSOCK", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ta_r_3", srv "s_2_1"';
 }
+let $MASTER_1_COMMENT6_P_1_1=
+  COMMENT='database "auto_test_remote", table "ta_ob"'
+  PARTITION BY LIST COLUMNS (e) PARTITIONS 1
+  (PARTITION pt1 values in (510411) COMMENT = 'srv "s_2_1"');
 if ($VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT_FT_2_1=
-    COMMENT='database "auto_test_remote", table "ft_r"'
-    CONNECTION='host "localhost", port "$CHILD2_1_MYPORT", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ft_r", srv "s_2_1"';
 }
 if (!$VERSION_COMPILE_OS_WIN)
 {
   let $MASTER_1_COMMENT_FT_2_1=
-    COMMENT='database "auto_test_remote", table "ft_r"'
-    CONNECTION='host "localhost", socket "$CHILD2_1_MYSOCK", user "root",
-    password ""';
+    COMMENT='database "auto_test_remote", table "ft_r", srv "s_2_1"';
 }
 let $MASTER_1_COMMENT2_FT_P_2_1=
   COMMENT='table "ft_r3"'
@@ -127,9 +106,9 @@ let $MASTER_1_COMMENT2_GM_P_2_1=
     COMMENT='srv "s_2_2", priority "1000001"'
   );
 let $MASTER_1_COMMENT_LOCK1=
-  COMMENT 'tbl "t1_1 t1_2", srv "s_2_1 s_2_2"';
+  COMMENT 'tbl "t1_1", srv "s_2_1"';
 let $MASTER_1_COMMENT_LOCK2=
-  COMMENT 'tbl "t2_1 t2_2", srv "s_2_2 s_2_1"';
+  COMMENT 'tbl "t2_1", srv "s_2_2"';
 let $MASTER_1_COMMENT_INCREMENT1_1=
   COMMENT 'aim "0", tbl "t1_1", srv "s_2_1"';
 let $MASTER_1_COMMENT_INCREMENT1_P_1=
@@ -156,31 +135,3 @@ let $MASTER_1_CHECK_DIRECT_ORDER_LIMIT_STATUS=
   SHOW STATUS LIKE 'Spider_direct_order_limit';
 let $MASTER_1_CHECK_DIRECT_AGGREGATE_STATUS=
   SHOW STATUS LIKE 'Spider_direct_aggregate';
-let $MASTER_1_AUTO_INCREMENT_INCREMENT1=
-  SET SESSION AUTO_INCREMENT_INCREMENT = 1 $STR_SEMICOLON
-  SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 1', '',
-    'srv "s_2_1"') $STR_SEMICOLON
-  SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 1', '',
-    'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_INCREMENT2=
-  SET SESSION AUTO_INCREMENT_INCREMENT = 777 $STR_SEMICOLON
-  SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 4', '',
-    'srv "s_2_1"') $STR_SEMICOLON
-  SELECT spider_direct_sql('SET SESSION AUTO_INCREMENT_INCREMENT = 4', '',
-    'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_OFFSET1=
-  SET SESSION AUTO_INCREMENT_OFFSET = 1 $STR_SEMICOLON
-  SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 1', '',
-    'srv "s_2_1"') $STR_SEMICOLON
-  SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 1', '',
-    'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_OFFSET2=
-  SET SESSION AUTO_INCREMENT_OFFSET = 777 $STR_SEMICOLON
-  SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 2', '',
-    'srv "s_2_1"') $STR_SEMICOLON
-  SELECT spider_bg_direct_sql('SET SESSION AUTO_INCREMENT_OFFSET = 3', '',
-    'srv "s_2_2"');
-let $MASTER_1_AUTO_INCREMENT_OFFSET3=
-  SET SESSION AUTO_INCREMENT_OFFSET = 1;
-let $MASTER_1_AUTO_INCREMENT_OFFSET4=
-  SET SESSION AUTO_INCREMENT_OFFSET = 777;

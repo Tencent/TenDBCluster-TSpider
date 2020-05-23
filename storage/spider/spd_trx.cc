@@ -2033,7 +2033,7 @@ int spider_internal_xa_commit_one_phase(
 		trx->join_trx_top = NULL;
 	}
 	if (error_num)
-	{/* 如果事务提交时出错，（可能部分提交）， 则有如下错误信息 */
+	{
 		thd->clear_error();
 		my_message(ER_SPIDER_XA_TIMEOUT_NUM, ER_SPIDER_XA_TIMEOUT_STR, MYF(0));
 		goto error_in_commit;
