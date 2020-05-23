@@ -2413,9 +2413,10 @@ int show_create_table(THD *thd, TABLE_LIST *table_list, String *packet,
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   {
-    if (table->part_info &&
+    if ((table->part_info &&
         !((table->s->db_type()->partition_flags() & HA_USE_AUTO_PARTITION) &&
-          table->part_info->is_auto_partitioned))
+          table->part_info->is_auto_partitioned)) &&
+          (!thd->variables.spider_not_show_partition))
     {
       /*
         Partition syntax for CREATE TABLE is at the end of the syntax.

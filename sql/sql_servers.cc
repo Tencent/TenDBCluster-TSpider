@@ -866,7 +866,10 @@ void merge_server_struct(FOREIGN_SERVER *from, FOREIGN_SERVER *to)
   if (!to->password)
     to->password= strdup_root(&mem, from->password);
   if (to->port == -1)
-    to->port= from->port;
+  {
+    to->port = from->port;
+    to->sport = from->sport;
+  }
   if (!to->socket && from->socket)
     to->socket= strdup_root(&mem, from->socket);
   if (!to->scheme && from->scheme)
@@ -1236,6 +1239,11 @@ prepare_server_struct_for_update(LEX_SERVER_OPTIONS *server_options,
   altered->port= (server_options->port > -1 &&
                  server_options->port != existing->port) ?
     server_options->port : -1;
+
+  char str[10] = { 0 };
+  snprintf(str, sizeof(str), "%d", server_options->port);
+  /* if not do this, while we get port from server_caches, may core dump */
+  altered->sport = strdup_root(&mem, str);
   altered->version = 0; /* no need */
   DBUG_VOID_RETURN;
 }
@@ -1309,6 +1317,7 @@ static FOREIGN_SERVER *clone_server(MEM_ROOT *mem, const FOREIGN_SERVER *server,
   buffer->scheme= safe_strdup_root(mem, server->scheme);
   buffer->username= safe_strdup_root(mem, server->username);
   buffer->password= safe_strdup_root(mem, server->password);
+  buffer->sport = safe_strdup_root(mem, server->sport);
   buffer->socket= safe_strdup_root(mem, server->socket);
   buffer->owner= safe_strdup_root(mem, server->owner);
   buffer->host= safe_strdup_root(mem, server->host);
