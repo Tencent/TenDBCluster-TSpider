@@ -31,7 +31,7 @@
 某个后端存储实例故障，导致对应的server不可用；需要进行主备切换或者修复故障实例
 
 ### 1.5 Out of sync错误
-非预期的TSpider向存储实例请求数据时出现异常，执行flush tables可解决。
+非预期的TSpider向存储实例请求数据时出现异常，设置spider_idle_conn_recycle_interval为8（快速释放掉空闲连接），执行flush tables可解决。
 
 
 ### 1.6 自增列

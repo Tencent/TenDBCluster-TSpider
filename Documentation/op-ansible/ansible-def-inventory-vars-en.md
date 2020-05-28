@@ -1,11 +1,12 @@
-# Ansible playbook说明
+# Ansible Playbook Instructions
 
-Ansible host inventory 说明，以及 `group_vars` 变量说明。
-TenDB Cluster Ansible playbook 仓库：https://git.code.oa.com/tenstack/TenDBCluster-Ansible 。
+This document contains instructions for Ansible host inventory and the `group_vars` variable.
 
-## Inventory hosts说明
+See also: [TenDB Cluster Ansible Playbook Repository](https://git.code.oa.com/tenstack/TenDBCluster-Ansible)
 
-定义一个如下拓扑的 TenDB Cluster
+## Host Inventory Instructions
+
+As an example, we define a topology of TenDB Cluster as:
 ```
                           +-------------------------+   +-------------------------+
                           |   +-----------------+   |   |   +-----------------+   |
@@ -33,10 +34,9 @@ TenDB Cluster Ansible playbook 仓库：https://git.code.oa.com/tenstack/TenDBCl
 +----------------++----------------++----------------+                             
 ```
 
-每个小框是一个 TenDB/TSpider/Tdbctl 实例
-每个大框代表一台机器，图所示一台机器2个实例
+In this topology a small grid represents a TenDB/TSpider/Tdbctl instance and a large grid represents a host. From it we can see there are two TenDB instances on one host.
 
-对应的 ***hosts.tendbcluster*** 定义 : 
+Accordingly, *hosts.tendbcluster* is defined as:
 ```
 [all:vars]
 ansible_ssh_user=root
@@ -102,57 +102,55 @@ tendb-spt3 ansible_host=192.168.1.2 mysql_shard=SPT3 mysql_port=20003 role=maste
 tendb-spt3-1 ansible_host=192.168.1.130 mysql_shard=SPT3 mysql_port=20003 role=slave master=tendb-spt3
 ```
 
-**说明：**
+Note:
 
-1. 所有inventory_hostname不得相同
+1. All `inventory_hostname`s must be distinct.
 
-2. Tdbctl, TSpider, TenDB 三个组件的主机名和端口( `ansible_host`:`mysql_port` ) 不得相同
-  TenDB 同一分片下的 server_id 自动生成，所以在 GTID 主备环境下，server_id 不会相同。
-  但注意如果增删 TenDB 节点，或者修改了 host 顺序之后，根据 `groups[mysql_shard].index(inventory_hostname)` 生成的 server_id 会变，如果没有同步重启 TenDB，可能会导致server_id 相同。
-  最安全的情况是，这里给每个 host 设置 `server_id` 变量
+2. Hostname-Port (`ansible_host` : `mysql_port`) pairs of Tdbctl, TSpider and TenDB nodes must be distinct. 
+  The `server_id` under the same shard of TenDB is auto generated; therefore, in a GTID master-slave environment, `server_id`s are guaranteed distinct. 
+  Please note that if some TenDB nodes are added or deleted, or the order of hosts are changed, the `server_id` generated based on `groups[mysql_shard].index(inventory_hostname)` will change accordingly; in this case, if TenDB nodes are not restarted, it may lead to duplicate `server_id`s. 
+  The safest way to approach this is to set the `server_id` variable for every host.
 
-3. TenDB同一分片下的 host 变量 `mysql_shard` 必须相同，且必须是 _`SPT` + 序号_ 格式
+3. The `mysql_shard` variable of hosts under the same shard of TenDB must be the same, and has to follow a format of *`SPT`+sequence_number*.
 
-4. TenDB的各分片 host role 必须正确配置是 master 还是 slave。
-  包括如果后续做了主备切换，这里必须及时更新，否则可能引起整个集群问题
+4. Each host of TenDB must have a role configured to either a master or slave. 
+  If a master/slave switch takes place later, the configured roles have to be updated in time, otherwise it may cause problems for the entire cluster.
 
-5. 建议存储节点(TenDB)的主备使用相同端口，且主备分布在不同的机器上。
+5. For TenDB, we suggest a slave use the same port as its master's. 
+  A master and a slave should be deployed on different hosts.
 
-6. TSpider的变量 `autoinc_value` 每加一个节点，保持自增。
-  在不是 TSpider 时会自动按照 index 来维持，所以部署好后，不要轻易改变这里的顺序
-  同理 TSpider 的 server_id 也是自动生成的。
+6. In TSpider, the `autoinc_value` variable auto increases every time a new node joins. 
+  If not in TSpider, it is maintained based on indexes. Therefore, it is not recommended to change the indexes. 
+  Similarly, the `server_id` in TSpider is auto generated and auto increases as such.
 
-7. Tdbctl 如果只给一个节点，则安装成单节点，如果给 3 个节点，则自动安装成 MGR 模式
-  正式环境建议安装成 MGR 模式，否则 Tdbctl 故障时无法做 DDL 操作。
+7. If there are at least 3 Tdbctl nodes, Tdbctl will be automatically configured to MGR mode during installation. 
+  In production, we suggest Tdbctl be in MGR mode, otherwise DDL operations will fail if Tdbctl ever undergoes a breakdown.
 
-8. 全局变量：
-  - `tendbcluster_shard_num`
-    设置分片个数，即 TenDB 实例个数。
-    具体的分片定义，必须准确给出，如下面的 `SPT0`, `SPT1`, `SPT2`, `SPT3`
+8. Global variables:
+    - `tendbcluster_shard_num`
+    Number of shards, i.e., number of TenDB instances.
+    Each shard must be given a precise definition (eg. `SPT0`, `SPT1`, `SPT2`, `SPT3` as defined above).
 
-  - `tendbcluster_name`
-    TenDBCluster 的集群名，主要用于监控时标识集群
+    - `tendbcluster_name`
+    Name of the current TenDBCluster, used to identify a cluster during monitoring.
 
-  - `node_status` - 待实现
-    节点状态，默认为`1`
-    - `1`: 正常工作，或者预期正常工作的节点
-    - `2`: 预期正常工作，但确认已经故障的节点
-    - `3`: 节点等待退役下线
-    - `4`: 节点已下线，可被安全从 inventory 中清除
-  - `tendbcluster:vars`
-    设置影响集群性能的关键变量，比如 mysql 数据目录 `mysql_home_dir`，innodb 缓冲池大小`innodb_buffer_pool_size_mb`
-    
-    - `mysql_home_dir`, `mysql_data_dir`
-      单机多分片（多实例）情况下，默认通过 mysql_port 来区分数据目录。
-      如果机器有多个高性能磁盘，也可以直接在 host 上设置变量 `mysql_data_dir`
-    - `innodb_buffer_pool_size_mb`
-      默认会根据 inventory 里面配置单机实例数，自动计算每个实例的 buffer pool 大小。
-      在 *group_vars* 里面设置变量 `innodb_buffer_pool_size_pct_total`，默认使用总内存的 0.8 。
-      当为特定实例设置不同的 buffer pool 时，直接在 host 上设置该变量来覆盖全局配置，单位 MB。
+    - `node_status` (to be implemented)
+    Status of a node (set to `1` by default).
+        - `1`: Working normally or expected to work normally.
+        - `2`: Expected to work normally but confirmed to have broken down.
+        - `3`: Waiting for retiring and switching offline.
+        - `4`: Currently offline, can be safely cleared out of the inventory.
 
-## group_vars变量说明
+    - `tendbcluster:vars`
+    Key variables that have great influence in cluster performance, such as `mysql_home_dir` (directory path for MySQL data storage) and `innodb_buffer_pool_size_mb` (size of InnoDB buffer pool).
+        - `mysql_home_dir`, `mysql_data_dir`
+        When multiple instances are deployed on a same host, `mysql_port` is used to separate data storage directories. If your hosts have multiple high-performance disks, you can directly set the `mysql_data_dir` variable for each host.
+        - `innodb_buffer_pool_size_mb`
+        By default, the size of buffer pool of each instance is calculated based on the number of instances on a host inferred from the inventory. The `innodb_buffer_pool_size_pct_total` variable in *group_vars* is set at `0.8` by default, making 80% of total memory being used. If you want to set a different buffer pool for a specific instance, you can overwrite the global configuration by setting the value of this variable for your host (unit: `MB`).
 
-group_vars/all
+## group_vars Variable Instructions
+
+group_vars/all:
 
 ```
 fileserver: http://9.79.12.184:6080/pkgs
@@ -212,31 +210,31 @@ tendbcluster_user_root_pass: "{{tendbcluster_user_admin_pass}}"
 
 ```
 
+Note:
+
 - `fileserver`
-  设置安装包的下载链接地址
+The http url for downloading packages for installation.
 
 - `mysql_version`, `mysql_pkg`, `mysql_pkg_md5`
-  设置 TenDB 的介质包版本、名称、md5
-  同理 TSpider, Tdbctl 也需要配置。
+TenDB package's version, name and MD5 checksum. Similarly, TSpider and Tdbctl packages are specified as such.
 
 - `innodb_buffer_pool_size_pct_total`
-  TenDB 实例占机器总内存比例，默认 0.8 。
-  比如机器内存 16384MB，则 buffer pool 大小为 `int(16384 * 0.8) = 13107`，当机器上部署4个分片时，每个实例 innodb_buffer_pool_size 为 `int(13107 / 4) = 3276` M。
-  也可以直接在 host inventory 里面配置具体的大小，来覆盖自动计算。
+  Percentage of TenDB's memory usage to total memory on a host. 
+  For example, say a host has a total memory of `16384 MB`, the size of buffer pool is then set as `int(16384 * 0.8) = 13107 MB`. If 4 shards are deployed on this host, then each instance's `innodb_buffer_pool_size` is `int(13107 / 4) = 3276 MB`. 
+  You can also manually set a specific size in the host inventory; in this case, the result of auto calculation will be overwritten.
 
 - `mycnf_mysqld`
-  自定义 my.conf 配置文件里面 `mysqld` 的配置项。
-  如果要为 TenDB, TSpider 的 my.cnf 配置不同的值，在对应的 `group_vars/tendb` 和 `group_vars/tspider` 里面设置
-
-  注意 my.cnf 的生成没有完全依赖这个 mycnf_mysqld ，在 `roles/tendb/templates/my.cnf.tendb.j2` 里面内置了一些配置。使用时以防重复
+  Use it to customize the `mysqld` section in the *my.cnf* file.
+  If you want to have different configurations for TenDB and TSpider, modify `group_vars/tendb` and `group_vars/tspider` respectively. 
+  Note that the generation of *my.cnf* file does not completely depend on `mycnf_mysqld`; there are some built-in configurations in the *roles/tendb/templates/my.cnf.tendb.j2* file.
 
 - `backup_dir`
-  MySQL备份目录，主要用在自动 build slave 时，mysqldump 的存放的备份的地址
+Directory for MySQL backups. It is mainly used to store backups from `mysqldump` during "build slave".
 
 - `tendbcluster_user_admin`, `tendbcluster_user_repl`
-  集群运行所必须要创建的两个用户，在部署集群时，会自动创建，在后续维护集群时，也要用到管理用户。
-  - `tendbcluster_user_admin` 指定管理用户名，创建 admin 用户时会限制访问ip。后续  Tdbctl 会用这个用户在各个节点创建表
-  - `tendbcluster_user_admin_pass` 指定 admin 用户密码，建议使用 ansible-vault 加密，见上文
-  - `tendbcluster_user_repl` 指定 mysql replication 的用户名，授权 `%` 。
-  - `tendbcluster_user_repl_pass` 指定复制用户的密码
-  - `tendbcluster_user_root_pass` 指定 mysql root 的密码，默认与 `tendbcluster_user_admin_pass` 相同。后续不再需要root
+User accounts that have to be created for the cluster to run. They are automatically created during the deployment of cluster and are used for maintaining the cluster.
+    - `tendbcluster_user_admin` Name of the admin user. The access IP is restricted during the creation of the admin user. Tdbctl will use this user account to create tables in each node.
+    - `tendbcluster_user_admin_pass` Password of the admin user. We suggest using `ansible-vault` for password encryption.
+    - `tendbcluster_user_repl` Name of the MySQL replication user. Replication privileges are granted to this user from any access IP (using `%`).
+    - `tendbcluster_user_repl_pass` Password of the MySQL replication user.
+    - `tendbcluster_user_root_pass` Password of the MySQL root account. Its value is the same as `tendbcluster_user_admin_pass`'s by default. Root account is not needed after deployment.

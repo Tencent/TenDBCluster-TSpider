@@ -100,38 +100,6 @@ Create Table: CREATE TABLE `t1` (
 1 row in set (0.00 sec)
 ```
 
-
-
-##### 如果只有一个普通索引,不指定shard_key, 默认会用索引的第一个字段作为分区key
- 
-```
-MariaDB [tendb_test]> create table  t1(
-    ->     inf_id  int(11)  auto_increment    not  null,
-    ->     name  varchar(50)  not  null,
-    ->     sex  varchar(5)  not null,
-    ->     birthday  varchar(50)  not  null,
-    ->     index  info(inf_id,sex)
-    ->     );
-Query OK, 0 rows affected (0.04 sec)
-
-MariaDB [tendb_test]>  show  create table t1\G;
-*************************** 1. row ***************************
-       Table: t1
-Create Table: CREATE TABLE `t1` (
-  `inf_id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,
-  `sex` varchar(5) NOT NULL,
-  `birthday` varchar(50) NOT NULL,
-  KEY `info` (`inf_id`,`sex`)
-) ENGINE=SPIDER DEFAULT CHARSET=utf8
- PARTITION BY LIST (crc32(`inf_id`) MOD 4)
-(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
- PARTITION `pt1` VALUES IN (1) COMMENT = 'database "tendb_test_1", table "t1", server "SPT1"' ENGINE = SPIDER,
- PARTITION `pt2` VALUES IN (2) COMMENT = 'database "tendb_test_2", table "t1", server "SPT2"' ENGINE = SPIDER,
- PARTITION `pt3` VALUES IN (3) COMMENT = 'database "tendb_test_3", table "t1", server "SPT3"' ENGINE = SPIDER)
-1 row in set (0.00 sec)
-```
-
 ##### 如果有多个唯一键,不指定shard_key, 默认会用唯一键的第一个字段作为分区key。但需保证分区key是每个唯一键的第一个字段，否则无法建表。
 ```
 MariaDB [tendb_test]> create table t1(c1 int primary key,c2 int,unique key t(c1,c2));
@@ -163,34 +131,30 @@ MariaDB [tendb_test]> create table t1(c1 int primary key,c2 int,unique key t(c2,
 ERROR 4151 (HY000): Failed to execute ddl, Error code: 12021, Detail Error Messages: CREATE TABLE ERROR: ERROR: too more unique key with the different pre key
 ```
 
-
-####  指定shard_key
-
-
-##### shard_key必须是索引的一部分 
-
+##### 如果只有一个普通索引,不指定shard_key, 默认会用索引的第一个字段作为分区key
+ 
 ```
-MariaDB [tendb_test]> create table t1(
-    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT) 
-    ->     COMMENT='shard_key "id"';
-ERROR 1075 (42000): Incorrect table definition; there can be only one auto column and it must be defined as a key
-```
-```
-MariaDB [tendb_test]> create table t1(
-    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT,
-    ->     key a(id)) 
-    ->     COMMENT='shard_key "id"';
-Query OK, 0 rows affected (0.03 sec)
+MariaDB [tendb_test]> create table  t1(
+    ->     inf_id  int(11)  auto_increment    not  null,
+    ->     name  varchar(50)  not  null,
+    ->     sex  varchar(5)  not null,
+    ->     birthday  varchar(50)  not  null,
+    ->     index  info(inf_id,sex)
+    ->     );
+Query OK, 0 rows affected (0.04 sec)
 
-MariaDB [tendb_test]> show  create table t1\G;
+MariaDB [tendb_test]>  show  create table t1\G;
 *************************** 1. row ***************************
        Table: t1
 Create Table: CREATE TABLE `t1` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  KEY `a` (`id`)
-) ENGINE=SPIDER DEFAULT CHARSET=utf8 COMMENT='shard_key "id"'
- PARTITION BY LIST (crc32(`id`) MOD 4)
- (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
+  `inf_id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `sex` varchar(5) NOT NULL,
+  `birthday` varchar(50) NOT NULL,
+  KEY `info` (`inf_id`,`sex`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`inf_id`) MOD 4)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "tendb_test_1", table "t1", server "SPT1"' ENGINE = SPIDER,
  PARTITION `pt2` VALUES IN (2) COMMENT = 'database "tendb_test_2", table "t1", server "SPT2"' ENGINE = SPIDER,
  PARTITION `pt3` VALUES IN (3) COMMENT = 'database "tendb_test_3", table "t1", server "SPT3"' ENGINE = SPIDER)
@@ -198,6 +162,7 @@ Create Table: CREATE TABLE `t1` (
 ```
 
 
+####  指定shard_key
 
 ##### 如果多个唯一健（含主键),shard_key只能是其中的共同部分；否则无法建表
 ```
@@ -234,8 +199,7 @@ Create Table: CREATE TABLE `t1` (
 1 row in set (0.00 sec)
 ```
 
-
-##### 如果多个普通索引，则必须指定shard_key
+##### 如果多个普通索引，则必须指定shard_key（Tdbctl上作的限制）
 
 ```
 MariaDB [tendb_test]> create table t1 (
@@ -273,6 +237,36 @@ Create Table: CREATE TABLE `t1` (
 1 row in set (0.00 sec)
 ```
 
+
+##### shard_key必须是索引的一部分（Tdbctl上作的限制） 
+
+```
+MariaDB [tendb_test]> create table t1(
+    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT) 
+    ->     COMMENT='shard_key "id"';
+ERROR 1075 (42000): Incorrect table definition; there can be only one auto column and it must be defined as a key
+```
+```
+MariaDB [tendb_test]> create table t1(
+    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT,
+    ->     key a(id)) 
+    ->     COMMENT='shard_key "id"';
+Query OK, 0 rows affected (0.03 sec)
+
+MariaDB [tendb_test]> show  create table t1\G;
+*************************** 1. row ***************************
+       Table: t1
+Create Table: CREATE TABLE `t1` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  KEY `a` (`id`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8 COMMENT='shard_key "id"'
+ PARTITION BY LIST (crc32(`id`) MOD 4)
+ (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "tendb_test_1", table "t1", server "SPT1"' ENGINE = SPIDER,
+ PARTITION `pt2` VALUES IN (2) COMMENT = 'database "tendb_test_2", table "t1", server "SPT2"' ENGINE = SPIDER,
+ PARTITION `pt3` VALUES IN (3) COMMENT = 'database "tendb_test_3", table "t1", server "SPT3"' ENGINE = SPIDER)
+1 row in set (0.00 sec)
+```
 
 
 

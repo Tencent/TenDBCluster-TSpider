@@ -32,3 +32,5 @@ _add_tspider.yml_ 主要内容：
 ```
 ansible-playbook -i hosts.tendbcluster -l tspider-node-03 del_tspider.yml
 ```
+
+缩容后，即使删掉 inventory 中对应的 host 信息。

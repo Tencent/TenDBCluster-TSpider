@@ -190,9 +190,6 @@ socket=/home/mysql/mysqldata/26000/mysql.sock
 datadir=/home/mysql/mysqldata/26000/data
 socket=/home/mysql/mysqldata/26000/mysql.sock
 port=26000
-[mysql]
-port=26000
-socket=/home/mysql/mysqldata/26000/mysql.sock
 log_bin=/home/mysql/mysqldata/26000/binlog/binlog26000.bin
 relay-log=/home/mysql/mysqldata/26000/relay-log/relay-log.bin
 #MGR Configuration#############
@@ -215,6 +212,9 @@ loose-group_replication_group_seeds= "127.0.0.1:46000,127.0.0.1:46001,127.0.0.1:
 loose-group_replication_bootstrap_group=off
 loose-group_replication_single_primary_mode=on
 loose-group_replication_ip_whitelist='127.0.0.1'
+[mysql]
+port=26000
+socket=/home/mysql/mysqldata/26000/mysql.sock
 ```
 #### Important Variables Reference
 - group_replication_single_primary_mode  

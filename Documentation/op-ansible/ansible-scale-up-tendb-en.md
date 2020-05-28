@@ -1,9 +1,9 @@
-# Ansible 存储层扩缩容
+# Data Layer Scaling Using Ansible
 
-# 1# TenDB 扩容
-在 TenDB 分片数固定的情况，TenDB 的扩容是指将实例分片，迁移到高配机器上，即 scale up 。
+# 1. TenDB Scaling Up
+On the basis that TenDB has a constant number of shards, the purpose of scaling up TenDB is to migrate instances to hosts with larger capacities. Here is a demonstration of migrating a master-slave pair of SPT1 to new hosts.
 
-下面演示将 SPT1 的一对主备，通过链式 slave 迁移到新机器上。初始状态：
+Initial state:
 ```
 +-----------------+
 |   tendb-spt1    |
@@ -16,7 +16,8 @@
 +-----------------+
 ```
 
-### 1.1 添加新机器到对应分片
+### 1.1 Add New Hosts to the Shard
+
 ```
 #### SPT1 ####
 [SPT1]
@@ -27,9 +28,11 @@ tendb-spt1-1 ansible_host=192.168.1.147 mysql_shard=SPT1 mysql_port=20001 role=s
 tendb-spt1-2 ansible_host=192.168.1.6 mysql_shard=SPT1 role=slave master=tendb-spt1 innodb_buffer_pool_size_mb=4096 mysql_data_dir=/data1/mysqldata/{{mysql_port}}
 tendb-spt1-3 ansible_host=192.168.1.210 mysql_shard=SPT1 role=slave master=tendb-spt1-2 innodb_buffer_pool_size_mb=4096 mysql_data_dir=/data1/mysqldata/{{mysql_port}}
 ```
-这里手动指定了 `innodb_buffer_pool_size_mb` 和 `mysql_data_dir`，如果期望自动计算 buffer pool，你需要将目标ip上其它将要扩容的实例，都写进去，因为自动计算是按照 inventory group `tendb` 的 `ansible_host` 汇总的
 
-另外注意，新的两台机器新加入时 role=slave，但指向的 master 不同，这是为了后续切换 tendb-spt1 与 tendb-spt1-2 主备是，一步到位。
+Here we manually specify `innodb_buffer_pool_size_mb` and `mysql_data_dir`. If you expect the buffer pool size to be automatically calculated, the other instances that will be installed on the target host should be added in the inventory file, since auto calculation is based on the `tendb` group's `ansible_host` in the inventory.
+
+Also note that, when joining the shard, the two new hosts have `role=slave` but point to different masters. Therefore, the master/slave switch between `tendb-spt1` and `tendb-spt1-2` later can be achieved in one step.
+
 ```
 +-----------------+            +-----------------+
 |   tendb-spt1    | <--------- |   tendb-spt1-2  |
@@ -42,18 +45,22 @@ tendb-spt1-3 ansible_host=192.168.1.210 mysql_shard=SPT1 role=slave master=tendb
 +-----------------+            +-----------------+
 ```
 
-### 1.2 做链式slave
+### 1.2 Chaining Slaves
+
 ```
 ansible-playbook -i hosts.tendbcluster -l tendb-spt1-2,tendb-spt1-3 init_common.yml
 ansible-playbook -i hosts.tendbcluster -l tendb-spt1-2,tendb-spt1-3 build_slave.yml
 ```
-使用 `-l` 指定要操作的新 TenDB node。
 
-### 1.3 主备切换
+The `-l` option is to specify the new TenDB nodes for the operation.
+
+### 1.3 Master/slave Switch
+
 ```
 ansible-playbook -i hosts.tendbcluster -l tendb-spt1,tendb-spt1-2 -e "master_tgt=tendb-spt1-2" switch_master_slave.yml
 ```
-使用 `-l` 指定要互切的两个 TenDB node，并指定 `master_tgt` 谁成为 master。
+
+Use the `-l` to specify the two TenDB nodes to switch and set the `master_tgt` value to specify who's the master.
 
 ```
 +-----------------+            +-----------------+         
@@ -69,13 +76,16 @@ ansible-playbook -i hosts.tendbcluster -l tendb-spt1,tendb-spt1-2 -e "master_tgt
                                                     
 ```
 
-切换后会同时修改 Tdbctl 里面的路由
+After switching, the routing information in Tdbctl will be flushed at the same time.
 
-### 1.4 停止老实例
+### 1.4 Stop Old Instances
+
 ```
 ansible-playbook -i hosts.tendbcluster -l tendb-spt1,tendb-spt1-1 stop_tendbcluster.yml
 ```
-如果一切正常，停止原机器上的主备实例
+
+If everything is working fine, stop the master/slave instances on the old hosts.
+
 ```
 +-----------------+
 |   tendb-spt1-2  |
@@ -88,7 +98,7 @@ Master   ^
 +-----------------+
 ```
 
-> 重要：删掉 inventory 里面老实例的信息，并更新role 和 master
+> Important: In the inventory, delete information of the old instances and update `role` and `master`.
 
 ```
 #### SPT1 ####
@@ -97,27 +107,29 @@ tendb-spt1-2 ansible_host=192.168.1.6 mysql_shard=SPT1 role=master innodb_buffer
 tendb-spt1-3 ansible_host=192.168.1.210 mysql_shard=SPT1 role=slave master=tendb-spt1-2 innodb_buffer_pool_size_mb=4096 mysql_data_dir=/data1/mysqldata/{{mysql_port}}
 ```
 
-### 1.5 部分扩容时，修改其它分片配置（可选）
-扩容时建议原机器上的其它分片，都扩到对应的新机器上，不保留原机器。这样的好处是**不需要**修改其它分片 buffer pool 配置，来让它达到扩容的目的。
+### 1.5 Modify Remaining Shards' Configuration (Optional)
 
-如果要保留原机器，那么剩余的分片可以设置更大的 buffer pool，再运行 `update_config_tendb.yml` 。
-修改剩余分片 SPT0 的缓冲池：
+When scaling up, we suggest the other shards on the original hosts be migrated to the corresponding new hosts, and therefore the old hosts can be "discarded". The advantage of doing so is that you **need not** modify the buffer pool configuration of the other shards to achieve scaling up.
+
+If you want to keep the old hosts, then the remaining shards can be set to have larger buffer pools. Run the `update_config_tendb.yml` playbook to modify the remaining shards' buffer pools of SPT0:
+
 ```
 ansible-playbook -i hosts.tendbcluster -l SPT0 update_config_tendb.yml
 
-# 默认修改配置不会重启实例，加入 restart=true 会自动重启 slave
+# By default, modifying configuration does not reboot instances; slaves will reboot if "restart=true" is specified.
 ansible-playbook -i hosts.tendbcluster -l SPT0 update_config_tendb.yml -e "restart=true"
 ```
 
-### TenDB一键扩容
-> 正式环境不建议使用
+### TenDB Scaling Up in One Step
 
-一键扩容是将上面的做slave与主备切换串起来，但同样需要开始前设置好 inventory 信息，结束后删除旧的host并更新role/master：
+> We do not recommend using it in production.
+
+We put the slave chaining and master/slave switch in one playbook so that scaling up can be achieved within one step. However, please note that the configuration in the inventory should be set up correctly beforehand, and that old hosts should be deleted and role/master should be updated.
 
 ```
 ansible-playbook -i hosts.tendbcluster -l SPT1 -e "master_tgt=tendb-spt1-2" tendb_migrate.yml
 ```
 
-## 2 TenDB缩容
-TenDB 缩容过程，与扩容完全相同，区别只是在给定新机器是，使用低配置机器，并评估好多个实例运行在一台机器上，磁盘空间是否足够。
+## 2 TenDB Scaling Down
 
+The procedures for scaling down TenDB are identical to the procedures of scaling up, except that the target hosts have a lower capacity and performance, and that evaluation is carried out to check whether disk space is enough for multiple instances to run on one host.

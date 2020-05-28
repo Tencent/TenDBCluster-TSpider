@@ -10,16 +10,14 @@ Download TSpider's latest version source code from github
 - cmake 3.75+
 - bison
 - zlib-dev
-- jemalloc
 
 #### Compile
-Example to compile TSpider version 3.4.4
+Example to compile TSpider version 3.5
 ```bash
-#cd source code directory, unzip libmariadb.zip
-unzip libmariadb.zip
+#cd source code directory
 #make bld direcotry
 mkdir bld && cd bld
-cmake .. -DMYSQL_SERVER_SUFFIX=-tspider-3.4.4 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DBUILD_CONFIG=mysql_release -DWITH_EMBEDDED_SERVER=OFF -DWITH_JEMALLOC=no -DWITH_SSL=no -DWITHOUT_MROONGA_STORAGE_ENGINE=1 -DWITHOUT_TOKUDB_STORAGE_ENGINE=1 -DWITHOUT_MARIA_STORAGE_ENGINE=1 -DWITH_ARIA_STORAGE_ENGINE=0 -DWITH_NUMA=no -DWITH_WSREP=0
+cmake .. -DMYSQL_SERVER_SUFFIX=-tspider-3.5 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr/local/mysql -DBUILD_CONFIG=mysql_release -DWITH_EMBEDDED_SERVER=OFF -DWITH_JEMALLOC=no -DWITH_SSL=no -DWITHOUT_MROONGA_STORAGE_ENGINE=1 -DWITHOUT_TOKUDB_STORAGE_ENGINE=1 -DWITHOUT_MARIA_STORAGE_ENGINE=1 -DWITH_ARIA_STORAGE_ENGINE=0 -DWITH_NUMA=no -DWITH_WSREP=0
 #compile and make package
 nohup make -j > mk.log 2>&1  && make package > mp.log 2>&1 &
 ```

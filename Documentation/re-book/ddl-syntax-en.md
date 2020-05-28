@@ -94,38 +94,6 @@ Create Table: CREATE TABLE `t1` (
 1 row in set (0.00 sec)
 ```
 
-
-
-##### If there is only one secondary index and shard_key is not specified, the first column of the index will be used as the shard_key by default. 
-```
-MariaDB [tendb_test]> create table  t1(
-    ->     inf_id  int(11)  auto_increment    not  null,
-    ->     name  varchar(50)  not  null,
-    ->     sex  varchar(5)  not null,
-    ->     birthday  varchar(50)  not  null,
-    ->     index  info(inf_id,sex)
-    ->     );
-Query OK, 0 rows affected (0.04 sec)
-
-MariaDB [tendb_test]>  show  create table t1\G;
-*************************** 1. row ***************************
-       Table: t1
-Create Table: CREATE TABLE `t1` (
-  `inf_id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) NOT NULL,
-  `sex` varchar(5) NOT NULL,
-  `birthday` varchar(50) NOT NULL,
-  KEY `info` (`inf_id`,`sex`)
-) ENGINE=SPIDER DEFAULT CHARSET=utf8
- PARTITION BY LIST (crc32(`inf_id`) MOD 4)
-(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
- PARTITION `pt1` VALUES IN (1) COMMENT = 'database "tendb_test_1", table "t1", server "SPT1"' ENGINE = SPIDER,
- PARTITION `pt2` VALUES IN (2) COMMENT = 'database "tendb_test_2", table "t1", server "SPT2"' ENGINE = SPIDER,
- PARTITION `pt3` VALUES IN (3) COMMENT = 'database "tendb_test_3", table "t1", server "SPT3"' ENGINE = SPIDER)
-1 row in set (0.00 sec)
-```
-
-
 ##### If there are multiple unique keys and shard_key is not specified, the first field of the unique key will be used as the shard key by default. But user need to ensure that the shard key is the first field of each unique key, otherwise the table cannot be created.
 
 ```
@@ -159,33 +127,29 @@ ERROR 4151 (HY000): Failed to execute ddl, Error code: 12021, Detail Error Messa
 ```
 
 
-####  With Specified Shard_key
-
-
-##### Shard_key must be Part of the Index 
-
+##### If there is only one secondary index and shard_key is not specified, the first column of the index will be used as the shard_key by default. 
 ```
-MariaDB [tendb_test]> create table t1(
-    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT) 
-    ->     COMMENT='shard_key "id"';
-ERROR 1075 (42000): Incorrect table definition; there can be only one auto column and it must be defined as a key
-```
-```
-MariaDB [tendb_test]> create table t1(
-    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT,
-    ->     key a(id)) 
-    ->     COMMENT='shard_key "id"';
-Query OK, 0 rows affected (0.03 sec)
+MariaDB [tendb_test]> create table  t1(
+    ->     inf_id  int(11)  auto_increment    not  null,
+    ->     name  varchar(50)  not  null,
+    ->     sex  varchar(5)  not null,
+    ->     birthday  varchar(50)  not  null,
+    ->     index  info(inf_id,sex)
+    ->     );
+Query OK, 0 rows affected (0.04 sec)
 
-MariaDB [tendb_test]> show  create table t1\G;
+MariaDB [tendb_test]>  show  create table t1\G;
 *************************** 1. row ***************************
        Table: t1
 Create Table: CREATE TABLE `t1` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  KEY `a` (`id`)
-) ENGINE=SPIDER DEFAULT CHARSET=utf8 COMMENT='shard_key "id"'
- PARTITION BY LIST (crc32(`id`) MOD 4)
- (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
+  `inf_id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `sex` varchar(5) NOT NULL,
+  `birthday` varchar(50) NOT NULL,
+  KEY `info` (`inf_id`,`sex`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`inf_id`) MOD 4)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "tendb_test_1", table "t1", server "SPT1"' ENGINE = SPIDER,
  PARTITION `pt2` VALUES IN (2) COMMENT = 'database "tendb_test_2", table "t1", server "SPT2"' ENGINE = SPIDER,
  PARTITION `pt3` VALUES IN (3) COMMENT = 'database "tendb_test_3", table "t1", server "SPT3"' ENGINE = SPIDER)
@@ -193,6 +157,7 @@ Create Table: CREATE TABLE `t1` (
 ```
 
 
+####  With Specified Shard_key
 
 ##### Shard_key can only be the common part of keys if there are multiple unique keys (including the primary key). Otherwise, the table cannot be created
 
@@ -231,7 +196,7 @@ Create Table: CREATE TABLE `t1` (
 ```
 
 
-##### If there are multiple secondary indexes and without unique key(including primary key), user must specify shard_key
+##### If there are multiple secondary indexes and without unique key(including primary key), user must specify shard_key (Restrictions made on Tdbctl)
 ```
 MariaDB [tendb_test]> create table t1 (
     ->     id int unsigned not null auto_increment, 
@@ -268,7 +233,35 @@ Create Table: CREATE TABLE `t1` (
 1 row in set (0.00 sec)
 ```
 
+##### Shard_key must be Part of the Index (Restrictions made on Tdbctl)
 
+```
+MariaDB [tendb_test]> create table t1(
+    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT) 
+    ->     COMMENT='shard_key "id"';
+ERROR 1075 (42000): Incorrect table definition; there can be only one auto column and it must be defined as a key
+```
+```
+MariaDB [tendb_test]> create table t1(
+    ->     id int(10) unsigned NOT NULL AUTO_INCREMENT,
+    ->     key a(id)) 
+    ->     COMMENT='shard_key "id"';
+Query OK, 0 rows affected (0.03 sec)
+
+MariaDB [tendb_test]> show  create table t1\G;
+*************************** 1. row ***************************
+       Table: t1
+Create Table: CREATE TABLE `t1` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  KEY `a` (`id`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8 COMMENT='shard_key "id"'
+ PARTITION BY LIST (crc32(`id`) MOD 4)
+ (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "tendb_test_0", table "t1", server "SPT0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "tendb_test_1", table "t1", server "SPT1"' ENGINE = SPIDER,
+ PARTITION `pt2` VALUES IN (2) COMMENT = 'database "tendb_test_2", table "t1", server "SPT2"' ENGINE = SPIDER,
+ PARTITION `pt3` VALUES IN (3) COMMENT = 'database "tendb_test_3", table "t1", server "SPT3"' ENGINE = SPIDER)
+1 row in set (0.00 sec)
+```
 
 
 ### 1.2  Constraint of Create Table

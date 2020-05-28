@@ -15,9 +15,12 @@ mariadb-10.3.7-linux-x86_64-tspider-3.4.5-gcs.tar.gz
 tdbctl-1.4-linux-x86_64.tar.gz
 ```
 
+这里默认 fileserver 为 _http://gcs.ied.com/static/pub_soft_ ，从 `group_vars/all` 里可以修改。 
+
 ### 1.2 Ansible中控机
+
 下载并安装 ansible-2.6.13-1.el6.noarch.rpm 。
-ansible 版本要求大于 2.4 。
+ansible 版本要求 大于2.4 ， 小于2.9。
 
 ### 1.3 配置ssh互信或密码
 目前我们是基于 root 用户来安装、维护 TenDBCluster 的。
@@ -61,7 +64,7 @@ ansible_ssh_public_key_file=/root/.ssh/tendbcluster_rsa.pub
 ```
 
 ### 1.4 MySQL密码加密
-考虑大安全因素，使用 ansible-vault 对 MySQL 的 admin/replication 用户加密。
+考虑到安全因素，使用 ansible-vault 对 MySQL 的 admin/replication 用户加密。
 设置管理密码，这个密码用于加解密 mysql 用户的密码：
 ```
 echo 'VaultPass123' > password_file
@@ -84,7 +87,11 @@ ansible-vault encrypt_string --vault-id mysql@password_file xxxxxx --name tendbc
 
 ## 2 部署TenDBCluster
 
+请根据[Ansible playbook说明](ansible-def-inventory-vars.md) 配置好 host inventory 。
+注：在单机部署的情况下，建议只安装一个 Tdbctl Node，如果想安装 MGR 模式需要3个不同的节点。（你也可以给每个 host 修改变量 `group_replication_local_address=127.0.0.1:23006` 监听不同的端口，打破这个限制）
+
 ### 2.1 初始化环境
+
 ```
 ansible-playbook -i hosts.tendbcluster init_common.yml
 ```
@@ -95,7 +102,6 @@ ansible-playbook -i hosts.tendbcluster init_common.yml
 - 修改 limits.conf nofile
 - 关闭 selinux
 - 关闭 hugepage
-- 关闭 iptables
 - 修改 vm.swappiness=1
 - 其它如 ip_local_port_range, tcp_tw_recycle 等
 
@@ -112,6 +118,8 @@ ansible-playbook -i hosts.tendbcluster build_slave.yml
 ansible-playbook -i hosts.tendbcluster install_tendb.yml --vault-id password_file
 ansible-playbook -i hosts.tendbcluster build_slave.yml --vault-id password_file
 ```
+以上两个playbook会检查实例进程是否已经在运行，如果端口被监听，会退出。如果要重新跑，可以加上`-e force=true`
+
 _install_tendb.yml_ 主要完成:
 - TenDB master/slave 的安装，启动 TenDB node
 - my.cnf 配置生成，包括 server_id 和 buffer pool 计算

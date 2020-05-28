@@ -24,15 +24,19 @@ ansible-playbook -i hosts.tendbcluster -l tendb-spt1-2 update_config_tendb.yml -
 ## 重启TenDB节点
 ```
 # 关闭
-ansible-playbook -i hosts.tendbcluster -l tendb-spt1,tendb-spt1-1 tendb_stop.yml
+ansible-playbook -i hosts.tendbcluster -l tendb-spt1,tendb-spt1-1 stop_tendbcluster.yml
 
 # 启动
-ansible-playbook -i hosts.tendbcluster -l tendb-spt1-3 tendb_start.yml
+ansible-playbook -i hosts.tendbcluster -l tendb-spt1-3 start_tendbcluster.yml
 
 # 重启
-ansible-playbook -i hosts.tendbcluster -l tendb-spt1-3 tendb_restart.yml
+ansible-playbook -i hosts.tendbcluster -l tendb-spt1-3 restart_tendbcluster.yml
+
+# 重启所有tendb
+ansible-playbook -i hosts.tendbcluster -l tendb restart_tendbcluster.yml
 ```
 
+你也可以提通过上面类似的命令，重启 TSpider 或者 Tdbctl 节点。
 
 ## 重建TenDB slave
 
@@ -58,8 +62,6 @@ playbook 校验了指定的 host 是否属于同一分片，如果是不同分�
 用户可以自己实现手动起切换逻辑，来确保数据不丢失，切换完成后需要更新路由。可以参考 ansible role  `switch_master_slave`
 
 切换后，记得手动更新 inventory 的 role 和 master 信息，以免与 Tdbctl 里面的 routes 不一致。
-
-todo: 如果不一致，运行playbook时会提示
 
 ## 修改主备关系
 将 TenDB Node `tendb-spt1-3` 的 master 设置为 `tendb-spt1-2`
@@ -95,13 +97,18 @@ tendb 在 master 故障时，需要第三方机制完成主备切换，成功将
 ansible-playbook -i hosts.tendbcluster start_tendbcluster.yml
 ```
 
+或者重启整个集群：
+```
+ansible-playbook -i hosts.tendbcluster restart_tendbcluster.yml
+```
+
 ## 停止集群
 停止集群所有实例（tendb, tspider, Tdbctl）
 ```
 ansible-playbook -i hosts.tendbcluster stop_tendbcluster.yml
 ```
 ## 销毁集群
-在实例停止状态，才可以销毁集群
+在实例停止状态，才可以销毁集群，并且会提示提供管理密码才能继续
 ```
 ansible-playbook -i hosts.tendbcluster destroy_tendbcluster.yml
 ```

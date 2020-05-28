@@ -5,16 +5,13 @@
     * [整体架构](architecture.md)
     * [主要特性](key-features.md)
 * 操作指南
-    * [快速上手]()
-        * [使用Docker Compose快速部署]
-        * [基本操作]
+    * 快速上手
+        * [使用Docker Compose快速部署](op-guide/docker-compose-tendbcluster.md)
     * 软硬件环境
-        * [软件介质]
         * [源码编译](op-guide/compile.md)
         * [硬件要求](op-guide/system.md)
     * 部署
-        * [集群搭建]
-        * [手动安装](op-guide/manual-install.md)
+        * [集群搭建-手动](op-guide/manual-install.md)
         * [路由管理](op-guide/route-manager.md)
         * [集群权限](op-guide/cluster-grant.md)
     * [运维](op-guide/cluster-operator.md)
@@ -22,7 +19,6 @@
         * [授权](op-guide/grant-operator.md)
         * [备份](op-guide/backup.md)
         * [监控](op-guide/monitor.md)
-        * 工具
     * [扩缩容](op-guide/scale-up-down.md)
         * [接入层扩缩容](op-guide/TSpider-scale.md)
         * [存储层扩缩容](op-guide/TenDB-scale.md)
@@ -79,16 +75,6 @@
     * [binlog限速](tendb/binlog-speed-limit.md)
     * [XA事务优化](tendb/xafeatures.md)
 	* [语法审核工具](tendb/tmysqlparse.md)
-* [TenDB Cluster in Kubernetes](kubernetes/cluster-in-k8s.md)
-    * [TenDB Cluster Operator简介](kubernetes/cluster-operator.md)
-    * [部署]
-    * [配置]
-    * [监控]
-    * [运维]
-    * [升级]
-    * [扩缩容]
-    * [高可用]
-    * [常见问题]
 * 最佳实践
     * [普通应用](practice/common-bestpractice.md)
     * [大数据应用](practice/bigdatapractice.md)
@@ -102,5 +88,6 @@
 * 贡献
     * [源码贡献](contribution/contribute.md)
     * [问题反馈](contribution/contribute.md#jump2)
+* [路线图](roadmap.md)
 * [致谢](acknowledgements.md)
 

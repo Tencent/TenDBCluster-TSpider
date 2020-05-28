@@ -5,15 +5,12 @@
     * [Architecture](architecture-en.md)
     * [Key Features](key-features-en.md)
 * Operation Guide
-    * [Quick Start]()
-        * [Deployment with Docker Compose]
-        * [Basic Operation]
+    * Quick Start
+        * [Quick Deployment With Docker Compose](op-guide/docker-compose-tendbcluster-en.md)
     * Software and Hardware Environment
-        * [Software Binaries]
         * [Source Code Compilation](op-guide/compile-en.md)
         * [Hardware Requirements](op-guide/system-en.md)
     * Deployment
-        * [Cluster Installation]
         * [Cluster Installation by Manual](op-guide/manual-install-en.md)
         * [Routing Management](op-guide/route-manager-en.md)
         * [Privileges Management](op-guide/cluster-grant-en.md)
@@ -33,13 +30,19 @@
     * Data Migration
         * [From MySQL to Cluster](op-guide/Data-migrate-en.md/#jump1)
         * [From Cluster to MySQL](op-guide/Data-migrate-en.md/#jump3)
+    * [Using Ansible to Manage TenDBCluster](op-ansible/readme-en.md)
+        * [Fast Deploy TenDBCluster Using Ansible](op-ansible/ansible-deploy-tendbcluster-en.md)
+        * [Data Layer Scaling Using Ansible](op-ansible/ansible-scale-up-tendb-en.md)
+        * [Proxy Layer Scaling Using Ansible](op-ansible/ansible-scale-out-tspider-en.md)
+        * [Common Operations and Maintenance Using Ansible](op-ansible/ansible-with-cluster-op-en.md)
+        * [Ansible Playbook Instructions](op-ansible/ansible-def-inventory-vars-en.md)
 * Reference Book
     * [SQL Grammar](re-book/sql-grammar-en.md)   
       * [DDL](re-book/ddl-syntax-en.md)   
-      * [DML](re-book/dml-syntax-en.md)
-      * [Account](re-book/grant-en.md)
-      * [Proceduer](re-book/stored-procedure-en.md)
-      * [Function](re-book/function-en.md)
+      * [DML](re-book/dml-syntax-en.md)    
+      * [Account](re-book/grant-en.md)    
+      * [Proceduer](re-book/stored-procedure-en.md)   
+      * [Function](re-book/function-en.md)   
       * [Trigger](re-book/trigger-en.md)
       * [New Grammer](re-book/new-grammar-en.md)
     * [Auto_increment](re-book/auto-increase-en.md)
@@ -73,16 +76,6 @@
     * [Binlog Speed Limit](tendb/binlog-speed-limit-en.md)
     * [XA Transaction Optimization](tendb/xafeatures-en.md)
 	* [Grammar Check Tools](tendb/tmysqlparse-en.md)
-* [TenDB Cluster in Kubernetes](kubernetes/cluster-in-k8s-en.md)
-    * [TenDB Cluster Operator](kubernetes/cluster-operator-en.md)
-    * [Deployment]
-    * [Configuration]
-    * [Monitoring]
-    * [Operation]
-    * [Upgrade]
-    * [Scaling]
-    * [HA]
-    * [FAQ]
 * Best Practices
     * [General Scenarios](practice/common-bestpractice-en.md)
     * [Big Data Scenarios](practice/bigdatapractice-en.md)
@@ -96,4 +89,5 @@
 * Contribution
     * [Source Code Contribution](contribution/contribute-en.md)
     * [Feedback](contribution/contribute-en.md#jump2)
+* [Roadmap](roadmap-en.md)
 * [Acknowledgements](acknowledgements-en.md)
