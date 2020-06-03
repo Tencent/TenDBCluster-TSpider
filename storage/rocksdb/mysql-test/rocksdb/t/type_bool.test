@@ -1,8 +1,0 @@
---source include/have_rocksdb.inc
-
-#
-# BOOLEAN column type
-#
-
---source type_bool.inc
-

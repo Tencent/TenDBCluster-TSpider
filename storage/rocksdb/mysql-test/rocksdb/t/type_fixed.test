@@ -1,8 +1,0 @@
---source include/have_rocksdb.inc
-
-#
-# Fixed point types
-#
-
---source type_fixed.inc
-
