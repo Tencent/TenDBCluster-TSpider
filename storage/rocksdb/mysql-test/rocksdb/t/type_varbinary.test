@@ -1,8 +1,0 @@
---source include/have_rocksdb.inc
-
-#
-# VARBINARY column types
-#
-
---source type_varbinary.inc
-

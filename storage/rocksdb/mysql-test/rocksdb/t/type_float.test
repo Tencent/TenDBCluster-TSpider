@@ -1,8 +1,0 @@
---source include/have_rocksdb.inc
-
-#
-# Float types
-#
-
---source type_float.inc
-

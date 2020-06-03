@@ -2195,6 +2195,7 @@ void *spider_bg_conn_action(
     my_thread_end();
     DBUG_RETURN(NULL);
   }
+  thread_safe_decrement32(&thread_count);  /* for shutdonw, don't wait this thread */
   /* lex_start(thd); */
   conn->bg_thd = thd;
   pthread_mutex_lock(&conn->bg_conn_mutex);
@@ -2270,6 +2271,7 @@ void *spider_bg_conn_action(
         conn->bg_conn_chain_mutex_ptr = NULL;
       }
       spider_free_trx(trx, TRUE);
+      thread_safe_increment32(&thread_count); 
       /* lex_end(thd->lex); */
       delete thd;
       pthread_mutex_lock(&conn->bg_conn_sync_mutex);
@@ -4657,6 +4659,7 @@ static void *spider_get_status_action(void *arg)
     SPIDER_set_next_thread_id(thd);
     thd->thread_stack = (char*)&thd;
     thd->store_globals();
+    thread_safe_decrement32(&thread_count);  /* for shutdonw, don't wait this thread */
 
     while (get_status_init)
     {

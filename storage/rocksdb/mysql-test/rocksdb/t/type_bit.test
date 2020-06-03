@@ -1,8 +1,0 @@
---source include/have_rocksdb.inc
-
-#
-# BIT column type
-#
-
---source type_bit.inc
-
