@@ -2212,7 +2212,6 @@ private:
 
   void dec_thread_count(void)
   {
-    DBUG_ASSERT(thread_count > 0);
     thread_safe_decrement32(&thread_count);
     signal_thd_deleted();
   }

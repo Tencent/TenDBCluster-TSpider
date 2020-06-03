@@ -10,15 +10,12 @@ Tdbctl is the control layer of TenDB Cluster. It is developed by Tencent Game CR
 ## Introduction to TenDB Cluster
 TenDB Cluster is a MySQL distributed relational database solution developed and maintained by Tencent Game DBA team. The main features include: transparent database/table sharding, high-availability, online scaling. With these features, developers can focus on the development and operation of their product without caring about data sharding logic. Also, in the case of massive concurrency, there is no need to care about the load pressure of the DB storage layer.
 
-## Quick start
-> docker-compose
-
-## [Documentation](Documentation/SUMMARY-en.md)
-For details, see [Reference Manual](Documentation/SUMMARY-en.md)
-
 ## Quick Start
 More detail see chapter: [Quick Deployment With Docker Compose](Documentation/op-guide/docker-compose-tendbcluster-en.md)
 
+
+## [Documentation](Documentation/SUMMARY-en.md)
+For details, see [Reference Manual](Documentation/SUMMARY-en.md)
 
 ## Flexible Deployment
 It is recommended to use TSpider + TenDB + Tdbctl to deploy TenDB Cluster.   

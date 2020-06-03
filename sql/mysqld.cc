@@ -1806,8 +1806,9 @@ static void close_connections(void)
   */
   DBUG_PRINT("info", ("thread_count: %d", thread_count));
 
-  for (int i= 0; *(volatile int32*) &thread_count && i < 1000; i++)
-    my_sleep(20000);
+  // don't sleep for spider
+  //for (int i= 0; *(volatile int32*) &thread_count && i < 1000; i++)
+  //  my_sleep(20000);
 
   /*
     Force remaining threads to die by closing the connection to the client
