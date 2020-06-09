@@ -18,10 +18,8 @@
 namespace dena {
 
 struct auto_addrinfo : private noncopyable {
-  auto_addrinfo() : addr(0) { }
-  ~auto_addrinfo() {
-    reset();
-  }
+  auto_addrinfo() : addr(0) {}
+  ~auto_addrinfo() { reset(); }
   void reset(addrinfo *a = 0) {
     if (addr != 0) {
       freeaddrinfo(addr);
@@ -30,7 +28,8 @@ struct auto_addrinfo : private noncopyable {
   }
   const addrinfo *get() const { return addr; }
   int resolve(const char *node, const char *service, int flags = 0,
-    int family = AF_UNSPEC, int socktype = SOCK_STREAM, int protocol = 0) {
+              int family = AF_UNSPEC, int socktype = SOCK_STREAM,
+              int protocol = 0) {
     reset();
     addrinfo hints;
     hints.ai_flags = flags;
@@ -39,11 +38,11 @@ struct auto_addrinfo : private noncopyable {
     hints.ai_protocol = protocol;
     return getaddrinfo(node, service, &hints, &addr);
   }
+
  private:
   addrinfo *addr;
 };
 
-};
+};  // namespace dena
 
 #endif
-

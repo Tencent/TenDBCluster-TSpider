@@ -22,10 +22,9 @@
 
 namespace dena {
 
-void fatal_abort(const String& message);
+void fatal_abort(const String &message);
 void fatal_abort(const char *message);
 
-};
+};  // namespace dena
 
 #endif
-

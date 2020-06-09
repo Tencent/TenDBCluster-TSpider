@@ -21,14 +21,12 @@
 namespace dena {
 
 enum special_char_t {
-  special_char_escape_prefix = 0x01,         /* SOH */
-  special_char_noescape_min = 0x10,          /* DLE */
-  special_char_escape_shift = 0x40,          /* '@' */
+  special_char_escape_prefix = 0x01, /* SOH */
+  special_char_noescape_min = 0x10,  /* DLE */
+  special_char_escape_shift = 0x40,  /* '@' */
 };
 
-void
-escape_string(char *& wp, const char *start, const char *finish)
-{
+void escape_string(char *&wp, const char *start, const char *finish) {
   while (start != finish) {
     const unsigned char c = *start;
     if (c >= special_char_noescape_min) {
@@ -43,9 +41,7 @@ escape_string(char *& wp, const char *start, const char *finish)
   }
 }
 
-void
-escape_string(string_buffer& ar, const char *start, const char *finish)
-{
+void escape_string(string_buffer &ar, const char *start, const char *finish) {
   const size_t buflen = (finish - start) * 2;
   char *const wp_begin = ar.make_space(buflen);
   char *wp = wp_begin;
@@ -53,9 +49,7 @@ escape_string(string_buffer& ar, const char *start, const char *finish)
   ar.space_wrote(wp - wp_begin);
 }
 
-bool
-unescape_string(char *& wp, const char *start, const char *finish)
-{
+bool unescape_string(char *&wp, const char *start, const char *finish) {
   /* works even if wp == start */
   while (start != finish) {
     const unsigned char c = *start;
@@ -65,7 +59,7 @@ unescape_string(char *& wp, const char *start, const char *finish)
       ++start;
       const unsigned char cn = *start;
       if (cn < special_char_escape_shift) {
-	return false;
+        return false;
       }
       wp[0] = cn - special_char_escape_shift;
     } else {
@@ -77,9 +71,7 @@ unescape_string(char *& wp, const char *start, const char *finish)
   return true;
 }
 
-bool
-unescape_string(string_buffer& ar, const char *start, const char *finish)
-{
+bool unescape_string(string_buffer &ar, const char *start, const char *finish) {
   const size_t buflen = finish - start;
   char *const wp_begin = ar.make_space(buflen);
   char *wp = wp_begin;
@@ -88,9 +80,7 @@ unescape_string(string_buffer& ar, const char *start, const char *finish)
   return r;
 }
 
-uint32
-read_ui32(char *& start, char *finish)
-{
+uint32 read_ui32(char *&start, char *finish) {
   char *const n_begin = start;
   read_token(start, finish);
   char *const n_end = start;
@@ -105,9 +95,7 @@ read_ui32(char *& start, char *finish)
   return v;
 }
 
-void
-write_ui32(string_buffer& buf, uint32 v)
-{
+void write_ui32(string_buffer &buf, uint32 v) {
   char *wp = buf.make_space(12);
   int len = snprintf(wp, 12, "%u", v);
   if (len > 0) {
@@ -115,9 +103,7 @@ write_ui32(string_buffer& buf, uint32 v)
   }
 }
 
-void
-write_ui64(string_buffer& buf, uint64 v)
-{
+void write_ui64(string_buffer &buf, uint64 v) {
   char *wp = buf.make_space(22);
   int len = snprintf(wp, 22, "%llu", static_cast<unsigned long long>(v));
   if (len > 0) {
@@ -125,5 +111,4 @@ write_ui64(string_buffer& buf, uint64 v)
   }
 }
 
-};
-
+};  // namespace dena

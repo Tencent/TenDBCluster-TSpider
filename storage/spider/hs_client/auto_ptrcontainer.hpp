@@ -67,4 +67,3 @@ struct auto_ptrcontainer {
 };
 
 #endif
-

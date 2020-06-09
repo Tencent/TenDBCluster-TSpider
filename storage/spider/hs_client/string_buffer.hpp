@@ -22,10 +22,8 @@
 namespace dena {
 
 struct string_buffer : private noncopyable {
-  string_buffer() : buffer(0), begin_offset(0), end_offset(0), alloc_size(0) { }
-  ~string_buffer() {
-    real_free();
-  }
+  string_buffer() : buffer(0), begin_offset(0), end_offset(0), alloc_size(0) {}
+  ~string_buffer() { real_free(); }
   void real_free() {
     if (alloc_size) {
       DENA_FREE(buffer);
@@ -35,27 +33,13 @@ struct string_buffer : private noncopyable {
       alloc_size = 0;
     }
   }
-  size_t real_size() {
-    return alloc_size;
-  }
-  const char *begin() const {
-    return buffer + begin_offset;
-  }
-  const char *end() const {
-    return buffer + end_offset;
-  }
-  char *begin() {
-    return buffer + begin_offset;
-  }
-  char *end() {
-    return buffer + end_offset;
-  }
-  size_t size() const {
-    return end_offset - begin_offset;
-  }
-  void clear() {
-    begin_offset = end_offset = 0;
-  }
+  size_t real_size() { return alloc_size; }
+  const char *begin() const { return buffer + begin_offset; }
+  const char *end() const { return buffer + end_offset; }
+  char *begin() { return buffer + begin_offset; }
+  char *end() { return buffer + end_offset; }
+  size_t size() const { return end_offset - begin_offset; }
+  void clear() { begin_offset = end_offset = 0; }
   void resize(size_t len) {
     if (size() < len) {
       reserve(len);
@@ -101,7 +85,7 @@ struct string_buffer : private noncopyable {
     end_offset += len;
   }
   template <size_t N>
-  void append_literal(const char (& str)[N]) {
+  void append_literal(const char (&str)[N]) {
     append(str, str + N - 1);
   }
   void append(const char *start, const char *finish) {
@@ -111,7 +95,7 @@ struct string_buffer : private noncopyable {
     end_offset += len;
   }
   void append_2(const char *s1, const char *f1, const char *s2,
-    const char *f2) {
+                const char *f2) {
     const size_t l1 = f1 - s1;
     const size_t l2 = f2 - s2;
     reserve(end_offset + l1 + l2);
@@ -119,7 +103,7 @@ struct string_buffer : private noncopyable {
     memcpy(buffer + end_offset + l1, s2, l2);
     end_offset += l1 + l2;
   }
-  void swap(string_buffer& sb) {
+  void swap(string_buffer &sb) {
     char *tmp_buffer = buffer;
     size_t tmp_begin_offset = begin_offset;
     size_t tmp_end_offset = end_offset;
@@ -133,6 +117,7 @@ struct string_buffer : private noncopyable {
     sb.end_offset = tmp_end_offset;
     sb.alloc_size = tmp_alloc_size;
   }
+
  private:
   char *buffer;
   size_t begin_offset;
@@ -140,7 +125,6 @@ struct string_buffer : private noncopyable {
   size_t alloc_size;
 };
 
-};
+};  // namespace dena
 
 #endif
-

@@ -264,7 +264,7 @@ UpgradeLog*.htm
 FakesAssemblies/
 
 compile_commands.json
-.clang-format
+# .clang-format
 .kscope/
 .vimrc
 .editorconfig

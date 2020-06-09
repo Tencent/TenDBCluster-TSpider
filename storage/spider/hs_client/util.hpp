@@ -13,13 +13,13 @@ namespace dena {
 
 /* boost::noncopyable */
 struct noncopyable {
-  noncopyable() { }
+  noncopyable() {}
+
  private:
-  noncopyable(const noncopyable&);
-  noncopyable& operator =(const noncopyable&);
+  noncopyable(const noncopyable &);
+  noncopyable &operator=(const noncopyable &);
 };
 
-};
+};  // namespace dena
 
 #endif
-

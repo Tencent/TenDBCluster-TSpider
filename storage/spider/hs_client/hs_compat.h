@@ -19,18 +19,15 @@
 #if defined(MARIADB_BASE_VERSION) && MYSQL_VERSION_ID >= 100213
 #define SPD_INIT_DYNAMIC_ARRAY2(A, B, C, D, E, F) \
   my_init_dynamic_array2(A, B, C, D, E, F)
-#define SPD_INIT_ALLOC_ROOT(A, B, C, D) \
-  init_alloc_root(A, "spider", B, C, D)
+#define SPD_INIT_ALLOC_ROOT(A, B, C, D) init_alloc_root(A, "spider", B, C, D)
 #elif defined(MARIADB_BASE_VERSION) && MYSQL_VERSION_ID >= 100000
 #define SPD_INIT_DYNAMIC_ARRAY2(A, B, C, D, E, F) \
   my_init_dynamic_array2(A, B, C, D, E, F)
-#define SPD_INIT_ALLOC_ROOT(A, B, C, D) \
-  init_alloc_root(A, B, C, D)
+#define SPD_INIT_ALLOC_ROOT(A, B, C, D) init_alloc_root(A, B, C, D)
 #else
 #define SPD_INIT_DYNAMIC_ARRAY2(A, B, C, D, E, F) \
   my_init_dynamic_array2(A, B, C, D, E)
-#define SPD_INIT_ALLOC_ROOT(A, B, C, D) \
-  init_alloc_root(A, B, C)
+#define SPD_INIT_ALLOC_ROOT(A, B, C, D) init_alloc_root(A, B, C)
 #endif
 
 #endif
