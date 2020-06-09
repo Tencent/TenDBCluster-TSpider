@@ -13,67 +13,34 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-long long spider_direct_sql_body(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error,
-  my_bool bg
-);
+long long spider_direct_sql_body(UDF_INIT *initid, UDF_ARGS *args,
+                                 char *is_null, char *error, my_bool bg);
 
-my_bool spider_direct_sql_init_body(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message,
-  my_bool bg
-);
+my_bool spider_direct_sql_init_body(UDF_INIT *initid, UDF_ARGS *args,
+                                    char *message, my_bool bg);
 
-void spider_direct_sql_deinit_body(
-  UDF_INIT *initid
-);
+void spider_direct_sql_deinit_body(UDF_INIT *initid);
 
 #ifndef WITHOUT_SPIDER_BG_SEARCH
-void spider_direct_sql_bg_start(
-  UDF_INIT *initid
-);
+void spider_direct_sql_bg_start(UDF_INIT *initid);
 
-long long spider_direct_sql_bg_end(
-  UDF_INIT *initid
-);
+long long spider_direct_sql_bg_end(UDF_INIT *initid);
 #endif
 
-long long spider_ping_table_body(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-);
+long long spider_ping_table_body(UDF_INIT *initid, UDF_ARGS *args,
+                                 char *is_null, char *error);
 
-my_bool spider_ping_table_init_body(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message
-);
+my_bool spider_ping_table_init_body(UDF_INIT *initid, UDF_ARGS *args,
+                                    char *message);
 
-void spider_ping_table_deinit_body(
-  UDF_INIT *initid
-);
+void spider_ping_table_deinit_body(UDF_INIT *initid);
 
 long long spider_flush_table_mon_cache_body();
 
-long long spider_copy_tables_body(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-);
+long long spider_copy_tables_body(UDF_INIT *initid, UDF_ARGS *args,
+                                  char *is_null, char *error);
 
-my_bool spider_copy_tables_init_body(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message
-);
+my_bool spider_copy_tables_init_body(UDF_INIT *initid, UDF_ARGS *args,
+                                     char *message);
 
-void spider_copy_tables_deinit_body(
-  UDF_INIT *initid
-);
+void spider_copy_tables_deinit_body(UDF_INIT *initid);

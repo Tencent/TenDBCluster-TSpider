@@ -38,11 +38,11 @@ struct mutex : private noncopyable {
       fatal_abort("pthread_mutex_unlock");
     }
   }
+
  private:
   mutable pthread_mutex_t mtx;
 };
 
-};
+};  // namespace dena
 
 #endif
-

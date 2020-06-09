@@ -20,136 +20,82 @@
 #include "spd_udf.h"
 
 extern "C" {
-long long spider_direct_sql(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-) {
+long long spider_direct_sql(UDF_INIT *initid, UDF_ARGS *args, char *is_null,
+                            char *error) {
   return spider_direct_sql_body(initid, args, is_null, error, FALSE);
 }
 
-my_bool spider_direct_sql_init(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message
-) {
+my_bool spider_direct_sql_init(UDF_INIT *initid, UDF_ARGS *args,
+                               char *message) {
   return spider_direct_sql_init_body(initid, args, message, FALSE);
 }
 
-void spider_direct_sql_deinit(
-  UDF_INIT *initid
-) {
+void spider_direct_sql_deinit(UDF_INIT *initid) {
   spider_direct_sql_deinit_body(initid);
 }
 
 #ifndef WITHOUT_SPIDER_BG_SEARCH
-long long spider_bg_direct_sql(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-) {
+long long spider_bg_direct_sql(UDF_INIT *initid, UDF_ARGS *args, char *is_null,
+                               char *error) {
   return spider_direct_sql_bg_end(initid);
 }
 
-my_bool spider_bg_direct_sql_init(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message
-) {
+my_bool spider_bg_direct_sql_init(UDF_INIT *initid, UDF_ARGS *args,
+                                  char *message) {
   return spider_direct_sql_init_body(initid, args, message, TRUE);
 }
 
-void spider_bg_direct_sql_deinit(
-  UDF_INIT *initid
-) {
+void spider_bg_direct_sql_deinit(UDF_INIT *initid) {
   spider_direct_sql_deinit_body(initid);
 }
 
-void spider_bg_direct_sql_clear(
-  UDF_INIT *initid,
-  char *is_null,
-  char *error
-) {
+void spider_bg_direct_sql_clear(UDF_INIT *initid, char *is_null, char *error) {
   spider_direct_sql_bg_start(initid);
 }
 
-void spider_bg_direct_sql_add(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-) {
+void spider_bg_direct_sql_add(UDF_INIT *initid, UDF_ARGS *args, char *is_null,
+                              char *error) {
   spider_direct_sql_body(initid, args, is_null, error, TRUE);
 }
 #endif
 
-long long spider_ping_table(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-) {
+long long spider_ping_table(UDF_INIT *initid, UDF_ARGS *args, char *is_null,
+                            char *error) {
   return spider_ping_table_body(initid, args, is_null, error);
 }
 
-my_bool spider_ping_table_init(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message
-) {
+my_bool spider_ping_table_init(UDF_INIT *initid, UDF_ARGS *args,
+                               char *message) {
   return spider_ping_table_init_body(initid, args, message);
 }
 
-void spider_ping_table_deinit(
-  UDF_INIT *initid
-) {
+void spider_ping_table_deinit(UDF_INIT *initid) {
   spider_ping_table_deinit_body(initid);
 }
 
-long long spider_flush_table_mon_cache(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-) {
+long long spider_flush_table_mon_cache(UDF_INIT *initid, UDF_ARGS *args,
+                                       char *is_null, char *error) {
   return spider_flush_table_mon_cache_body();
 }
 
-my_bool spider_flush_table_mon_cache_init(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message
-) {
+my_bool spider_flush_table_mon_cache_init(UDF_INIT *initid, UDF_ARGS *args,
+                                          char *message) {
   return FALSE;
 }
 
-void spider_flush_table_mon_cache_deinit(
-  UDF_INIT *initid
-) {
-}
+void spider_flush_table_mon_cache_deinit(UDF_INIT *initid) {}
 
-long long spider_copy_tables(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *is_null,
-  char *error
-) {
+long long spider_copy_tables(UDF_INIT *initid, UDF_ARGS *args, char *is_null,
+                             char *error) {
   return spider_copy_tables_body(initid, args, is_null, error);
 }
 
-my_bool spider_copy_tables_init(
-  UDF_INIT *initid,
-  UDF_ARGS *args,
-  char *message
-) {
+my_bool spider_copy_tables_init(UDF_INIT *initid, UDF_ARGS *args,
+                                char *message) {
   return spider_copy_tables_init_body(initid, args, message);
 }
 
-void spider_copy_tables_deinit(
-  UDF_INIT *initid
-) {
+void spider_copy_tables_deinit(UDF_INIT *initid) {
   spider_copy_tables_deinit_body(initid);
 }
 }

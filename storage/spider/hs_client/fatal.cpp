@@ -25,25 +25,20 @@ namespace dena {
 const int opt_syslog = LOG_ERR | LOG_PID | LOG_CONS;
 */
 
-void
-fatal_abort(const String& message)
-{
+void fatal_abort(const String &message) {
   fprintf(stderr, "FATAL_COREDUMP: %s\n", message.ptr());
-/*
-  syslog(opt_syslog, "FATAL_COREDUMP: %s", message.ptr());
-*/
+  /*
+    syslog(opt_syslog, "FATAL_COREDUMP: %s", message.ptr());
+  */
   abort();
 }
 
-void
-fatal_abort(const char *message)
-{
+void fatal_abort(const char *message) {
   fprintf(stderr, "FATAL_COREDUMP: %s\n", message);
-/*
-  syslog(opt_syslog, "FATAL_COREDUMP: %s", message);
-*/
+  /*
+    syslog(opt_syslog, "FATAL_COREDUMP: %s", message);
+  */
   abort();
 }
 
-};
-
+};  // namespace dena

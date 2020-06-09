@@ -81,4 +81,3 @@ struct thread : private noncopyable {
 };
 
 #endif
-

@@ -26,18 +26,15 @@ extern "C" {
 #define DENA_REALLOC(x, y) realloc(x, y)
 #define DENA_FREE(x) free(x)
 #define DENA_NEWCHAR(x) (new char[x])
-#define DENA_DELETE(x) (delete [] x)
+#define DENA_DELETE(x) (delete[] x)
 #endif
 
 #if 1
-#define DENA_ALLOCA_ALLOCATE(typ, len) \
-  (typ *) (alloca((len) * sizeof(typ)))
+#define DENA_ALLOCA_ALLOCATE(typ, len) (typ *)(alloca((len) * sizeof(typ)))
 #define DENA_ALLOCA_FREE(x)
 #else
-#define DENA_ALLOCA_ALLOCATE(typ, len) \
-  (typ *) (malloc((len) * sizeof(typ)))
+#define DENA_ALLOCA_ALLOCATE(typ, len) (typ *)(malloc((len) * sizeof(typ)))
 #define DENA_ALLOCA_FREE(x) free(x)
 #endif
 
 #endif
-

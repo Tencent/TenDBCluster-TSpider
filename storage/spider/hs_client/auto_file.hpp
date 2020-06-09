@@ -20,10 +20,8 @@
 namespace dena {
 
 struct auto_file : private noncopyable {
-  auto_file() : fd(-1) { }
-  ~auto_file() {
-    reset();
-  }
+  auto_file() : fd(-1) {}
+  ~auto_file() { reset(); }
   int get() const { return fd; }
   int close() {
     if (fd < 0) {
@@ -39,6 +37,7 @@ struct auto_file : private noncopyable {
     }
     fd = x;
   }
+
  private:
   int fd;
 };
@@ -61,7 +60,6 @@ struct auto_dir : private noncopyable {
 };
 */
 
-};
+};  // namespace dena
 
 #endif
-
