@@ -22,6 +22,7 @@ Refer to the chapter `Cluster Installation`
 Use mysqldump to backup the table structure on the MySQL, and import the backed up table structure to the entire cluster through the TSpider node.
 
 ### Import Data
+
 <a id="jump2"></a>
 
 Use mysqldump to backup data on the MySQL (ignoring the table structure), then import the data into the entire cluster through TSpider.

@@ -1,11 +1,13 @@
 # TenDB Cluster Auto-increment Columns
 
 TenDB Cluster only guarantees the uniqueness of the auto-increment column, and not guarantees that they are continuous and increment globally.  
+
 In TenDB Cluster, a table will be distributed in multiple TenDB storage instances, and multiple TSpider nodes will read and write this table equally and simultaneously. Differing from single instance MySQL, an auto-increment column needs to be maintained by multiple TSpider nodes together.
 
 To achieve the same behavior with that in single instance MySQL, All tables in TenDB Cluster must be locked when TSpider nodes update auto-increment column, or use third-party resource as a critical resource to ensure the uniqueness. Both solutions will introduce noticeable performance overhead, therefore it is not suitable for production environments.
 
 The implementation strategy of auto-increment in TenDB Cluster is, to let each TSpider node maintain its own auto-increment column, and to make sure that the increment generated in each TSpider node is different to that generated in other nodes. Due to this autonomy, it can not be guaranteed that the auto-increment column is continuous and incremental in Cluster aspect, however, this approach has low cost in maintaining auto-increment column and high efficiency during updating them.   
+
 In a word, TSpider will generate a global non-continuous unique identity for auto-increment.
 
 

@@ -63,9 +63,7 @@ int spider_udf_set_copy_tables_param_default(SPIDER_COPY_TABLES *copy_tables) {
   if (copy_tables->bulk_insert_rows == -1) copy_tables->bulk_insert_rows = 100;
   if (copy_tables->use_table_charset == -1) copy_tables->use_table_charset = 1;
   if (copy_tables->use_transaction == -1) copy_tables->use_transaction = 1;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
   if (copy_tables->bg_mode == -1) copy_tables->bg_mode = 0;
-#endif
   DBUG_RETURN(0);
 }
 
@@ -195,9 +193,7 @@ int spider_udf_parse_copy_tables_param(SPIDER_COPY_TABLES *copy_tables,
   copy_tables->bulk_insert_rows = -1;
   copy_tables->use_table_charset = -1;
   copy_tables->use_transaction = -1;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
   copy_tables->bg_mode = -1;
-#endif
 
   if (param_length == 0) goto set_default;
   DBUG_PRINT("info", ("spider create param_string string"));
@@ -239,9 +235,7 @@ int spider_udf_parse_copy_tables_param(SPIDER_COPY_TABLES *copy_tables,
         if (error_num) goto error;
         continue;
       case 3:
-#ifndef WITHOUT_SPIDER_BG_SEARCH
         SPIDER_PARAM_INT_WITH_MAX("bgm", bg_mode, 0, 1);
-#endif
         SPIDER_PARAM_INT("bii", bulk_insert_interval, 0);
         SPIDER_PARAM_LONGLONG("bir", bulk_insert_rows, 1);
         SPIDER_PARAM_STR("dtb", database);
@@ -249,12 +243,10 @@ int spider_udf_parse_copy_tables_param(SPIDER_COPY_TABLES *copy_tables,
         SPIDER_PARAM_INT_WITH_MAX("utr", use_transaction, 0, 1);
         error_num = param_string_parse.print_param_error();
         goto error;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
       case 7:
         SPIDER_PARAM_INT_WITH_MAX("bg_mode", bg_mode, 0, 1);
         error_num = param_string_parse.print_param_error();
         goto error;
-#endif
       case 8:
         SPIDER_PARAM_STR("database", database);
         error_num = param_string_parse.print_param_error();
@@ -674,7 +666,6 @@ int spider_udf_copy_tables_create_table_list(SPIDER_COPY_TABLES *copy_tables,
   DBUG_RETURN(0);
 }
 
-#ifndef WITHOUT_SPIDER_BG_SEARCH
 int spider_udf_bg_copy_exec_sql(SPIDER_COPY_TABLE_CONN *table_conn) {
   int error_num;
   SPIDER_CONN *conn = table_conn->conn;
@@ -700,7 +691,6 @@ int spider_udf_bg_copy_exec_sql(SPIDER_COPY_TABLE_CONN *table_conn) {
   conn->bg_caller_sync_wait = FALSE;
   DBUG_RETURN(0);
 }
-#endif
 
 long long spider_copy_tables_body(UDF_INIT *initid, UDF_ARGS *args,
                                   char *is_null, char *error) {

@@ -230,28 +230,6 @@ class spider_db_mysql : public spider_db_conn {
                              uint binlog_file_name_length,
                              const char *binlog_pos, uint binlog_pos_length,
                              SPIDER_DB_RESULT **res);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  int append_sql(char *sql, ulong sql_length,
-                 st_spider_db_request_key *request_key);
-  int append_open_handler(uint handler_id, const char *db_name,
-                          const char *table_name, const char *index_name,
-                          const char *sql,
-                          st_spider_db_request_key *request_key);
-  int append_select(uint handler_id, spider_string *sql,
-                    SPIDER_DB_HS_STRING_REF_BUFFER *keys, int limit, int skip,
-                    st_spider_db_request_key *request_key);
-  int append_insert(uint handler_id, SPIDER_DB_HS_STRING_REF_BUFFER *upds,
-                    st_spider_db_request_key *request_key);
-  int append_update(uint handler_id, spider_string *sql,
-                    SPIDER_DB_HS_STRING_REF_BUFFER *keys,
-                    SPIDER_DB_HS_STRING_REF_BUFFER *upds, int limit, int skip,
-                    bool increment, bool decrement,
-                    st_spider_db_request_key *request_key);
-  int append_delete(uint handler_id, spider_string *sql,
-                    SPIDER_DB_HS_STRING_REF_BUFFER *keys, int limit, int skip,
-                    st_spider_db_request_key *request_key);
-  void reset_request_queue();
-#endif
   size_t escape_string(char *to, const char *from, size_t from_length);
   bool have_lock_table_list();
   int append_lock_tables(spider_string *str);
@@ -357,9 +335,6 @@ class spider_mysql_handler : public spider_db_handler {
   spider_string *exec_ha_sql;
   bool reading_from_bulk_tmp_table;
   bool filled_up;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  SPIDER_DB_HS_STRING_REF_BUFFER hs_upds;
-#endif
   SPIDER_INT_HLD *union_table_name_pos_first;
   SPIDER_INT_HLD *union_table_name_pos_current;
 
@@ -405,12 +380,6 @@ class spider_mysql_handler : public spider_db_handler {
   int append_update(spider_string *str, int link_idx);
   int append_delete_part();
   int append_delete(spider_string *str);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
-  int append_increment_update_set_part();
-  int append_increment_update_set(spider_string *str);
-#endif
-#endif
   int append_update_set_part();
   int append_update_set(spider_string *str);
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
@@ -603,13 +572,6 @@ class spider_mysql_handler : public spider_db_handler {
   int append_lock_tables_list(SPIDER_CONN *conn, int link_idx, int *appended);
   int realloc_sql(ulong *realloced);
   int reset_sql(ulong sql_type);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  int reset_keys(ulong sql_type);
-  int reset_upds(ulong sql_type);
-  int reset_strs(ulong sql_type);
-  int reset_strs_pos(ulong sql_type);
-  int push_back_upds(SPIDER_HS_STRING_REF &info);
-#endif
   bool need_lock_before_set_sql_for_exec(ulong sql_type);
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
   int set_sql_for_exec(ulong sql_type, int link_idx,

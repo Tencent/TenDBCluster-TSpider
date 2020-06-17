@@ -5,7 +5,7 @@ The high availability of the TSpider access layer, including the rapid detection
 
 <a id="jump1"></a>
 
-There are generally two ways to found the fault. 
+There are generally two ways to find the fault. 
 
 - Cluster Awareness
 

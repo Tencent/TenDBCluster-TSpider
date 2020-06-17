@@ -116,7 +116,7 @@ After the application starts the transaction and the first request is sent (like
 
 When the transaction above is commited，TenDB1 execute a statement `xa commit xid one phase with logs`; This is a extension TenDB implemented, which is used to commit XA transactions and record `xid` into `mysql.xa_commit_log`.
 
-**Why xid Should be Recorded?**
+**Why `xid` Should be Recorded**
 
 This is because XA transaction can be failed due to some software and hardware exceptions, which would make `xa prepare` don't know how to handle it. A `xa_commit_log` can records suspended transactions. Therefore, transactions in `xa_commit_log` should be commited, others should be rolled back.
 

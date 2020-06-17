@@ -66,14 +66,6 @@ class ha_spider : public handler {
   uint *conn_kind;
   SPIDER_CONN **conns;
   LF_PINS *conn_pins;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  char **hs_r_conn_keys;
-  SPIDER_CONN **hs_r_conns;
-  ulonglong *hs_r_conn_ages;
-  char **hs_w_conn_keys;
-  SPIDER_CONN **hs_w_conns;
-  ulonglong *hs_w_conn_ages;
-#endif
 
   /* for active-standby mode */
   uint *conn_link_idx;
@@ -199,34 +191,8 @@ class ha_spider : public handler {
   uchar *m_handler_opened;
   uint *m_handler_id;
   char **m_handler_cid;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  uchar *r_handler_opened;
-  uint *r_handler_id;
-  uint *r_handler_index;
-  uchar *w_handler_opened;
-  uint *w_handler_id;
-  uint *w_handler_index;
-#ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
-  uchar *do_hs_direct_update;
-  uint32 **hs_r_ret_fields;
-  uint32 **hs_w_ret_fields;
-  size_t *hs_r_ret_fields_num;
-  size_t *hs_w_ret_fields_num;
-  uint32 *hs_pushed_ret_fields;
-  size_t hs_pushed_ret_fields_num;
-  size_t hs_pushed_ret_fields_size;
-  size_t hs_pushed_lcl_fields_num;
-  uchar *tmp_column_bitmap;
-  bool hs_increment;
-  bool hs_decrement;
-  uint32 hs_pushed_strref_num;
-#endif
-#endif
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
   bool do_direct_update;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  bool maybe_do_hs_direct_update;
-#endif
   uint direct_update_kinds;
   List<Item> *direct_update_fields;
   List<Item> *direct_update_values;
@@ -609,31 +575,15 @@ class ha_spider : public handler {
   void set_first_link_idx();
   void reset_first_link_idx();
   int reset_sql_sql(ulong sql_type);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  int reset_hs_sql(ulong sql_type);
-  int reset_hs_keys(ulong sql_type);
-  int reset_hs_upds(ulong sql_type);
-  int reset_hs_strs(ulong sql_type);
-  int reset_hs_strs_pos(ulong sql_type);
-  int push_back_hs_upds(SPIDER_HS_STRING_REF &info);
-#endif
   int append_tmp_table_and_sql_for_bka(const key_range *start_key);
   int reuse_tmp_table_and_sql_for_bka();
   int append_union_table_and_sql_for_bka(const key_range *start_key);
   int reuse_union_table_and_sql_for_bka();
   int append_insert_sql_part();
   int append_update_sql_part();
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
-  int append_increment_update_set_sql_part();
-#endif
-#endif
   int append_update_set_sql_part();
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
   int append_direct_update_set_sql_part();
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  int append_direct_update_set_hs_part();
-#endif
 #endif
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
   int append_dup_update_pushdown_sql_part(const char *alias, uint alias_length);
@@ -660,10 +610,6 @@ class ha_spider : public handler {
                                                   ulong sql_type);
   int append_key_where_sql_part(const key_range *start_key,
                                 const key_range *end_key, ulong sql_type);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  int append_key_where_hs_part(const key_range *start_key,
-                               const key_range *end_key, ulong sql_type);
-#endif
   int append_match_where_sql_part(ulong sql_type);
   int append_condition_sql_part(const char *alias, uint alias_length,
                                 ulong sql_type, bool test_flg);
@@ -687,15 +633,9 @@ class ha_spider : public handler {
   int append_key_order_with_alias_sql_part(const char *alias, uint alias_length,
                                            ulong sql_type);
   int append_limit_sql_part(longlong offset, longlong limit, ulong sql_type);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  int append_limit_hs_part(longlong offset, longlong limit, ulong sql_type);
-#endif
   int reappend_limit_sql_part(longlong offset, longlong limit, ulong sql_type);
   int append_insert_terminator_sql_part(ulong sql_type);
   int append_insert_values_sql_part(ulong sql_type);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  int append_insert_values_hs_part(ulong sql_type);
-#endif
   int append_into_sql_part(ulong sql_type);
   void set_insert_to_pos_sql(ulong sql_type);
   bool is_bulk_insert_exec_period(bool bulk_end);
@@ -725,9 +665,6 @@ class ha_spider : public handler {
   int print_item_type(Item *item, spider_string *str, const char *alias,
                       uint alias_length);
   bool support_use_handler_sql(int use_handler);
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  bool support_bulk_access_hs() const;
-#endif
   int init_union_table_name_pos_sql();
   int set_union_table_name_pos_sql();
   SPIDER_CONN *spider_get_conn_by_idx(int link_idx);

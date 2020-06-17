@@ -1091,9 +1091,7 @@ int spider_group_by_handler::init_scan() {
   ) {
     result_list->internal_limit = select_limit /* + offset_limit */;
     result_list->split_read = select_limit /* + offset_limit */;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
     result_list->bgs_split_read = select_limit /* + offset_limit */;
-#endif
 
     result_list->split_read_base = 9223372036854775807LL;
     result_list->semi_split_read = 0;
@@ -1104,9 +1102,7 @@ int spider_group_by_handler::init_scan() {
   }
   result_list->semi_split_read_base = 0;
   result_list->set_split_read = TRUE;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
   if ((error_num = spider_set_conn_bg_param(spider))) DBUG_RETURN(error_num);
-#endif
   DBUG_PRINT("info", ("spider result_list.finish_flg = FALSE"));
   result_list->finish_flg = FALSE;
   result_list->record_num = 0;
@@ -1203,7 +1199,6 @@ int spider_group_by_handler::init_scan() {
     link_idx = link_idx_holder->link_idx;
     dbton_hdl = spider->dbton_handler[conn->dbton_id];
     spider->link_idx_chain = link_idx_chain;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
     if (result_list->bgs_phase > 0) {
       if ((error_num =
                spider_check_and_init_casual_read(trx->thd, spider, link_idx)))
@@ -1222,7 +1217,6 @@ int spider_group_by_handler::init_scan() {
         DBUG_RETURN(error_num);
       }
     } else {
-#endif
       if (dbton_hdl->need_lock_before_set_sql_for_exec(
               SPIDER_SQL_TYPE_SELECT_SQL)) {
         spider_mta_conn_mutex_lock(conn);
@@ -1290,9 +1284,7 @@ int spider_group_by_handler::init_scan() {
         spider_db_discard_result(spider, link_idx, conn);
         spider_mta_conn_mutex_unlock(conn);
       }
-#ifndef WITHOUT_SPIDER_BG_SEARCH
     }
-#endif
   }
 
   first = TRUE;
@@ -1324,7 +1316,6 @@ int spider_group_by_handler::next_row() {
           table->status = STATUS_NOT_FOUND;
         DBUG_RETURN(spider->store_error_num);
       }
-#ifndef WITHOUT_SPIDER_BG_SEARCH
       if (spider->result_list.bgs_phase > 0) {
         fields->set_pos_to_first_link_idx_chain();
         while ((link_idx_chain = fields->get_next_link_idx_chain())) {
@@ -1348,7 +1339,6 @@ int spider_group_by_handler::next_row() {
           }
         }
       }
-#endif
       spider->use_pre_call = FALSE;
     }
   } else if (offset_limit) {

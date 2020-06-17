@@ -11,7 +11,7 @@ TSpider Node use connection pool to interactive with all the TenDB Node, some ne
 
 a. Set the global variables on TSpider Nodes, spider_idle_conn_recycle_interval = 8 which is the minimum value, it means that after 8 seconds all the idled connections will be released by Spider Node.   
 b. The Client resend the query to TSpider Node, and the problematic connection will be released immediately and reconnect to TenDB Node again.   
-c. Restart TSpider Node, so all the connection will be Re-established
+c. Restart TSpider Node, so all the connection will be Re-established.
 	  
 ### 1.2 ERROR 12723
 > ERROR 12723 (HY000): Too many connections between TSpider Node and TenDB Node
@@ -19,8 +19,9 @@ c. Restart TSpider Node, so all the connection will be Re-established
 TSpider Node use connection pool to interactive with all the TenDB Node, each TSpider Node will establish spider_max_connections connections with each TenDB Node, when 
 a large number of new connections flooded in an instant to TSpider Node, it may encounter no enough connnection to use and so Client will receive Error Code 12723. That is two ways to solve this problem:  
 
-a.set a bigger spider_max_connections   
-b.optimizate the SQL, when the SQL execute more quickly, it will occupy the connection less time
+a. set a bigger `spider_max_connections`.
+
+b. optimizate the SQL, when the SQL execute more quickly, it will occupy the connection less time.
 
 ### 1.3 ERROR 1477
 
@@ -55,10 +56,10 @@ For details see [chapter Autoincrement](../re-book/auto-increase-en.md)
 ### 2.3 Analyse the SlOW QUERY
 There is some steps to solve the TenDB Cluster SLOW QUERY:
 
-1. Set global general_log = on and set global spider_general_log = on, and use pt-query-digest to analyse the SQL
-2. Set global spider_bgs_mode=1, which TSpider Node will make read operation executed in parallel on all the TenDB Nodes
-3. When update/delete/insert SQL involve seraval TenDB Nodes, you can set global spider_bgs_mode=1 and set global spider_bgs_dml = 1, which TSpider Node will make  update/delete/insert SQL executed in parallel on all the involved TenDB Nodes
-4. Check the network latancy between TSpider Node and TenDB Node, you can ping from TSpider Node and TenDB Node to check the ttl time between the two Nodes
+1. Set global general_log = on and set global spider_general_log = on, and use pt-query-digest to analyse the SQL.
+2. Set global spider_bgs_mode=1, which TSpider Node will make read operation executed in parallel on all the TenDB Nodes.
+3. When update/delete/insert SQL involve seraval TenDB Nodes, you can `set global spider_bgs_mode=1` and `set global spider_bgs_dml = 1`, which TSpider Node will make  update/delete/insert SQL executed in parallel on all the involved TenDB Nodes
+4. Check the network latancy between TSpider Node and TenDB Node, you can ping from TSpider Node and TenDB Node to check the ttl time between the two Nodes.
 
 ### 2.4 OOM Problem
 
@@ -69,13 +70,13 @@ This will happen when Client fetch large data from TSpider Node, also you can Se
 This will happen when you config the larger innodb_buffer_pool_size on TenDB Node, and a large number of new connections flooded in an instant, you can lower down the buffer pool size and use connection pool between client and TSpider Node.
 
 ### 2.5 Network Flow_In and Flow_Out In TSpider Node is much different
-Commonly, network Flow In on TSpider Node will be larger than Flow Out, because TSpider Node need to fetch more data from TenDB Node and calculate the result and return to Client. for example, TSpider Node may execute SELECT max(COLUMN) from TBALE
+Commonly, network Flow In on TSpider Node will be larger than Flow Out, because TSpider Node need to fetch more data from TenDB Node and calculate the result and return to Client. for example, TSpider Node may execute `SELECT max(COLUMN) from TBALE`.
 
 ### 2.6 TenDB Nodes may have different work load
-It may happen that you use the unsuitable Shard Key, so it result that different TenDB Node will have different data and request
+It may happen that you use the unsuitable Shard Key, so it result that different TenDB Node will have different data and request.
 
 ### 2.7 Query TimeOut
-When you execute complicated QUERY, it will result in query TimeOut, you can set global spider_net_read_timeout/spider_net_write_timeout to avoid this TimeOut problem
+When you execute complicated QUERY, it will result in query TimeOut, you can set global spider_net_read_timeout/spider_net_write_timeout to avoid this TimeOut problem.
 
 ### 2.8 Statistics Information
-Set global spider_get_sts_or_crd = on on TSpider Node to collect table statistics information from TenDB Nodes, and TSpider Node will store these information into mysql.spider_table_status table. Because this operation will produce some work load and you can use spider_modify_status_interval variable to control the interval time
+Set global spider_get_sts_or_crd = on on TSpider Node to collect table statistics information from TenDB Nodes, and TSpider Node will store these information into mysql.spider_table_status table. Because this operation will produce some work load and you can use spider_modify_status_interval variable to control the interval time.

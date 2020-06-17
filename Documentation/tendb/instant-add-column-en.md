@@ -52,7 +52,7 @@ The header records crucial information about fields, its structure is shown in t
 
 -Record Extra Bytes: fixed 5 bytes, records additional information
 -Nullable Bitmap: record nullable bitmap, use 1 bit to indicate whether a nullable field is NULL
--non-NULL Variable-Length Array: array of non-null variable-length fields, specifying the length of non-null variable-length fields (such as varchar, varbinary) in the row
+-non-NULL Variable-Length Array: array of non-null variable-length fields, specifying the length of non-null variable-length fields (such as varchar, varbinary) in the row.
 
 In order to store the information of the new field, we only need to change the record header in the Compact format.
 
@@ -62,11 +62,11 @@ In order to store the information of the new field, we only need to change the r
 
 Suppose the Field count record of a record is x and the number of table fields is y, then x <= y is always true. For the modified format, the field processing becomes:
 
-  * If x == y, process it as it was
+  * If x == y, process it as it was.
   * If x < y, then the record must be in
-   Generated before column-adding, then the last y-x fields must be NULL or the default value
-    -If the field is allowed to be NULL, it is NULL
-    -If the field is not allowed to be NULL, it is the default value
+   Generated before column-adding, then the last y-x fields must be NULL or the default value.
+    -If the field is allowed to be NULL, it is NULL.
+    -If the field is not allowed to be NULL, it is the default value.
 
 The entire process is as follows
 

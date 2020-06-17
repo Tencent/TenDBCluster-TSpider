@@ -398,12 +398,6 @@ void spider_delete_init_error_table(const char *name);
 
 bool spider_check_pk_update(TABLE *table);
 
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
-bool spider_check_hs_pk_update(ha_spider *spider, key_range *key);
-#endif
-#endif
-
 void spider_set_tmp_share_pointer(SPIDER_SHARE *tmp_share,
                                   char **tmp_connect_info,
                                   uint *tmp_connect_info_length, long *tmp_long,
@@ -461,7 +455,6 @@ int spider_discover_table_structure(handlerton *hton, THD *thd,
                                     TABLE_SHARE *share, HA_CREATE_INFO *info);
 #endif
 
-#ifndef WITHOUT_SPIDER_BG_SEARCH
 int spider_create_spider_object_for_share(SPIDER_TRX *trx, SPIDER_SHARE *share,
                                           ha_spider **spider);
 
@@ -486,7 +479,6 @@ void spider_table_add_share_to_crd_thread(SPIDER_SHARE *share);
 void spider_table_remove_share_from_sts_thread(SPIDER_SHARE *share);
 
 void spider_table_remove_share_from_crd_thread(SPIDER_SHARE *share);
-#endif
 
 void spider_print_timestamp(FILE *file /*!< in: file where to print */
 );

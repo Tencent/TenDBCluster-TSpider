@@ -1,5 +1,5 @@
 # Trigger
-A trigger is a named database object that is associated with a table, and that activates when a particular event occurs for the table. TenDB Cluster is compatible with MySQL's trigger grammer.
+A trigger is a named database object that is associated with a table, and that activates when a particular event occurs for the table. TenDB Cluster is compatible with MySQL's trigger grammar.
 
 
 <font color="#dd0000">Note：</font> 

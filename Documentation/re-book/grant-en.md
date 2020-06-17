@@ -1,5 +1,5 @@
 # TenDB Cluster Account Management 
-The grammer of ccount management is the same as ordinary MySQL. There is no much difference in use.  
+The grammar of ccount management is the same as ordinary MySQL. There is no much difference in use.  
 <font color="#dd0000">Note： </font>   
 >ddl_execute_by_ctl=0  
 Execute the grant statement on the TSpider node, only grant for current node,  which is no difference from ordinary MySQL.  

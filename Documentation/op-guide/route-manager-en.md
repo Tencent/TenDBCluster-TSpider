@@ -1,6 +1,6 @@
 # Routing Management
 TenDB Cluster's data distribution, reading and writing are based on sharding rules, so it is very important to
-maintain routing in scenarios such as deploy cluster, data management and cluster failover.
+maintain routing in scenarios such as cluster deployment, data management and cluster failover.
 At present, TSpider and Tdbctl nodes have a routing table. The routing tables of TSpider nodes are synchronized by Tdbctl,
 and ensure global consistency. 
 
@@ -30,7 +30,7 @@ Below is the description of table's field
 > Server_name default is increment from 0 
 
 ### Routing Table Example
-Below is a local TenDB Cluster with 4 TenDB node，2 TSpider node，1 Tdbctl node 
+Below is a local TenDB Cluster with 4 TenDB nodes，2 TSpider nodes，1 Tdbctl nodes 
 
 |Server_name|Host|Db|Username|Password|Port|Socket|Wrapper|
 | :--- | :----|:--- | :----|:--- | :----|:--- | :---|
@@ -73,4 +73,4 @@ When the master-slave replication is configured in TenDB, the slave cluster can 
 The Slave cluster's routing is also maintained on the Tdbctl node, which wrapper type is `SPIDER_SLAVE`，and all data layer routing point to TenDB slave nodes.
 - SPIDER_SLAVE
 >When Tdbctl sync routing to TSpider node, it will skip nodes whose Wrapper is `SPIDER_SLAVE`.  
-For DDL SQL, Tdbctl still still sync to `SPIDER_SLAVE`
+For DDL SQL, Tdbctl still sync to `SPIDER_SLAVE`

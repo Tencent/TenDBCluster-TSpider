@@ -3,11 +3,11 @@ The high availability of the Tdbctl node  is relatively simple. At present, we a
 
 ## Fault discovery
 Unlike TSpider and TenDB nodes that discover faults through peripheral detection, Tdbctl's fault discovery relies more on the fault detection mechanism of the MGR scheme itself to determine faults. 
-Specific details can refer to the document[MySQL GROUP REPLICATION](https://dev.mysql.com/doc/refman/5.7/en/group-replication-network-partitioning.html)
+Specific details can refer to the document [MySQL GROUP REPLICATION](https://dev.mysql.com/doc/refman/5.7/en/group-replication-network-partitioning.html)
 
 ## Failover
 After detecting a fault, MGR will remove the faulty node from the replication group and promote a slave node to be the master node through election to ensure service.
-Information such as the status of specific group members can be use MGR[group-replication-monitoring](https://dev.mysql.com/doc/refman/5.7/en/group-replication-monitoring.html)
+Information such as the status of specific group members can be use MGR [group-replication-monitoring](https://dev.mysql.com/doc/refman/5.7/en/group-replication-monitoring.html).
 
 Since our mysql.servers table records all routing information of MGR nodes, in addition to the fault removal function of the MGR itself, we also need to remove the faulty node from the mysql.servers table, otherwise it will affect the DDL request of the cluster.
 ```sql
@@ -20,7 +20,7 @@ When the failed node is recovery, or a new node is added (full data has been imp
 - Modify my.cnf to enable MGR related configuration
 - Configure permission
 - Enable MGR
->```sql
+```sql
 START GROUP_REPLICATION;
 ```
 
@@ -29,7 +29,7 @@ After the MGR synchronization is normal, connect to the master node of Tdbctl, m
 ## Other Instructions
 We take 26000 instance failure as an example to demonstrate the failover and failure recovery of Tdbctl
 
-### 故障切换
+### Failover
 Shutdown 26000 instance,  simulate member 26000 failure.
 
 - Connect to 26001 instance, check MGR switching status

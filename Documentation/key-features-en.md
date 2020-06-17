@@ -11,7 +11,7 @@ The proxy layer TSpider of TenDB Cluster, as a distributed MySQL storage engine,
 TenDB Cluster is capable of online scaling up and down without affecting cluster services. The topics that follow describe how to do online scaling for three components.
 
 ### **TSpider**
-The proxy layer TSpider does not store data and is a stateless node. Therefore, if scale up is needeed, the only thing to do is to add more TSpider nodes with the same permissions and schema to the name service. Similarly, if scale down is needed, you only need to remove some TSpider nodes from the name service.
+The proxy layer TSpider does not store data and is a stateless node. Therefore, if scale-up is needed, the only thing to do is to add more TSpider nodes with the same permissions and schema to the name service. Similarly, if scale-down is needed, you only need to remove some TSpider nodes from the name service.
 
 ### **TenDB**
 The scaling of storage layer TenDB requires vertical scaling. First, use MySQL hot backup plan to migrate data from TenDB instances to more powerful machines. Second, synchronize data between old instances and new ones. Finally, after data synchronization is complete, refresh the routing information of Tdbctl. In this way, we can do scaling without affecting online services.

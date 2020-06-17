@@ -8,6 +8,7 @@ TenDB Cluster 集群主要包括三个核心组件：TSpider，TenDB 和 Tdbctl�
 TSpider是TenDB Cluster集群的接入层。   
 TSpider由腾讯游戏CROS DBA团队基于MariaDB 10.3.7上的开源存储引擎spider定制研发而成，是游戏场景中规模最大的分布式MySQL存储引擎。TSpider使用了MySQL分区表的特性，却将每个分区的数据存储到一个远端MySQL实例中。   
 ![pic](./pic/spider.png)
+
 作为一种MySQL引擎，TSpider天然的支持MySQL协议，而且使用MySQL标准API即可请求TSpider。   
 TSpider在接入到应用请求后，会通过数据路由规则对SQL改写然后分发到相应的存储节点TenDB执行，再对TenDB的返回结果进行处理最终返回给应用层。   
 TSpider本身并不存储数据，基本是无状态的（各TSpider节点部分配置需要不同），可无限水平扩展。 应用层可通过负载均衡组件（比如LVS, L5，甚至DNS)提供的统一接入地址访问多个对等的TSpider节点。
