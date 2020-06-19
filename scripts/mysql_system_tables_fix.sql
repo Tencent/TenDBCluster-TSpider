@@ -65,7 +65,7 @@ ALTER TABLE tables_priv
   MODIFY Db char(64) NOT NULL default '',
   MODIFY User char(32) NOT NULL default '',
   MODIFY Table_name char(64) NOT NULL default '',
-  MODIFY Grantor char(141) NOT NULL default '',
+  MODIFY Grantor char(255) NOT NULL default '',
   ENGINE=MyISAM,
   CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 
@@ -161,7 +161,6 @@ alter table func comment='User defined functions';
 # Convert all tables to UTF-8 with binary collation
 # and reset all char columns to correct width
 ALTER TABLE user
-  MODIFY Host char(60) NOT NULL default '',
   MODIFY User char(32) NOT NULL default '',
   ENGINE=MyISAM, CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 
@@ -215,7 +214,6 @@ ALTER TABLE db
   MODIFY  Lock_tables_priv enum('N','Y') COLLATE utf8_general_ci DEFAULT 'N' NOT NULL;
 
 ALTER TABLE host
-  MODIFY Host char(60) NOT NULL default '',
   MODIFY Db char(64) NOT NULL default '',
   ENGINE=MyISAM, CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 ALTER TABLE host
@@ -383,6 +381,7 @@ UPDATE user LEFT JOIN db USING (Host,User) SET Create_user_priv='Y'
 #
 
 ALTER TABLE procs_priv
+  MODIFY Host char(60) NOT NULL default '',
   ENGINE=MyISAM,
   CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 
@@ -460,7 +459,7 @@ ALTER TABLE proc CONVERT TO CHARACTER SET utf8;
 ALTER TABLE proc  MODIFY db
                          char(64) collate utf8_bin DEFAULT '' NOT NULL,
                   MODIFY definer
-                         char(141) collate utf8_bin DEFAULT '' NOT NULL,
+                         char(255) collate utf8_bin DEFAULT '' NOT NULL,
                   MODIFY comment
                          char(64) collate utf8_bin DEFAULT '' NOT NULL;
 
@@ -743,20 +742,49 @@ PREPARE stmt FROM @str;
 EXECUTE stmt;
 DROP PREPARE stmt; 
 
+
+
 # MDEV-4332 longer user names
 alter table user         modify User         char(32)  binary not null default '';
 alter table db           modify User         char(32)  binary not null default '';
 alter table tables_priv  modify User         char(32)  binary not null default '';
 alter table columns_priv modify User         char(32)  binary not null default '';
 alter table procs_priv   modify User         char(32)  binary not null default '';
-alter table proc         modify definer      char(141) collate utf8_bin not null default '';
-alter table event        modify definer      char(141) collate utf8_bin not null default '';
+alter table proc         modify definer      char(255) collate utf8_bin not null default '';
+alter table event        modify definer      char(255) collate utf8_bin not null default '';
 alter table proxies_priv modify User         char(32)  COLLATE utf8_bin not null default '';
 alter table proxies_priv modify Proxied_user char(32)  COLLATE utf8_bin not null default '';
-alter table proxies_priv modify Grantor      char(141) COLLATE utf8_bin not null default '';
-alter table servers      modify Username     char(32)                   not null default '';
-alter table procs_priv   modify Grantor      char(141) COLLATE utf8_bin not null default '';
-alter table tables_priv  modify Grantor      char(141) COLLATE utf8_bin not null default '';
+alter table proxies_priv modify Grantor      char(255) COLLATE utf8_bin not null default '';
+ALTER TABLE proxies_priv modify Host         char(255) CHARACTER SET ASCII DEFAULT '' NOT NULL;
+ALTER TABLE proxies_priv modify Proxied_host char(255) CHARACTER SET ASCII DEFAULT '' NOT NULL;
+alter table servers      modify Username     char(64)                   not null default '';
+alter table procs_priv   modify Grantor      char(255) COLLATE utf8_bin not null default '';
+alter table tables_priv  modify Grantor      char(255) COLLATE utf8_bin not null default '';
+
+# Increase host name length. We need a separate ALTER TABLE to
+# alter the CHARACTER SET to ASCII, because the syntax
+# 'CONVERT TO CHARACTER...' above changes all field charset
+# to utf8_bin.
+
+ALTER TABLE db
+  MODIFY Host char(255) CHARACTER SET ASCII DEFAULT '' NOT NULL;
+
+ALTER TABLE user
+  MODIFY Host char(255) CHARACTER SET ASCII DEFAULT '' NOT NULL;
+
+ALTER TABLE servers
+MODIFY Host char(255) CHARACTER SET ASCII NOT NULL DEFAULT '';
+
+ALTER TABLE tables_priv
+MODIFY Host char(255) CHARACTER SET ASCII DEFAULT '' NOT NULL,
+MODIFY Grantor char(255) binary DEFAULT '' NOT NULL;
+
+ALTER TABLE columns_priv
+MODIFY Host char(255) CHARACTER SET ASCII DEFAULT '' NOT NULL;
+
+ALTER TABLE procs_priv
+MODIFY Host char(255) CHARACTER SET ASCII DEFAULT '' NOT NULL,
+MODIFY Grantor char(255) binary DEFAULT '' NOT NULL;
 
 # Activate the new, possible modified privilege tables
 # This should not be needed, but gives us some extra testing that the above

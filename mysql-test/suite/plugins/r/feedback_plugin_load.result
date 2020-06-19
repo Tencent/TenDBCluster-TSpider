@@ -19,6 +19,7 @@ SELECT VARIABLE_VALUE>0, VARIABLE_NAME FROM INFORMATION_SCHEMA.FEEDBACK
 WHERE VARIABLE_NAME LIKE 'Collation used %'
 ORDER BY VARIABLE_NAME;
 VARIABLE_VALUE>0	VARIABLE_NAME
+1	Collation used ascii_general_ci
 1	Collation used binary
 1	Collation used latin1_bin
 1	Collation used latin1_swedish_ci

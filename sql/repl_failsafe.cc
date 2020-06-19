@@ -75,7 +75,7 @@ void change_rpl_status(ulong from_status, ulong to_status)
 
 #define get_object(p, obj, msg) \
 {\
-  uint len = (uint)*p++;  \
+  uint len = net_field_length_ll(&p);  \
   if (p + len > p_end || len >= sizeof(obj)) \
   {\
     errmsg= msg;\
@@ -238,11 +238,11 @@ bool show_slave_hosts(THD* thd)
                                        MYSQL_TYPE_LONG),
                        thd->mem_root);
   field_list.push_back(new (mem_root)
-                       Item_empty_string(thd, "Host", 20),
+                       Item_empty_string(thd, "Host", HOSTNAME_LENGTH),
                        thd->mem_root);
   if (opt_show_slave_auth_info)
   {
-    field_list.push_back(new (mem_root) Item_empty_string(thd, "User", 20),
+    field_list.push_back(new (mem_root) Item_empty_string(thd, "User", USERNAME_CHAR_LENGTH),
                          thd->mem_root);
     field_list.push_back(new (mem_root) Item_empty_string(thd, "Password", 20),
                          thd->mem_root);

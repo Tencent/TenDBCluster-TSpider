@@ -304,10 +304,10 @@ typedef struct  user_conn {
 
 typedef struct st_user_stats
 {
-  char user[MY_MAX(USERNAME_LENGTH, LIST_PROCESS_HOST_LEN) + 1];
+  char user[MY_MAX(USERNAME_LENGTH, HOSTNAME_LENGTH) + 1];
   // Account name the user is mapped to when this is a user from mapped_user.
   // Otherwise, the same value as user.
-  char priv_user[MY_MAX(USERNAME_LENGTH, LIST_PROCESS_HOST_LEN) + 1];
+  char priv_user[MY_MAX(USERNAME_LENGTH, HOSTNAME_LENGTH) + 1];
   uint user_name_length;
   uint total_connections;
   uint total_ssl_connections;

@@ -930,11 +930,11 @@ A sample log-pos table definition:
 =over 4
 
 CREATE TABLE log_pos (
-  host            varchar(60) NOT null,
+  host            varchar(255) NOT null,
   time_stamp      timestamp NOT NULL,
   log_file        varchar(32) default NULL,
   log_pos         int(11)     default NULL,
-  master_host     varchar(60) NULL,
+  master_host     varchar(255) NULL,
   master_log_file varchar(32) NULL,
   master_log_pos  int NULL,
 

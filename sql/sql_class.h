@@ -1282,9 +1282,9 @@ public:
   const char *host;
   const char *user, *ip;
   char   priv_user[USERNAME_LENGTH];
-  char   proxy_user[USERNAME_LENGTH + MAX_HOSTNAME + 5];
+  char   proxy_user[USERNAME_LENGTH + HOSTNAME_LENGTH + 6];
   /* The host privilege we are using */
-  char   priv_host[MAX_HOSTNAME];
+  char   priv_host[HOSTNAME_LENGTH];
   /* The role privilege we are using */
   char   priv_role[USERNAME_LENGTH];
   /* The external user (if available) */

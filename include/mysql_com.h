@@ -23,7 +23,21 @@
 
 #include "my_decimal_limits.h"
 
-#define HOSTNAME_LENGTH 60
+/*
+  Note that this is the actual length available, and that room
+  for a trailing '\0' is not included in this size.
+
+  The metadata columns storing hostname use single byte character
+  as they are using ASCII character set.
+*/
+#define HOSTNAME_LENGTH 255
+
+/*
+Number of characters that a port number can have.
+As per rfc6335 section 6, the range is 0 to 65535.
+*/
+#define PORTNUMBER_LENGTH 5
+
 #define SYSTEM_CHARSET_MBMAXLEN 3
 #define NAME_CHAR_LEN	64U             /* Field/table name length */
 #define USERNAME_CHAR_LENGTH 128U
@@ -61,7 +75,7 @@
 
 #define SERVER_VERSION_LENGTH 60
 #define SQLSTATE_LENGTH 5
-#define LIST_PROCESS_HOST_LEN 64
+#define LIST_PROCESS_HOST_LEN HOSTNAME_LENGTH + 1 + PORTNUMBER_LENGTH + 1
 
 /*
   Maximum length of comments

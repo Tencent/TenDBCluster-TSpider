@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS t1;
 select variable_value from information_schema.global_status where variable_name="handler_read_key" into @global_read_key;
 show columns from information_schema.client_statistics;
 Field	Type	Null	Key	Default	Extra
-CLIENT	varchar(64)	NO			
+CLIENT	varchar(262)	NO			
 TOTAL_CONNECTIONS	bigint(21)	NO		0	
 CONCURRENT_CONNECTIONS	bigint(21)	NO		0	
 CONNECTED_TIME	bigint(21)	NO		0	
