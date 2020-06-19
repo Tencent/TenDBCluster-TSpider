@@ -9,6 +9,6 @@ Kentoku创造性的在MySQL技术架构上实现spider这一分布式数据库�
 Monty是MySQL之父、MariaDB 公司创始人兼 CTO。    
 Monty一生致力于数据库的开源事业，而spider这一优质开源产品能够完善MariaDB的开源生态，因此Monty将spider纳入到MariaDB产品中。
 
-## jayzhan(詹士杰)
-jayzhan(詹士杰)， 原腾讯游戏高级工程师，现Riot高级工程师。   
-jayzhan(詹士杰)凭借丰富的项目经验和技术背景，成功的促进了腾讯游戏CROS体系和Riot在TenDB Cluster上的技术合作。
+## jayzhan(詹卫杰)
+jayzhan(詹卫杰)， 原腾讯游戏高级工程师，现Riot高级工程师。   
+jayzhan(詹卫杰)凭借丰富的项目经验和技术背景，成功的促进了腾讯游戏CROS体系和Riot在TenDB Cluster上的技术合作。

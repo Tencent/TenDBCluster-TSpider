@@ -148,7 +148,7 @@ MariaDB [tendb_test]> select  spider_rone_shard  id from test_tspider   limit 1;
 Add global parameter `spider_query_one_shard，spider_transaction_one_shard`   
 When `spider_query_one_shard=true`, `update, delete, select` query need to have equivalent shard_key as a condition. It is also supported that, one of the tables specifies shard_key in join queries.   
 when spider_transaction_one_shard=true, queries in the transaction must be distributed to the same shard.  
-In addition, add grammer for `config_table`, if specify a table as config_table, then skip the restriction from spider_query_one_shard, but can not skip the restriction from spider_transaction_one_shard. The usage of config_table is as follows: 
+In addition, add grammar for `config_table`, if specify a table as config_table, then skip the restriction from spider_query_one_shard, but can not skip the restriction from spider_transaction_one_shard. The usage of config_table is as follows: 
 ```
     CREATE TABLE `t6` (
         `id` int(11) NOT NULL,

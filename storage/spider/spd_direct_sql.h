@@ -39,6 +39,4 @@ int spider_udf_set_direct_sql_param_default(SPIDER_TRX *trx,
 void spider_udf_free_direct_sql_alloc(SPIDER_DIRECT_SQL *direct_sql,
                                       my_bool bg);
 
-#ifndef WITHOUT_SPIDER_BG_SEARCH
 int spider_udf_bg_direct_sql(SPIDER_DIRECT_SQL *direct_sql);
-#endif

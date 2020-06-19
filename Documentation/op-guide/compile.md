@@ -1,5 +1,5 @@
 # 源码编译
-本章节介绍如何使用源码来编译TenDB, TSpier, Tdbctl节点
+本章节介绍如何使用源码来编译TenDB, TSpider, Tdbctl节点
 
 ## TSpider编译
 下载最新版本TSpider源码  

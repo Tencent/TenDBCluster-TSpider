@@ -3,6 +3,6 @@
 
 You can find our community members through commit history logs of github repository:
    
-+ TSpider: https://github.com/TencentDBA/TendbCluster3   
-+ TenDB: https://github.com/TencentDBA/TenDB3   
-+ Tdbctl: https://github.com/TencentDBA/Tdbctl
+TSpider:  https://github.com/Tencent/TenDBCluster-TSpider   
+TenDB:    https://github.com/Tencent/TenDBCluster-TenDB  
+Tdbctl:   https://github.com/Tencent/TenDBCluster-Tdbctl

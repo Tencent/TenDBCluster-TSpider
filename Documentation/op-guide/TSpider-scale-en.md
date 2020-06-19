@@ -6,7 +6,7 @@ The application layer can access multiple peer TSpider nodes through the unified
 When the request load on the application side is low, the cluster access layer can be reduced by reducing the TSpider nodes online, and certain cluster resources can be saved while ensuring stable application requests.
 When the request load on the application side is high, you can increase the cluster access layer by adding TSpider nodes online, so that the cluster can quickly respond to more application requests and provide higher real-time throughput.
 After adding or removing nodes, it is generally expected that the application side can quickly detect node changes without any configuration changes. The currently recommended method is to configure name services or load balancing components for the access layer nodes, and the application side requests through domain names and other methods. 
-When the number of nodes changes, only the resolution result of the name service needs to be changed, so that the application side is not aware. For example, when using a domain name to connect to the cluster, since the domain name cannot distinguish the port numbers of different TSpider nodes, if you consider using a domain name, try to make the TSpider nodes distributed on different hosts use the same port number service before deployment to reduce system complexity degree
+When the number of nodes changes, only the resolution result of the name service needs to be changed, so that the application side is not aware. For example, when using a domain name to connect to the cluster, since the domain name cannot distinguish the port numbers of different TSpider nodes, if you consider using a domain name, try to make the TSpider nodes distributed on different hosts use the same port number service before deployment to reduce system complexity degree.
 
 
 ## Scale Up
@@ -28,20 +28,21 @@ Suppose there is a TenDB Cluster with the current topology:
 
 ### Deploy new TSpider node  
 
-Refer to the manual deployment chapter[install-TSpider](manual-install.md/#jump2), deploy a TSpider instance with port number 25002 locally
+Refer to the manual deployment chapter[install-TSpider](manual-install.md/#jump2), deploy a TSpider instance with port number 25002 locally.
 
 ### Import table schema
-Back up the table schema from any TSpider node (backup the mysql.servers table should be priority during backup) and import to this node
+Back up the table schema from any TSpider node (backup the mysql.servers table should be priority during backup) and import to this node.
+
 __Attention__
-- Before importing the schema to the new TSpider node, you need ```set ddl_execute_by_ctl = off```, to ensure that the imported schema will not be distributed by the Tdbctl node, and the TSpider node will not report errors
-- The mysql.users table must be backup to ensure consistency of permissions on the application side
-- You must import the schema after importing the mysql.users table, otherwise the import will report an error (because the servers table is empty, the spider engine is abnormal)
+- Before importing the schema to the new TSpider node, you need ```set ddl_execute_by_ctl = off```, to ensure that the imported schema will not be distributed by the Tdbctl node, and the TSpider node will not report errors.
+- The mysql.users table must be backup to ensure consistency of permissions on the application side.
+- You must import the schema after importing the mysql.users table, otherwise the import will report an error (because the servers table is empty, the spider engine is abnormal).
 
 
 ### Grant
 Log in to Tdbctl and TenDB node to authorize the new TSpider node.
-For the user name and password, refer to the Username and Password fields in the mysql.servers table. You can also use the new user name and password
-The following uses the new username and password as examples
+For the username and password, refer to the Username and Password fields in the mysql.servers table. You can also use a new username and password.
+The following uses a new username and password as examples.
 
 ```sql
 create user 'myql1'@'127.0.0.1' identified by 'mysql1';
@@ -59,7 +60,7 @@ tdbctl flush routing;
 ### Change domain name
 If the access layer accesses the domain name system, you need to modify the domain name configuration to access the new node ip.
 In this example, since we are all using local deployment, the host name is 127.0.0.1, so skip this step.
-If it is a different host, the port number of each access layer is also different. It is not possible to simply modify the domain name, and also consider the difference of the ports
+If it is a different host, the port number of each access layer is also different. It is not possible to simply modify the domain name, and also consider the difference of the ports.
 
 ### New Topology After Scale Up 
 | Node type | 	Host|Port|Server_name|
@@ -116,7 +117,7 @@ Shut down the MySQL service of the downsized TSpider node.
 |TenDB|127.0.0.1|20003|SPT3|
 
 ## Other instructions
-In application scenarios with many long connections, capacity expansion cannot solve the cluster load problem immediately. If the application reconnection mechanism is relatively complete, you can perform a kill operation on the TSpider node with a higher load. Through the kill part of the connection, the new connection is gradually balanced to the newly added TSpider node
+In application scenarios with many long connections, capacity expansion cannot solve the cluster load problem immediately. If the application reconnection mechanism is relatively complete, you can perform a kill operation on the TSpider node with a higher load. Through the kill part of the connection, the new connection is gradually balanced to the newly added TSpider node.
 ```sql
 show processlist;
 #kill connection with specified id
@@ -125,4 +126,4 @@ kill thread_id;
 kill threads all
 ```
 
-After the cluster is downsized, if the downsized TSpider node does not shut down the service in time, in the case of a long connection scenario or domain name cache, there may still be a connection request to the old TSpider node, and this TSpider node has been removed from the cluster routing table After cleaning, Tdbctl will no longer synchronize DDL operations, so the application side may use the old table structure to operate the request, causing unknown errors. Therefore, the reduced TSpider node is best to close the service in time to reclaim resources
+After the cluster is downsized, if the downsized TSpider node does not shut down the service in time, in the case of a long connection scenario or domain name cache, there may still be a connection request to the old TSpider node, and this TSpider node has been removed from the cluster routing table After cleaning, Tdbctl will no longer synchronize DDL operations, so the application side may use the old table structure to operate the request, causing unknown errors. Therefore, the reduced TSpider node is best to close the service in time to reclaim resources.

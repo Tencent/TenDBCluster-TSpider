@@ -46,7 +46,7 @@ If you need to create a non-forwarding table in TSpider, you need to set `ddl_ex
 - change table schema
 ```sql
 use test1;
-#增加字段c
+#add a field `c`
 alter table t1 add c int;
 show create table t1;
 CREATE TABLE `t1` (

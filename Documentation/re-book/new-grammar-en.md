@@ -1,5 +1,5 @@
-## TenDB Cluster Added Grammer
-TSpider has added some grammer, the following will introduce how to use.
+## TenDB Cluster Added Grammar
+TSpider has added some grammar rules, the following content will introduce how to use them.
 
 ### Kill Thread
 Three ways to kill threads:    

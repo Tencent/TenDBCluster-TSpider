@@ -101,7 +101,6 @@ uint spider_tree_num(SPIDER_CONN *top);
 
 SPIDER_CONN *spider_tree_delete(SPIDER_CONN *conn, SPIDER_CONN *top);
 
-#ifndef WITHOUT_SPIDER_BG_SEARCH
 int spider_set_conn_bg_param(ha_spider *spider);
 
 int spider_set_conn_bg_param_for_dml(ha_spider *spider);
@@ -149,7 +148,6 @@ int spider_create_mon_threads(SPIDER_TRX *trx, SPIDER_SHARE *share);
 void spider_free_mon_threads(SPIDER_SHARE *share);
 
 void *spider_bg_mon_action(void *arg);
-#endif
 
 #define SPIDER_DISABLE_LINK
 

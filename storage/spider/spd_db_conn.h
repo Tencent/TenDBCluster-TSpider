@@ -710,10 +710,6 @@ int spider_db_bulk_open_handler(ha_spider *spider, SPIDER_CONN *conn,
 int spider_db_close_handler(ha_spider *spider, SPIDER_CONN *conn, int link_idx,
                             uint tgt_conn_kind);
 
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-void spider_db_hs_request_buf_reset(SPIDER_CONN *conn);
-#endif
-
 bool spider_db_conn_is_network_error(int error_num);
 
 CHARSET_INFO *spider_get_item_field_charset(Item *item, ha_spider *spider);

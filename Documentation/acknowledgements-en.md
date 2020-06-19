@@ -8,5 +8,5 @@ Kentoku SHIBA is the author of the spider engine. We would thank him for his cre
 Monty is the main author of MySQL, a founding member and CTO of the MariaDB Corporation AB.      
 Monty devoted his life to open source databases. He incorporated spider into MariaDB products to improve MariaDB's open source ecosystem because of spider's great features.
 
-## Jayzhan (Jieshi Zhan)
-Jayzhan (Jieshi Zhan) was a senior engineer of Tencent Game, and is now a senior engineer of Riot. With rich project experience and technical background, Jayzhan successfully promoted the technical cooperation between Tencent IEG Common R&D and Operation System and Riot on TenDB Cluster.
+## Jayzhan (Weijie Zhan)
+Jayzhan (Weijie Zhan) was a senior engineer of Tencent Game, and is now a senior engineer of Riot. With rich project experience and technical background, Jayzhan successfully promoted the technical cooperation between Tencent IEG Common R&D and Operation System and Riot on TenDB Cluster.

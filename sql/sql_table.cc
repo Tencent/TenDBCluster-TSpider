@@ -2043,7 +2043,7 @@ bool mysql_rm_table(THD *thd,TABLE_LIST *tables, bool if_exists,
       DBUG_RETURN(true);
   }
 
-  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  if (thd->is_support_ddl_by_ctl)
   {
       thd->do_ddl_by_ctl = TRUE;
       DBUG_RETURN(true);
@@ -4762,7 +4762,7 @@ handler *mysql_create_frm_image(THD *thd,
 
   if (create_table_mode != C_ALTER_TABLE_FRM_ONLY)
   {
-    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    if (thd->is_support_ddl_by_ctl)
     {
       thd->do_ddl_by_ctl = TRUE;
       goto err;
@@ -4948,7 +4948,7 @@ int create_table_impl(THD *thd,
       }
       else if (options.if_not_exists())
       {
-          if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+          if (thd->is_support_ddl_by_ctl)
               thd->do_ddl_by_ctl = TRUE;
           goto warn;
       }
@@ -5014,7 +5014,7 @@ int create_table_impl(THD *thd,
 
     if (create_table_mode != C_ALTER_TABLE_FRM_ONLY)
     {
-      if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+      if (thd->is_support_ddl_by_ctl)
       {
         thd->do_ddl_by_ctl = TRUE;
         goto err;
@@ -5036,7 +5036,7 @@ int create_table_impl(THD *thd,
   create_info->table= 0;
   if (!frm_only && create_info->tmp_table())
   {
-    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    if (thd->is_support_ddl_by_ctl)
     {
       thd->do_ddl_by_ctl = TRUE;
       goto err;
@@ -5084,7 +5084,7 @@ int create_table_impl(THD *thd,
 
     free_table_share(&share);
 
-    if (!result && tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    if (!result && thd->is_support_ddl_by_ctl)
     {
       thd->do_ddl_by_ctl = TRUE;
       result = 1;
@@ -5101,7 +5101,7 @@ int create_table_impl(THD *thd,
   }
 #endif
   
-  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  if (thd->is_support_ddl_by_ctl)
   {
     thd->do_ddl_by_ctl = TRUE;
     goto err;
@@ -9147,7 +9147,7 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
   bool versioned= table && table->versioned();
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
-  if (tdbctl_is_ddl_by_ctl(thd, thd->lex) && alter_info->partition_flags)
+  if (thd->is_support_ddl_by_ctl && alter_info->partition_flags)
   {
       my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0), "ALTER TABLE PARTITION");
       DBUG_RETURN(true);
@@ -9405,7 +9405,7 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
   {
     bool res;
 
-    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    if (thd->is_support_ddl_by_ctl)
     {
       thd->do_ddl_by_ctl = TRUE;
       DBUG_RETURN(true);
@@ -9499,7 +9499,7 @@ bool mysql_alter_table(THD *thd, const LEX_CSTRING *new_db,
       DBUG_RETURN(true);
     }
 
-    if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+    if (thd->is_support_ddl_by_ctl)
     {
       thd->do_ddl_by_ctl = TRUE;
       DBUG_RETURN(true);

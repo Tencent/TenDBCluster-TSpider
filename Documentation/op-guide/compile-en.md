@@ -1,8 +1,8 @@
 # Source Compile 
-This chapter describes how to compile from source code
+This chapter describes how to compile from source code.
 
 ## Compile TSpider
-Download TSpider's latest version source code from github
+Download TSpider's latest version source code from GitHub.
 
 ### Build Requirements
 - Mainstream linux distribution, CentOS etc.
@@ -24,16 +24,16 @@ nohup make -j > mk.log 2>&1  && make package > mp.log 2>&1 &
 
 #### cmake aruguments
 - MYSQL_SERVER_SUFFIX
-TSider version suffix information
+TSider version suffix information.
 
 - CMAKE_INSTALL_PREFIX
-package to install, default to /usr/local
+package to install, default to `/usr/local`.
 
 ## TenDB Compile
-Download TenDB's latest version source code from github
+Download TenDB's latest version source code from GitHub.
 
 ### Build Requirements
-- Mainstream linux distribution，more information to [OS Requirements](https://www.mysql.com/support/supportedplatforms/database.html)
+- Mainstream linux distribution, for more information see [OS Requirements](https://www.mysql.com/support/supportedplatforms/database.html).
 - CMAKE 2.8.2+
 - GCC 4.4+
 - bison
@@ -54,10 +54,10 @@ nohup make -j > mk.log 2>&1  && make package > mp.log 2>&1 &
 ```
 
 ## Tdbctl Compile
-Download Tdbctl's latest version source code from github
+Download Tdbctl's latest version source code from GitHub.
 
 ### Build Requirements
-- Mainstream linux distribution，more information to [OS Requirements](https://www.mysql.com/support/supportedplatforms/database.html)
+- Mainstream linux distribution, for more information see [OS Requirements](https://www.mysql.com/support/supportedplatforms/database.html).
 - CMAKE 2.8.2+
 - GCC 4.9.2+
 - bison

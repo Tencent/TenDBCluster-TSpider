@@ -73,9 +73,10 @@ Query OK, 0 rows affected (0.00 sec)
 >可以看到从路由中剔除故障的中控节点后，集群DDL操作恢复正常  
 
 ### 故障恢复
-重新启动26000节点
+> 重新启动26000节点
 
-- MGR中加入26000节点
+- MGR中加入26000节点  
+
 ```sql
 #连接26000
 mysql -umysql -pmysql -h127.0.0.1 -P26000
@@ -93,9 +94,11 @@ mysql> select * from performance_schema.replication_group_members ;
 | group_replication_applier | d34f771c-68c9-11ea-89e1-6c0b84d5c2e5 | 127.0.0.1   |       26002 | ONLINE       |
 +---------------------------+--------------------------------------+-------------+-------------+--------------+
 ```
+
 >组成员加入成功
 
-- 路由表添加新节点
+- 路由表添加新节点  
+
 ```sql
 mysql -umysql -pmysql -h127.0.0.1 -P26001
 mysql> insert into mysql.servers values('TDBCTL0','127.0.0.1','','mysql','mysql',26000,'','TDBCTL','');
@@ -106,6 +109,7 @@ Query OK, 0 rows affected (0.00 sec)
 ```
 
 - 验证集群操作
+
 ```sql
 mysql -umysql -pmysql -h127.0.0.1 -P25000
 mysql> create database test_ok;

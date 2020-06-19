@@ -2436,7 +2436,8 @@ public:
   int32 spider_last_partition_num;
   ulong spider_features_type;
   ulong current_global_server_version;
-  bool do_ddl_by_ctl;
+  bool is_support_ddl_by_ctl; // equal to tdbctl_is_ddl_by_ctl(thd,lex)
+  bool do_ddl_by_ctl; // must do tcadmin_execute_command
 
   // Process indicator
   struct {

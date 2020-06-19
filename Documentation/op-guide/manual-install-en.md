@@ -73,10 +73,10 @@ cd /usr/local/mysql && ./bin/mysqld --defaults-file=/home/mysql/my.cnf.20000 --i
 ./bin/mysqld_safe --defaults-file=/home/mysql/my.cnf.20000 --user=mysql &
 ```
 ### Deploying Another Three Instances 
-Another instances's deployment is essentially the same sequence of steps as 20000 instance, except for things such as the `port` in my.cnf.   
+Other instances' deployment follows essentially the same sequence of steps as the 20000 instance's, except for things such as the `port` in my.cnf.   
 
 ## Deploying TSpider Node
-Deploying two TSpider nodes with port 25000,250001. Each TSpider instance requires a specific data directory, an initialize each one. 
+Deploying two TSpider nodes with port 25000,25001. Each TSpider instance requires a specific data directory, an initialize each one. 
 
 The following uses 25000 port as an example to deploy instance.
 
@@ -168,7 +168,7 @@ cd /usr/local/tspider && ./scripts/mysql_install_db --defaults-file=/home/mysql/
 ```
 
 ### Deploying Another Instance 
-Another instances's deployment is essentially the same sequence of steps as 25000 instance, except for things such as the `port`, `spider_auto_increment_mode_value` in my.cnf.
+Other instances' deployment follows essentially the same sequence of steps as the 25000 instance's, except for things such as the `port`, `spider_auto_increment_mode_value` in my.cnf.
 
 ## Deploying Tdbctl Node
 Use [Group Replication](https://dev.mysql.com/doc/refman/5.7/en/group-replication.html) to deploy three Tdbctl nodes, ports are 26000~26002.  
@@ -271,7 +271,7 @@ START GROUP_REPLICATION;
 
 ## Configuration TenDB Cluster 
 <a id="cluster-privilege"></a>
-After all nodes had started and configured, we need to configure them as an TenDB Cluster.  
+After all nodes had started and configured, we need to configure them as a TenDB Cluster.  
 The privileges configure below are for reference only, the actual access control needs to be considered  with application security.
 About Cluster's privileges, refrer to [Account Management](cluster-grant-en.md)
 

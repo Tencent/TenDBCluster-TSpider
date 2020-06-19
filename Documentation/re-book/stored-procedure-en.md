@@ -1,5 +1,5 @@
 # Stored Procedure
-Stored Procedure is a database object that stores complex procedures in the database, and can be called by external programs. TenDB Cluster is compatible with MySQL's stored procedure grammer.
+Stored Procedure is a database object that stores complex procedures in the database, and can be called by external programs. TenDB Cluster is compatible with MySQL's stored procedure grammar.
 
 
 

@@ -14,10 +14,6 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include "hs_compat.h"
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#include "hstcpcli.hpp"
-#endif
-
 #define SPIDER_DISABLE_STANDBY /* disable one spider shard has multi remote db \
                                 */
 
@@ -111,26 +107,6 @@ typedef st_spider_result SPIDER_RESULT;
 #define SPIDER_SQL_TABLE_NAME_STR "`table_name`"
 #define SPIDER_SQL_TABLE_NAME_LEN sizeof(SPIDER_SQL_TABLE_NAME_STR) - 1
 
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#define SPIDER_SQL_HS_EQUAL_STR "="
-#define SPIDER_SQL_HS_EQUAL_LEN (sizeof(SPIDER_SQL_HS_EQUAL_STR) - 1)
-#define SPIDER_SQL_HS_GT_STR ">"
-#define SPIDER_SQL_HS_GT_LEN (sizeof(SPIDER_SQL_HS_GT_STR) - 1)
-#define SPIDER_SQL_HS_GTEQUAL_STR ">="
-#define SPIDER_SQL_HS_GTEQUAL_LEN (sizeof(SPIDER_SQL_HS_GTEQUAL_STR) - 1)
-#define SPIDER_SQL_HS_LT_STR "<"
-#define SPIDER_SQL_HS_LT_LEN (sizeof(SPIDER_SQL_HS_LT_STR) - 1)
-#define SPIDER_SQL_HS_INSERT_STR "+"
-#define SPIDER_SQL_HS_INSERT_LEN (sizeof(SPIDER_SQL_HS_INSERT_STR) - 1)
-#define SPIDER_SQL_HS_UPDATE_STR "U"
-#define SPIDER_SQL_HS_UPDATE_LEN (sizeof(SPIDER_SQL_HS_UPDATE_STR) - 1)
-#define SPIDER_SQL_HS_DELETE_STR "D"
-#define SPIDER_SQL_HS_DELETE_LEN (sizeof(SPIDER_SQL_HS_DELETE_STR) - 1)
-#define SPIDER_SQL_HS_INCREMENT_STR "+"
-#define SPIDER_SQL_HS_INCREMENT_LEN (sizeof(SPIDER_SQL_HS_INCREMENT_STR) - 1)
-#define SPIDER_SQL_HS_DECREMENT_STR "-"
-#define SPIDER_SQL_HS_DECREMENT_LEN (sizeof(SPIDER_SQL_HS_DECREMENT_STR) - 1)
-#endif
 #define SPIDER_SQL_HS_LTEQUAL_STR "<="
 #define SPIDER_SQL_HS_LTEQUAL_LEN (sizeof(SPIDER_SQL_HS_LTEQUAL_STR) - 1)
 
@@ -213,16 +189,8 @@ typedef st_spider_result SPIDER_RESULT;
   (sizeof(SPIDER_SQL_LCL_NAME_QUOTE_STR) - 1)
 
 #define SPIDER_CONN_KIND_MYSQL (1 << 0)
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#define SPIDER_CONN_KIND_HS_READ (1 << 2)
-#define SPIDER_CONN_KIND_HS_WRITE (1 << 3)
-#endif
-
 #define SPIDER_SQL_KIND_SQL (1 << 0)
 #define SPIDER_SQL_KIND_HANDLER (1 << 1)
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#define SPIDER_SQL_KIND_HS (1 << 2)
-#endif
 
 #define SPIDER_SQL_TYPE_SELECT_SQL (1 << 0)
 #define SPIDER_SQL_TYPE_INSERT_SQL (1 << 1)
@@ -493,63 +461,6 @@ class spider_fields {
   int ping_table_mon_from_table(SPIDER_LINK_IDX_CHAIN *link_idx_chain);
 };
 
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#define SPIDER_HS_UINT32_INFO dena::uint32_info
-#define SPIDER_HS_STRING_REF dena::string_ref
-#ifndef HANDLERSOCKET_MYSQL_UTIL
-#define SPIDER_HS_VECTOR std::vector
-class spider_db_hs_string_ref_buffer {
-  SPIDER_HS_VECTOR<SPIDER_HS_STRING_REF> hs_conds;
-
- public:
-  spider_db_hs_string_ref_buffer();
-  ~spider_db_hs_string_ref_buffer();
-  int init();
-  void clear();
-  int push_back(SPIDER_HS_STRING_REF &cond);
-  SPIDER_HS_STRING_REF *ptr();
-  uint size();
-};
-#else
-class spider_db_hs_string_ref_buffer {
-  bool hs_da_init;
-  DYNAMIC_ARRAY hs_conds;
-  uint hs_conds_id;
-  const char *hs_conds_func_name;
-  const char *hs_conds_file_name;
-  ulong hs_conds_line_no;
-
- public:
-  spider_db_hs_string_ref_buffer();
-  ~spider_db_hs_string_ref_buffer();
-  int init();
-  void clear();
-  int push_back(SPIDER_HS_STRING_REF &cond);
-  SPIDER_HS_STRING_REF *ptr();
-  uint size();
-};
-#endif
-
-class spider_db_hs_str_buffer {
-  bool hs_da_init;
-  DYNAMIC_ARRAY hs_conds;
-  uint hs_conds_id;
-  const char *hs_conds_func_name;
-  const char *hs_conds_file_name;
-  ulong hs_conds_line_no;
-
- public:
-  spider_db_hs_str_buffer();
-  ~spider_db_hs_str_buffer();
-  int init();
-  void clear();
-  spider_string *add(uint *strs_pos, const char *str, uint str_len);
-};
-
-#define SPIDER_DB_HS_STRING_REF_BUFFER spider_db_hs_string_ref_buffer
-#define SPIDER_DB_HS_STR_BUFFER spider_db_hs_str_buffer
-#endif
-
 struct st_spider_db_request_key {
   ulonglong spider_thread_id;
   query_id_t query_id;
@@ -745,31 +656,6 @@ class spider_db_conn {
                                  spider_string *str, int mode,
                                  SPIDER_DB_RESULT **res1,
                                  SPIDER_DB_RESULT **res2) = 0;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  virtual int append_sql(char *sql, ulong sql_length,
-                         st_spider_db_request_key *request_key) = 0;
-  virtual int append_open_handler(uint handler_id, const char *db_name,
-                                  const char *table_name,
-                                  const char *index_name, const char *sql,
-                                  st_spider_db_request_key *request_key) = 0;
-  virtual int append_select(uint handler_id, spider_string *sql,
-                            SPIDER_DB_HS_STRING_REF_BUFFER *keys, int limit,
-                            int skip,
-                            st_spider_db_request_key *request_key) = 0;
-  virtual int append_insert(uint handler_id,
-                            SPIDER_DB_HS_STRING_REF_BUFFER *upds,
-                            st_spider_db_request_key *request_key) = 0;
-  virtual int append_update(uint handler_id, spider_string *sql,
-                            SPIDER_DB_HS_STRING_REF_BUFFER *keys,
-                            SPIDER_DB_HS_STRING_REF_BUFFER *upds, int limit,
-                            int skip, bool increment, bool decrement,
-                            st_spider_db_request_key *request_key) = 0;
-  virtual int append_delete(uint handler_id, spider_string *sql,
-                            SPIDER_DB_HS_STRING_REF_BUFFER *keys, int limit,
-                            int skip,
-                            st_spider_db_request_key *request_key) = 0;
-  virtual void reset_request_queue() = 0;
-#endif
   virtual size_t escape_string(char *to, const char *from,
                                size_t from_length) = 0;
   virtual bool have_lock_table_list() = 0;
@@ -846,11 +732,6 @@ class spider_db_handler {
   virtual int append_insert_part() = 0;
   virtual int append_update_part() = 0;
   virtual int append_delete_part() = 0;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-#ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
-  virtual int append_increment_update_set_part() = 0;
-#endif
-#endif
   virtual int append_update_set_part() = 0;
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
   virtual int append_direct_update_set_part() = 0;
@@ -953,13 +834,6 @@ class spider_db_handler {
                                       int *appended) = 0;
   virtual int realloc_sql(ulong *realloced) = 0;
   virtual int reset_sql(ulong sql_type) = 0;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  virtual int reset_keys(ulong sql_type) = 0;
-  virtual int reset_upds(ulong sql_type) = 0;
-  virtual int reset_strs(ulong sql_type) = 0;
-  virtual int reset_strs_pos(ulong sql_type) = 0;
-  virtual int push_back_upds(SPIDER_HS_STRING_REF &info) = 0;
-#endif
   virtual bool need_lock_before_set_sql_for_exec(ulong sql_type) = 0;
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
   virtual int set_sql_for_exec(ulong sql_type, int link_idx,
@@ -1100,14 +974,8 @@ typedef struct st_spider_condition {
 typedef struct st_spider_result {
   uint dbton_id;
   SPIDER_DB_RESULT *result;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-  volatile
-#endif
-      st_spider_result *prev;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-  volatile
-#endif
-      st_spider_result *next;
+  volatile st_spider_result *prev;
+  volatile st_spider_result *next;
   SPIDER_POSITION *first_position; /* for quick mode */
   int pos_page_size;               /* for quick mode */
   longlong record_num;
@@ -1124,33 +992,11 @@ typedef struct st_spider_result {
 } SPIDER_RESULT;
 
 typedef struct st_spider_result_list {
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-  volatile
-#endif
-      SPIDER_RESULT *first;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-  volatile
-#endif
-      SPIDER_RESULT *last;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
-  volatile
-#endif
-      SPIDER_RESULT *current;
+  volatile SPIDER_RESULT *first;
+  volatile SPIDER_RESULT *last;
+  volatile SPIDER_RESULT *current;
   KEY *key_info;
   int key_order;
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  ulonglong hs_upd_rows;
-  SPIDER_DB_RESULT *hs_result;
-  SPIDER_DB_RESULT_BUFFER *hs_result_buf;
-  bool hs_has_result;
-  SPIDER_DB_CONN *hs_conn;
-#endif
-#ifdef HA_CAN_BULK_ACCESS
-#if defined(HS_HAS_SQLCOM) && defined(HAVE_HANDLERSOCKET)
-  uchar *hs_r_bulk_open_index;
-  uchar *hs_w_bulk_open_index;
-#endif
-#endif
   spider_string *sqls;
   int ha_read_kind;
   bool have_sql_kind_backup;
@@ -1211,15 +1057,11 @@ typedef struct st_spider_result_list {
   longlong second_read;
   int set_split_read_count;
   int *casual_read;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
   /* 0:nomal 1:store 2:store end */
-  volatile
-#endif
-      int quick_phase;
+  volatile int quick_phase;
   bool keyread;
   int lock_type;
   TABLE *table;
-#ifndef WITHOUT_SPIDER_BG_SEARCH
   volatile int bgs_error;
   bool bgs_error_with_message;
   char bgs_error_msg[MYSQL_ERRMSG_SIZE];
@@ -1230,8 +1072,6 @@ typedef struct st_spider_result_list {
   volatile longlong bgs_first_read;
   volatile longlong bgs_second_read;
   volatile longlong bgs_split_read;
-  volatile
-#endif
-      SPIDER_RESULT *bgs_current;
+  volatile SPIDER_RESULT *bgs_current;
   SPIDER_DB_ROW *tmp_pos_row_first;
 } SPIDER_RESULT_LIST;

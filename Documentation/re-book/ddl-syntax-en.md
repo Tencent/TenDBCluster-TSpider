@@ -159,7 +159,7 @@ Create Table: CREATE TABLE `t1` (
 
 ####  With Specified Shard_key
 
-##### Shard_key can only be the common part of keys if there are multiple unique keys (including the primary key). Otherwise, the table cannot be created
+##### Shard_key can only be the common part of keys if there are multiple unique keys (including the primary key). Otherwise, the table cannot be created.
 
 ```
 MariaDB [tendb_test]>     create table t1 (
@@ -196,7 +196,7 @@ Create Table: CREATE TABLE `t1` (
 ```
 
 
-##### If there are multiple secondary indexes and without unique key(including primary key), user must specify shard_key (Restrictions made on Tdbctl)
+##### If there are multiple secondary indexes and without unique key(including primary key), user must specify shard_key (Restrictions made on Tdbctl).
 ```
 MariaDB [tendb_test]> create table t1 (
     ->     id int unsigned not null auto_increment, 
@@ -233,7 +233,7 @@ Create Table: CREATE TABLE `t1` (
 1 row in set (0.00 sec)
 ```
 
-##### Shard_key must be Part of the Index (Restrictions made on Tdbctl)
+##### Shard_key must be Part of the Index (Restrictions made on Tdbctl).
 
 ```
 MariaDB [tendb_test]> create table t1(
@@ -325,7 +325,7 @@ ADD，DROP or  RENAME index
 ADD，DROP，MODIFY or CHANGE column
 ```
 
-<font color="#dd0000">Noted: on the TSpider node, it is prohibited to modify the sharding rules when alter table</font> 
+<font color="#dd0000">Noted: on the TSpider node, it is prohibited to modify the sharding rules when alter table.</font> 
 ```
 MariaDB [tendb_test]> create table t1(c1 int , c2 int,primary key id(c1,c2));
 Query OK, 0 rows affected (0.04 sec)
@@ -416,7 +416,7 @@ MariaDB [tendb_test]> SELECT * FROM t1;
 ```
 
 
-<font color="#dd0000">Note:  cannot drop the shard_key</font>   
+<font color="#dd0000">Note:  cannot drop the shard_key.</font>   
 ```
 MariaDB [tendb_test]> create table t1(c1 int , c2 int,primary key id(c1,c2));
 Query OK, 0 rows affected (0.04 sec)
@@ -522,7 +522,7 @@ CREATE TABLE `t1` (
 
 
 ### 2.5 MODIFY COLUMN
-`ALTER TABLE .. MODIFY COLUMN` statement is used to modify the columns on the existing table, including the column data type and attribute
+`ALTER TABLE .. MODIFY COLUMN` statement is used to modify the columns on the existing table, including the column data type and attribute.
 ```
 MariaDB [tendb_test]>CREATE TABLE t1 (id int not null primary key AUTO_INCREMENT, col1 INT);
 MariaDB [tendb_test]>show create table  t1;

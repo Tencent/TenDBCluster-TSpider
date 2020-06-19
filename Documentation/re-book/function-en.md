@@ -1,5 +1,5 @@
 # Function
-The function is a collection of sql in the database, calling function can reduce a lot of work.  TenDB Cluster is compatible with MySQL's function grammer.
+The function is a collection of sql in the database, calling function can reduce a lot of work.  TenDB Cluster is compatible with MySQL's function grammar.
 
 
 
