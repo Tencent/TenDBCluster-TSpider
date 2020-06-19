@@ -2853,7 +2853,7 @@ static int mysql_create_routine(THD *thd, LEX *lex) {
   }
 #endif
 
-  if (tdbctl_is_ddl_by_ctl(thd, thd->lex)) {
+  if (thd->is_support_ddl_by_ctl) {
     thd->do_ddl_by_ctl = TRUE;
     return true;
   }
@@ -3472,6 +3472,7 @@ int mysql_execute_command(THD *thd) {
   if (tdbctl_is_forbid_type_in_ctl(thd, lex)) {
     goto finish;
   }
+  thd->is_support_ddl_by_ctl = tdbctl_is_ddl_by_ctl(thd, lex);
 
   switch (lex->sql_command) {
     case SQLCOM_SHOW_EVENTS:
@@ -3841,7 +3842,7 @@ int mysql_execute_command(THD *thd) {
 #ifdef WITH_PARTITION_STORAGE_ENGINE
       {
         partition_info *part_info = thd->lex->part_info;
-        if (part_info && tdbctl_is_ddl_by_ctl(thd, lex)) {
+        if (part_info && thd->is_support_ddl_by_ctl) {
           my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0),
                    "CRREATE PARTITION TABLE");
           goto end_with_restore_list;
@@ -3858,7 +3859,7 @@ int mysql_execute_command(THD *thd) {
       {
         select_result *result;
 
-        if (tdbctl_is_ddl_by_ctl(thd, lex)) {
+        if (thd->is_support_ddl_by_ctl) {
           my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0),
                    "CRREATE TABLE ... SELECT");
           goto end_with_restore_list;
@@ -3990,7 +3991,7 @@ int mysql_execute_command(THD *thd) {
           res = mysql_create_like_table(thd, create_table, select_tables,
                                         &create_info);
         } else {
-          if (tdbctl_is_ddl_by_ctl(thd, lex) && create_info.tmp_table()) {
+          if (thd->is_support_ddl_by_ctl && create_info.tmp_table()) {
             my_error(ER_UNSUPPORT_SQL_IN_DDL_CTL, MYF(0),
                      "CRREATE TEMPORARY TABLE");
             goto end_with_restore_list;
@@ -4987,7 +4988,7 @@ int mysql_execute_command(THD *thd) {
                        "mysql", NULL, NULL, 1, 1) &&
           check_global_access(thd, CREATE_USER_ACL))
         break;
-      if (tdbctl_is_ddl_by_ctl(thd, lex)) {
+      if (thd->is_support_ddl_by_ctl) {
         thd->do_ddl_by_ctl = TRUE;
         break;
       }
@@ -5003,7 +5004,7 @@ int mysql_execute_command(THD *thd) {
       if (check_access(thd, DELETE_ACL, "mysql", NULL, NULL, 1, 1) &&
           check_global_access(thd, CREATE_USER_ACL))
         break;
-      if (tdbctl_is_ddl_by_ctl(thd, lex)) {
+      if (thd->is_support_ddl_by_ctl) {
         thd->do_ddl_by_ctl = TRUE;
         break;
       }
@@ -5020,7 +5021,7 @@ int mysql_execute_command(THD *thd) {
           check_global_access(thd, CREATE_USER_ACL))
         break;
       /* Conditionally writes to binlog */
-      if (tdbctl_is_ddl_by_ctl(thd, lex)) {
+      if (thd->is_support_ddl_by_ctl) {
         thd->do_ddl_by_ctl = TRUE;
         break;
       }
@@ -5036,7 +5037,7 @@ int mysql_execute_command(THD *thd) {
       if (check_access(thd, UPDATE_ACL, "mysql", NULL, NULL, 1, 1) &&
           check_global_access(thd, CREATE_USER_ACL))
         break;
-      if (tdbctl_is_ddl_by_ctl(thd, lex)) {
+      if (thd->is_support_ddl_by_ctl) {
         thd->do_ddl_by_ctl = TRUE;
         break;
       }
@@ -5055,7 +5056,7 @@ int mysql_execute_command(THD *thd) {
                        first_table ? 0 : 1, 0))
         goto error;
 
-      if (tdbctl_is_ddl_by_ctl(thd, lex)) {
+      if (thd->is_support_ddl_by_ctl) {
         thd->do_ddl_by_ctl = TRUE;
         goto error;
       }
@@ -5469,7 +5470,7 @@ int mysql_execute_command(THD *thd) {
                                &lex->spname->m_name, sph, 0))
         goto error;
 
-      if (tdbctl_is_ddl_by_ctl(thd, lex)) {
+      if (thd->is_support_ddl_by_ctl) {
         thd->do_ddl_by_ctl = TRUE;
         goto error;
       }
@@ -5510,7 +5511,7 @@ int mysql_execute_command(THD *thd) {
         if (udf) {
           if (check_access(thd, DELETE_ACL, "mysql", NULL, NULL, 1, 0))
             goto error;
-          if (tdbctl_is_ddl_by_ctl(thd, thd->lex)) {
+          if (thd->is_support_ddl_by_ctl) {
             thd->do_ddl_by_ctl = TRUE;
             goto error;
           }
@@ -5550,7 +5551,7 @@ int mysql_execute_command(THD *thd) {
         goto error;
       WSREP_TO_ISOLATION_BEGIN(WSREP_MYSQL_DB, NULL, NULL);
 
-      if (tdbctl_is_ddl_by_ctl(thd, thd->lex)) {
+      if (thd->is_support_ddl_by_ctl) {
         thd->do_ddl_by_ctl = TRUE;
         goto error;
       }
@@ -5962,7 +5963,7 @@ finish:
   }
 #endif /* WITH_WSREP */
 
-  if (tdbctl_is_ddl_by_ctl(thd, lex) && thd->do_ddl_by_ctl) {
+  if (thd->is_support_ddl_by_ctl && thd->do_ddl_by_ctl) {
     tdbctl_execute_command(thd, lex);
   }
   DBUG_RETURN(res || thd->is_error());
@@ -7006,6 +7007,7 @@ void THD::reset_for_next_command(bool do_clear_error) {
   if (thd && thd->lex) thd->lex->type &= ~REFRESH_NO_BLOCK;
 
   thd->is_spider_query = FALSE;
+  thd->is_support_ddl_by_ctl = FALSE;
   thd->do_ddl_by_ctl = FALSE;
   thd->spider_remote_query.free();
   thd->spider_slow_query_num = 0;

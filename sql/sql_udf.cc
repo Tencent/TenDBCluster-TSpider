@@ -503,7 +503,7 @@ int mysql_create_function(THD *thd,udf_func *udf)
   if (check_ident_length(&udf->name))
     DBUG_RETURN(1);
 
-  if (tdbctl_is_ddl_by_ctl(thd, thd->lex))
+  if (thd->is_support_ddl_by_ctl)
   {
       thd->do_ddl_by_ctl = TRUE;
       DBUG_RETURN(1);
