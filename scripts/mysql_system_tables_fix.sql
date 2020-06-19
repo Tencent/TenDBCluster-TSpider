@@ -63,7 +63,7 @@ ALTER TABLE tables_priv
 ALTER TABLE tables_priv
   MODIFY Host char(60) NOT NULL default '',
   MODIFY Db char(64) NOT NULL default '',
-  MODIFY User char(80) NOT NULL default '',
+  MODIFY User char(32) NOT NULL default '',
   MODIFY Table_name char(64) NOT NULL default '',
   MODIFY Grantor char(141) NOT NULL default '',
   ENGINE=MyISAM,
@@ -91,7 +91,7 @@ ALTER TABLE columns_priv
 ALTER TABLE columns_priv
   MODIFY Host char(60) NOT NULL default '',
   MODIFY Db char(64) NOT NULL default '',
-  MODIFY User char(80) NOT NULL default '',
+  MODIFY User char(32) NOT NULL default '',
   MODIFY Table_name char(64) NOT NULL default '',
   MODIFY Column_name char(64) NOT NULL default '',
   ENGINE=MyISAM,
@@ -162,7 +162,7 @@ alter table func comment='User defined functions';
 # and reset all char columns to correct width
 ALTER TABLE user
   MODIFY Host char(60) NOT NULL default '',
-  MODIFY User char(80) NOT NULL default '',
+  MODIFY User char(32) NOT NULL default '',
   ENGINE=MyISAM, CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 
 # In MySQL 5.7.6 the Password column is removed. Recreate it to preserve the number
@@ -198,7 +198,7 @@ ALTER TABLE user
 ALTER TABLE db
   MODIFY Host char(60) NOT NULL default '',
   MODIFY Db char(64) NOT NULL default '',
-  MODIFY User char(80) NOT NULL default '',
+  MODIFY User char(32) NOT NULL default '',
   ENGINE=MyISAM, CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;
 ALTER TABLE db
   MODIFY  Select_priv enum('N','Y') COLLATE utf8_general_ci DEFAULT 'N' NOT NULL,
@@ -744,17 +744,17 @@ EXECUTE stmt;
 DROP PREPARE stmt; 
 
 # MDEV-4332 longer user names
-alter table user         modify User         char(80)  binary not null default '';
-alter table db           modify User         char(80)  binary not null default '';
-alter table tables_priv  modify User         char(80)  binary not null default '';
-alter table columns_priv modify User         char(80)  binary not null default '';
-alter table procs_priv   modify User         char(80)  binary not null default '';
+alter table user         modify User         char(32)  binary not null default '';
+alter table db           modify User         char(32)  binary not null default '';
+alter table tables_priv  modify User         char(32)  binary not null default '';
+alter table columns_priv modify User         char(32)  binary not null default '';
+alter table procs_priv   modify User         char(32)  binary not null default '';
 alter table proc         modify definer      char(141) collate utf8_bin not null default '';
 alter table event        modify definer      char(141) collate utf8_bin not null default '';
-alter table proxies_priv modify User         char(80)  COLLATE utf8_bin not null default '';
-alter table proxies_priv modify Proxied_user char(80)  COLLATE utf8_bin not null default '';
+alter table proxies_priv modify User         char(32)  COLLATE utf8_bin not null default '';
+alter table proxies_priv modify Proxied_user char(32)  COLLATE utf8_bin not null default '';
 alter table proxies_priv modify Grantor      char(141) COLLATE utf8_bin not null default '';
-alter table servers      modify Username     char(80)                   not null default '';
+alter table servers      modify Username     char(32)                   not null default '';
 alter table procs_priv   modify Grantor      char(141) COLLATE utf8_bin not null default '';
 alter table tables_priv  modify Grantor      char(141) COLLATE utf8_bin not null default '';
 
