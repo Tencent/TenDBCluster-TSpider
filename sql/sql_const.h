@@ -39,7 +39,6 @@
 #else
 #define MAX_REFLENGTH 4				/* Max length for record ref */
 #endif
-#define MAX_HOSTNAME  61			/* len+1 in mysql.user */
 #define MAX_CONNECTION_NAME NAME_LEN
 
 #define MAX_MBWIDTH		3		/* Max multibyte sequence */

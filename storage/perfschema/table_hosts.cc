@@ -37,7 +37,7 @@ table_hosts::m_share=
   sizeof(PFS_simple_index), /* ref length */
   &m_table_lock,
   { C_STRING_WITH_LEN("CREATE TABLE hosts("
-                      "HOST CHAR(60) collate utf8_bin default null,"
+                      "HOST CHAR(255) collate utf8_bin default null,"
                       "CURRENT_CONNECTIONS bigint not null,"
                       "TOTAL_CONNECTIONS bigint not null)") }
 };

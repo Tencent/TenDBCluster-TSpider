@@ -1725,7 +1725,7 @@ static void append_directory(THD *thd, String *packet, const char *dir_type,
 }
 
 
-#define LIST_PROCESS_HOST_LEN 64
+#define LIST_PROCESS_HOST_LEN HOSTNAME_LENGTH + 1 + PORTNUMBER_LENGTH + 1
 
 
 /**

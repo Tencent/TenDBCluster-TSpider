@@ -8529,7 +8529,7 @@ static bool check_show_access(THD *thd, LEX_USER *lex_user,
 bool mysql_show_create_user(THD *thd, LEX_USER *lex_user)
 {
   const char *username= NULL, *hostname= NULL;
-  char buff[1024]; //Show create user should not take more than 1024 bytes.
+  char buff[2048]; //Show create user should not take more than 2048 bytes.
   Protocol *protocol= thd->protocol;
   bool error= false;
   ACL_USER *acl_user;
@@ -11464,6 +11464,16 @@ static bool update_schema_privilege(THD *thd, TABLE *table, char *buff,
 #endif
 
 
+/**
+Grantee is of form 'user'@'hostname', so add +1 for '@' and +4 for the
+single qoutes. And +1 for null byte too.
+
+Note that we use USERNAME_LENGTH and not USERNAME_CHAR_LENGTH here
+because the username can be utf8.
+*/
+static const int GRANTEE_MAX_BUFF_LENGTH =
+USERNAME_LENGTH + 1 + HOSTNAME_LENGTH + 4 + 1;
+
 int fill_schema_user_privileges(THD *thd, TABLE_LIST *tables, COND *cond)
 {
 #ifndef NO_EMBEDDED_ACCESS_CHECKS
@@ -11471,7 +11481,7 @@ int fill_schema_user_privileges(THD *thd, TABLE_LIST *tables, COND *cond)
   uint counter;
   ACL_USER *acl_user;
   ulong want_access;
-  char buff[100];
+  char buff[GRANTEE_MAX_BUFF_LENGTH];
   TABLE *table= tables->table;
   bool no_global_access= check_access(thd, SELECT_ACL, "mysql",
                                       NULL, NULL, 1, 1);
@@ -11544,7 +11554,7 @@ int fill_schema_schema_privileges(THD *thd, TABLE_LIST *tables, COND *cond)
   uint counter;
   ACL_DB *acl_db;
   ulong want_access;
-  char buff[100];
+  char buff[GRANTEE_MAX_BUFF_LENGTH];
   TABLE *table= tables->table;
   bool no_global_access= check_access(thd, SELECT_ACL, "mysql",
                                       NULL, NULL, 1, 1);
@@ -11618,7 +11628,7 @@ int fill_schema_table_privileges(THD *thd, TABLE_LIST *tables, COND *cond)
 #ifndef NO_EMBEDDED_ACCESS_CHECKS
   int error= 0;
   uint index;
-  char buff[100];
+  char buff[GRANTEE_MAX_BUFF_LENGTH];
   TABLE *table= tables->table;
   bool no_global_access= check_access(thd, SELECT_ACL, "mysql",
                                       NULL, NULL, 1, 1);
@@ -11700,7 +11710,7 @@ int fill_schema_column_privileges(THD *thd, TABLE_LIST *tables, COND *cond)
 #ifndef NO_EMBEDDED_ACCESS_CHECKS
   int error= 0;
   uint index;
-  char buff[100];
+  char buff[GRANTEE_MAX_BUFF_LENGTH];
   TABLE *table= tables->table;
   bool no_global_access= check_access(thd, SELECT_ACL, "mysql",
                                       NULL, NULL, 1, 1);

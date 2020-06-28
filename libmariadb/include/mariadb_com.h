@@ -239,7 +239,7 @@ enum enum_server_command
 #define NET_WAIT_TIMEOUT	8*60*60		/* Wait for new query */
 
 /* for server integration (mysqlbinlog) */
-#define LIST_PROCESS_HOST_LEN 64
+#define LIST_PROCESS_HOST_LEN HOSTNAME_LENGTH + 1 + PORTNUMBER_LENGTH + 1
 #define MYSQL50_TABLE_NAME_PREFIX         "#mysql50#"
 #define MYSQL50_TABLE_NAME_PREFIX_LENGTH  (sizeof(MYSQL50_TABLE_NAME_PREFIX)-1)
 #define SAFE_NAME_LEN (NAME_LEN + MYSQL50_TABLE_NAME_PREFIX_LENGTH)

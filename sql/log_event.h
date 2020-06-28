@@ -234,7 +234,7 @@ class String;
                                    1 + 8          /* type, table_map_for_update */ + \
                                    1 + 4          /* type, master_data_written */ + \
                                    1 + 3          /* type, sec_part of NOW() */ + \
-                                   1 + 16 + 1 + 60/* type, user_len, user, host_len, host */)
+                                   1 + 16 + 1 + 255/* type, user_len, user, host_len, host */)
 #define MAX_LOG_EVENT_HEADER   ( /* in order of Query_log_event::write */ \
   LOG_EVENT_HEADER_LEN + /* write_header */ \
   QUERY_HEADER_LEN     + /* write_data */   \
