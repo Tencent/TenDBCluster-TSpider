@@ -937,7 +937,7 @@ THR_LOCK_DATA **ha_spider::store_lock(THD *thd, THR_LOCK_DATA **to,
 }
 
 int ha_spider::external_lock(THD *thd, int lock_type) {
-  int error_num;
+  int error_num = 0;
   bool sync_trx_isolation = spider_param_sync_trx_isolation(thd);
   backup_error_status();
   DBUG_ENTER("ha_spider::external_lock");
@@ -958,7 +958,8 @@ int ha_spider::external_lock(THD *thd, int lock_type) {
   }
 
   DBUG_PRINT("info", ("spider sql_command=%d", sql_command));
-  DBUG_ASSERT(trx == spider_get_trx(thd, TRUE, &error_num));
+  if (!(trx = spider_get_trx(thd, TRUE, &error_num)))
+    DBUG_RETURN(error_num);
 #ifdef HA_CAN_BULK_ACCESS
   external_lock_cnt++;
 #endif
@@ -1174,10 +1175,12 @@ int ha_spider::reset() {
 }
 
 int ha_spider::extra(enum ha_extra_function operation) {
-  int error_num;
+  int error_num = 0;
   DBUG_ENTER("ha_spider::extra");
   DBUG_PRINT("info", ("spider this=%p", this));
   DBUG_PRINT("info", ("spider operation=%d", (int)operation));
+  if (!(trx = spider_get_trx(ha_thd(), TRUE, &error_num)))
+    DBUG_RETURN(error_num);
   switch (operation) {
     case HA_EXTRA_QUICK:
       quick_mode = TRUE;
@@ -1215,15 +1218,11 @@ int ha_spider::extra(enum ha_extra_function operation) {
 #endif
     case HA_EXTRA_ATTACH_CHILDREN:
       DBUG_PRINT("info", ("spider HA_EXTRA_ATTACH_CHILDREN"));
-      if (!(trx = spider_get_trx(ha_thd(), TRUE, &error_num)))
-        DBUG_RETURN(error_num);
       break;
 #if MYSQL_VERSION_ID < 50500
 #else
     case HA_EXTRA_ADD_CHILDREN_LIST:
       DBUG_PRINT("info", ("spider HA_EXTRA_ADD_CHILDREN_LIST"));
-      if (!(trx = spider_get_trx(ha_thd(), TRUE, &error_num)))
-        DBUG_RETURN(error_num);
       break;
 #endif
 #if defined(HA_EXTRA_HAS_STARTING_ORDERED_INDEX_SCAN) || \
@@ -6052,6 +6051,7 @@ int ha_spider::info(uint flag) {
   THD *thd = ha_thd();
   double sts_interval = spider_param_sts_interval(thd, share->sts_interval);
   SPIDER_INIT_ERROR_TABLE *spider_init_error_table = NULL;
+  int error_num = 0;
   set_error_mode();
   backup_error_status();
   DBUG_ENTER("ha_spider::info");
@@ -6061,13 +6061,11 @@ int ha_spider::info(uint flag) {
   auto_inc_temporary = FALSE;
 #endif
   sql_command = thd_sql_command(thd);
-  /*
-    if (
-      sql_command == SQLCOM_DROP_TABLE ||
-      sql_command == SQLCOM_ALTER_TABLE ||
-      sql_command == SQLCOM_SHOW_CREATE
-    ) {
-  */
+
+  if (!(trx = spider_get_trx(thd, TRUE, &error_num))) {
+    DBUG_RETURN(error_num);
+  }
+
   if (flag & HA_STATUS_AUTO) {
     stats.auto_increment_value = 0;
 #ifdef HANDLER_HAS_CAN_USE_FOR_AUTO_INC_INIT
@@ -6076,7 +6074,7 @@ int ha_spider::info(uint flag) {
   }
   if (sql_command == SQLCOM_DROP_TABLE || sql_command == SQLCOM_ALTER_TABLE ||
       sql_command == SQLCOM_SHOW_CREATE)
-    DBUG_RETURN(0);
+    DBUG_RETURN(error_num);
 
   if (flag & (HA_STATUS_TIME | HA_STATUS_CONST | HA_STATUS_VARIABLE |
               HA_STATUS_AUTO)) {
@@ -6127,11 +6125,6 @@ int ha_spider::info(uint flag) {
             !(table->next_number_field->val_int() != 0 ||
               (table->auto_increment_field_not_null &&
                thd->variables.sql_mode & MODE_NO_AUTO_VALUE_ON_ZERO))) {
-          int tmp_num = 0;
-          if (!(trx = spider_get_trx(thd, TRUE, &tmp_num))) {
-            my_error(ER_OUT_OF_RESOURCES, MYF(0), HA_ERR_OUT_OF_MEM);
-            DBUG_RETURN(tmp_num);
-          }
           get_auto_increment(0, 0, 0, &first_value, &nb_reserved_values);
           share->lgtm_tblhnd_share->auto_increment_value = first_value;
           share->lgtm_tblhnd_share->auto_increment_lclval = first_value;
