@@ -1040,6 +1040,8 @@ typedef struct st_spider_result_list {
   /* the limit_offeset, without where condition */
   bool direct_limit_offset;
   bool direct_distinct;
+  /* always directly dispatch limit, direct_limit must be false when "distinct with where" */
+  bool direct_limit; 
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
   bool direct_aggregate;
   bool snap_mrr_with_cnt;
