@@ -6578,20 +6578,7 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
     DBUG_PRINT("info", ("spider set use_index_merge"));
     spider->use_index_merge = TRUE;
   }
-  DBUG_PRINT("info",
-             ("spider SQLCOM_HA_READ=%s",
-              (spider->sql_command == SQLCOM_HA_READ) ? "TRUE" : "FALSE"));
-  DBUG_PRINT("info", ("spider sql_kinds with SPIDER_SQL_KIND_HANDLER=%s",
-                      (spider->sql_kinds & SPIDER_SQL_KIND_HANDLER) ? "TRUE"
-                                                                    : "FALSE"));
-  DBUG_PRINT("info", ("spider use_index_merge=%s",
-                      spider->use_index_merge ? "TRUE" : "FALSE"));
-  DBUG_PRINT("info",
-             ("spider is_clone=%s", spider->is_clone ? "TRUE" : "FALSE"));
-#ifdef HA_CAN_BULK_ACCESS
-  DBUG_PRINT("info", ("spider is_bulk_access_clone=%s",
-                      spider->is_bulk_access_clone ? "TRUE" : "FALSE"));
-#endif
+  spider->result_list.direct_limit = TRUE;
   if (spider->sql_command != SQLCOM_HA_READ && !spider->use_index_merge &&
 #ifdef HA_CAN_BULK_ACCESS
       (!spider->is_clone || spider->is_bulk_access_clone)
@@ -6601,30 +6588,24 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
   ) {
     spider_get_select_limit(spider, &select_lex, &select_limit, &offset_limit);
     bool first_check = TRUE;
-    DBUG_PRINT("info", ("spider select_lex=%p", select_lex));
-#if defined(MARIADB_BASE_VERSION) && MYSQL_VERSION_ID >= 100000
-    DBUG_PRINT("info", ("spider leaf_tables.elements=%u",
-                        select_lex ? select_lex->leaf_tables.elements : 0));
-#endif
-
     if (select_lex && (select_lex->options & SELECT_DISTINCT)) {
-      DBUG_PRINT("info", ("spider with distinct"));
       spider->result_list.direct_distinct = TRUE;
+    }
+
+    /*  don't dispatch limit to data node */
+    /* example query: select distinct id from t where name > 'a' limit 10  */
+    if (select_lex && (select_lex->options & SELECT_DISTINCT) &&
+        select_lex->where && select_lex->explicit_limit) { 
+      spider->result_list.direct_limit = FALSE;
     }
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
     spider->result_list.direct_aggregate = TRUE;
 #endif
-    DBUG_PRINT("info", ("spider select_limit=%lld", select_limit));
-    DBUG_PRINT("info", ("spider offset_limit=%lld", offset_limit));
     if (
-#if MYSQL_VERSION_ID < 50500
-        !thd->variables.engine_condition_pushdown ||
-#else
 #ifdef SPIDER_ENGINE_CONDITION_PUSHDOWN_IS_ALWAYS_ON
 #else
         !(thd->variables.optimizer_switch &
           OPTIMIZER_SWITCH_ENGINE_CONDITION_PUSHDOWN) ||
-#endif
 #endif
 #ifdef SPIDER_NEED_CHECK_CONDITION_AT_CHECKING_DIRECT_ORDER_LIMIT
         !spider->condition ||
@@ -6669,7 +6650,6 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
       Item_sum **item_sum_ptr;
       for (item_sum_ptr = join->sum_funcs; *item_sum_ptr; ++item_sum_ptr) {
         if (spider->print_item_type(*item_sum_ptr, NULL, NULL, 0)) {
-          DBUG_PRINT("info", ("spider aggregate FALSE by not supported"));
           spider->result_list.direct_aggregate = FALSE;
           break;
         }
@@ -6681,28 +6661,7 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
         spider_param_direct_order_limit(thd, share->direct_order_limit);
     DBUG_PRINT("info", ("spider direct_order_limit=%lld", direct_order_limit));
     if (direct_order_limit) {
-      DBUG_PRINT("info",
-                 ("spider first_check=%s", first_check ? "TRUE" : "FALSE"));
-      DBUG_PRINT(
-          "info",
-          ("spider (select_lex->options & OPTION_FOUND_ROWS)=%s",
-           select_lex && (select_lex->options & OPTION_FOUND_ROWS) ? "TRUE"
-                                                                   : "FALSE"));
-#ifdef HANDLER_HAS_DIRECT_AGGREGATE
-      DBUG_PRINT("info",
-                 ("spider direct_aggregate=%s",
-                  spider->result_list.direct_aggregate ? "TRUE" : "FALSE"));
-#endif
-      DBUG_PRINT("info", ("spider select_lex->group_list.elements=%u",
-                          select_lex ? select_lex->group_list.elements : 0));
-      DBUG_PRINT("info",
-                 ("spider select_lex->with_sum_func=%s",
-                  select_lex && select_lex->with_sum_func ? "TRUE" : "FALSE"));
-      DBUG_PRINT("info", ("spider select_lex->having=%s",
-                          select_lex && select_lex->having ? "TRUE" : "FALSE"));
-      DBUG_PRINT("info", ("spider select_lex->order_list.elements=%u",
-                          select_lex ? select_lex->order_list.elements : 0));
-      if (!first_check || !select_lex->explicit_limit ||
+          if (!first_check || !select_lex->explicit_limit ||
           (select_lex->options & OPTION_FOUND_ROWS) ||
           (
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
@@ -6732,7 +6691,6 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
       DBUG_RETURN(TRUE);
     }
   }
-  DBUG_PRINT("info", ("spider FALSE by parameter"));
   DBUG_RETURN(FALSE);
 }
 

@@ -8123,10 +8123,9 @@ int spider_mysql_handler::append_limit(spider_string *str, longlong offset,
   char buf[SPIDER_LONGLONG_LEN + 1];
   uint32 length;
   DBUG_ENTER("spider_mysql_handler::append_limit");
-  DBUG_PRINT("info", ("spider this=%p", this));
-  DBUG_PRINT("info", ("spider offset=%lld", offset));
-  DBUG_PRINT("info", ("spider limit=%lld", limit));
-  if (offset || limit < 9223372036854775807LL) {
+
+  if ((offset || limit < 9223372036854775807LL) &&
+      (spider->result_list.direct_limit)) {
     if (str->reserve(SPIDER_SQL_LIMIT_LEN + SPIDER_SQL_COMMA_LEN +
                      ((SPIDER_LONGLONG_LEN)*2)))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
