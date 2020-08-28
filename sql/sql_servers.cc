@@ -868,7 +868,6 @@ void merge_server_struct(FOREIGN_SERVER *from, FOREIGN_SERVER *to)
   if (to->port == -1)
   {
     to->port = from->port;
-    to->sport = from->sport;
   }
   if (!to->socket && from->socket)
     to->socket= strdup_root(&mem, from->socket);
@@ -1242,8 +1241,6 @@ prepare_server_struct_for_update(LEX_SERVER_OPTIONS *server_options,
 
   char str[10] = { 0 };
   snprintf(str, sizeof(str), "%d", server_options->port);
-  /* if not do this, while we get port from server_caches, may core dump */
-  altered->sport = strdup_root(&mem, str);
   altered->version = 0; /* no need */
   DBUG_VOID_RETURN;
 }
@@ -1317,7 +1314,6 @@ static FOREIGN_SERVER *clone_server(MEM_ROOT *mem, const FOREIGN_SERVER *server,
   buffer->scheme= safe_strdup_root(mem, server->scheme);
   buffer->username= safe_strdup_root(mem, server->username);
   buffer->password= safe_strdup_root(mem, server->password);
-  buffer->sport = safe_strdup_root(mem, server->sport);
   buffer->socket= safe_strdup_root(mem, server->socket);
   buffer->owner= safe_strdup_root(mem, server->owner);
   buffer->host= safe_strdup_root(mem, server->host);
@@ -1402,21 +1398,22 @@ ulong get_server_version_by_name(const char *server_name)
 	mysql_rwlock_unlock(&THR_LOCK_servers);
 	DBUG_RETURN(server_version);
 }
+
 int back_up_one_server(FOREIGN_SERVER *server)
 {
 	int error = 0;
 	DBUG_ENTER("insert_into_servers_cache_version");
 	/* construct  FOREIGN_SERVER_V */
 	FOREIGN_SERVER *tmp = (FOREIGN_SERVER *)alloc_root(&mem_bak, sizeof(FOREIGN_SERVER));
-	tmp->server_name = strdup_root(&mem_bak, server->server_name);
-	tmp->host = strdup_root(&mem_bak, server->host);
-	tmp->username = strdup_root(&mem_bak, server->username);
-	tmp->password = strdup_root(&mem_bak, server->password);
-	tmp->db = strdup_root(&mem_bak, server->db);
-	tmp->scheme = strdup_root(&mem_bak, server->scheme);
-	tmp->socket = strdup_root(&mem_bak, server->socket);
-	tmp->owner = strdup_root(&mem_bak, server->owner);
-	tmp->sport = strdup_root(&mem_bak, server->sport);
+	tmp->server_name = safe_strdup_root(&mem_bak, server->server_name);
+	tmp->host = safe_strdup_root(&mem_bak, server->host);
+	tmp->username = safe_strdup_root(&mem_bak, server->username);
+	tmp->password = safe_strdup_root(&mem_bak, server->password);
+	tmp->db = safe_strdup_root(&mem_bak, server->db);
+	tmp->scheme = safe_strdup_root(&mem_bak, server->scheme);
+	tmp->socket = safe_strdup_root(&mem_bak, server->socket);
+	tmp->owner = safe_strdup_root(&mem_bak, server->owner);
+	tmp->sport = safe_strdup_root(&mem_bak, server->sport);
 	tmp->port = server->port;
 	tmp->server_name_length = server->server_name_length;
 	tmp->version = server->version;
@@ -1462,7 +1459,6 @@ bool update_server_version(bool *version_updated)
 				strcmp(server->socket, server_bak->socket) ||
 				strcmp(server->password, server_bak->password) ||
 				strcmp(server->owner, server_bak->owner) ||
-				strcmp(server->sport, server_bak->sport) ||
 				server->port != server_bak->port)
 			{/* not equal: 1.update server_v; 2.version++ */
 				server_bak->version++;
