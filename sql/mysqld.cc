@@ -1809,6 +1809,8 @@ static void close_connections(void)
   // don't sleep for spider
   //for (int i= 0; *(volatile int32*) &thread_count && i < 1000; i++)
   //  my_sleep(20000);
+  if (thread_count > 0) 
+    sleep(2);
 
   /*
     Force remaining threads to die by closing the connection to the client
