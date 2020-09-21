@@ -9,10 +9,10 @@ TenDB Cluster是腾讯游戏CROS DBA团队提供的MySQL分布式关系型数据
 
 ## 快速体验
 可以使用Docker-compose快速部署TenDB Cluster进行体验。    
-关于Docker-compose的细节见章节[使用Docker Compose快速部署](Documentation/op-guide/docker-compose-tendbcluster.md)
+关于Docker-compose的细节见章节[使用Docker Compose快速部署](https://tendbcluster.com/book-cn/Documentation/op-guide/docker-compose-tendbcluster.html)
 
-## [使用文档](http://tendbcluster.com/)
-具体见[参考手册](http://tendbcluster.com/)
+## [使用文档](https://tendbcluster.com/book-cn/)
+具体见[参考手册](https://tendbcluster.com/book-cn/)
 
 
 ## 灵活部署
@@ -28,7 +28,7 @@ Tdbctl:   https://github.com/Tencent/TenDBCluster-Tdbctl/issues
 
 
 ## 路线图
-详情见章节[路线图](Documentation/roadmap.md)
+详情见章节[路线图](https://tendbcluster.com/book-cn/Documentation/roadmap.html)
 
 
 ## 开源协议
@@ -37,4 +37,4 @@ TenDB Cluster主要是使用GNU General Public License Version 2开源协议，�
 
 ## 致谢
 感谢MariaDB及Percona在MySQL开源生态做出的杰出贡献，正是站在前人的肩膀上TenDB Cluster才得以诞生。   
-另外，也特别感谢帮助TenDB Cluster达到其现状的杰出开发人员、贡献人和支持人员，详情见[致谢章节](Documentation/acknowledgements.md)
+另外，也特别感谢帮助TenDB Cluster达到其现状的杰出开发人员、贡献人和支持人员，详情见[致谢章节](https://tendbcluster.com/book-cn/Documentation/acknowledgements.html)
