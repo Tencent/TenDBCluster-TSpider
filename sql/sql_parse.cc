@@ -9769,7 +9769,7 @@ LEX_CSTRING tdbctl_get_current_db(THD *thd, LEX *lex) {
 bool tdbctl_is_ignore_db(char *db_list, LEX_CSTRING current_db) {
   char *ptr;
   char *next_ptr;
-  char *delim = ",";
+  char const *delim = ",";
   if (current_db.str == "" || current_db.length == 0) return FALSE;
 
   char *strtmp = new char[strlen(db_list) + 1];
