@@ -142,7 +142,6 @@ ha_spider::ha_spider() : handler(spider_hton_ptr, NULL) {
   result_list.bgs_working = FALSE;
   result_list.direct_order_limit = FALSE;
   result_list.direct_limit_offset = FALSE;
-  result_list.direct_limit = TRUE;
   result_list.set_split_read = FALSE;
   result_list.insert_dup_update_pushdown = FALSE;
   result_list.tmp_pos_row_first = NULL;
@@ -238,7 +237,6 @@ ha_spider::ha_spider(handlerton *hton, TABLE_SHARE *table_arg)
   result_list.bgs_working = FALSE;
   result_list.direct_order_limit = FALSE;
   result_list.direct_limit_offset = FALSE;
-  result_list.direct_limit = TRUE;
   result_list.set_split_read = FALSE;
   result_list.insert_dup_update_pushdown = FALSE;
   result_list.tmp_pos_row_first = NULL;
@@ -1151,7 +1149,6 @@ int ha_spider::reset() {
   result_list.have_sql_kind_backup = FALSE;
   result_list.direct_order_limit = FALSE;
   result_list.direct_limit_offset = FALSE;
-  result_list.direct_limit = TRUE;
   result_list.set_split_read = FALSE;
   result_list.insert_dup_update_pushdown = FALSE;
   use_spatial_index = FALSE;
@@ -7230,7 +7227,7 @@ int ha_spider::direct_update_rows_init(uint mode, KEY_MULTI_RANGE *ranges,
       **/
     }
 
-    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table
     // it can't use direct_update where set timestamp = ** by user.
     if (thd->is_set_time()) {
       // always one table
@@ -7327,7 +7324,7 @@ int ha_spider::direct_update_rows_init() {
     **********/
     }
 
-    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table
     // it can't use direct_update where set timestamp = ** by user.
     if (thd->is_set_time()) {
       // always one table

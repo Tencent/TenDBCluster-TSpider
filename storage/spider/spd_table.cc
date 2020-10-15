@@ -6578,7 +6578,6 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
     DBUG_PRINT("info", ("spider set use_index_merge"));
     spider->use_index_merge = TRUE;
   }
-  spider->result_list.direct_limit = TRUE;
   if (spider->sql_command != SQLCOM_HA_READ && !spider->use_index_merge &&
 #ifdef HA_CAN_BULK_ACCESS
       (!spider->is_clone || spider->is_bulk_access_clone)
@@ -6592,12 +6591,6 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
       spider->result_list.direct_distinct = TRUE;
     }
 
-    /*  don't dispatch limit to data node */
-    /* example query: select distinct id from t where name > 'a' limit 10  */
-    if (select_lex && (select_lex->options & SELECT_DISTINCT) &&
-        select_lex->where && select_lex->explicit_limit) { 
-      spider->result_list.direct_limit = FALSE;
-    }
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
     spider->result_list.direct_aggregate = TRUE;
 #endif
@@ -6662,7 +6655,6 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
     DBUG_PRINT("info", ("spider direct_order_limit=%lld", direct_order_limit));
     if (direct_order_limit) {
           if (!first_check || !select_lex->explicit_limit ||
-          (select_lex->options & OPTION_FOUND_ROWS) ||
           (
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
               !spider->result_list.direct_aggregate &&
