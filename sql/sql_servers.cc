@@ -1413,7 +1413,8 @@ int back_up_one_server(FOREIGN_SERVER *server)
 	tmp->scheme = safe_strdup_root(&mem_bak, server->scheme);
 	tmp->socket = safe_strdup_root(&mem_bak, server->socket);
 	tmp->owner = safe_strdup_root(&mem_bak, server->owner);
-	tmp->sport = safe_strdup_root(&mem_bak, server->sport);
+	// "create server ..." may trigger a bug here 
+        // tmp->sport = safe_strdup_root(&mem_bak, server->sport);
 	tmp->port = server->port;
 	tmp->server_name_length = server->server_name_length;
 	tmp->version = server->version;
