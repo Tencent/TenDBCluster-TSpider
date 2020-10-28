@@ -1,0 +1,209 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS tbl;
+CREATE TABLE m (
+id int(11) NOT NULL,
+PRIMARY KEY (id)
+) DEFAULT CHARSET=utf8;
+CREATE TABLE tbl (
+id int(11) NOT NULL,
+flag int(11) DEFAULT NULL,
+PRIMARY KEY (id)
+)ENGINE=Spider DEFAULT CHARSET=utf8
+PARTITION BY LIST (id % 2)
+(
+PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl", srv "s_2_1",aim "0"',
+PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl", srv "s_2_2",aim "1"'
+);
+
+insert data and test
+INSERT INTO tbl VALUES (101624109, 1);
+INSERT INTO tbl VALUES (91272871, 1);
+INSERT INTO tbl VALUES (94933594, 1);
+INSERT INTO tbl VALUES (98646655, 1);
+INSERT INTO tbl VALUES (13914947, 0);
+INSERT INTO tbl VALUES (45051390, 0);
+INSERT INTO tbl VALUES (30864034, 1);
+INSERT INTO tbl VALUES (33671239, 0);
+INSERT INTO tbl VALUES (39109063, 1);
+INSERT INTO tbl VALUES (91137966, 1);
+INSERT INTO tbl VALUES (95897689, 0);
+INSERT INTO tbl VALUES (571307512, 1);
+INSERT INTO tbl VALUES (35706155, 1);
+INSERT INTO tbl VALUES (34044708, 0);
+SELECT COUNT(*) FROM tbl;
+COUNT(*)
+14
+SELECT * FROM tbl ORDER BY `id`;
+id	flag
+13914947	0
+30864034	1
+33671239	0
+34044708	0
+35706155	1
+39109063	1
+45051390	0
+91137966	1
+91272871	1
+94933594	1
+95897689	0
+98646655	1
+101624109	1
+571307512	1
+SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+SET @optimzer_switch_bk = @@session.optimizer_switch;
+mrr = on
+SET SESSION optimizer_switch = "mrr=on";
+spider_ignore_single_select_index enable
+SET GLOBAL spider_ignore_single_select_index = ON;
+SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+id
+30864034
+91137966
+571307512
+35706155
+39109063
+91272871
+98646655
+101624109
+INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+SELECT * FROM m;
+id
+30864034
+35706155
+39109063
+91137966
+91272871
+98646655
+101624109
+571307512
+TRUNCATE TABLE m;
+spider_ignore_single_select_index disable
+SET GLOBAL spider_ignore_single_select_index = OFF;
+SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+id
+30864034
+91137966
+571307512
+35706155
+39109063
+91272871
+98646655
+101624109
+INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+SELECT * FROM m;
+id
+30864034
+35706155
+39109063
+91137966
+91272871
+98646655
+101624109
+571307512
+TRUNCATE TABLE m;
+mrr = off
+SET SESSION optimizer_switch = "mrr=off";
+spider_ignore_single_select_index enable
+SET GLOBAL spider_ignore_single_select_index = ON;
+SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+id
+30864034
+91137966
+571307512
+35706155
+39109063
+91272871
+98646655
+101624109
+INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+SELECT * FROM m;
+id
+30864034
+35706155
+39109063
+91137966
+91272871
+98646655
+101624109
+571307512
+TRUNCATE TABLE m;
+spider_ignore_single_select_index disable
+SET GLOBAL spider_ignore_single_select_index = OFF;
+SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+id
+30864034
+91137966
+571307512
+35706155
+39109063
+91272871
+98646655
+101624109
+INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
+SELECT * FROM m;
+id
+30864034
+35706155
+39109063
+91137966
+91272871
+98646655
+101624109
+571307512
+TRUNCATE TABLE m;
+spider_ignore_single_select_index restore
+SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+optimizer_switch restore
+SET SESSION optimizer_switch = @optimzer_switch_bk;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
