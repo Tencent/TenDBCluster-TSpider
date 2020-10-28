@@ -4185,6 +4185,10 @@ int ha_spider::read_multi_range_next(KEY_MULTI_RANGE **found_range_p)
       DBUG_RETURN(0);
     }
 
+    if (error_num == HA_ERR_END_OF_FILE) {
+      DBUG_RETURN(error_num);
+    }
+
 #ifdef HA_MRR_USE_DEFAULT_IMPL
     range_res = mrr_funcs.next(mrr_iter, &mrr_cur_range);
     DBUG_PRINT("info", ("spider range_res1=%d", range_res));

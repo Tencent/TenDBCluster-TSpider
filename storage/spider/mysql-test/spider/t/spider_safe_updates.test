@@ -1,0 +1,213 @@
+# bugfix for mrr simple select duplicate records
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  CREATE DATABASE auto_test_remote_2;
+  USE auto_test_remote_2;
+}
+--enable_warnings
+
+
+--let $CHILD2_1_DROP_TABLES_BACKUP= $CHILD2_1_DROP_TABLES
+let $CHILD2_1_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl;
+--let $CHILD2_1_CREATE_TABLES_BACKUP= $CHILD2_1_CREATE_TABLES
+let $CHILD2_1_CREATE_TABLES=
+CREATE TABLE tbl (
+  id int primary key auto_increment,
+  content varchar(20)
+)$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+
+--let $CHILD2_2_DROP_TABLES_BACKUP= $CHILD2_2_DROP_TABLES
+let $CHILD2_2_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl;
+--let $CHILD2_2_CREATE_TABLES_BACKUP= $CHILD2_2_CREATE_TABLES
+let $CHILD2_2_CREATE_TABLES=
+CREATE TABLE tbl (
+  id int primary key auto_increment,
+  content varchar(20)
+)$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+DROP TABLE IF EXISTS tbl;
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+let $MASTER_CREATE_TABLES1 =
+CREATE TABLE safe_update_test_innodb (
+  id int primary key,
+  content varchar(20)
+)ENGINE=INNODB;
+
+let $MASTER_CREATE_TABLES2 = 
+CREATE TABLE safe_update_test_spider (
+  id int primary key,
+  content varchar(20)
+)$MASTER_1_ENGINE $MASTER_1_CHARSET
+PARTITION BY LIST (id % 2)
+(
+  PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl", srv "s_2_1",aim "0"',
+  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl", srv "s_2_2",aim "1"'
+);
+
+eval $MASTER_CREATE_TABLES1;
+eval $MASTER_CREATE_TABLES2;
+
+--echo
+--echo insert data and test
+
+SET @sql_safe_updates_bk = @@session.sql_safe_updates;
+
+SET sql_safe_updates = 1;
+INSERT INTO safe_update_test_innodb VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+--error ER_UPDATE_WITHOUT_KEY_IN_SAFE_MODE
+DELETE FROM safe_update_test_innodb WHERE content = 'd';
+--error ER_UPDATE_WITHOUT_KEY_IN_SAFE_MODE
+UPDATE safe_update_test_innodb SET content = 'f' where content = 'c';
+DELETE FROM safe_update_test_innodb WHERE id = 2;
+UPDATE safe_update_test_innodb SET content = 'f' where id = 1;
+SELECT * FROM safe_update_test_innodb;
+truncate table safe_update_test_innodb;
+
+SET sql_safe_updates = 0;
+INSERT INTO safe_update_test_innodb VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+DELETE FROM safe_update_test_innodb WHERE content = 'd';
+UPDATE safe_update_test_innodb SET content = 'f' where content = 'c';
+DELETE FROM safe_update_test_innodb WHERE id = 2;
+UPDATE safe_update_test_innodb SET content = 'f' where id = 1;
+SELECT * FROM safe_update_test_innodb;
+truncate table safe_update_test_innodb;
+
+SET sql_safe_updates = 1;
+INSERT INTO safe_update_test_spider VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+--error ER_UPDATE_WITHOUT_KEY_IN_SAFE_MODE
+DELETE FROM safe_update_test_spider WHERE content = 'd';
+--error ER_UPDATE_WITHOUT_KEY_IN_SAFE_MODE
+UPDATE safe_update_test_spider SET content = 'f' where content = 'c';
+# TODO: fix safe_updates in Spider SE later
+# DELETE FROM safe_update_test_spider WHERE id = 2;
+# UPDATE safe_update_test_spider SET content = 'f' where id = 1;
+SELECT * FROM safe_update_test_spider;
+truncate table safe_update_test_spider;
+
+SET sql_safe_updates = 0;
+INSERT INTO safe_update_test_spider VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+DELETE FROM safe_update_test_spider WHERE content = 'd';
+UPDATE safe_update_test_spider SET content = 'f' where content = 'c';
+DELETE FROM safe_update_test_spider WHERE id = 2;
+UPDATE safe_update_test_spider SET content = 'f' where id = 1;
+SELECT * FROM safe_update_test_spider;
+truncate table safe_update_test_spider;
+
+-- echo restore sql_safe_updates
+SET sql_safe_updates = @sql_safe_updates_bk;
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test

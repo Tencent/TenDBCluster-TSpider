@@ -23114,7 +23114,12 @@ void JOIN::set_allowed_join_cache_types() {
       optimizer_flag(thd, OPTIMIZER_SWITCH_SEMIJOIN_WITH_CACHE);
   allowed_outer_join_with_cache =
       optimizer_flag(thd, OPTIMIZER_SWITCH_OUTER_JOIN_WITH_CACHE);
-  max_allowed_join_cache_level = thd->variables.join_cache_level;
+  // max_allowed_join_cache_level = thd->variables.join_cache_level;
+  // BKA join algorithms are not allowed, because they have bugs in Spider SE
+  max_allowed_join_cache_level =
+      thd->variables.join_cache_level > JOIN_CACHE_BKA_BIT
+          ? JOIN_CACHE_BKA_BIT
+          : thd->variables.join_cache_level;
 }
 
 /**
