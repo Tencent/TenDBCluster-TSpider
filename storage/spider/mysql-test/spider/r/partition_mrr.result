@@ -74,70 +74,41 @@ TRUNCATE TABLE mysql.general_log;
 connection master_1;
 SELECT a.pkey FROM tbl_a a, tbl_b b WHERE a.pkey = b.pkey;
 pkey
-4
-5
-10
-11
-16
-17
-22
-23
-28
-29
 0
 1
-6
-7
-12
-13
-18
-19
-24
-25
 2
 3
+4
+5
+6
+7
 8
 9
+10
+11
+12
+13
 14
 15
+16
+17
+18
+19
 20
 21
+22
+23
+24
+25
 26
 27
+28
+29
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 argument
 select `pkey` from `auto_test_remote`.`tbl_a` order by `pkey`
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 0
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 1
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 2
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 3
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 4
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 5
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 6
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 7
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 8
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 9
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 10
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 11
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 12
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 13
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 14
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 15
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 16
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 17
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 18
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 19
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 20
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 21
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 22
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 23
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 24
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 25
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 26
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 27
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 28
-select `pkey` from `auto_test_remote`.`tbl_b` where `pkey` = 29
+select `pkey` from `auto_test_remote`.`tbl_b` order by `pkey`
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 SELECT pkey FROM tbl_a ORDER BY pkey ;
 SELECT pkey FROM tbl_b ORDER BY pkey;
@@ -167,36 +138,7 @@ connection child2_2;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 argument
 select `pkey` from `auto_test_remote2`.`tbl_a` order by `pkey`
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 0
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 1
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 2
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 3
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 4
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 5
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 6
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 7
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 8
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 9
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 10
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 11
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 12
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 13
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 14
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 15
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 16
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 17
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 18
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 19
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 20
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 21
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 22
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 23
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 24
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 25
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 26
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 27
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 28
-select `pkey` from `auto_test_remote2`.`tbl_b` where `pkey` = 29
+select `pkey` from `auto_test_remote2`.`tbl_b` order by `pkey`
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 SELECT pkey FROM tbl_a ORDER BY pkey ;
 SELECT pkey FROM tbl_b ORDER BY pkey;
@@ -226,36 +168,7 @@ connection child2_3;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 argument
 select `pkey` from `auto_test_remote3`.`tbl_a` order by `pkey`
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 0
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 1
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 2
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 3
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 4
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 5
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 6
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 7
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 8
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 9
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 10
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 11
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 12
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 13
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 14
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 15
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 16
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 17
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 18
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 19
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 20
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 21
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 22
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 23
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 24
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 25
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 26
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 27
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 28
-select `pkey` from `auto_test_remote3`.`tbl_b` where `pkey` = 29
+select `pkey` from `auto_test_remote3`.`tbl_b` order by `pkey`
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 SELECT pkey FROM tbl_a ORDER BY pkey ;
 SELECT pkey FROM tbl_b ORDER BY pkey;

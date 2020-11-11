@@ -57,25 +57,18 @@ VALUES('1983-01-01', '1990-01-01'),
 ('1983-01-01', '1992-05-05'),
 ('1983-01-01', '1995-12-01');
 set  sql_safe_updates = 1;
-delete  from tbl_a  where id>0;
-affected rows: 5
 
 select for master
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%delete %';
 argument
-delete  from tbl_a  where id>0
-mysql localhost 3306 delete from `auto_test_remote`.`tbl_a` where (`id` > 0)
-mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where (`id` > 0)
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%delete %'
 connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%delete %';
 argument
-delete from `auto_test_remote`.`tbl_a` where (`id` > 0)
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%delete %'
 connection child2_2;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%delete %';
 argument
-delete from `auto_test_remote_2`.`tbl_a` where (`id` > 0)
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%delete %'
 
 deinit
