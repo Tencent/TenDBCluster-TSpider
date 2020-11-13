@@ -3034,11 +3034,16 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
     SPIDER_DB_ROW *tmp_row;
     uint field_count = current->result->num_fields();
     SPIDER_POSITION *position;
-    longlong page_size =
-        !result_list->quick_page_size ||
-                result_list->limit_num < result_list->quick_page_size
-            ? result_list->limit_num
-            : result_list->quick_page_size;
+    longlong page_size = 0LL;
+    if (thd->spider_const_index_read) {
+      /* only one row for const index read */
+      page_size = 1;
+    } else {
+      page_size = !result_list->quick_page_size ||
+                          result_list->limit_num < result_list->quick_page_size
+                      ? result_list->limit_num
+                      : result_list->quick_page_size;
+    }
     int roop_count = 0;
     current->field_count = field_count;
     if (!(position = (SPIDER_POSITION *)spider_bulk_malloc(

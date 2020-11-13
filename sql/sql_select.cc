@@ -17571,6 +17571,8 @@ static int join_read_const(JOIN_TAB *tab) {
     if (cp_buffer_from_ref(tab->join->thd, table, &tab->ref))
       error = HA_ERR_KEY_NOT_FOUND;
     else {
+      if (table->file->is_spider_storage_engine())
+        tab->join->thd->spider_const_index_read = TRUE;
       error = table->file->ha_index_read_idx_map(
           table->record[0], tab->ref.key, (uchar *)tab->ref.key_buff,
           make_prev_keypart_map(tab->ref.key_parts), HA_READ_KEY_EXACT);
