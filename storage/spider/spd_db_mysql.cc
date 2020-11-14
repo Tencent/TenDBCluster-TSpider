@@ -6280,8 +6280,8 @@ int spider_mysql_handler::append_insert(spider_string *str, int link_idx) {
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
     str->q_append(SPIDER_SQL_HIGH_PRIORITY_STR, SPIDER_SQL_HIGH_PRIORITY_LEN);
   }
-  if (spider->ignore_dup_key && spider->direct_dup_insert &&
-      !spider->write_can_replace &&
+  if (spider->ignore_dup_key && !spider->write_can_replace &&
+    (spider->direct_dup_insert && spider->direct_insert_ignore) &&
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
       (!spider->insert_with_update || !dup_update_sql.length()) &&
 #else

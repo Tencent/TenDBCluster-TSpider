@@ -6985,9 +6985,8 @@ int ha_spider::write_row(uchar *buf) {
     }
   }
   if (!bulk_insert || bulk_size < 0) {
-    direct_dup_insert =
-        spider_param_direct_dup_insert(trx->thd, share->direct_dup_insert);
-    DBUG_PRINT("info", ("spider direct_dup_insert=%d", direct_dup_insert));
+    direct_dup_insert = spider_param_direct_dup_insert(trx->thd, share->direct_dup_insert);
+    direct_insert_ignore = spider_param_direct_insert_ignore(trx->thd);
     if ((error_num = spider_db_bulk_insert_init(this, table)))
       DBUG_RETURN(check_error_mode(error_num));
     if (bulk_insert)
@@ -6997,9 +6996,8 @@ int ha_spider::write_row(uchar *buf) {
 #else
               insert_with_update ||
 #endif
-                  (!direct_dup_insert && ignore_dup_key)
-              ? 0
-              : spider_param_bulk_size(trx->thd, share->bulk_size);
+                  ((!direct_dup_insert || !direct_insert_ignore) && ignore_dup_key)
+              ? 0 : spider_param_bulk_size(trx->thd, share->bulk_size);
     else
       bulk_size = 0;
   }

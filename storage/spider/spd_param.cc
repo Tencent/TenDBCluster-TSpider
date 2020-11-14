@@ -1781,6 +1781,28 @@ int spider_param_direct_dup_insert(THD *thd, int direct_dup_insert) {
                   : THDVAR(thd, direct_dup_insert));
 }
 
+
+/*
+  0 : don't dispatch "insert ignore" to data node
+  1 : dispatch "insert ignore" directly
+ */
+static MYSQL_THDVAR_INT(
+    direct_insert_ignore,   /* name */
+    PLUGIN_VAR_RQCMDARG, /* opt */
+    "Dispatch \"INSERT IGNORE\" to remote server ", /* comment */
+    NULL,                              /* check */
+    NULL,                              /* update */
+    0,                                 /* def */
+    0,                                 /* min */
+    1,                                 /* max */
+    0                                  /* blk */
+);
+
+int spider_param_direct_insert_ignore(THD *thd) {
+  DBUG_ENTER("spider_param_direct_insert_ignore");
+  DBUG_RETURN(THDVAR(thd, direct_insert_ignore));
+}
+
 static uint spider_udf_table_lock_mutex_count = 20;
 /*
   1-: mutex count
@@ -2850,6 +2872,7 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(local_lock_table),
     MYSQL_SYSVAR(use_pushdown_udf),
     MYSQL_SYSVAR(direct_dup_insert),
+    MYSQL_SYSVAR(direct_insert_ignore),
     MYSQL_SYSVAR(udf_table_lock_mutex_count),
     MYSQL_SYSVAR(udf_table_mon_mutex_count),
     MYSQL_SYSVAR(udf_ds_bulk_insert_rows),

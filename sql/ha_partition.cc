@@ -7235,10 +7235,9 @@ int ha_partition::info(uint flag) {
           file = *file_array;
           if (opt_spider_auto_increment_mode_switch &&
               is_spider_storage_engine()) { /* spider_auto_increment */
-            if (part_share->next_auto_inc_val ==
-                0) { /* part_share->next_auto_inc_val  would be 0 after flush
-                        table/restart mysqld , then get this value from remote
-                        db */
+            if (part_share->next_auto_inc_val == 0) { 
+              /* part_share->next_auto_inc_val  would be 0 after flush
+                 table/restart mysqld , then get this value from remote db */
               file->info(HA_STATUS_AUTO | no_lock_flag);
               set_if_bigger(auto_increment_value,
                             file->stats.auto_increment_value);
