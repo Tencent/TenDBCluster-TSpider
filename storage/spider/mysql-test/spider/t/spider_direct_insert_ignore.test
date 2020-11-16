@@ -1,0 +1,356 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+    SET @old_log_output = @@global.log_output;
+    SET @old_log_output1 = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE,FILE';
+    set global spider_general_log=1;
+    TRUNCATE TABLE mysql.general_log;
+}
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  CREATE DATABASE auto_test_remote_2;
+  USE auto_test_remote_2;
+}
+--enable_warnings
+
+
+--let $CHILD2_1_DROP_TABLES_BACKUP= $CHILD2_1_DROP_TABLES
+let $CHILD2_1_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl_a;
+--let $CHILD2_1_CREATE_TABLES_BACKUP= $CHILD2_1_CREATE_TABLES
+let $CHILD2_1_CREATE_TABLES=
+CREATE TABLE tbl_a
+(id INT PRIMARY KEY, c2 INT)$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+
+
+--let $CHILD2_2_DROP_TABLES_BACKUP= $CHILD2_2_DROP_TABLES
+let $CHILD2_2_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl_a;
+--let $CHILD2_2_CREATE_TABLES_BACKUP= $CHILD2_2_CREATE_TABLES
+let $CHILD2_2_CREATE_TABLES=
+CREATE TABLE tbl_a
+(id INT PRIMARY KEY, c2 INT)$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if ($USE_GENERAL_LOG)
+  {
+    SET @old_log_output = @@global.log_output;
+    TRUNCATE TABLE mysql.general_log;
+    set global log_output = 'TABLE';
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if ($USE_GENERAL_LOG)
+  {
+    SET @old_log_output = @@global.log_output;
+    TRUNCATE TABLE mysql.general_log;
+    set global log_output = 'TABLE';
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+DROP TABLE IF EXISTS ta_l;
+--enable_warnings
+
+let $MASTER_1_CHARSET=DEFAULT CHARSET=utf8;
+eval CREATE TABLE tbl_a
+(id INT PRIMARY KEY, c2 INT) $MASTER_1_ENGINE  PARTITION BY LIST (crc32(id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+ PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+
+SET @spider_direct_insert_ignore_bk = @@session.spider_direct_insert_ignore;
+SET @spider_direct_dup_insert_bk = @@session.spider_direct_dup_insert;
+
+--echo spider_direct_insert_ignore = 0, spider_direct_dup_insert = 1
+SET spider_direct_dup_insert = 1;
+SET spider_direct_insert_ignore = 0;
+
+insert into tbl_a values (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+replace into tbl_a values (1, 1), (2, 5), (3, 8), (7, 6), (8, 5), (9, 6);
+--echo
+--echo select for master
+--echo replace test
+SELECT * FROM tbl_a ORDER BY id;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%mysql% replace %';
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%replace %';
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%replace %';
+  }
+}
+
+truncate table tbl_a;
+SET spider_direct_dup_insert = 1;
+SET spider_direct_insert_ignore = 0;
+insert into tbl_a values (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+insert into tbl_a values(100, 2), (101, 3), (2, 2), (5, 5), (1, 1), (6, 6), (9, 10), (77, 5) on duplicate key update c2 = 3;
+
+--echo
+--echo select for master
+--echo duplicate key update test
+SELECT * FROM tbl_a ORDER BY id;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+}
+
+truncate table tbl_a;
+SET spider_direct_dup_insert = 1;
+SET spider_direct_insert_ignore = 0;
+insert into tbl_a values (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+show variables like 'spider_direct_insert_ignore';
+show variables like 'spider_direct_dup_insert';
+insert ignore into tbl_a values (5, 1), (11, 1), (12, 2), (13, 3), (8, 4);
+--echo
+--echo select for master
+--echo insert ignore test
+SELECT * FROM tbl_a ORDER BY id;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+}
+
+--echo spider_ignore_single_select_index = 1, spider_direct_dup_insert = 1
+SET spider_direct_dup_insert = 1;
+SET spider_direct_insert_ignore = 1;
+
+truncate table tbl_a;
+insert into tbl_a values (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+replace into tbl_a values (1, 1), (2, 5), (3, 8), (7, 6), (8, 5), (9, 6);
+--echo
+--echo select for master
+--echo replace test
+SELECT * FROM tbl_a ORDER BY id;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%mysql% replace %';
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%replace %';
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%replace %';
+  }
+}
+
+truncate table tbl_a;
+SET spider_direct_dup_insert = 1;
+SET spider_direct_insert_ignore = 1;
+insert into tbl_a values (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+insert into tbl_a values(100, 2), (101, 3), (2, 2), (5, 5), (1, 1), (6, 6), (9, 10), (77, 5) on duplicate key update c2 = 3;
+
+--echo
+--echo select for master
+--echo duplicate key update test
+SELECT * FROM tbl_a ORDER BY id;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+}
+
+truncate table tbl_a;
+SET spider_direct_dup_insert = 1;
+SET spider_direct_insert_ignore = 1;
+insert into tbl_a values (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+show variables like 'spider_direct_insert_ignore';
+show variables like 'spider_direct_dup_insert';
+insert ignore into tbl_a values (5, 1), (11, 1), (12, 2), (13, 3), (8, 4);
+--echo
+--echo select for master
+--echo insert ignore test
+SELECT * FROM tbl_a ORDER BY id;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+}
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+  --connection child2_2
+  if ($USE_GENERAL_LOG)
+  {
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%insert %';
+  }
+}
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+SET SESSION spider_direct_insert_ignore = @spider_direct_insert_ignore_bk;
+SET SESSION spider_direct_dup_insert = @spider_direct_dup_insert_bk;
+
+DROP DATABASE IF EXISTS auto_test_local;
+if ($USE_GENERAL_LOG)
+{
+  SET GLOBAL log_output = @old_log_output;
+  SET GLOBAL spider_general_log = @old_log_output1;
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  if ($USE_GENERAL_LOG)
+  {
+    SET GLOBAL log_output = @old_log_output;
+  }
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
