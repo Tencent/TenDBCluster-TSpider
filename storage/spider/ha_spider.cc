@@ -6900,6 +6900,11 @@ int ha_spider::write_row(uchar *buf) {
       spider_param_auto_increment_mode(thd, share->auto_increment_mode);
   bool auto_increment_flag =
       table->next_number_field && buf == table->record[0];
+  bool skip_insert_ingore = 
+      (sql_command == SQLCOM_REPLACE) ||
+      (sql_command == SQLCOM_REPLACE_SELECT) ||
+      (sql_command == SQLCOM_LOAD &&
+      lex_duplicates == DUP_REPLACE);
   backup_error_status();
   DBUG_ENTER("ha_spider::write_row");
   DBUG_PRINT("info", ("spider this=%p", this));
@@ -6996,7 +7001,7 @@ int ha_spider::write_row(uchar *buf) {
 #else
               insert_with_update ||
 #endif
-                  ((!direct_dup_insert || !direct_insert_ignore) && ignore_dup_key)
+          ((!direct_dup_insert || (!direct_insert_ignore && !skip_insert_ingore)) && ignore_dup_key)
               ? 0 : spider_param_bulk_size(trx->thd, share->bulk_size);
     else
       bulk_size = 0;
@@ -7232,7 +7237,7 @@ int ha_spider::direct_update_rows_init(uint mode, KEY_MULTI_RANGE *ranges,
       **/
     }
 
-    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table
     // it can't use direct_update where set timestamp = ** by user.
     if (thd->is_set_time()) {
       // always one table
@@ -7329,7 +7334,7 @@ int ha_spider::direct_update_rows_init() {
     **********/
     }
 
-    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table
     // it can't use direct_update where set timestamp = ** by user.
     if (thd->is_set_time()) {
       // always one table
