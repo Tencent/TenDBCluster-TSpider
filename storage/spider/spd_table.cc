@@ -1593,6 +1593,10 @@ int st_spider_param_string_parse::print_param_error() {
     }                                                                          \
     break;                                                                     \
   }
+#define SPIDER_IGNORE_PARAM(title_name)                                        \
+  if (!strncasecmp(tmp_ptr, title_name, title_length)) {                       \
+    break;                                                                     \
+  }
 
 int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
@@ -1973,6 +1977,8 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           SPIDER_PARAM_STR_LIST("ssl_capath", tgt_ssl_capaths);
           SPIDER_PARAM_STR("bka_engine", bka_engine);
           SPIDER_PARAM_LONGLONG("first_read", first_read, 0);
+          SPIDER_IGNORE_PARAM("shard_func");
+          SPIDER_IGNORE_PARAM("shard_type");
           error_num = connect_string_parse.print_param_error();
           goto error;
         case 11:
@@ -1982,6 +1988,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           SPIDER_PARAM_LONG_LIST_WITH_MAX("link_status", link_statuses, 0, 3);
           SPIDER_PARAM_LONG_LIST_WITH_MAX("use_handler", use_handlers, 0, 3);
           SPIDER_PARAM_INT_WITH_MAX("casual_read", casual_read, 0, 63);
+          SPIDER_IGNORE_PARAM("shard_count");
           error_num = connect_string_parse.print_param_error();
           goto error;
         case 12:
