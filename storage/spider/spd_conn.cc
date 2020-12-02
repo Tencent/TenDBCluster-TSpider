@@ -264,7 +264,7 @@ void spider_free_conn_from_trx(SPIDER_TRX *trx, SPIDER_CONN *conn, bool another,
         /* !conn->queued_connect &&*/
         /*  failed to create conn, don't need to free */
         spider_param_conn_recycle_mode(trx->thd) == 1 &&
-        !(thd->is_error()) /*if thd->is_error��must be free,not recycle in the
+        !(thd->is_error()) /*if thd->is_error, must be free,not recycle in the
                               connect pool*/
     ) {
       /* conn_recycle_mode == 1 */
@@ -1522,12 +1522,12 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
 
       thd_proc_info(thd, "Waking up bg thread ");
       pthread_mutex_lock(
-          &conn->bg_conn_sync_mutex);  // ���뱣֤sinalǰ����̨�߳���wait״̬
+          &conn->bg_conn_sync_mutex);  // must ensure: before signal backend is wait
       pthread_cond_signal(&conn->bg_conn_cond);
       pthread_mutex_unlock(&conn->bg_conn_mutex);
       pthread_cond_wait(&conn->bg_conn_sync_cond,
-                        &conn->bg_conn_sync_mutex);  // �����wait��ҲûӰ��
-                                                     // ��  �൱��һ������ ��
+                        &conn->bg_conn_sync_mutex);  // also ok if don't wait
+                                                     // ? handshake ?
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
       conn->bg_caller_wait = FALSE;
       if (sql_type != SPIDER_SQL_TYPE_SELECT_SQL)
@@ -1546,7 +1546,7 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
          conn->bg_conn_working)) {
       thd_proc_info(thd, "Waiting bg action");
       pthread_mutex_lock(
-          &conn->bg_conn_mutex); /* ֻ��spider_bg_action��pthread_cond_waitʱ�Ż�����ɹ���1,��query;2�����ٴδ������
+          &conn->bg_conn_mutex); /* ֻonly spider_bg_action at pthread_cond_wait can success 1. wait query; 2. process again
                                   */
       assert(!conn->bg_conn_working);
       result_list->sql_type = sql_type;
@@ -1627,11 +1627,11 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
 #endif
         thd_proc_info(thd, "Starting bg action");
         pthread_mutex_lock(&conn->bg_conn_sync_mutex);
-        pthread_cond_signal(&conn->bg_conn_cond);  // ���źţ���̨�߳�ִ��sql
+        pthread_cond_signal(&conn->bg_conn_cond);  // send signal => backend to execute sql
         pthread_mutex_unlock(&conn->bg_conn_mutex);
         pthread_cond_wait(
             &conn->bg_conn_sync_cond,
-            &conn->bg_conn_sync_mutex);  // ȷ����̨�߳���ִ��sql�������д���wait״̬
+            &conn->bg_conn_sync_mutex);  // make sure that backend has executed sql, not at wait state
         pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
         conn->bg_caller_sync_wait = FALSE;
       } else {
