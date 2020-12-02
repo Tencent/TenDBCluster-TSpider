@@ -264,7 +264,7 @@ void spider_free_conn_from_trx(SPIDER_TRX *trx, SPIDER_CONN *conn, bool another,
         /* !conn->queued_connect &&*/
         /*  failed to create conn, don't need to free */
         spider_param_conn_recycle_mode(trx->thd) == 1 &&
-        !(thd->is_error()) /*if thd->is_error£¬must be free,not recycle in the
+        !(thd->is_error()) /*if thd->is_errorï¿½ï¿½must be free,not recycle in the
                               connect pool*/
     ) {
       /* conn_recycle_mode == 1 */
@@ -1522,12 +1522,12 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
 
       thd_proc_info(thd, "Waking up bg thread ");
       pthread_mutex_lock(
-          &conn->bg_conn_sync_mutex);  // ±ØÐë±£Ö¤sinalÇ°£¬ºóÌ¨Ïß³ÌÊÇwait×´Ì¬
+          &conn->bg_conn_sync_mutex);  // ï¿½ï¿½ï¿½ë±£Ö¤sinalÇ°ï¿½ï¿½ï¿½ï¿½Ì¨ï¿½ß³ï¿½ï¿½ï¿½wait×´Ì¬
       pthread_cond_signal(&conn->bg_conn_cond);
       pthread_mutex_unlock(&conn->bg_conn_mutex);
       pthread_cond_wait(&conn->bg_conn_sync_cond,
-                        &conn->bg_conn_sync_mutex);  // Èç¹û²»wait£¬Ò²Ã»Ó°Ïì
-                                                     // £¿  Ïàµ±ÓÚÒ»´ÎÎÕÊÖ £¿
+                        &conn->bg_conn_sync_mutex);  // ï¿½ï¿½ï¿½ï¿½ï¿½waitï¿½ï¿½Ò²Ã»Ó°ï¿½ï¿½
+                                                     // ï¿½ï¿½  ï¿½àµ±ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
       conn->bg_caller_wait = FALSE;
       if (sql_type != SPIDER_SQL_TYPE_SELECT_SQL)
@@ -1546,7 +1546,7 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
          conn->bg_conn_working)) {
       thd_proc_info(thd, "Waiting bg action");
       pthread_mutex_lock(
-          &conn->bg_conn_mutex); /* Ö»ÓÐspider_bg_actionÔÚpthread_cond_waitÊ±²Å»á¼ÓËø³É¹¦£º1,µÈquery;2£¬µÈÔÙ´Î´¦Àí½á¹û
+          &conn->bg_conn_mutex); /* Ö»ï¿½ï¿½spider_bg_actionï¿½ï¿½pthread_cond_waitÊ±ï¿½Å»ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½1,ï¿½ï¿½query;2ï¿½ï¿½ï¿½ï¿½ï¿½Ù´Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                                   */
       assert(!conn->bg_conn_working);
       result_list->sql_type = sql_type;
@@ -1627,11 +1627,11 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
 #endif
         thd_proc_info(thd, "Starting bg action");
         pthread_mutex_lock(&conn->bg_conn_sync_mutex);
-        pthread_cond_signal(&conn->bg_conn_cond);  // ·¢ÐÅºÅ£¬ºóÌ¨Ïß³ÌÖ´ÐÐsql
+        pthread_cond_signal(&conn->bg_conn_cond);  // ï¿½ï¿½ï¿½ÅºÅ£ï¿½ï¿½ï¿½Ì¨ï¿½ß³ï¿½Ö´ï¿½ï¿½sql
         pthread_mutex_unlock(&conn->bg_conn_mutex);
         pthread_cond_wait(
             &conn->bg_conn_sync_cond,
-            &conn->bg_conn_sync_mutex);  // È·¶¨ºóÌ¨Ïß³ÌÒÑÖ´ÐÐsql£¬²»ÊÇÉÐ´¦ÓÚwait×´Ì¬
+            &conn->bg_conn_sync_mutex);  // È·ï¿½ï¿½ï¿½ï¿½Ì¨ï¿½ß³ï¿½ï¿½ï¿½Ö´ï¿½ï¿½sqlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½wait×´Ì¬
         pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
         conn->bg_caller_sync_wait = FALSE;
       } else {
@@ -1845,8 +1845,7 @@ void *spider_bg_conn_action(void *arg) {
     conn->bg_conn_working = false;
     pthread_cond_wait(
         &conn->bg_conn_cond,
-        &conn->bg_conn_mutex); /* µÈ´ýÖ÷Ïß³ÌqueryÓï¾ä¡£
-                                  »òÕßqueryÖ´ÐÐÍêÁË£¬µÈÖ÷ÏßºÍ´¦Àí½á¹û */
+        &conn->bg_conn_mutex); /* wait main thread processing the query */
     conn->bg_conn_working = true;
     DBUG_PRINT("info", ("spider bg roop start"));
 #ifndef DBUG_OFF
@@ -1873,14 +1872,14 @@ void *spider_bg_conn_action(void *arg) {
         }
         set_sql = true;
       }
-      /* bg_serch·¢¹ýsignalÐÅºÅºó£¬¸æËßÖ÷Ïß³Ì×ÓÏß³Ì¿ªÊ¼¹¤×÷ */
+      /* after bg_search sending signal, tell main/sub threads to work */
       pthread_mutex_lock(&conn->bg_conn_sync_mutex);
       if (conn->bg_direct_sql) conn->bg_get_job_stack_off = TRUE;
       pthread_cond_signal(
-          &conn->bg_conn_sync_cond); /* ·¢³öÏß³ÌÒÑÏìÓ¦queryµÄÐÅºÅ */
+          &conn->bg_conn_sync_cond); /* send signal of responding */
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
-      if (conn->bg_conn_chain_mutex_ptr) { /* Í¨³£Îª0.
-                                              ÁíÍâ£¬tspiderÖÐ£¬Í¬Ò»·ÖÆ¬Ö»ÓÐÒ»¸öconn
+      if (conn->bg_conn_chain_mutex_ptr) { /* normaly it's 0
+                                              in TSpider, one shard => one conn
                                             */
         pthread_mutex_lock(conn->bg_conn_chain_mutex_ptr);
         if ((&conn->bg_conn_chain_mutex) != conn->bg_conn_chain_mutex_ptr) {
@@ -1889,7 +1888,7 @@ void *spider_bg_conn_action(void *arg) {
         }
       }
     }
-    if (conn->bg_kill) { /* ÊÍ·ÅconnÊ±Ìõ¼þÎªÕæ */
+    if (conn->bg_kill) { /* true when free conn */
       DBUG_PRINT("info", ("spider bg kill start"));
       if (conn->bg_conn_chain_mutex_ptr) {
         pthread_mutex_unlock(conn->bg_conn_chain_mutex_ptr);
@@ -1909,7 +1908,7 @@ void *spider_bg_conn_action(void *arg) {
       my_thread_end();
       DBUG_RETURN(NULL);
     }
-    if (conn->bg_get_job_stack) { /* udf²Å×ßµÄÂß¼­ */
+    if (conn->bg_get_job_stack) { /* only udf reach here */
       conn->bg_get_job_stack = FALSE;
       if (!spider_bg_conn_get_job(conn)) {
         conn->bg_direct_sql = FALSE;
@@ -2051,7 +2050,7 @@ void *spider_bg_conn_action(void *arg) {
       }
       continue;
     }
-    if (conn->bg_direct_sql) {  // udf£¬²»×ß
+    if (conn->bg_direct_sql) {  // if not udf
       bool is_error = FALSE;
       DBUG_PRINT("info", ("spider bg direct sql start"));
       do {
@@ -2090,7 +2089,7 @@ void *spider_bg_conn_action(void *arg) {
       conn->bg_direct_sql = FALSE;
       continue;
     }
-    if (conn->bg_exec_sql) {  // udf£¬²»×ß
+    if (conn->bg_exec_sql) {  // if not udf
       DBUG_PRINT("info", ("spider bg exec sql start"));
       spider = (ha_spider *)conn->bg_target;
       *conn->bg_error_num = spider_db_query_with_set_names(
@@ -2098,7 +2097,7 @@ void *spider_bg_conn_action(void *arg) {
       conn->bg_exec_sql = FALSE;
       continue;
     }
-    if (conn->bg_simple_action) {  // oracleÏÂ×ß
+    if (conn->bg_simple_action) {  // if oracle
       switch (conn->bg_simple_action) {
         case SPIDER_BG_SIMPLE_CONNECT:
           conn->db_conn->bg_connect();

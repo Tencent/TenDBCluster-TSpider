@@ -259,6 +259,9 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
 #endif
                               uint create_table);
 
+void spider_init_share_for_parse_connect_info(SPIDER_SHARE *share,
+                                              TABLE_SHARE *table_share);
+
 int spider_set_connect_info_default(SPIDER_SHARE *share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
                                     partition_element *part_elem,

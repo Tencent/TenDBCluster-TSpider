@@ -1360,6 +1360,16 @@ int ha_spider::pre_index_end() {
 }
 #endif
 
+/**
+  Using index to read.
+  [Very important] We only allow const and system join type to
+  use index for the sack of stablity.
+
+  @param  buf                buffer to store result
+  @param  key                key to use            
+
+  @return error_num         0 Suceese, or >0 Error
+*/
 int ha_spider::index_read_map_internal(uchar *buf, const uchar *key,
                                        key_part_map keypart_map,
                                        enum ha_rkey_function find_flag) {
@@ -8049,6 +8059,15 @@ bool ha_spider::get_error_message(int error, String *buf) {
   DBUG_RETURN(FALSE);
 }
 
+/**
+  Create a Spider table.
+
+  @param  name              Full path of table name.
+  @param  form              Table object.
+  @param  create_info       Create info generated for CREATE TABLE
+
+  @return                   0 Suceese, or >0 Error
+*/
 int ha_spider::create(const char *name, TABLE *form, HA_CREATE_INFO *info) {
   int error_num, dummy;
   SPIDER_SHARE tmp_share;
