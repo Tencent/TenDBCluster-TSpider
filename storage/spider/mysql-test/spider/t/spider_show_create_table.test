@@ -153,8 +153,8 @@ end_time DATE NOT NULL) $MASTER_1_ENGINE PARTITION BY LIST (crc32(id)%2)
  PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
  
  show create table tbl_a;
- show variables like "%auto_inc%";
- show status like "%auto_inc%";
+ show variables like "%spider_auto_inc%";
+ show status like "%spider_auto_inc%";
 
 
 --echo

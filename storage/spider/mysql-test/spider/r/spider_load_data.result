@@ -51,10 +51,10 @@ PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl
 truncate table tbl_a;
 select *  from tbl_a;
 id
-4
 1
 2
 3
+4
 
 select for master
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%mysql% replace %' and  argument not like  "%load data%";

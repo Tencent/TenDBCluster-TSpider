@@ -7014,6 +7014,7 @@ void THD::reset_for_next_command(bool do_clear_error) {
   thd->spider_current_partition_num = 0;
   thd->spider_features_type = 0;
   thd->current_global_server_version = get_modify_server_version();
+  thd->spider_const_index_read = FALSE;
 
   DBUG_PRINT("debug", ("is_current_stmt_binlog_format_row(): %d",
                        is_current_stmt_binlog_format_row()));

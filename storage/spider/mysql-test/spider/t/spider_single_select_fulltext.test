@@ -1,0 +1,227 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  CREATE DATABASE auto_test_remote_2;
+  USE auto_test_remote_2;
+}
+--enable_warnings
+
+
+--let $CHILD2_1_DROP_TABLES_BACKUP= $CHILD2_1_DROP_TABLES
+let $CHILD2_1_DROP_TABLES=
+  DROP TABLE IF EXISTS t1;
+--let $CHILD2_1_CREATE_TABLES_BACKUP= $CHILD2_1_CREATE_TABLES
+let $CHILD2_1_CREATE_TABLES=
+CREATE TABLE t1 (id INT PRIMARY KEY, a VARCHAR(200), b TEXT, FULLTEXT (a,b))$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+
+--let $CHILD2_2_DROP_TABLES_BACKUP= $CHILD2_2_DROP_TABLES
+let $CHILD2_2_DROP_TABLES=
+  DROP TABLE IF EXISTS t1;
+--let $CHILD2_2_CREATE_TABLES_BACKUP= $CHILD2_2_CREATE_TABLES
+let $CHILD2_2_CREATE_TABLES=
+CREATE TABLE t1 (id INT PRIMARY KEY, a VARCHAR(200), b TEXT, FULLTEXT (a,b))$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+DROP TABLE IF EXISTS t1;
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+let $MASTER_CREATE_TABLES1 = 
+CREATE TABLE t1 (id int primary key auto_increment, a VARCHAR(200), b TEXT, FULLTEXT (a,b))$MASTER_1_ENGINE $MASTER_1_CHARSET
+PARTITION BY HASH (id)
+(
+  PARTITION `pt0` COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"',
+  PARTITION `pt1` COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"'
+);
+
+eval $MASTER_CREATE_TABLES1;
+
+--echo
+--echo insert data and test
+SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+
+-- echo spider_ignore_single_select_index enable
+SET GLOBAL spider_ignore_single_select_index = ON;
+INSERT INTO t1 VALUES
+(1, 'MySQL has now support', 'for full-text search'),
+(2, 'Full-text indexes', 'are called collections'),
+(3, 'Only MyISAM tables','support collections'),
+(4, 'Function MATCH ... AGAINST()','is used to do a search'),
+(5, 'Full-text search in MySQL', 'implements vector space model');
+SHOW INDEX FROM t1;
+
+# nl search
+
+select * from t1 where MATCH(a,b) AGAINST ("collections");
+explain extended select * from t1 where MATCH(a,b) AGAINST ("collections");
+select * from t1 where MATCH(a,b) AGAINST ("indexes");
+select * from t1 where MATCH(a,b) AGAINST ("indexes collections");
+# select * from t1 where MATCH(a,b) AGAINST ("only"); -- cannot pass
+
+# query expansion
+
+select * from t1 where MATCH(a,b) AGAINST ("collections" WITH QUERY EXPANSION);
+# select * from t1 where MATCH(a,b) AGAINST ("indexes" WITH QUERY EXPANSION); -- cannot pass
+select * from t1 where MATCH(a,b) AGAINST ("indexes collections" WITH QUERY EXPANSION);
+
+# IN NATURAL LANGUAGE MODE
+select * from t1 where MATCH(a,b) AGAINST ("indexes" IN NATURAL LANGUAGE MODE);
+# select * from t1 where MATCH(a,b) AGAINST ("indexes" IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION); --cannot pass
+--error 1064
+select * from t1 where MATCH(a,b) AGAINST ("indexes" IN BOOLEAN MODE WITH QUERY EXPANSION);
+
+# add_ft_keys() tests
+
+explain select * from t1 where MATCH(a,b) AGAINST ("collections");
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>0;
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>1;
+# explain select * from t1 where MATCH(a,b) AGAINST ("collections")>=0; --cannot pass
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>=1;
+explain select * from t1 where 0<MATCH(a,b) AGAINST ("collections");
+explain select * from t1 where 1<MATCH(a,b) AGAINST ("collections");
+# explain select * from t1 where 0<=MATCH(a,b) AGAINST ("collections"); --cannot pass
+explain select * from t1 where 1<=MATCH(a,b) AGAINST ("collections");
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>0 and a like '%ll%';
+
+# boolean search
+
+select * from t1 where MATCH(a,b) AGAINST("support -collections" IN BOOLEAN MODE);
+explain extended select * from t1 where MATCH(a,b) AGAINST("support -collections" IN BOOLEAN MODE);
+select * from t1 where MATCH(a,b) AGAINST("support  collections" IN BOOLEAN MODE);
+select * from t1 where MATCH(a,b) AGAINST("support +collections" IN BOOLEAN MODE);
+select * from t1 where MATCH(a,b) AGAINST("sear*" IN BOOLEAN MODE);
+select * from t1 where MATCH(a,b) AGAINST("+support +collections" IN BOOLEAN MODE);
+select * from t1 where MATCH(a,b) AGAINST("+search" IN BOOLEAN MODE);
+select * from t1 where MATCH(a,b) AGAINST("+search +(support vector)" IN BOOLEAN MODE);
+select * from t1 where MATCH(a,b) AGAINST("+search -(support vector)" IN BOOLEAN MODE);
+# select *, MATCH(a,b) AGAINST("support collections" IN BOOLEAN MODE) as x from t1; --cannot pass
+# select *, MATCH(a,b) AGAINST("collections support" IN BOOLEAN MODE) as x from t1; --cannot pass
+
+select * from t1 where MATCH a,b AGAINST ("+call* +coll*" IN BOOLEAN MODE);
+
+select * from t1 where MATCH a,b AGAINST ('"support now"' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('"Now sUPPort"' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('"now   support"' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('"text search"  "now support"' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('"text search" -"now support"' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('"text search" +"now support"' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('"text i"' IN BOOLEAN MODE);
+# select * from t1 where MATCH a,b AGAINST ('"xt indexes"' IN BOOLEAN MODE); --cannot pass
+
+select * from t1 where MATCH a,b AGAINST ('+(support collections) +foobar*' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('+(+(support collections)) +foobar*' IN BOOLEAN MODE);
+select * from t1 where MATCH a,b AGAINST ('+collections -supp* -foobar*' IN BOOLEAN MODE);
+
+-- echo spider_ignore_single_select_index restore
+SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test

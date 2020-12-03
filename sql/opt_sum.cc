@@ -398,6 +398,21 @@ int opt_sum_query(THD *thd,
             const_result= 0;
             break;
           }
+          /*
+            Spider with 'spider_ignore_single_select_index = ON' should
+            not use any keys
+          */
+          if (opt_spider_ignore_single_select_index &&
+              thd && thd->lex &&
+              thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
+               /* !thd->lex->describe &&  // not describe/explain types */
+              !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
+              thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
+              table->file && table->file->is_spider_storage_engine())  /* only for spider */
+          {
+            const_result= 0;
+            break;
+          }
           longlong info_limit= 1;
           table->file->info_push(INFO_KIND_FORCE_LIMIT_BEGIN, &info_limit);
           if (likely(!(error= table->file->ha_index_init((uint) ref.key, 1))))

@@ -1,0 +1,200 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;
+CREATE TABLE t1 (id int primary key auto_increment, a VARCHAR(200), b TEXT, FULLTEXT (a,b))ENGINE=Spider DEFAULT CHARSET=utf8
+PARTITION BY HASH (id)
+(
+PARTITION `pt0` COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"',
+PARTITION `pt1` COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"'
+);
+
+insert data and test
+SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+spider_ignore_single_select_index enable
+SET GLOBAL spider_ignore_single_select_index = ON;
+INSERT INTO t1 VALUES
+(1, 'MySQL has now support', 'for full-text search'),
+(2, 'Full-text indexes', 'are called collections'),
+(3, 'Only MyISAM tables','support collections'),
+(4, 'Function MATCH ... AGAINST()','is used to do a search'),
+(5, 'Full-text search in MySQL', 'implements vector space model');
+SHOW INDEX FROM t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	0	PRIMARY	1	id	A	4	NULL	NULL		BTREE		
+t1	1	a	1	a	NULL	4	NULL	NULL	YES	FULLTEXT		
+t1	1	a	2	b	NULL	4	NULL	NULL	YES	FULLTEXT		
+select * from t1 where MATCH(a,b) AGAINST ("collections");
+id	a	b
+2	Full-text indexes	are called collections
+3	Only MyISAM tables	support collections
+explain extended select * from t1 where MATCH(a,b) AGAINST ("collections");
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	100.00	Using where with pushed condition
+Warnings:
+Note	1003	select `auto_test_local`.`t1`.`id` AS `id`,`auto_test_local`.`t1`.`a` AS `a`,`auto_test_local`.`t1`.`b` AS `b` from `auto_test_local`.`t1` where (match `auto_test_local`.`t1`.`a`,`auto_test_local`.`t1`.`b` against ('collections'))
+select * from t1 where MATCH(a,b) AGAINST ("indexes");
+id	a	b
+2	Full-text indexes	are called collections
+select * from t1 where MATCH(a,b) AGAINST ("indexes collections");
+id	a	b
+2	Full-text indexes	are called collections
+3	Only MyISAM tables	support collections
+select * from t1 where MATCH(a,b) AGAINST ("collections" WITH QUERY EXPANSION);
+id	a	b
+2	Full-text indexes	are called collections
+3	Only MyISAM tables	support collections
+1	MySQL has now support	for full-text search
+select * from t1 where MATCH(a,b) AGAINST ("indexes collections" WITH QUERY EXPANSION);
+id	a	b
+2	Full-text indexes	are called collections
+3	Only MyISAM tables	support collections
+1	MySQL has now support	for full-text search
+select * from t1 where MATCH(a,b) AGAINST ("indexes" IN NATURAL LANGUAGE MODE);
+id	a	b
+2	Full-text indexes	are called collections
+select * from t1 where MATCH(a,b) AGAINST ("indexes" IN BOOLEAN MODE WITH QUERY EXPANSION);
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'WITH QUERY EXPANSION)' at line 1
+explain select * from t1 where MATCH(a,b) AGAINST ("collections");
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>0;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>=1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+explain select * from t1 where 0<MATCH(a,b) AGAINST ("collections");
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+explain select * from t1 where 1<MATCH(a,b) AGAINST ("collections");
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+explain select * from t1 where 1<=MATCH(a,b) AGAINST ("collections");
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+explain select * from t1 where MATCH(a,b) AGAINST ("collections")>0 and a like '%ll%';
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	Using where with pushed condition
+select * from t1 where MATCH(a,b) AGAINST("support -collections" IN BOOLEAN MODE);
+id	a	b
+1	MySQL has now support	for full-text search
+explain extended select * from t1 where MATCH(a,b) AGAINST("support -collections" IN BOOLEAN MODE);
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	fulltext	a	a	0		1	100.00	Using where with pushed condition
+Warnings:
+Note	1003	select `auto_test_local`.`t1`.`id` AS `id`,`auto_test_local`.`t1`.`a` AS `a`,`auto_test_local`.`t1`.`b` AS `b` from `auto_test_local`.`t1` where (match `auto_test_local`.`t1`.`a`,`auto_test_local`.`t1`.`b` against ('support -collections' in boolean mode))
+select * from t1 where MATCH(a,b) AGAINST("support  collections" IN BOOLEAN MODE);
+id	a	b
+2	Full-text indexes	are called collections
+3	Only MyISAM tables	support collections
+1	MySQL has now support	for full-text search
+select * from t1 where MATCH(a,b) AGAINST("support +collections" IN BOOLEAN MODE);
+id	a	b
+2	Full-text indexes	are called collections
+3	Only MyISAM tables	support collections
+select * from t1 where MATCH(a,b) AGAINST("sear*" IN BOOLEAN MODE);
+id	a	b
+4	Function MATCH ... AGAINST()	is used to do a search
+1	MySQL has now support	for full-text search
+5	Full-text search in MySQL	implements vector space model
+select * from t1 where MATCH(a,b) AGAINST("+support +collections" IN BOOLEAN MODE);
+id	a	b
+3	Only MyISAM tables	support collections
+select * from t1 where MATCH(a,b) AGAINST("+search" IN BOOLEAN MODE);
+id	a	b
+4	Function MATCH ... AGAINST()	is used to do a search
+1	MySQL has now support	for full-text search
+5	Full-text search in MySQL	implements vector space model
+select * from t1 where MATCH(a,b) AGAINST("+search +(support vector)" IN BOOLEAN MODE);
+id	a	b
+5	Full-text search in MySQL	implements vector space model
+1	MySQL has now support	for full-text search
+select * from t1 where MATCH(a,b) AGAINST("+search -(support vector)" IN BOOLEAN MODE);
+id	a	b
+4	Function MATCH ... AGAINST()	is used to do a search
+select * from t1 where MATCH a,b AGAINST ("+call* +coll*" IN BOOLEAN MODE);
+id	a	b
+2	Full-text indexes	are called collections
+select * from t1 where MATCH a,b AGAINST ('"support now"' IN BOOLEAN MODE);
+id	a	b
+select * from t1 where MATCH a,b AGAINST ('"Now sUPPort"' IN BOOLEAN MODE);
+id	a	b
+1	MySQL has now support	for full-text search
+select * from t1 where MATCH a,b AGAINST ('"now   support"' IN BOOLEAN MODE);
+id	a	b
+1	MySQL has now support	for full-text search
+select * from t1 where MATCH a,b AGAINST ('"text search"  "now support"' IN BOOLEAN MODE);
+id	a	b
+1	MySQL has now support	for full-text search
+5	Full-text search in MySQL	implements vector space model
+select * from t1 where MATCH a,b AGAINST ('"text search" -"now support"' IN BOOLEAN MODE);
+id	a	b
+5	Full-text search in MySQL	implements vector space model
+select * from t1 where MATCH a,b AGAINST ('"text search" +"now support"' IN BOOLEAN MODE);
+id	a	b
+1	MySQL has now support	for full-text search
+select * from t1 where MATCH a,b AGAINST ('"text i"' IN BOOLEAN MODE);
+id	a	b
+select * from t1 where MATCH a,b AGAINST ('+(support collections) +foobar*' IN BOOLEAN MODE);
+id	a	b
+select * from t1 where MATCH a,b AGAINST ('+(+(support collections)) +foobar*' IN BOOLEAN MODE);
+id	a	b
+select * from t1 where MATCH a,b AGAINST ('+collections -supp* -foobar*' IN BOOLEAN MODE);
+id	a	b
+2	Full-text indexes	are called collections
+spider_ignore_single_select_index restore
+SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

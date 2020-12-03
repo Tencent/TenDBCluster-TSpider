@@ -2438,6 +2438,7 @@ public:
   ulong current_global_server_version;
   bool is_support_ddl_by_ctl; // equal to tdbctl_is_ddl_by_ctl(thd,lex)
   bool do_ddl_by_ctl; // must do tcadmin_execute_command
+  bool spider_const_index_read; // const or system join type in spider
 
   // Process indicator
   struct {

@@ -124,6 +124,19 @@ TABLE *spider_open_sys_table(THD *thd, const char *table_name,
                              Open_tables_state *open_tables_backup,
                              bool need_lock, int *error_num)
 #else
+/**
+  Open a Spider system table.
+
+  @param  thd                Current calling thread
+  @param  table_name         Name of the system table to open
+  @param  table_name_length  Length of the name
+  @param  write              Open table for write
+  @param  open_tables_backup Backup table state
+                             Only needed when open system tables
+  @param  need_lock          Whether lock is needed
+
+  @return error_num         0 Suceese, or >0 Error
+*/
 TABLE *spider_open_sys_table(THD *thd, const char *table_name,
                              int table_name_length, bool write,
                              Open_tables_backup *open_tables_backup,
@@ -271,6 +284,15 @@ error_col_num_chk:
   DBUG_RETURN(NULL);
 }
 
+/**
+  Close a Spider system table.
+
+  @param  thd                Current calling thread
+  @param  tables             The table to close
+  @param  open_tables_backup Backup table state
+                             Only needed when open system tables
+  @param  need_lock          Whether lock is needed
+*/
 #if MYSQL_VERSION_ID < 50500
 void spider_close_sys_table(THD *thd, TABLE *table,
                             Open_tables_state *open_tables_backup,
@@ -318,6 +340,16 @@ bool spider_sys_open_tables(THD *thd, TABLE_LIST **tables,
   DBUG_RETURN(FALSE);
 }
 
+/**
+  Implementation of opening Spider system tables.
+
+  @param  thd                Current calling thread
+  @param  tables             Table lists to open
+  @param  open_tables_backup Backup table state
+                             Only needed when open system tables
+
+  @return                    The table list has been opened
+*/
 TABLE *spider_sys_open_table(THD *thd, TABLE_LIST *tables,
                              Open_tables_backup *open_tables_backup) {
   TABLE *table;
@@ -337,6 +369,13 @@ TABLE *spider_sys_open_table(THD *thd, TABLE_LIST *tables,
   DBUG_RETURN(table);
 }
 
+/**
+  Implementing of closing a Spider system table.
+
+  @param  thd                Current calling thread
+  @param  open_tables_backup Backup table state
+                             Only needed when open system tables
+*/
 void spider_sys_close_table(THD *thd, Open_tables_backup *open_tables_backup) {
   DBUG_ENTER("spider_sys_close_table");
   close_thread_tables(thd);
