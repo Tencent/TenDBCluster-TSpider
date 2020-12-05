@@ -95,6 +95,7 @@ bool spider_param_get_sts_or_crd();
 bool spider_param_local_lock_table(THD *thd);
 int spider_param_use_pushdown_udf(THD *thd, int use_pushdown_udf);
 int spider_param_direct_dup_insert(THD *thd, int direct_dup_insert);
+int spider_param_direct_insert_ignore(THD *thd);
 uint spider_param_udf_table_lock_mutex_count();
 uint spider_param_udf_table_mon_mutex_count();
 longlong spider_param_udf_ds_bulk_insert_rows(THD *thd,

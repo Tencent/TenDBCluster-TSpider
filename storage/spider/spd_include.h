@@ -895,6 +895,7 @@ typedef struct st_spider_share {
   int skip_default_condition;
   int skip_parallel_search;
   int direct_dup_insert;
+  int direct_insert_ignore;
   longlong direct_order_limit;
   int read_only_mode;
   int error_read_mode;

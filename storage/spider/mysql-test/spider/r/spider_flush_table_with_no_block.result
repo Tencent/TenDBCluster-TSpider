@@ -50,20 +50,16 @@ start_time DATE NOT NULL,
 end_time DATE NOT NULL) ENGINE=Spider PARTITION BY LIST (crc32(id)%2)
 (PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
 PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
-show variables like "%auto_inc%";
+show variables like "%spider_auto_inc%";
 Variable_name	Value
-auto_increment_increment	1
-auto_increment_offset	1
 spider_auto_increment_mode	0
 spider_auto_increment_mode_switch	ON
 spider_auto_increment_mode_value	12
 spider_auto_increment_step	17
 flush table with no block;
 affected rows: 0
-show variables like "%auto_inc%";
+show variables like "%spider_auto_inc%";
 Variable_name	Value
-auto_increment_increment	1
-auto_increment_offset	1
 spider_auto_increment_mode	0
 spider_auto_increment_mode_switch	ON
 spider_auto_increment_mode_value	12

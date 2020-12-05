@@ -174,6 +174,7 @@ class ha_spider : public handler {
   int bulk_size;
   ha_rows total_inserted_rows;
   int direct_dup_insert;
+  int direct_insert_ignore;
   int store_error_num;
   uint dup_key_idx;
   int select_column_mode;

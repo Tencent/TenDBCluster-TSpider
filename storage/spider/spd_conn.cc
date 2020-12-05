@@ -264,7 +264,7 @@ void spider_free_conn_from_trx(SPIDER_TRX *trx, SPIDER_CONN *conn, bool another,
         /* !conn->queued_connect &&*/
         /*  failed to create conn, don't need to free */
         spider_param_conn_recycle_mode(trx->thd) == 1 &&
-        !(thd->is_error()) /*if thd->is_error，must be free,not recycle in the
+        !(thd->is_error()) /*if thd->is_error, must be free,not recycle in the
                               connect pool*/
     ) {
       /* conn_recycle_mode == 1 */
@@ -1522,12 +1522,12 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
 
       thd_proc_info(thd, "Waking up bg thread ");
       pthread_mutex_lock(
-          &conn->bg_conn_sync_mutex);  // 必须保证sinal前，后台线程是wait状态
+          &conn->bg_conn_sync_mutex);  // must ensure: before signal backend is wait
       pthread_cond_signal(&conn->bg_conn_cond);
       pthread_mutex_unlock(&conn->bg_conn_mutex);
       pthread_cond_wait(&conn->bg_conn_sync_cond,
-                        &conn->bg_conn_sync_mutex);  // 如果不wait，也没影响
-                                                     // ？  相当于一次握手 ？
+                        &conn->bg_conn_sync_mutex);  // also ok if don't wait
+                                                     // ? handshake ?
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
       conn->bg_caller_wait = FALSE;
       if (sql_type != SPIDER_SQL_TYPE_SELECT_SQL)
@@ -1546,7 +1546,7 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
          conn->bg_conn_working)) {
       thd_proc_info(thd, "Waiting bg action");
       pthread_mutex_lock(
-          &conn->bg_conn_mutex); /* 只有spider_bg_action在pthread_cond_wait时才会加锁成功：1,等query;2，等再次处理结果
+          &conn->bg_conn_mutex); /* 只only spider_bg_action at pthread_cond_wait can success 1. wait query; 2. process again
                                   */
       assert(!conn->bg_conn_working);
       result_list->sql_type = sql_type;
@@ -1627,11 +1627,11 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
 #endif
         thd_proc_info(thd, "Starting bg action");
         pthread_mutex_lock(&conn->bg_conn_sync_mutex);
-        pthread_cond_signal(&conn->bg_conn_cond);  // 发信号，后台线程执行sql
+        pthread_cond_signal(&conn->bg_conn_cond);  // send signal => backend to execute sql
         pthread_mutex_unlock(&conn->bg_conn_mutex);
         pthread_cond_wait(
             &conn->bg_conn_sync_cond,
-            &conn->bg_conn_sync_mutex);  // 确定后台线程已执行sql，不是尚处于wait状态
+            &conn->bg_conn_sync_mutex);  // make sure that backend has executed sql, not at wait state
         pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
         conn->bg_caller_sync_wait = FALSE;
       } else {
@@ -1845,8 +1845,7 @@ void *spider_bg_conn_action(void *arg) {
     conn->bg_conn_working = false;
     pthread_cond_wait(
         &conn->bg_conn_cond,
-        &conn->bg_conn_mutex); /* 等待主线程query语句。
-                                  或者query执行完了，等主线和处理结果 */
+        &conn->bg_conn_mutex); /* wait main thread processing the query */
     conn->bg_conn_working = true;
     DBUG_PRINT("info", ("spider bg roop start"));
 #ifndef DBUG_OFF
@@ -1873,14 +1872,14 @@ void *spider_bg_conn_action(void *arg) {
         }
         set_sql = true;
       }
-      /* bg_serch发过signal信号后，告诉主线程子线程开始工作 */
+      /* after bg_search sending signal, tell main/sub threads to work */
       pthread_mutex_lock(&conn->bg_conn_sync_mutex);
       if (conn->bg_direct_sql) conn->bg_get_job_stack_off = TRUE;
       pthread_cond_signal(
-          &conn->bg_conn_sync_cond); /* 发出线程已响应query的信号 */
+          &conn->bg_conn_sync_cond); /* send signal of responding */
       pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
-      if (conn->bg_conn_chain_mutex_ptr) { /* 通常为0.
-                                              另外，tspider中，同一分片只有一个conn
+      if (conn->bg_conn_chain_mutex_ptr) { /* normaly it's 0
+                                              in TSpider, one shard => one conn
                                             */
         pthread_mutex_lock(conn->bg_conn_chain_mutex_ptr);
         if ((&conn->bg_conn_chain_mutex) != conn->bg_conn_chain_mutex_ptr) {
@@ -1889,7 +1888,7 @@ void *spider_bg_conn_action(void *arg) {
         }
       }
     }
-    if (conn->bg_kill) { /* 释放conn时条件为真 */
+    if (conn->bg_kill) { /* true when free conn */
       DBUG_PRINT("info", ("spider bg kill start"));
       if (conn->bg_conn_chain_mutex_ptr) {
         pthread_mutex_unlock(conn->bg_conn_chain_mutex_ptr);
@@ -1909,7 +1908,7 @@ void *spider_bg_conn_action(void *arg) {
       my_thread_end();
       DBUG_RETURN(NULL);
     }
-    if (conn->bg_get_job_stack) { /* udf才走的逻辑 */
+    if (conn->bg_get_job_stack) { /* only udf reach here */
       conn->bg_get_job_stack = FALSE;
       if (!spider_bg_conn_get_job(conn)) {
         conn->bg_direct_sql = FALSE;
@@ -2051,7 +2050,7 @@ void *spider_bg_conn_action(void *arg) {
       }
       continue;
     }
-    if (conn->bg_direct_sql) {  // udf，不走
+    if (conn->bg_direct_sql) {  // if not udf
       bool is_error = FALSE;
       DBUG_PRINT("info", ("spider bg direct sql start"));
       do {
@@ -2090,7 +2089,7 @@ void *spider_bg_conn_action(void *arg) {
       conn->bg_direct_sql = FALSE;
       continue;
     }
-    if (conn->bg_exec_sql) {  // udf，不走
+    if (conn->bg_exec_sql) {  // if not udf
       DBUG_PRINT("info", ("spider bg exec sql start"));
       spider = (ha_spider *)conn->bg_target;
       *conn->bg_error_num = spider_db_query_with_set_names(
@@ -2098,7 +2097,7 @@ void *spider_bg_conn_action(void *arg) {
       conn->bg_exec_sql = FALSE;
       continue;
     }
-    if (conn->bg_simple_action) {  // oracle下走
+    if (conn->bg_simple_action) {  // if oracle
       switch (conn->bg_simple_action) {
         case SPIDER_BG_SIMPLE_CONNECT:
           conn->db_conn->bg_connect();

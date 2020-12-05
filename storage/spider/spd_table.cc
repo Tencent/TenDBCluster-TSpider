@@ -1593,7 +1593,22 @@ int st_spider_param_string_parse::print_param_error() {
     }                                                                          \
     break;                                                                     \
   }
+#define SPIDER_IGNORE_PARAM(title_name)                                        \
+  if (!strncasecmp(tmp_ptr, title_name, title_length)) {                       \
+    break;                                                                     \
+  }
 
+/**
+  Parse information from table, including partition, subpartition
+  information (if any), and table comment.
+
+  @param  share             Shared spider table object.
+  @param  table_share       Shared MySQL table object.
+  @param  part_info         Information about partition.
+  @param  create_table      1 if it is called by create table.
+
+  @return                   0 Suceese, or >0 Error
+*/
 int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
                               partition_info *part_info,
@@ -1630,85 +1645,8 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
   spider_get_partition_info(share->table_name, share->table_name_length,
                             table_share, part_info, &part_elem, &sub_elem);
 #endif
-  share->sts_bg_mode = -1;
-  share->sts_interval = -1;
-  share->sts_mode = -1;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-  share->sts_sync = -1;
-#endif
-  share->store_last_sts = -1;
-  share->load_sts_at_startup = -1;
-  share->crd_bg_mode = -1;
-  share->crd_interval = -1;
-  share->crd_mode = -1;
-#ifdef WITH_PARTITION_STORAGE_ENGINE
-  share->crd_sync = -1;
-#endif
-  share->store_last_crd = -1;
-  share->load_crd_at_startup = -1;
-  share->crd_type = -1;
-  share->crd_weight = -1;
-  share->internal_offset = -1;
-  share->internal_limit = -1;
-  share->split_read = -1;
-  share->semi_split_read = -1;
-  share->semi_split_read_limit = -1;
-  share->init_sql_alloc_size = -1;
-  share->reset_sql_alloc = -1;
-  share->multi_split_read = -1;
-  share->max_order = -1;
-  share->semi_table_lock = -1;
-  share->semi_table_lock_conn = -1;
-  share->selupd_lock_mode = -1;
-  share->query_cache = -1;
-  share->query_cache_sync = -1;
-  share->internal_delayed = -1;
-  share->bulk_size = -1;
-  share->bulk_update_mode = -1;
-  share->bulk_update_size = -1;
-  share->internal_optimize = -1;
-  share->internal_optimize_local = -1;
-  share->scan_rate = -1;
-  share->read_rate = -1;
-  share->priority = -1;
-  share->quick_mode = -1;
-  share->quick_page_size = -1;
-  share->low_mem_read = -1;
-  share->table_count_mode = -1;
-  share->select_column_mode = -1;
-  share->bgs_mode = -1;
-  share->bgs_first_read = -1;
-  share->bgs_second_read = -1;
-  share->first_read = -1;
-  share->second_read = -1;
-  share->auto_increment_mode = -1;
-  share->use_table_charset = -1;
-  share->use_pushdown_udf = -1;
-  share->skip_default_condition = -1;
-  share->skip_parallel_search = -1;
-  share->direct_dup_insert = -1;
-  share->direct_order_limit = -1;
-  share->bka_mode = -1;
-  share->read_only_mode = -1;
-  share->error_read_mode = -1;
-  share->error_write_mode = -1;
-  share->active_link_count = -1;
-#ifdef HA_CAN_BULK_ACCESS
-  share->bulk_access_free = -1;
-#endif
-#ifdef HA_CAN_FORCE_BULK_UPDATE
-  share->force_bulk_update = -1;
-#endif
-#ifdef HA_CAN_FORCE_BULK_DELETE
-  share->force_bulk_delete = -1;
-#endif
-  share->casual_read = -1;
-  share->delete_all_rows_type = -1;
-  share->static_records_for_status = -1;
-  share->static_mean_rec_length = -1;
-  for (roop_count = 0; roop_count < (int)table_share->keys; roop_count++) {
-    share->static_key_cardinality[roop_count] = -1;
-  }
+
+  spider_init_share_for_parse_connect_info(share, table_share);
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   for (roop_count = 4; roop_count > 0; roop_count--)
@@ -1724,6 +1662,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
 #ifdef WITH_PARTITION_STORAGE_ENGINE
       case 4:
         if (!sub_elem || !sub_elem->part_comment) continue;
+        /* Get subpartition information*/
         DBUG_PRINT("info", ("spider create sub comment string"));
         if (!(connect_string = spider_create_string(
                   sub_elem->part_comment, strlen(sub_elem->part_comment)))) {
@@ -1734,6 +1673,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
         break;
       case 3:
         if (!part_elem || !part_elem->part_comment) continue;
+        /* Parse partition comment */
         DBUG_PRINT("info", ("spider create part comment string"));
         if (!(connect_string = spider_create_string(
                   part_elem->part_comment, strlen(part_elem->part_comment)))) {
@@ -1745,6 +1685,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
 #endif
       case 2:
         if (table_share->comment.length == 0) continue;
+        /* Parse table comment */
         DBUG_PRINT("info", ("spider create comment string"));
         if (!(connect_string = spider_create_string(
                   table_share->comment.str, table_share->comment.length))) {
@@ -1798,6 +1739,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           if (error_num) goto error;
           continue;
         case 3:
+          SPIDER_PARAM_STR_LIST("srv", server_names);
           SPIDER_PARAM_LONG_LIST_WITH_MAX("abl", access_balances, 0,
                                           2147483647);
           SPIDER_PARAM_INT_WITH_MAX("aim", auto_increment_mode, 0, 3);
@@ -1896,7 +1838,6 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           SPIDER_PARAM_STR_LIST("sqn", tgt_sequence_names);
           SPIDER_PARAM_LONGLONG("srd", second_read, 0);
           SPIDER_PARAM_DOUBLE("srt", scan_rate, 0);
-          SPIDER_PARAM_STR_LIST("srv", server_names);
           SPIDER_PARAM_DOUBLE("ssr", semi_split_read, 0);
           SPIDER_PARAM_LONGLONG("ssl", semi_split_read_limit, 0);
 #ifdef WITH_PARTITION_STORAGE_ENGINE
@@ -1973,6 +1914,8 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           SPIDER_PARAM_STR_LIST("ssl_capath", tgt_ssl_capaths);
           SPIDER_PARAM_STR("bka_engine", bka_engine);
           SPIDER_PARAM_LONGLONG("first_read", first_read, 0);
+          SPIDER_IGNORE_PARAM("shard_func");
+          SPIDER_IGNORE_PARAM("shard_type");
           error_num = connect_string_parse.print_param_error();
           goto error;
         case 11:
@@ -1982,6 +1925,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           SPIDER_PARAM_LONG_LIST_WITH_MAX("link_status", link_statuses, 0, 3);
           SPIDER_PARAM_LONG_LIST_WITH_MAX("use_handler", use_handlers, 0, 3);
           SPIDER_PARAM_INT_WITH_MAX("casual_read", casual_read, 0, 63);
+          SPIDER_IGNORE_PARAM("shard_count");
           error_num = connect_string_parse.print_param_error();
           goto error;
         case 12:
@@ -2854,6 +2798,96 @@ error:
   if (connect_string) spider_free(spider_current_trx, connect_string, MYF(0));
 error_alloc_conn_string:
   DBUG_RETURN(error_num);
+}
+
+/**
+  Initialize share value for spider_parse_connect_info
+
+  @param share              Shared spider table object.
+  @param  table_share       Shared MySQL table object.
+*/
+void spider_init_share_for_parse_connect_info(SPIDER_SHARE *share,
+                                              TABLE_SHARE *table_share) {
+  int roop_count;
+  share->sts_bg_mode = -1;
+  share->sts_interval = -1;
+  share->sts_mode = -1;
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  share->sts_sync = -1;
+#endif
+  share->store_last_sts = -1;
+  share->load_sts_at_startup = -1;
+  share->crd_bg_mode = -1;
+  share->crd_interval = -1;
+  share->crd_mode = -1;
+#ifdef WITH_PARTITION_STORAGE_ENGINE
+  share->crd_sync = -1;
+#endif
+  share->store_last_crd = -1;
+  share->load_crd_at_startup = -1;
+  share->crd_type = -1;
+  share->crd_weight = -1;
+  share->internal_offset = -1;
+  share->internal_limit = -1;
+  share->split_read = -1;
+  share->semi_split_read = -1;
+  share->semi_split_read_limit = -1;
+  share->init_sql_alloc_size = -1;
+  share->reset_sql_alloc = -1;
+  share->multi_split_read = -1;
+  share->max_order = -1;
+  share->semi_table_lock = -1;
+  share->semi_table_lock_conn = -1;
+  share->selupd_lock_mode = -1;
+  share->query_cache = -1;
+  share->query_cache_sync = -1;
+  share->internal_delayed = -1;
+  share->bulk_size = -1;
+  share->bulk_update_mode = -1;
+  share->bulk_update_size = -1;
+  share->internal_optimize = -1;
+  share->internal_optimize_local = -1;
+  share->scan_rate = -1;
+  share->read_rate = -1;
+  share->priority = -1;
+  share->quick_mode = -1;
+  share->quick_page_size = -1;
+  share->low_mem_read = -1;
+  share->table_count_mode = -1;
+  share->select_column_mode = -1;
+  share->bgs_mode = -1;
+  share->bgs_first_read = -1;
+  share->bgs_second_read = -1;
+  share->first_read = -1;
+  share->second_read = -1;
+  share->auto_increment_mode = -1;
+  share->use_table_charset = -1;
+  share->use_pushdown_udf = -1;
+  share->skip_default_condition = -1;
+  share->skip_parallel_search = -1;
+  share->direct_dup_insert = -1;
+  share->direct_order_limit = -1;
+  share->bka_mode = -1;
+  share->read_only_mode = -1;
+  share->error_read_mode = -1;
+  share->error_write_mode = -1;
+  share->active_link_count = -1;
+#ifdef HA_CAN_BULK_ACCESS
+  share->bulk_access_free = -1;
+#endif
+#ifdef HA_CAN_FORCE_BULK_UPDATE
+  share->force_bulk_update = -1;
+#endif
+#ifdef HA_CAN_FORCE_BULK_DELETE
+  share->force_bulk_delete = -1;
+#endif
+  share->casual_read = -1;
+  share->delete_all_rows_type = -1;
+  share->static_records_for_status = -1;
+  share->static_mean_rec_length = -1;
+  for (roop_count = 0; roop_count < (int)table_share->keys; roop_count++) {
+    share->static_key_cardinality[roop_count] = -1;
+  }
 }
 
 int spider_set_connect_info_default(SPIDER_SHARE *share,
@@ -5984,6 +6018,7 @@ int spider_get_crd(SPIDER_SHARE *share, int link_idx, time_t tmp_time,
   DBUG_RETURN(0);
 }
 
+/* TODO: make this function more efficient */
 void spider_set_result_list_param(ha_spider *spider) {
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   SPIDER_SHARE *share = spider->share;

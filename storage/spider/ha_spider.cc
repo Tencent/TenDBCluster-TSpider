@@ -1360,6 +1360,16 @@ int ha_spider::pre_index_end() {
 }
 #endif
 
+/**
+  Using index to read.
+  [Very important] We only allow const and system join type to
+  use index for the sack of stablity.
+
+  @param  buf                buffer to store result
+  @param  key                key to use            
+
+  @return error_num         0 Suceese, or >0 Error
+*/
 int ha_spider::index_read_map_internal(uchar *buf, const uchar *key,
                                        key_part_map keypart_map,
                                        enum ha_rkey_function find_flag) {
@@ -4185,6 +4195,10 @@ int ha_spider::read_multi_range_next(KEY_MULTI_RANGE **found_range_p)
       DBUG_RETURN(0);
     }
 
+    if (error_num == HA_ERR_END_OF_FILE) {
+      DBUG_RETURN(error_num);
+    }
+
 #ifdef HA_MRR_USE_DEFAULT_IMPL
     range_res = mrr_funcs.next(mrr_iter, &mrr_cur_range);
     DBUG_PRINT("info", ("spider range_res1=%d", range_res));
@@ -6896,6 +6910,11 @@ int ha_spider::write_row(uchar *buf) {
       spider_param_auto_increment_mode(thd, share->auto_increment_mode);
   bool auto_increment_flag =
       table->next_number_field && buf == table->record[0];
+  bool skip_insert_ingore = 
+      (sql_command == SQLCOM_REPLACE) ||
+      (sql_command == SQLCOM_REPLACE_SELECT) ||
+      (sql_command == SQLCOM_LOAD &&
+      lex_duplicates == DUP_REPLACE);
   backup_error_status();
   DBUG_ENTER("ha_spider::write_row");
   DBUG_PRINT("info", ("spider this=%p", this));
@@ -6981,9 +7000,8 @@ int ha_spider::write_row(uchar *buf) {
     }
   }
   if (!bulk_insert || bulk_size < 0) {
-    direct_dup_insert =
-        spider_param_direct_dup_insert(trx->thd, share->direct_dup_insert);
-    DBUG_PRINT("info", ("spider direct_dup_insert=%d", direct_dup_insert));
+    direct_dup_insert = spider_param_direct_dup_insert(trx->thd, share->direct_dup_insert);
+    direct_insert_ignore = spider_param_direct_insert_ignore(trx->thd);
     if ((error_num = spider_db_bulk_insert_init(this, table)))
       DBUG_RETURN(check_error_mode(error_num));
     if (bulk_insert)
@@ -6993,9 +7011,8 @@ int ha_spider::write_row(uchar *buf) {
 #else
               insert_with_update ||
 #endif
-                  (!direct_dup_insert && ignore_dup_key)
-              ? 0
-              : spider_param_bulk_size(trx->thd, share->bulk_size);
+          ((!direct_dup_insert || (!direct_insert_ignore && !skip_insert_ingore)) && ignore_dup_key)
+              ? 0 : spider_param_bulk_size(trx->thd, share->bulk_size);
     else
       bulk_size = 0;
   }
@@ -7230,7 +7247,7 @@ int ha_spider::direct_update_rows_init(uint mode, KEY_MULTI_RANGE *ranges,
       **/
     }
 
-    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table
     // it can't use direct_update where set timestamp = ** by user.
     if (thd->is_set_time()) {
       // always one table
@@ -7327,7 +7344,7 @@ int ha_spider::direct_update_rows_init() {
     **********/
     }
 
-    // If there is column which timestamp on update CURRENT_TIMESTAMP on table£¬
+    // If there is column which timestamp on update CURRENT_TIMESTAMP on table
     // it can't use direct_update where set timestamp = ** by user.
     if (thd->is_set_time()) {
       // always one table
@@ -8042,6 +8059,15 @@ bool ha_spider::get_error_message(int error, String *buf) {
   DBUG_RETURN(FALSE);
 }
 
+/**
+  Create a Spider table.
+
+  @param  name              Full path of table name.
+  @param  form              Table object.
+  @param  create_info       Create info generated for CREATE TABLE
+
+  @return                   0 Suceese, or >0 Error
+*/
 int ha_spider::create(const char *name, TABLE *form, HA_CREATE_INFO *info) {
   int error_num, dummy;
   SPIDER_SHARE tmp_share;

@@ -1598,6 +1598,15 @@ int spider_db_mysql::set_net_timeout() {
   DBUG_RETURN(0);
 }
 
+/**
+  Execute query on remote
+
+  @param  query              query to execute by remote
+  @param  length             length of the query
+  @param  quick_mode         spider quick mode
+
+  @return error_num         0 Suceese, or >0 Error
+*/
 int spider_db_mysql::exec_query(const char *query, uint length,
                                 int quick_mode) {
   int error_num = 0;
@@ -1726,6 +1735,7 @@ int spider_db_mysql::exec_query(const char *query, uint length,
   DBUG_RETURN(error_num);
 }
 
+/* return the error number */
 int spider_db_mysql::get_errno() {
   DBUG_ENTER("spider_db_mysql::get_errno");
   DBUG_PRINT("info", ("spider this=%p", this));
@@ -1734,6 +1744,7 @@ int spider_db_mysql::get_errno() {
   DBUG_RETURN(stored_error);
 }
 
+/* return the error specification */
 const char *spider_db_mysql::get_error() {
   const char *error_ptr;
   DBUG_ENTER("spider_db_mysql::get_error");
@@ -6280,8 +6291,8 @@ int spider_mysql_handler::append_insert(spider_string *str, int link_idx) {
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
     str->q_append(SPIDER_SQL_HIGH_PRIORITY_STR, SPIDER_SQL_HIGH_PRIORITY_LEN);
   }
-  if (spider->ignore_dup_key && spider->direct_dup_insert &&
-      !spider->write_can_replace &&
+  if (spider->ignore_dup_key && !spider->write_can_replace &&
+    (spider->direct_dup_insert && spider->direct_insert_ignore) &&
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
       (!spider->insert_with_update || !dup_update_sql.length()) &&
 #else

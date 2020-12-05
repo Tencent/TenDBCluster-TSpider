@@ -7014,6 +7014,7 @@ void THD::reset_for_next_command(bool do_clear_error) {
   thd->spider_current_partition_num = 0;
   thd->spider_features_type = 0;
   thd->current_global_server_version = get_modify_server_version();
+  thd->spider_const_index_read = FALSE;
 
   DBUG_PRINT("debug", ("is_current_stmt_binlog_format_row(): %d",
                        is_current_stmt_binlog_format_row()));
@@ -9769,7 +9770,7 @@ LEX_CSTRING tdbctl_get_current_db(THD *thd, LEX *lex) {
 bool tdbctl_is_ignore_db(char *db_list, LEX_CSTRING current_db) {
   char *ptr;
   char *next_ptr;
-  char *delim = ",";
+  char const *delim = ",";
   if (current_db.str == "" || current_db.length == 0) return FALSE;
 
   char *strtmp = new char[strlen(db_list) + 1];

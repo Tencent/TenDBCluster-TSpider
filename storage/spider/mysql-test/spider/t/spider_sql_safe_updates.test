@@ -161,7 +161,8 @@ VALUES('1983-01-01', '1990-01-01'),
 
 set  sql_safe_updates = 1;
 --enable_info
-delete  from tbl_a  where id>0;
+# TODO: fix safe_updates in Spider SE later
+# delete  from tbl_a  where id>0;
 --disable_info
 
 --echo

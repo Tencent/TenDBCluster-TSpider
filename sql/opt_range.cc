@@ -2411,14 +2411,28 @@ int SQL_SELECT::test_quick_select(THD *thd, key_map keys_to_use,
   quick_keys.clear_all();
   DBUG_ASSERT(!head->is_filled_at_execution());
 
-  /* single table query update in spider do not need using index */
-  if (opt_spider_ignore_single_update_index &&
-      thd && thd->lex &&
-      thd->lex->sql_command == SQLCOM_UPDATE &&  /* simple update*/
-      thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
-      head->file && head->file->is_spider_storage_engine())  /* only for spider */
+  /* single table query select in spider does not need using index*/
+  if (opt_spider_ignore_single_select_index &&
+    thd && thd->lex &&
+    thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
+    /* !thd->lex->describe &&  // not describe/explain types */
+    !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
+    thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
+    head->file && head->file->is_spider_storage_engine())  /* only for spider */
   {
-      DBUG_RETURN(0);
+    DBUG_RETURN(0);
+  }
+
+  /* single table query update in spider does not need using index */
+  if (opt_spider_ignore_single_update_index &&
+    thd && thd->lex &&
+    (thd->lex->sql_command == SQLCOM_UPDATE ||
+    thd->lex->sql_command == SQLCOM_DELETE) &&  /* simple update or delete*/
+    thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
+    head->file && head->file->is_spider_storage_engine())  /* only for spider */
+  {
+    /* TODO: fix sql_safe_updates for spider later */
+    DBUG_RETURN(0);
   }
 
 
@@ -2603,12 +2617,16 @@ int SQL_SELECT::test_quick_select(THD *thd, key_map keys_to_use,
 
       /* Get best 'range' plan and prepare data for making other plans */
 
-      can_index_range = TRUE;
-      if ((range_trp = get_key_scans_params(&param, tree, FALSE, TRUE,
-          best_read_time)))
-      {
-          best_trp = range_trp;
-          best_read_time = best_trp->read_cost;
+      if (!(head->file && head->file->is_spider_storage_engine()) ||
+        (thd->variables.option_bits & OPTION_SAFE_UPDATES)) {
+        /* currently, do not use quick range for Spider, unless it is a safe_update */
+        can_index_range = TRUE;
+        if ((range_trp = get_key_scans_params(&param, tree, FALSE, TRUE,
+            best_read_time)))
+        {
+            best_trp = range_trp;
+            best_read_time = best_trp->read_cost;
+        }
       }
 
       /*

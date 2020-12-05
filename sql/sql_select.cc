@@ -4246,6 +4246,20 @@ static bool make_join_statistics(JOIN *join, List<TABLE_LIST> &tables_list,
                 break;
               } else
                 found_ref |= refs;  // Table is const if all refs are const
+            } else if (opt_spider_ignore_single_select_index &&
+                join->thd && join->thd->lex &&
+                join->thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
+                /* !thd->lex->describe &&  // not describe/explain types */
+                !(join->thd->lex->describe && (join->thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
+                join->thd->lex->query_tables && (join->thd->lex->query_tables->next_global == NULL) && /* single table */
+                table->file && table->file->is_spider_storage_engine()) {
+              /* if is Spider SE and `ignore_single_select_index = ON`, clear all keys */
+              s->keys.clear_all();
+              s->const_keys.clear_all();
+              s->checked_keys.clear_all();
+              s->type = JT_ALL;
+              const_ref.clear_all();
+              eq_part.clear_all();
             } else if (base_const_ref == base_eq_part)
               s->const_keys.set_bit(key);
           }
@@ -8689,6 +8703,20 @@ static bool create_ref_for_key(JOIN *join, JOIN_TAB *j, KEYUSE *org_keyuse,
   } else {
     keyparts = length = 0;
     uint found_part_ref_or_null = 0;
+    if ((j->type != JT_CONST && j->type != JT_SYSTEM) &&
+        opt_spider_ignore_single_select_index &&
+        thd && thd->lex &&
+        thd->lex->sql_command == SQLCOM_SELECT &&
+        !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
+        thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
+        table->file && table->file->is_spider_storage_engine()) {
+      /*
+        In TSpider, if `ignore_single_select_index = ON`,
+        ref join types are not allowed
+      */
+      j->type = JT_ALL;
+      DBUG_RETURN(FALSE);
+    }
     /*
       Calculate length for the used key
       Stop if there is a missing key part or when we find second key_part
@@ -17543,6 +17571,8 @@ static int join_read_const(JOIN_TAB *tab) {
     if (cp_buffer_from_ref(tab->join->thd, table, &tab->ref))
       error = HA_ERR_KEY_NOT_FOUND;
     else {
+      if (table->file->is_spider_storage_engine())
+        tab->join->thd->spider_const_index_read = TRUE;
       error = table->file->ha_index_read_idx_map(
           table->record[0], tab->ref.key, (uchar *)tab->ref.key_buff,
           make_prev_keypart_map(tab->ref.key_parts), HA_READ_KEY_EXACT);
@@ -23114,7 +23144,12 @@ void JOIN::set_allowed_join_cache_types() {
       optimizer_flag(thd, OPTIMIZER_SWITCH_SEMIJOIN_WITH_CACHE);
   allowed_outer_join_with_cache =
       optimizer_flag(thd, OPTIMIZER_SWITCH_OUTER_JOIN_WITH_CACHE);
-  max_allowed_join_cache_level = thd->variables.join_cache_level;
+  // max_allowed_join_cache_level = thd->variables.join_cache_level;
+  // BKA join algorithms are not allowed, because they have bugs in Spider SE
+  max_allowed_join_cache_level =
+      thd->variables.join_cache_level > JOIN_CACHE_BKA_BIT
+          ? JOIN_CACHE_BKA_BIT
+          : thd->variables.join_cache_level;
 }
 
 /**

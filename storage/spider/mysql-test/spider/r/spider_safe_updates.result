@@ -1,0 +1,121 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS tbl;
+CREATE TABLE safe_update_test_innodb (
+id int primary key,
+content varchar(20)
+)ENGINE=INNODB;
+CREATE TABLE safe_update_test_spider (
+id int primary key,
+content varchar(20)
+)ENGINE=Spider DEFAULT CHARSET=utf8
+PARTITION BY LIST (id % 2)
+(
+PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl", srv "s_2_1",aim "0"',
+PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl", srv "s_2_2",aim "1"'
+);
+
+insert data and test
+SET @sql_safe_updates_bk = @@session.sql_safe_updates;
+SET sql_safe_updates = 1;
+INSERT INTO safe_update_test_innodb VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+DELETE FROM safe_update_test_innodb WHERE content = 'd';
+ERROR HY000: You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column
+UPDATE safe_update_test_innodb SET content = 'f' where content = 'c';
+ERROR HY000: You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column
+DELETE FROM safe_update_test_innodb WHERE id = 2;
+UPDATE safe_update_test_innodb SET content = 'f' where id = 1;
+SELECT * FROM safe_update_test_innodb;
+id	content
+1	f
+3	c
+4	d
+truncate table safe_update_test_innodb;
+SET sql_safe_updates = 0;
+INSERT INTO safe_update_test_innodb VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+DELETE FROM safe_update_test_innodb WHERE content = 'd';
+UPDATE safe_update_test_innodb SET content = 'f' where content = 'c';
+DELETE FROM safe_update_test_innodb WHERE id = 2;
+UPDATE safe_update_test_innodb SET content = 'f' where id = 1;
+SELECT * FROM safe_update_test_innodb;
+id	content
+1	f
+3	f
+truncate table safe_update_test_innodb;
+SET sql_safe_updates = 1;
+INSERT INTO safe_update_test_spider VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+DELETE FROM safe_update_test_spider WHERE content = 'd';
+ERROR HY000: You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column
+UPDATE safe_update_test_spider SET content = 'f' where content = 'c';
+ERROR HY000: You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column
+SELECT * FROM safe_update_test_spider;
+id	content
+2	b
+4	d
+1	a
+3	c
+truncate table safe_update_test_spider;
+SET sql_safe_updates = 0;
+INSERT INTO safe_update_test_spider VALUES (1, 'a'), (2, 'b'), (3, 'c'), (4, 'd');
+DELETE FROM safe_update_test_spider WHERE content = 'd';
+UPDATE safe_update_test_spider SET content = 'f' where content = 'c';
+DELETE FROM safe_update_test_spider WHERE id = 2;
+UPDATE safe_update_test_spider SET content = 'f' where id = 1;
+SELECT * FROM safe_update_test_spider;
+id	content
+1	f
+3	f
+truncate table safe_update_test_spider;
+restore sql_safe_updates
+SET sql_safe_updates = @sql_safe_updates_bk;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

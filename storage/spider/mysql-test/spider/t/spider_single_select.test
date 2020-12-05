@@ -1,0 +1,227 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+
+--echo
+--echo drop and create databases
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  CREATE DATABASE auto_test_remote;
+  USE auto_test_remote;
+
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+  CREATE DATABASE auto_test_remote_2;
+  USE auto_test_remote_2;
+}
+--enable_warnings
+
+
+--let $CHILD2_1_DROP_TABLES_BACKUP= $CHILD2_1_DROP_TABLES
+let $CHILD2_1_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl;
+--let $CHILD2_1_CREATE_TABLES_BACKUP= $CHILD2_1_CREATE_TABLES
+let $CHILD2_1_CREATE_TABLES=
+CREATE TABLE tbl (
+  id INT PRIMARY KEY,
+  pad CHAR(60),
+  c CHAR(120),
+  flag INT,
+  ckey INT,
+  index idx(ckey)
+)$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+
+--let $CHILD2_2_DROP_TABLES_BACKUP= $CHILD2_2_DROP_TABLES
+let $CHILD2_2_DROP_TABLES=
+  DROP TABLE IF EXISTS tbl;
+--let $CHILD2_2_CREATE_TABLES_BACKUP= $CHILD2_2_CREATE_TABLES
+let $CHILD2_2_CREATE_TABLES=
+CREATE TABLE tbl (
+  id INT PRIMARY KEY,
+  pad CHAR(60),
+  c CHAR(120),
+  flag INT,
+  ckey INT,
+  index idx(ckey)
+)$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+DROP TABLE IF EXISTS tbl;
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+let $MASTER_CREATE_TABLES1 = 
+CREATE TABLE tbl (
+  id int primary key,
+  pad char(60),
+  c char(120),
+  flag int,
+  ckey int,
+  index idx(ckey)
+)$MASTER_1_ENGINE $MASTER_1_CHARSET
+PARTITION BY LIST (id % 2)
+(
+  PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl", srv "s_2_1",aim "0"',
+  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl", srv "s_2_2",aim "1"'
+);
+
+eval $MASTER_CREATE_TABLES1;
+
+--echo
+--echo insert data and test
+INSERT INTO tbl VALUES
+(1,  "67847967377-48000963322-62604785301-91415491898-96926520291", "83868641912-28773972837-60736120486-75162659906-27563526494-20381887404-41576422241-93426793964-56405065102-33518432330", 1, 10),
+(2,  "23183251411-36241541236-31706421314-92007079971-60663066966", "38014276128-25250245652-62722561801-27818678124-24890218270-18312424692-92565570600-36243745486-21199862476-38576014630", 1, 9),
+(3,  "38615512647-91458489257-90681424432-95014675832-60408598704", "33973744704-80540844748-72700647445-87330233173-87249600839-07301471459-22846777364-58808996678-64607045326-48799346817", 0, 8),
+(4,  "63947013338-98809887124-59806726763-79831528812-45582457048", "37002370280-58842166667-00026392672-77506866252-09658311935-56926959306-83464667271-94685475868-28264244556-14550208498", 1, 7),
+(5,  "34551750492-67990399350-81179284955-79299808058-21257255869", "44257470806-17967007152-32809666989-26174672567-29883439075-95767161284-94957565003-35708767253-53935174705-16168070783", 0, 6),
+(6,  "05161542529-00085727016-35134775864-52531204064-98744439797", "37216201353-39109531021-11197415756-87798784755-02463049870-83329763120-57551308766-61100580113-80090253566-30971527105", 0, 5),
+(7,  "91798303270-64988107984-08161247972-12116454627-22996445111", "33071042495-29920376648-91343430102-79082003121-73317691963-02846712788-88069761578-14885283975-44409837760-90760298045", 0, 4),
+(8,  "76460662325-41613089656-42706083314-81833284991-17063140920", "73754818686-04889373966-18668178968-56957589012-31352882173-91882653509-59577900152-88962682169-52981807259-62646890059", 1, 3),
+(9,  "30508501104-50823269125-88107014550-70202920684-95842308929", "26482547570-00155460224-12388481921-23289186371-78242522654-77998886134-73270876420-50821093220-31442690639-11588920653", 0, 2),
+(10, "62779785163-72948938250-41369758259-80996497836-62655463951", "80707408529-50567701755-94710751896-99750913740-12893433455-71449705205-06190682370-44407762850-72484044178-50518730145", 1, 1),
+(11, "48573666000-08738799548-77636362790-42210907101-93959032950", "36136545002-86991679216-03626334357-76004089615-79374967509-18534984815-05132458464-89989437682-83510632788-12432287646", 0, null);
+
+SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+
+-- echo spider_ignore_single_select_index enable
+SET GLOBAL spider_ignore_single_select_index = ON;
+
+-- echo JOIN TYPE 'const' TEST
+SELECT pad FROM tbl WHERE id = 5;
+EXPLAIN SELECT pad FROM tbl WHERE id = 5;
+SELECT * FROM tbl WHERE id = 9;
+EXPLAIN SELECT * FROM tbl WHERE id = 9;
+SELECT c FROM tbl WHERE id = 3;
+EXPLAIN SELECT c FROM tbl WHERE id = 3;
+
+-- echo JOIN TYPE 'ref' TEST
+SELECT pad FROM tbl WHERE ckey = 2;
+EXPLAIN SELECT pad FROM tbl WHERE ckey = 2;
+SELECT * FROM tbl WHERE ckey = 7;
+EXPLAIN SELECT * FROM tbl WHERE ckey = 4;
+SELECT c FROM tbl WHERE ckey = 8;
+EXPLAIN SELECT c FROM tbl WHERE ckey = 8;
+
+-- echo JOIN TYPE 'ref_or_null'
+SELECT pad FROM tbl WHERE ckey = 7 or ckey is null;
+EXPLAIN SELECT pad FROM tbl WHERE ckey = 7 or ckey is null;
+SELECT * FROM tbl WHERE ckey = 1 or ckey is null;
+EXPLAIN SELECT * FROM tbl WHERE ckey = 1 or ckey is null;
+SELECT c FROM tbl WHERE ckey = 10 or ckey is null;
+EXPLAIN SELECT c FROM tbl WHERE ckey = 10 or ckey is null;
+
+-- echo JOIN TYPE 'index'
+SELECT ckey FROM tbl WHERE ckey = 7;
+EXPLAIN SELECT ckey FROM tbl WHERE ckey > 7;
+SELECT ckey FROM tbl WHERE ckey < 4;
+EXPLAIN SELECT ckey FROM tbl WHERE ckey < 4;
+SELECT ckey FROM tbl WHERE ckey not in (5);
+EXPLAIN SELECT ckey FROM tbl WHERE ckey not in (5);
+
+-- echo JOIN TYPE 'range'
+-- echo Currently, RANGE JOIN TYPE is not tested, since it needs spider_ignore_single_select_index = OFF
+
+-- echo spider_ignore_single_select_index restore
+SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
