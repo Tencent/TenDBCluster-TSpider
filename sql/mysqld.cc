@@ -209,6 +209,8 @@ typedef fp_except fp_except_t;
 #define fcntl(X,Y,Z) 0
 #endif
 
+/* DO NOT MERGE, Test BlueKing (landun) auto-test */
+
 extern "C" my_bool reopen_fstreams(const char *filename,
                                    FILE *outstream, FILE *errstream);
 
