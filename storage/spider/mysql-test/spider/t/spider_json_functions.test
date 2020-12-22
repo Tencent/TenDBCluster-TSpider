@@ -1,0 +1,53 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--echo test JSON_ARRAY() functions
+--echo this includes JSON_ARRAY(), JSON_ARRAY_APPEND() and JSON_ARRAY_INSERT()
+--source json_array.inc
+
+--echo test JSON_CONTAINS() functions
+--echo this includes JSON_CONTAINS() and JSON_CONTAINS_PATH()
+--source json_contains.inc
+
+--echo test Functions that return JSON VALUE Attributes
+--echo this includes JSON_DEPTH(), JSON_LENGTH(), JSON_TYPE() and JSON_VALID()
+--source json_value_attr.inc
+
+--echo test Functions that modify JSON values
+--echo this includes JSON_INSERT(), JSON_MERGER(), JSON_REMOVE(), JSON_REPLACE(), JSON_SET() and JSON_UNQUOTE()
+--source json_change_value.inc
+
+--echo test Functions that relate to JSON searchs
+--echo this includes JSON_KEYS() and JSON_SEARCH() 
+--source json_searchs.inc
+
+--echo test Functions that create JSON values
+--echo this includes JSON_ARRAY(), JSON_QUOTE() and JSON_OBJECT()
+--source json_create_value.inc
+
+--echo
+--echo deinit
+--disable_warnings
+--connection master_1
+DROP DATABASE IF EXISTS auto_test_local;
+
+if ($USE_CHILD_GROUP2)
+{
+  --connection child2_1
+  DROP DATABASE IF EXISTS auto_test_remote;
+  --connection child2_2
+  DROP DATABASE IF EXISTS auto_test_remote_2;
+}
+
+--disable_query_log
+--disable_result_log
+--source test_deinit.inc
+--enable_result_log
+--enable_query_log
+--enable_warnings
+--echo
+--echo end of test
