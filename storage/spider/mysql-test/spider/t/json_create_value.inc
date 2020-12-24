@@ -26,3 +26,7 @@ PARTITION BY LIST (id % 2)
 --echo BUG: JSON_OBJECT() and JSON_ARRAY() will translate true to 1
 INSERT INTO tbl VALUES(1, 'null'),(2, '"null"'),(3, '[1,2,3]');
 SELECT JSON_QUOTE(j) FROM tbl;
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES (1, json_array(1,'abc',NULL,true));
+SELECT * FROM tbl WHERE (j = json_array(1,'abc',NULL,true));
+TRUNCATE TABLE tbl;

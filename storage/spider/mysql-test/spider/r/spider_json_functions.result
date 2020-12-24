@@ -477,6 +477,12 @@ JSON_QUOTE(j)
 "\"null\""
 "null"
 "[1,2,3]"
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES (1, json_array(1,'abc',NULL,true));
+SELECT * FROM tbl WHERE (j = json_array(1,'abc',NULL,true));
+id	j
+1	[1, "abc", null, true]
+TRUNCATE TABLE tbl;
 
 deinit
 connection master_1;

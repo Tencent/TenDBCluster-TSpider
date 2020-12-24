@@ -3676,6 +3676,7 @@ public:
     Item_int(thd, str_arg, i, 1) {}
   bool is_bool_type() { return true; }
   Item *neg_transformer(THD *thd);
+  virtual void print(String *str, enum_query_type query_type);
 };
 
 
