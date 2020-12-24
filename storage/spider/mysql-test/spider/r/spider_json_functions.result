@@ -267,6 +267,16 @@ SELECT * FROM tbl;
 id	j
 1	["d"]
 TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES (1, '{ "a": 1, "b": [2, 3]}');
+UPDATE tbl SET j = JSON_REPLACE(j, '$.a', 10, '$.c', '[true, false]');
+SELECT * FROM tbl;
+id	j
+1	{"a": 10, "b": [2, 3]}
+UPDATE tbl SET j = JSON_REPLACE(j, '$.b[1]', 4);
+SELECT * FROM tbl;
+id	j
+1	{"a": 10, "b": [2, 4]}
+TRUNCATE TABLE tbl;
 INSERT INTO tbl VALUES(1, '{ "a": 1, "b": [2, 3]}');
 SELECT * FROM tbl;
 id	j

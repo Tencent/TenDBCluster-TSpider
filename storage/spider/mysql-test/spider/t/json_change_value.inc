@@ -38,9 +38,12 @@ INSERT INTO tbl VALUES(1, '["a", "d"]');
 SELECT * FROM tbl WHERE j = JSON_REMOVE('["a", ["b", "c"], "d"]', '$[1]');
 UPDATE tbl SET j = JSON_REMOVE(j, '$[0]');
 SELECT * FROM tbl;
-# TRUNCATE TABLE tbl;
-# INSERT INTO tbl VALUES (1, '{ "a": 1, "b": [2, 3]}');
-# UPDATE tbl SET j = JSON_REPLACE(j, '$.a', 10, '$.c', '[true, false]'); -- crash
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES (1, '{ "a": 1, "b": [2, 3]}');
+UPDATE tbl SET j = JSON_REPLACE(j, '$.a', 10, '$.c', '[true, false]');
+SELECT * FROM tbl;
+UPDATE tbl SET j = JSON_REPLACE(j, '$.b[1]', 4);
+SELECT * FROM tbl;
 TRUNCATE TABLE tbl;
 INSERT INTO tbl VALUES(1, '{ "a": 1, "b": [2, 3]}');
 SELECT * FROM tbl;
