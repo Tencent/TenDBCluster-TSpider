@@ -124,6 +124,12 @@ public:
   int compare_json_str_basic(Item *j, Item *s);
   int compare_json_str();
   int compare_str_json();
+  int compare_json_object_str();
+  int compare_str_json_object();
+  int compare_json_object_str_basic(Item **a, Item **b);
+  int compare_e_json_object_str();
+  int compare_e_str_json_object();
+  int compare_e_json_object_str_basic(Item **a, Item **b);
   int compare_e_json_str_basic(Item *j, Item *s);
   int compare_e_json_str();
   int compare_e_str_json();

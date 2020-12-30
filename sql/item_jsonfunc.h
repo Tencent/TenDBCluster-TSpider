@@ -25,6 +25,15 @@
 #include "item_strfunc.h"      // Item_str_func
 
 
+class json_object_key_value {
+public:
+  String *key;
+  Item *value;
+
+  json_object_key_value(String *k, Item *v) : key(k), value(v){};
+};
+
+
 class json_path_with_flags
 {
 public:

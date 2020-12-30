@@ -23,10 +23,20 @@ PARTITION BY LIST (id % 2)
 
 --echo
 --echo insert data and test
---echo BUG: JSON_OBJECT() and JSON_ARRAY() will translate true to 1
 INSERT INTO tbl VALUES(1, 'null'),(2, '"null"'),(3, '[1,2,3]');
 SELECT JSON_QUOTE(j) FROM tbl;
 TRUNCATE TABLE tbl;
 INSERT INTO tbl VALUES (1, json_array(1,'abc',NULL,true));
 SELECT * FROM tbl WHERE (j = json_array(1,'abc',NULL,true));
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES(1, JSON_OBJECT('name', 'carrot', 'id', 87, 'flag', true));
+INSERT INTO tbl VALUES(2, JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true)));
+INSERT INTO tbl VALUES (3, JSON_OBJECT());
+INSERT INTO tbl VALUES (4, NULL);
+SELECT * FROM tbl ORDER BY id;
+SELECT * FROM tbl WHERE j = JSON_OBJECT('name', 'carrot', 'id', 87, 'flag', true);
+SELECT * FROM tbl where j = JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true));
+SELECT * FROM tbl where j != JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true));
+SELECT * FROM tbl WHERE j IS NULL;
+SELECT * FROM tbl WHERE j IS NOT NULL ORDER BY id;
 TRUNCATE TABLE tbl;

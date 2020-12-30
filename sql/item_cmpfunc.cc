@@ -1106,6 +1106,25 @@ int Arg_comparator::compare_e_str_json()
   return compare_e_json_str_basic(*b, *a);
 }
 
+int Arg_comparator::compare_json_object_str()
+{
+  return compare_json_object_str_basic(a, b);
+}
+
+int Arg_comparator::compare_str_json_object()
+{
+  return compare_json_object_str_basic(b, a);
+}
+
+int Arg_comparator::compare_e_json_object_str()
+{
+  return compare_e_json_object_str_basic(a, b);
+}
+
+int Arg_comparator::compare_e_str_json_object()
+{
+  return compare_e_json_object_str_basic(b, a);
+}
 
 void Item_func_truth::fix_length_and_dec()
 {

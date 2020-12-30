@@ -470,7 +470,6 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
-BUG: JSON_OBJECT() and JSON_ARRAY() will translate true to 1
 INSERT INTO tbl VALUES(1, 'null'),(2, '"null"'),(3, '[1,2,3]');
 SELECT JSON_QUOTE(j) FROM tbl;
 JSON_QUOTE(j)
@@ -482,6 +481,35 @@ INSERT INTO tbl VALUES (1, json_array(1,'abc',NULL,true));
 SELECT * FROM tbl WHERE (j = json_array(1,'abc',NULL,true));
 id	j
 1	[1, "abc", null, true]
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES(1, JSON_OBJECT('name', 'carrot', 'id', 87, 'flag', true));
+INSERT INTO tbl VALUES(2, JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true)));
+INSERT INTO tbl VALUES (3, JSON_OBJECT());
+INSERT INTO tbl VALUES (4, NULL);
+SELECT * FROM tbl ORDER BY id;
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+2	{"id": 85, "ext": {"id1": 86, "flag": true, "name1": "carrot"}, "flag": false, "name": "nuts"}
+3	{}
+4	NULL
+SELECT * FROM tbl WHERE j = JSON_OBJECT('name', 'carrot', 'id', 87, 'flag', true);
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+SELECT * FROM tbl where j = JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true));
+id	j
+2	{"id": 85, "ext": {"id1": 86, "flag": true, "name1": "carrot"}, "flag": false, "name": "nuts"}
+SELECT * FROM tbl where j != JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true));
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+3	{}
+SELECT * FROM tbl WHERE j IS NULL;
+id	j
+4	NULL
+SELECT * FROM tbl WHERE j IS NOT NULL ORDER BY id;
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+2	{"id": 85, "ext": {"id1": 86, "flag": true, "name1": "carrot"}, "flag": false, "name": "nuts"}
+3	{}
 TRUNCATE TABLE tbl;
 
 deinit
