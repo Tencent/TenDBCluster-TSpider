@@ -3079,6 +3079,8 @@ int spider_db_mysql_util::open_item_func(Item_func *item_func,
       last_str = SPIDER_SQL_IS_NOT_NULL_STR;
       last_str_length = SPIDER_SQL_IS_NOT_NULL_LEN;
       break;
+    case Item_func::JSON_EXTRACT_FUNC:
+      /* JSON_EXTRACT_FUN should be treated as UNKNOWN_FUNC */
     case Item_func::UNKNOWN_FUNC:
       func_name = (char *)item_func->func_name();
       func_name_length = strlen(func_name);
@@ -3324,6 +3326,13 @@ int spider_db_mysql_util::open_item_func(Item_func *item_func,
           separete_str = SPIDER_SQL_COMMA_STR;
           separete_str_length = SPIDER_SQL_COMMA_LEN;
           break;
+        }
+      } else if (func_name_length == 11) {
+        if (!strncasecmp("json_update", func_name, func_name_length)) {
+          /* JSON_UPDATE should be replaced with JSON_REPLACE */
+          func_name = SPIDER_SQL_JSON_REPLACE_STR;
+          func_name_length = SPIDER_SQL_JSON_REPLACE_LEN;
+          /* do not break here*/
         }
       } else if (func_name_length == 12) {
         if (!strncasecmp("cast_as_date", func_name, func_name_length)) {

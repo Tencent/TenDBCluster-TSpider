@@ -1420,6 +1420,11 @@ static int append_json_value(String *str, Item *item, String *tmp_val)
     return str->append(t_f, t_f_len);
   }
   {
+    /*
+      if it's a json_object
+      val_json will call Item_func_json_object::val_str,
+      where json keys will be sorted
+    */
     String *sv= item->val_json(tmp_val);
     if (item->null_value)
       goto append_null;
@@ -1437,6 +1442,20 @@ static int append_json_value(String *str, Item *item, String *tmp_val)
 
 append_null:
   return str->append("null", 4);
+}
+
+
+static int append_json_keyname_str(String *str, String *keyname, String *tmp_val)
+{
+  if (!keyname || (keyname->length() == 0))
+    goto append_null;
+
+  return str->append("\"", 1) ||
+         st_append_escaped(str, keyname) ||
+         str->append("\": ", 3);
+
+append_null:
+  return str->append("\"\": ", 4);
 }
 
 
@@ -1808,28 +1827,70 @@ return_null:
 }
 
 
+/*
+  Used for sort json object's key
+*/
+static int sort_json_key(json_object_key_value **a, json_object_key_value **b) {
+  /* we perform a sort like mysql does */
+  if ((*a)->key->length() != (*b)->key->length())
+    return ((*a)->key->length() > (*b)->key->length()) ? 1 : -1;
+
+  return memcmp((*a)->key->ptr(), (*b)->key->ptr(), (*a)->key->length());
+}
+
 String *Item_func_json_object::val_str(String *str)
 {
   DBUG_ASSERT(fixed == 1);
+  json_object_key_value **kv_array = NULL;
   uint n_arg;
+  uint kv_pairs = arg_count / 2;
+  json_object_key_value *jkv = NULL;
 
   str->length(0);
   str->set_charset(collation.collation);
 
-  if (str->append("{", 1) ||
-      (arg_count > 0 &&
-       (append_json_keyname(str, args[0], &tmp_val) ||
-        append_json_value(str, args[1], &tmp_val))))
+  if (str->append("{", 1))
     goto err_return;
 
-  for (n_arg=2; n_arg < arg_count; n_arg+=2)
+  if (kv_pairs > 0 && (arg_count % 2 == 0))
   {
-    if (str->append(", ", 2) ||
-        append_json_keyname(str, args[n_arg], &tmp_val) ||
-        append_json_value(str, args[n_arg+1], &tmp_val))
+    kv_array = (json_object_key_value**)my_malloc(sizeof(json_object_key_value*) * kv_pairs,
+                                                 MYF(MY_WME | MY_THREAD_SPECIFIC));
+    if (kv_array == NULL)
       goto err_return;
-  }
 
+    /* get <key, value> pair */
+    for (n_arg = 0; n_arg < arg_count; n_arg+=2)
+    {
+      String *jkey = args[n_arg]->val_str(&tmp_val);
+      jkv = new json_object_key_value(jkey, args[n_arg+1]);
+      kv_array[n_arg/2] = jkv;
+    }
+    
+    /* sort by key */
+    my_qsort(kv_array, kv_pairs, 
+      sizeof(json_object_key_value*), (qsort_cmp)sort_json_key);
+    
+    /* append key, value */
+    if (append_json_keyname_str(str, kv_array[0]->key, &tmp_val) ||
+        append_json_value(str, kv_array[0]->value, &tmp_val))
+      goto err_return;
+
+    for (n_arg=2; n_arg < arg_count; n_arg+=2)
+    {
+      if (str->append(", ", 2) ||
+        append_json_keyname_str(str, kv_array[n_arg/2]->key, &tmp_val) ||
+        append_json_value(str, kv_array[n_arg/2]->value, &tmp_val))
+      goto err_return;
+    }
+
+    /* free mem */
+    for (n_arg=0; n_arg < arg_count; n_arg+=2) {
+      jkv = kv_array[n_arg/2];
+      delete jkv;
+    }
+    my_free(kv_array);                                    
+  }
   if (str->append("}", 1))
     goto err_return;
 
@@ -3263,4 +3324,55 @@ int Arg_comparator::compare_e_json_str_basic(Item *j, Item *s)
   return MY_TEST(sortcmp(res1, res2, compare_collation()) == 0);
 }
 
+/*
+  Compare between a JSON object and a string
+  return 
+    <0 if a < b
+    0  if a = b
+    >0 if a > b 
+  @note: mysql will sort json_object by its key, so the string could
+         be sorted
+*/
+int Arg_comparator::compare_json_object_str_basic(Item **a, Item **b)
+{
+  Item *j = *a;
+  Item *s = *b;
+  String *res1,*res2;
+  Item_func_json_object *jo= (Item_func_json_object *) j;
+  /* use the original order to compare -> compatible with mariadb 
+     this DOES NOT take into account that NULL == NULL
+  */
+  if(compare_string() == 0)
+    return 0;
+  
+  /* sort json object keys */
+  res1= jo->val_str(&value1);
+  res2= s->val_str(&value2);
+  return sortcmp(res1, res2, compare_collation());
+}
 
+/*
+  Compare between a JSON object and a string
+  return 
+    0  if a != b
+    1  if a == b
+  @note: mysql will sort json_object by its key, so the string could
+         be sorted
+*/
+int Arg_comparator::compare_e_json_object_str_basic(Item **a, Item **b)
+{
+  Item *j = *a;
+  Item *s = *b;
+  String *res1,*res2;
+  Item_func_json_object *jo= (Item_func_json_object *) j;
+  /* use the original order to compare -> compatible with mariadb 
+     this also take into account that NULL == NULL
+  */
+  if(compare_e_string() == 1)
+    return 1;
+  
+  /* sort json object keys */
+  res1= jo->val_str(&value1);
+  res2= s->val_str(&value2);
+  return MY_TEST(sortcmp(res1, res2, compare_collation()) == 0);
+}

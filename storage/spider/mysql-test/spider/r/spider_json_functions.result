@@ -267,6 +267,16 @@ SELECT * FROM tbl;
 id	j
 1	["d"]
 TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES (1, '{ "a": 1, "b": [2, 3]}');
+UPDATE tbl SET j = JSON_REPLACE(j, '$.a', 10, '$.c', '[true, false]');
+SELECT * FROM tbl;
+id	j
+1	{"a": 10, "b": [2, 3]}
+UPDATE tbl SET j = JSON_REPLACE(j, '$.b[1]', 4);
+SELECT * FROM tbl;
+id	j
+1	{"a": 10, "b": [2, 4]}
+TRUNCATE TABLE tbl;
 INSERT INTO tbl VALUES(1, '{ "a": 1, "b": [2, 3]}');
 SELECT * FROM tbl;
 id	j
@@ -331,6 +341,43 @@ id	j
 SELECT * FROM tbl WHERE JSON_KEYS(j) = JSON_ARRAY("a", "b");
 id	j
 1	{"a": 1, "b": {"c": 30}}
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES (1, '{"a": 1, "b": 2, "c": {"d": 4}}');
+SELECT JSON_EXTRACT(j, '$.a') FROM tbl;
+JSON_EXTRACT(j, '$.a')
+1
+SELECT JSON_EXTRACT(j, '$.b') FROM tbl;
+JSON_EXTRACT(j, '$.b')
+2
+SELECT JSON_EXTRACT(j, '$.c') FROM tbl;
+JSON_EXTRACT(j, '$.c')
+{"d": 4}
+SELECT JSON_EXTRACT(j, '$.d') FROM tbl;
+JSON_EXTRACT(j, '$.d')
+NULL
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES(1, '{"Name":"Tom", "Age":35}');
+INSERT INTO tbl VALUES(2, '{"Name":"Jerry", "Age":18}');
+SELECT * FROM tbl WHERE JSON_CONTAINS(j, '18', "$.Age");
+id	j
+2	{"Name":"Jerry", "Age":18}
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES(1, '[10, 20, [30, 40]]');
+SELECT JSON_EXTRACT(j, '$[1]') FROM tbl;
+JSON_EXTRACT(j, '$[1]')
+20
+SELECT * FROM tbl WHERE JSON_EXTRACT(j, '$[1]') = 20;
+id	j
+1	[10, 20, [30, 40]]
+SELECT JSON_EXTRACT(j, '$[2][*]') FROM tbl;
+JSON_EXTRACT(j, '$[2][*]')
+[30, 40]
+SELECT JSON_EXTRACT(j, '$[2][0]') FROM tbl;
+JSON_EXTRACT(j, '$[2][0]')
+30
+SELECT * FROM tbl WHERE JSON_EXTRACT(j, '$[2][1]') = 40;
+id	j
+1	[10, 20, [30, 40]]
 TRUNCATE TABLE tbl;
 INSERT INTO tbl VALUES(1, '["abc", [{"k": "10"}, "def"], {"x":"abc"}, {"y":"bcd"}]');
 SELECT JSON_SEARCH(j, 'one', 'abc') FROM tbl;
@@ -423,13 +470,47 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
-BUG: JSON_OBJECT() and JSON_ARRAY() will translate true to 1
 INSERT INTO tbl VALUES(1, 'null'),(2, '"null"'),(3, '[1,2,3]');
 SELECT JSON_QUOTE(j) FROM tbl;
 JSON_QUOTE(j)
 "\"null\""
 "null"
 "[1,2,3]"
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES (1, json_array(1,'abc',NULL,true));
+SELECT * FROM tbl WHERE (j = json_array(1,'abc',NULL,true));
+id	j
+1	[1, "abc", null, true]
+TRUNCATE TABLE tbl;
+INSERT INTO tbl VALUES(1, JSON_OBJECT('name', 'carrot', 'id', 87, 'flag', true));
+INSERT INTO tbl VALUES(2, JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true)));
+INSERT INTO tbl VALUES (3, JSON_OBJECT());
+INSERT INTO tbl VALUES (4, NULL);
+SELECT * FROM tbl ORDER BY id;
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+2	{"id": 85, "ext": {"id1": 86, "flag": true, "name1": "carrot"}, "flag": false, "name": "nuts"}
+3	{}
+4	NULL
+SELECT * FROM tbl WHERE j = JSON_OBJECT('name', 'carrot', 'id', 87, 'flag', true);
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+SELECT * FROM tbl where j = JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true));
+id	j
+2	{"id": 85, "ext": {"id1": 86, "flag": true, "name1": "carrot"}, "flag": false, "name": "nuts"}
+SELECT * FROM tbl where j != JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false, 'ext', JSON_OBJECT('name1', 'carrot', 'id1', 86, 'flag', true));
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+3	{}
+SELECT * FROM tbl WHERE j IS NULL;
+id	j
+4	NULL
+SELECT * FROM tbl WHERE j IS NOT NULL ORDER BY id;
+id	j
+1	{"id": 87, "flag": true, "name": "carrot"}
+2	{"id": 85, "ext": {"id1": 86, "flag": true, "name1": "carrot"}, "flag": false, "name": "nuts"}
+3	{}
+TRUNCATE TABLE tbl;
 
 deinit
 connection master_1;
