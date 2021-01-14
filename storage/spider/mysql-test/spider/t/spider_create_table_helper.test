@@ -1,0 +1,30 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i INT PRIMARY KEY, j JSON
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+--echo
+--echo test
+
+--connection master_1
+SHOW CREATE TABLE t1;
+INSERT INTO t1 VALUES(1, '{"name" : "test"}'), (2, '{"name" : "test2"}'), (3, '{"name" : "test3"}');
+SELECT * FROM t1 ORDER BY i;
+
+--connection child2_1
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY i;
+
+--connection child2_2
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY i;
+
+--source ../include/spider_drop_database.inc

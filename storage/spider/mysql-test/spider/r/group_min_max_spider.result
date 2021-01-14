@@ -1,0 +1,3092 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (i int primary key auto_increment, a1 char(64), a2 char(64), b char(16), c char(16) not null, d char(16), dummy char(248) default ' ')ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(i) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+test
+connection master_1;
+insert into t1 (a1, a2, b, c, d) values
+('a','a','a','a111','xy1'),('a','a','a','b111','xy2'),('a','a','a','c111','xy3'),('a','a','a','d111','xy4'),
+('a','a','b','e112','xy1'),('a','a','b','f112','xy2'),('a','a','b','g112','xy3'),('a','a','b','h112','xy4'),
+('a','b','a','i121','xy1'),('a','b','a','j121','xy2'),('a','b','a','k121','xy3'),('a','b','a','l121','xy4'),
+('a','b','b','m122','xy1'),('a','b','b','n122','xy2'),('a','b','b','o122','xy3'),('a','b','b','p122','xy4'),
+('b','a','a','a211','xy1'),('b','a','a','b211','xy2'),('b','a','a','c211','xy3'),('b','a','a','d211','xy4'),
+('b','a','b','e212','xy1'),('b','a','b','f212','xy2'),('b','a','b','g212','xy3'),('b','a','b','h212','xy4'),
+('b','b','a','i221','xy1'),('b','b','a','j221','xy2'),('b','b','a','k221','xy3'),('b','b','a','l221','xy4'),
+('b','b','b','m222','xy1'),('b','b','b','n222','xy2'),('b','b','b','o222','xy3'),('b','b','b','p222','xy4'),
+('c','a','a','a311','xy1'),('c','a','a','b311','xy2'),('c','a','a','c311','xy3'),('c','a','a','d311','xy4'),
+('c','a','b','e312','xy1'),('c','a','b','f312','xy2'),('c','a','b','g312','xy3'),('c','a','b','h312','xy4'),
+('c','b','a','i321','xy1'),('c','b','a','j321','xy2'),('c','b','a','k321','xy3'),('c','b','a','l321','xy4'),
+('c','b','b','m322','xy1'),('c','b','b','n322','xy2'),('c','b','b','o322','xy3'),('c','b','b','p322','xy4'),
+('d','a','a','a411','xy1'),('d','a','a','b411','xy2'),('d','a','a','c411','xy3'),('d','a','a','d411','xy4'),
+('d','a','b','e412','xy1'),('d','a','b','f412','xy2'),('d','a','b','g412','xy3'),('d','a','b','h412','xy4'),
+('d','b','a','i421','xy1'),('d','b','a','j421','xy2'),('d','b','a','k421','xy3'),('d','b','a','l421','xy4'),
+('d','b','b','m422','xy1'),('d','b','b','n422','xy2'),('d','b','b','o422','xy3'),('d','b','b','p422','xy4'),
+('a','a','a','a111','xy1'),('a','a','a','b111','xy2'),('a','a','a','c111','xy3'),('a','a','a','d111','xy4'),
+('a','a','b','e112','xy1'),('a','a','b','f112','xy2'),('a','a','b','g112','xy3'),('a','a','b','h112','xy4'),
+('a','b','a','i121','xy1'),('a','b','a','j121','xy2'),('a','b','a','k121','xy3'),('a','b','a','l121','xy4'),
+('a','b','b','m122','xy1'),('a','b','b','n122','xy2'),('a','b','b','o122','xy3'),('a','b','b','p122','xy4'),
+('b','a','a','a211','xy1'),('b','a','a','b211','xy2'),('b','a','a','c211','xy3'),('b','a','a','d211','xy4'),
+('b','a','b','e212','xy1'),('b','a','b','f212','xy2'),('b','a','b','g212','xy3'),('b','a','b','h212','xy4'),
+('b','b','a','i221','xy1'),('b','b','a','j221','xy2'),('b','b','a','k221','xy3'),('b','b','a','l221','xy4'),
+('b','b','b','m222','xy1'),('b','b','b','n222','xy2'),('b','b','b','o222','xy3'),('b','b','b','p222','xy4'),
+('c','a','a','a311','xy1'),('c','a','a','b311','xy2'),('c','a','a','c311','xy3'),('c','a','a','d311','xy4'),
+('c','a','b','e312','xy1'),('c','a','b','f312','xy2'),('c','a','b','g312','xy3'),('c','a','b','h312','xy4'),
+('c','b','a','i321','xy1'),('c','b','a','j321','xy2'),('c','b','a','k321','xy3'),('c','b','a','l321','xy4'),
+('c','b','b','m322','xy1'),('c','b','b','n322','xy2'),('c','b','b','o322','xy3'),('c','b','b','p322','xy4'),
+('d','a','a','a411','xy1'),('d','a','a','b411','xy2'),('d','a','a','c411','xy3'),('d','a','a','d411','xy4'),
+('d','a','b','e412','xy1'),('d','a','b','f412','xy2'),('d','a','b','g412','xy3'),('d','a','b','h412','xy4'),
+('d','b','a','i421','xy1'),('d','b','a','j421','xy2'),('d','b','a','k421','xy3'),('d','b','a','l421','xy4'),
+('d','b','b','m422','xy1'),('d','b','b','n422','xy2'),('d','b','b','o422','xy3'),('d','b','b','p422','xy4');
+create index idx_t1_0 on t1 (a1);
+create index idx_t1_1 on t1 (a1,a2,b,c);
+create index idx_t1_2 on t1 (a1,a2,b);
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+auto_test_local.t1	analyze	status	OK
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (i int primary key auto_increment, a1 char(64), a2 char(64) not null, b char(16), c char(16), d char(16), dummy char(248) default ' ')ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(i) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+insert into t2 select * from t1;
+insert into t2 (a1, a2, b, c, d) values
+('a','a',NULL,'a777','xyz'),('a','a',NULL,'a888','xyz'),('a','a',NULL,'a999','xyz'),
+('a','a','a',NULL,'xyz'),
+('a','a','b',NULL,'xyz'),
+('a','b','a',NULL,'xyz'),
+('c','a',NULL,'c777','xyz'),('c','a',NULL,'c888','xyz'),('c','a',NULL,'c999','xyz'),
+('d','b','b',NULL,'xyz'),
+('e','a','a',NULL,'xyz'),('e','a','a',NULL,'xyz'),('e','a','a',NULL,'xyz'),('e','a','a',NULL,'xyz'),
+('e','a','b',NULL,'xyz'),('e','a','b',NULL,'xyz'),('e','a','b',NULL,'xyz'),('e','a','b',NULL,'xyz'),
+('a','a',NULL,'a777','xyz'),('a','a',NULL,'a888','xyz'),('a','a',NULL,'a999','xyz'),
+('a','a','a',NULL,'xyz'),
+('a','a','b',NULL,'xyz'),
+('a','b','a',NULL,'xyz'),
+('c','a',NULL,'c777','xyz'),('c','a',NULL,'c888','xyz'),('c','a',NULL,'c999','xyz'),
+('d','b','b',NULL,'xyz'),
+('e','a','a',NULL,'xyz'),('e','a','a',NULL,'xyz'),('e','a','a',NULL,'xyz'),('e','a','a',NULL,'xyz'),
+('e','a','b',NULL,'xyz'),('e','a','b',NULL,'xyz'),('e','a','b',NULL,'xyz'),('e','a','b',NULL,'xyz');
+create index idx_t2_0 on t2 (a1);
+create index idx_t2_1 on t2 (a1,a2,b,c);
+create index idx_t2_2 on t2 (a1,a2,b);
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+auto_test_local.t2	analyze	status	OK
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t3;;
+CREATE TABLE t3 (i int primary key auto_increment, a1 char(1), a2 char(1), b char(1), c char(4) not null, d char(3), dummy char(1) default ' ')ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(i) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t3", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t3", srv "s_2_2",aim "1"');;
+insert into t3 (a1, a2, b, c, d) values
+('a','a','a','a111','xy1'),('a','a','a','b111','xy2'),('a','a','a','c111','xy3'),('a','a','a','d111','xy4'),
+('a','a','b','e112','xy1'),('a','a','b','f112','xy2'),('a','a','b','g112','xy3'),('a','a','b','h112','xy4'),
+('a','b','a','i121','xy1'),('a','b','a','j121','xy2'),('a','b','a','k121','xy3'),('a','b','a','l121','xy4'),
+('a','b','b','m122','xy1'),('a','b','b','n122','xy2'),('a','b','b','o122','xy3'),('a','b','b','p122','xy4'),
+('b','a','a','a211','xy1'),('b','a','a','b211','xy2'),('b','a','a','c211','xy3'),('b','a','a','d211','xy4'),
+('b','a','b','e212','xy1'),('b','a','b','f212','xy2'),('b','a','b','g212','xy3'),('b','a','b','h212','xy4'),
+('b','b','a','i221','xy1'),('b','b','a','j221','xy2'),('b','b','a','k221','xy3'),('b','b','a','l221','xy4'),
+('b','b','b','m222','xy1'),('b','b','b','n222','xy2'),('b','b','b','o222','xy3'),('b','b','b','p222','xy4'),
+('c','a','a','a311','xy1'),('c','a','a','b311','xy2'),('c','a','a','c311','xy3'),('c','a','a','d311','xy4'),
+('c','a','b','e312','xy1'),('c','a','b','f312','xy2'),('c','a','b','g312','xy3'),('c','a','b','h312','xy4'),
+('c','b','a','i321','xy1'),('c','b','a','j321','xy2'),('c','b','a','k321','xy3'),('c','b','a','l321','xy4'),
+('c','b','b','m322','xy1'),('c','b','b','n322','xy2'),('c','b','b','o322','xy3'),('c','b','b','p322','xy4');
+insert into t3 (a1, a2, b, c, d) values
+('a','a','a','a111','xy1'),('a','a','a','b111','xy2'),('a','a','a','c111','xy3'),('a','a','a','d111','xy4'),
+('a','a','b','e112','xy1'),('a','a','b','f112','xy2'),('a','a','b','g112','xy3'),('a','a','b','h112','xy4'),
+('a','b','a','i121','xy1'),('a','b','a','j121','xy2'),('a','b','a','k121','xy3'),('a','b','a','l121','xy4'),
+('a','b','b','m122','xy1'),('a','b','b','n122','xy2'),('a','b','b','o122','xy3'),('a','b','b','p122','xy4'),
+('b','a','a','a211','xy1'),('b','a','a','b211','xy2'),('b','a','a','c211','xy3'),('b','a','a','d211','xy4'),
+('b','a','b','e212','xy1'),('b','a','b','f212','xy2'),('b','a','b','g212','xy3'),('b','a','b','h212','xy4'),
+('b','b','a','i221','xy1'),('b','b','a','j221','xy2'),('b','b','a','k221','xy3'),('b','b','a','l221','xy4'),
+('b','b','b','m222','xy1'),('b','b','b','n222','xy2'),('b','b','b','o222','xy3'),('b','b','b','p222','xy4'),
+('c','a','a','a311','xy1'),('c','a','a','b311','xy2'),('c','a','a','c311','xy3'),('c','a','a','d311','xy4'),
+('c','a','b','e312','xy1'),('c','a','b','f312','xy2'),('c','a','b','g312','xy3'),('c','a','b','h312','xy4'),
+('c','b','a','i321','xy1'),('c','b','a','j321','xy2'),('c','b','a','k321','xy3'),('c','b','a','l321','xy4'),
+('c','b','b','m322','xy1'),('c','b','b','n322','xy2'),('c','b','b','o322','xy3'),('c','b','b','p322','xy4');
+insert into t3 (a1, a2, b, c, d) values
+('a','a','a','a111','xy1'),('a','a','a','b111','xy2'),('a','a','a','c111','xy3'),('a','a','a','d111','xy4'),
+('a','a','b','e112','xy1'),('a','a','b','f112','xy2'),('a','a','b','g112','xy3'),('a','a','b','h112','xy4'),
+('a','b','a','i121','xy1'),('a','b','a','j121','xy2'),('a','b','a','k121','xy3'),('a','b','a','l121','xy4'),
+('a','b','b','m122','xy1'),('a','b','b','n122','xy2'),('a','b','b','o122','xy3'),('a','b','b','p122','xy4'),
+('b','a','a','a211','xy1'),('b','a','a','b211','xy2'),('b','a','a','c211','xy3'),('b','a','a','d211','xy4'),
+('b','a','b','e212','xy1'),('b','a','b','f212','xy2'),('b','a','b','g212','xy3'),('b','a','b','h212','xy4'),
+('b','b','a','i221','xy1'),('b','b','a','j221','xy2'),('b','b','a','k221','xy3'),('b','b','a','l221','xy4'),
+('b','b','b','m222','xy1'),('b','b','b','n222','xy2'),('b','b','b','o222','xy3'),('b','b','b','p222','xy4'),
+('c','a','a','a311','xy1'),('c','a','a','b311','xy2'),('c','a','a','c311','xy3'),('c','a','a','d311','xy4'),
+('c','a','b','e312','xy1'),('c','a','b','f312','xy2'),('c','a','b','g312','xy3'),('c','a','b','h312','xy4'),
+('c','b','a','i321','xy1'),('c','b','a','j321','xy2'),('c','b','a','k321','xy3'),('c','b','a','l321','xy4'),
+('c','b','b','m322','xy1'),('c','b','b','n322','xy2'),('c','b','b','o322','xy3'),('c','b','b','p322','xy4');
+insert into t3 (a1, a2, b, c, d) values
+('a','a','a','a111','xy1'),('a','a','a','b111','xy2'),('a','a','a','c111','xy3'),('a','a','a','d111','xy4'),
+('a','a','b','e112','xy1'),('a','a','b','f112','xy2'),('a','a','b','g112','xy3'),('a','a','b','h112','xy4'),
+('a','b','a','i121','xy1'),('a','b','a','j121','xy2'),('a','b','a','k121','xy3'),('a','b','a','l121','xy4'),
+('a','b','b','m122','xy1'),('a','b','b','n122','xy2'),('a','b','b','o122','xy3'),('a','b','b','p122','xy4'),
+('b','a','a','a211','xy1'),('b','a','a','b211','xy2'),('b','a','a','c211','xy3'),('b','a','a','d211','xy4'),
+('b','a','b','e212','xy1'),('b','a','b','f212','xy2'),('b','a','b','g212','xy3'),('b','a','b','h212','xy4'),
+('b','b','a','i221','xy1'),('b','b','a','j221','xy2'),('b','b','a','k221','xy3'),('b','b','a','l221','xy4'),
+('b','b','b','m222','xy1'),('b','b','b','n222','xy2'),('b','b','b','o222','xy3'),('b','b','b','p222','xy4'),
+('c','a','a','a311','xy1'),('c','a','a','b311','xy2'),('c','a','a','c311','xy3'),('c','a','a','d311','xy4'),
+('c','a','b','e312','xy1'),('c','a','b','f312','xy2'),('c','a','b','g312','xy3'),('c','a','b','h312','xy4'),
+('c','b','a','i321','xy1'),('c','b','a','j321','xy2'),('c','b','a','k321','xy3'),('c','b','a','l321','xy4'),
+('c','b','b','m322','xy1'),('c','b','b','n322','xy2'),('c','b','b','o322','xy3'),('c','b','b','p322','xy4');
+create index idx_t3_0 on t3 (a1);
+create index idx_t3_1 on t3 (a1,a2,b,c);
+create index idx_t3_2 on t3 (a1,a2,b);
+analyze table t3;
+Table	Op	Msg_type	Msg_text
+auto_test_local.t3	analyze	status	OK
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `i` int(11) NOT NULL AUTO_INCREMENT,
+  `a1` char(64) DEFAULT NULL,
+  `a2` char(64) DEFAULT NULL,
+  `b` char(16) DEFAULT NULL,
+  `c` char(16) NOT NULL,
+  `d` char(16) DEFAULT NULL,
+  `dummy` char(248) DEFAULT '',
+  PRIMARY KEY (`i`),
+  KEY `idx_t1_0` (`a1`),
+  KEY `idx_t1_1` (`a1`,`a2`,`b`,`c`),
+  KEY `idx_t1_2` (`a1`,`a2`,`b`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`i`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `i` int(11) NOT NULL AUTO_INCREMENT,
+  `a1` char(64) DEFAULT NULL,
+  `a2` char(64) NOT NULL,
+  `b` char(16) DEFAULT NULL,
+  `c` char(16) DEFAULT NULL,
+  `d` char(16) DEFAULT NULL,
+  `dummy` char(248) DEFAULT '',
+  PRIMARY KEY (`i`),
+  KEY `idx_t2_0` (`a1`),
+  KEY `idx_t2_1` (`a1`,`a2`,`b`,`c`),
+  KEY `idx_t2_2` (`a1`,`a2`,`b`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`i`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+SHOW CREATE TABLE t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `i` int(11) NOT NULL AUTO_INCREMENT,
+  `a1` char(1) DEFAULT NULL,
+  `a2` char(1) DEFAULT NULL,
+  `b` char(1) DEFAULT NULL,
+  `c` char(4) NOT NULL,
+  `d` char(3) DEFAULT NULL,
+  `dummy` char(1) DEFAULT '',
+  PRIMARY KEY (`i`),
+  KEY `idx_t3_0` (`a1`),
+  KEY `idx_t3_1` (`a1`,`a2`,`b`,`c`),
+  KEY `idx_t3_2` (`a1`,`a2`,`b`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`i`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t3", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t3", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+select a1, min(a2) from t1 group by a1;
+a1	min(a2)
+a	a
+b	a
+c	a
+d	a
+select a1, max(a2) from t1 group by a1;
+a1	max(a2)
+a	b
+b	b
+c	b
+d	b
+select a1, min(a2), max(a2) from t1 group by a1;
+a1	min(a2)	max(a2)
+a	a	b
+b	a	b
+c	a	b
+d	a	b
+select a1, a2, b, min(c), max(c) from t1 group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,max(c),min(c) from t1 group by a1,a2,b;
+a1	a2	b	max(c)	min(c)
+a	a	a	d111	a111
+a	a	b	h112	e112
+a	b	a	l121	i121
+a	b	b	p122	m122
+b	a	a	d211	a211
+b	a	b	h212	e212
+b	b	a	l221	i221
+b	b	b	p222	m222
+c	a	a	d311	a311
+c	a	b	h312	e312
+c	b	a	l321	i321
+c	b	b	p322	m322
+d	a	a	d411	a411
+d	a	b	h412	e412
+d	b	a	l421	i421
+d	b	b	p422	m422
+select a1,a2,b,max(c),min(c) from t2 group by a1,a2,b;
+a1	a2	b	max(c)	min(c)
+a	a	NULL	a999	a777
+a	a	a	d111	a111
+a	a	b	h112	e112
+a	b	a	l121	i121
+a	b	b	p122	m122
+b	a	a	d211	a211
+b	a	b	h212	e212
+b	b	a	l221	i221
+b	b	b	p222	m222
+c	a	NULL	c999	c777
+c	a	a	d311	a311
+c	a	b	h312	e312
+c	b	a	l321	i321
+c	b	b	p322	m322
+d	a	a	d411	a411
+d	a	b	h412	e412
+d	b	a	l421	i421
+d	b	b	p422	m422
+e	a	a	NULL	NULL
+e	a	b	NULL	NULL
+select min(a2), a1, max(a2), min(a2), a1 from t1 group by a1;
+min(a2)	a1	max(a2)	min(a2)	a1
+a	a	b	a	a
+a	b	b	a	b
+a	c	b	a	c
+a	d	b	a	d
+select a1, b, min(c), a1, max(c), b, a2, max(c), max(c) from t1 group by a1, a2, b;
+a1	b	min(c)	a1	max(c)	b	a2	max(c)	max(c)
+a	a	a111	a	d111	a	a	d111	d111
+a	b	e112	a	h112	b	a	h112	h112
+a	a	i121	a	l121	a	b	l121	l121
+a	b	m122	a	p122	b	b	p122	p122
+b	a	a211	b	d211	a	a	d211	d211
+b	b	e212	b	h212	b	a	h212	h212
+b	a	i221	b	l221	a	b	l221	l221
+b	b	m222	b	p222	b	b	p222	p222
+c	a	a311	c	d311	a	a	d311	d311
+c	b	e312	c	h312	b	a	h312	h312
+c	a	i321	c	l321	a	b	l321	l321
+c	b	m322	c	p322	b	b	p322	p322
+d	a	a411	d	d411	a	a	d411	d411
+d	b	e412	d	h412	b	a	h412	h412
+d	a	i421	d	l421	a	b	l421	l421
+d	b	m422	d	p422	b	b	p422	p422
+select min(a2) from t1 group by a1;
+min(a2)
+a
+a
+a
+a
+select a2, min(c), max(c) from t1 group by a1,a2,b;
+a2	min(c)	max(c)
+a	a111	d111
+a	e112	h112
+b	i121	l121
+b	m122	p122
+a	a211	d211
+a	e212	h212
+b	i221	l221
+b	m222	p222
+a	a311	d311
+a	e312	h312
+b	i321	l321
+b	m322	p322
+a	a411	d411
+a	e412	h412
+b	i421	l421
+b	m422	p422
+select a1,a2,b,min(c),max(c) from t1 where a1 < 'd' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+select a1,a2,b,min(c),max(c) from t1 where a1 >= 'b' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t1 where a1 >= 'c' or a1 < 'b' group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1, max(c)            from t1 where a1 >= 'c' or a1 < 'b' group by a1,a2,b;
+a1	max(c)
+a	d111
+a	h112
+a	l121
+a	p122
+c	d311
+c	h312
+c	l321
+c	p322
+d	d411
+d	h412
+d	l421
+d	p422
+select a1,a2,b,min(c),max(c) from t1 where a1 >= 'c' or a2 < 'b' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	d111
+a	a	b	e112	h112
+b	a	a	a211	d211
+b	a	b	e212	h212
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t1 where a1 = 'z' or a1 = 'b' or a1 = 'd' group by a1,a2,b;
+a1	a2	b	max(c)
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t1 where a1 = 'z' or a1 = 'b' or a1 = 'd' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t1 where (a1 = 'b' or a1 = 'd' or a1 = 'a' or a1 = 'c') and (a2 > 'a') group by a1,a2,b;
+a1	a2	b	max(c)
+a	b	a	l121
+a	b	b	p122
+b	b	a	l221
+b	b	b	p222
+c	b	a	l321
+c	b	b	p322
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t1 where (a1 = 'b' or a1 = 'd' or a1 = 'a' or a1 = 'c') and (a2 > 'a') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,min(c),max(c)      from t1 where a1 >= 'b' group by a1,a2,b;
+a1	min(c)	max(c)
+b	a211	d211
+b	e212	h212
+b	i221	l221
+b	m222	p222
+c	a311	d311
+c	e312	h312
+c	i321	l321
+c	m322	p322
+d	a411	d411
+d	e412	h412
+d	i421	l421
+d	m422	p422
+select a1,  max(c)           from t1 where a1 in ('a','b','d') group by a1,a2,b;
+a1	max(c)
+a	d111
+a	h112
+a	l121
+a	p122
+b	d211
+b	h212
+b	l221
+b	p222
+d	d411
+d	h412
+d	l421
+d	p422
+select a1,a2,b,       max(c) from t2 where a1 < 'd' group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	NULL	a999
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	NULL	c999
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+select a1,a2,b,min(c),max(c) from t2 where a1 < 'd' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	NULL	a777	a999
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	NULL	c777	c999
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+select a1,a2,b,min(c),max(c) from t2 where a1 >= 'b' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	NULL	c777	c999
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+e	a	a	NULL	NULL
+e	a	b	NULL	NULL
+select a1,a2,b,       max(c) from t2 where a1 >= 'c' or a1 < 'b' group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	NULL	a999
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+c	a	NULL	c999
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+e	a	a	NULL
+e	a	b	NULL
+select a1, max(c)            from t2 where a1 >= 'c' or a1 < 'b' group by a1,a2,b;
+a1	max(c)
+a	a999
+a	d111
+a	h112
+a	l121
+a	p122
+c	c999
+c	d311
+c	h312
+c	l321
+c	p322
+d	d411
+d	h412
+d	l421
+d	p422
+e	NULL
+e	NULL
+select a1,a2,b,min(c),max(c) from t2 where a1 >= 'c' or a2 < 'b' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	NULL	a777	a999
+a	a	a	a111	d111
+a	a	b	e112	h112
+b	a	a	a211	d211
+b	a	b	e212	h212
+c	a	NULL	c777	c999
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+e	a	a	NULL	NULL
+e	a	b	NULL	NULL
+select a1,a2,b,       max(c) from t2 where a1 = 'z' or a1 = 'b' or a1 = 'd' group by a1,a2,b;
+a1	a2	b	max(c)
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t2 where a1 = 'z' or a1 = 'b' or a1 = 'd' group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t2 where (a1 = 'b' or a1 = 'd' or a1 = 'a' or a1 = 'c') and (a2 > 'a') group by a1,a2,b;
+a1	a2	b	max(c)
+a	b	a	l121
+a	b	b	p122
+b	b	a	l221
+b	b	b	p222
+c	b	a	l321
+c	b	b	p322
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t2 where (a1 = 'b' or a1 = 'd' or a1 = 'a' or a1 = 'c') and (a2 > 'a') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,min(c),max(c)      from t2 where a1 >= 'b' group by a1,a2,b;
+a1	min(c)	max(c)
+b	a211	d211
+b	e212	h212
+b	i221	l221
+b	m222	p222
+c	c777	c999
+c	a311	d311
+c	e312	h312
+c	i321	l321
+c	m322	p322
+d	a411	d411
+d	e412	h412
+d	i421	l421
+d	m422	p422
+e	NULL	NULL
+e	NULL	NULL
+select a1,  max(c)           from t2 where a1 in ('a','b','d') group by a1,a2,b;
+a1	max(c)
+a	a999
+a	d111
+a	h112
+a	l121
+a	p122
+b	d211
+b	h212
+b	l221
+b	p222
+d	d411
+d	h412
+d	l421
+d	p422
+select a1,a2,b,max(c),min(c) from t1 where (a2 = 'a') and (b = 'b') group by a1;
+a1	a2	b	max(c)	min(c)
+a	a	b	h112	e112
+b	a	b	h212	e212
+c	a	b	h312	e312
+d	a	b	h412	e412
+select a1,max(c),min(c)      from t1 where (a2 = 'a') and (b = 'b') group by a1;
+a1	max(c)	min(c)
+a	h112	e112
+b	h212	e212
+c	h312	e312
+d	h412	e412
+select a1,a2,b,       max(c) from t1 where (b = 'b') group by a1,a2;
+a1	a2	b	max(c)
+a	a	b	h112
+a	b	b	p122
+b	a	b	h212
+b	b	b	p222
+c	a	b	h312
+c	b	b	p322
+d	a	b	h412
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t1 where (b = 'b') group by a1,a2;
+a1	a2	b	min(c)	max(c)
+a	a	b	e112	h112
+a	b	b	m122	p122
+b	a	b	e212	h212
+b	b	b	m222	p222
+c	a	b	e312	h312
+c	b	b	m322	p322
+d	a	b	e412	h412
+d	b	b	m422	p422
+select a1,a2, max(c)         from t1 where (b = 'b') group by a1,a2;
+a1	a2	max(c)
+a	a	h112
+a	b	p122
+b	a	h212
+b	b	p222
+c	a	h312
+c	b	p322
+d	a	h412
+d	b	p422
+select a1,a2,b,max(c),min(c) from t2 where (a2 = 'a') and (b = 'b') group by a1;
+a1	a2	b	max(c)	min(c)
+a	a	b	h112	e112
+b	a	b	h212	e212
+c	a	b	h312	e312
+d	a	b	h412	e412
+e	a	b	NULL	NULL
+select a1,max(c),min(c)      from t2 where (a2 = 'a') and (b = 'b') group by a1;
+a1	max(c)	min(c)
+a	h112	e112
+b	h212	e212
+c	h312	e312
+d	h412	e412
+e	NULL	NULL
+select a1,a2,b,       max(c) from t2 where (b = 'b') group by a1,a2;
+a1	a2	b	max(c)
+a	a	b	h112
+a	b	b	p122
+b	a	b	h212
+b	b	b	p222
+c	a	b	h312
+c	b	b	p322
+d	a	b	h412
+d	b	b	p422
+e	a	b	NULL
+select a1,a2,b,min(c),max(c) from t2 where (b = 'b') group by a1,a2;
+a1	a2	b	min(c)	max(c)
+a	a	b	e112	h112
+a	b	b	m122	p122
+b	a	b	e212	h212
+b	b	b	m222	p222
+c	a	b	e312	h312
+c	b	b	m322	p322
+d	a	b	e412	h412
+d	b	b	m422	p422
+e	a	b	NULL	NULL
+select a1,a2, max(c)         from t2 where (b = 'b') group by a1,a2;
+a1	a2	max(c)
+a	a	h112
+a	b	p122
+b	a	h212
+b	b	p222
+c	a	h312
+c	b	p322
+d	a	h412
+d	b	p422
+e	a	NULL
+select a1,a2,b,max(c),min(c) from t3 where (a2 = 'a') and (b = 'b') group by a1;
+a1	a2	b	max(c)	min(c)
+a	a	b	h112	e112
+b	a	b	h212	e212
+c	a	b	h312	e312
+select a1,max(c),min(c)      from t3 where (a2 = 'a') and (b = 'b') group by a1;
+a1	max(c)	min(c)
+a	h112	e112
+b	h212	e212
+c	h312	e312
+select a1,a2,b,min(c) from t2 where (a2 = 'a') and b is NULL group by a1;
+a1	a2	b	min(c)
+a	a	NULL	a777
+c	a	NULL	c777
+select a1,a2,b,max(c) from t2 where (a2 = 'a') and b is NULL group by a1;
+a1	a2	b	max(c)
+a	a	NULL	a999
+c	a	NULL	c999
+select a1,a2,b,min(c) from t2 where b is NULL group by a1,a2;
+a1	a2	b	min(c)
+a	a	NULL	a777
+c	a	NULL	c777
+select a1,a2,b,max(c) from t2 where b is NULL group by a1,a2;
+a1	a2	b	max(c)
+a	a	NULL	a999
+c	a	NULL	c999
+select a1,a2,b,min(c),max(c) from t2 where b is NULL group by a1,a2;
+a1	a2	b	min(c)	max(c)
+a	a	NULL	a777	a999
+c	a	NULL	c777	c999
+select a1,a2,b,min(c),max(c) from t2 where b is NULL group by a1,a2;
+a1	a2	b	min(c)	max(c)
+a	a	NULL	a777	a999
+c	a	NULL	c777	c999
+select a1,a2,b,       max(c) from t1 where (c > 'b1') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t1 where (c > 'b1') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	b111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	b211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	b311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	b411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t1 where (c > 'f123') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t1 where (c > 'f123') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	b	g112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	b	f212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	b	f312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	b	f412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t1 where (c < 'a0') group by a1,a2,b;
+a1	a2	b	max(c)
+select a1,a2,b,min(c),max(c) from t1 where (c < 'a0') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+select a1,a2,b,       max(c) from t1 where (c < 'k321') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	a	d111
+a	a	b	h112
+a	b	a	k121
+b	a	a	d211
+b	a	b	h212
+b	b	a	k221
+c	a	a	d311
+c	a	b	h312
+c	b	a	j321
+d	a	a	d411
+d	a	b	h412
+d	b	a	j421
+select a1,a2,b,min(c),max(c) from t1 where (c < 'k321') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	k121
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	k221
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	j321
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	j421
+select a1,a2,b,       max(c) from t1 where (c < 'a0') or (c > 'b1') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t1 where (c < 'a0') or (c > 'b1') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	b111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	b211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	b311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	b411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t1 where (c > 'b1') or (c <= 'g1') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t1 where (c > 'b1') or (c <= 'g1') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,min(c),max(c) from t1 where (c > 'b111') and (c <= 'g112') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	c111	d111
+a	a	b	e112	g112
+b	a	a	b211	d211
+b	a	b	e212	f212
+c	a	a	b311	d311
+c	a	b	e312	f312
+d	a	a	b411	d411
+d	a	b	e412	f412
+select a1,a2,b,min(c),max(c) from t1 where (c < 'c5') or (c = 'g412') or (c = 'k421') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	c111
+b	a	a	a211	c211
+c	a	a	a311	c311
+d	a	a	a411	c411
+d	a	b	g412	g412
+d	b	a	k421	k421
+select a1,a2,b,min(c),max(c) from t1 where ((c > 'b111') and (c <= 'g112')) or ((c > 'd000') and (c <= 'i110')) group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	c111	d111
+a	a	b	e112	h112
+b	a	a	b211	d211
+b	a	b	e212	h212
+c	a	a	b311	d311
+c	a	b	e312	h312
+d	a	a	b411	d411
+d	a	b	e412	h412
+select a1,a2,b,min(c),max(c) from t1 where (c between 'b111' and 'g112') or (c between 'd000' and 'i110') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	b111	d111
+a	a	b	e112	h112
+b	a	a	b211	d211
+b	a	b	e212	h212
+c	a	a	b311	d311
+c	a	b	e312	h312
+d	a	a	b411	d411
+d	a	b	e412	h412
+select a1,a2,b,       max(c) from t2 where (c > 'b1') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	NULL	c999
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t2 where (c > 'b1') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	b111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	b211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	NULL	c777	c999
+c	a	a	b311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	b411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t2 where (c > 'f123') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t2 where (c > 'f123') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	b	g112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	b	f212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	b	f312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	b	f412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t2 where (c < 'a0') group by a1,a2,b;
+a1	a2	b	max(c)
+select a1,a2,b,min(c),max(c) from t2 where (c < 'a0') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+select a1,a2,b,       max(c) from t2 where (c < 'k321') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	NULL	a999
+a	a	a	d111
+a	a	b	h112
+a	b	a	k121
+b	a	a	d211
+b	a	b	h212
+b	b	a	k221
+c	a	NULL	c999
+c	a	a	d311
+c	a	b	h312
+c	b	a	j321
+d	a	a	d411
+d	a	b	h412
+d	b	a	j421
+select a1,a2,b,min(c),max(c) from t2 where (c < 'k321') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	NULL	a777	a999
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	k121
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	k221
+c	a	NULL	c777	c999
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	j321
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	j421
+select a1,a2,b,       max(c) from t2 where (c < 'a0') or (c > 'b1') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	NULL	c999
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t2 where (c < 'a0') or (c > 'b1') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	b111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	b211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	NULL	c777	c999
+c	a	a	b311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	b411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,       max(c) from t2 where (c > 'b1') or (c <= 'g1') group by a1,a2,b;
+a1	a2	b	max(c)
+a	a	NULL	a999
+a	a	a	d111
+a	a	b	h112
+a	b	a	l121
+a	b	b	p122
+b	a	a	d211
+b	a	b	h212
+b	b	a	l221
+b	b	b	p222
+c	a	NULL	c999
+c	a	a	d311
+c	a	b	h312
+c	b	a	l321
+c	b	b	p322
+d	a	a	d411
+d	a	b	h412
+d	b	a	l421
+d	b	b	p422
+select a1,a2,b,min(c),max(c) from t2 where (c > 'b1') or (c <= 'g1') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	NULL	a777	a999
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	NULL	c777	c999
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,min(c),max(c) from t2 where (c > 'b111') and (c <= 'g112') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	c111	d111
+a	a	b	e112	g112
+b	a	a	b211	d211
+b	a	b	e212	f212
+c	a	NULL	c777	c999
+c	a	a	b311	d311
+c	a	b	e312	f312
+d	a	a	b411	d411
+d	a	b	e412	f412
+select a1,a2,b,min(c),max(c) from t2 where (c < 'c5') or (c = 'g412') or (c = 'k421') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	NULL	a777	a999
+a	a	a	a111	c111
+b	a	a	a211	c211
+c	a	a	a311	c311
+d	a	a	a411	c411
+d	a	b	g412	g412
+d	b	a	k421	k421
+select a1,a2,b,min(c),max(c) from t2 where ((c > 'b111') and (c <= 'g112')) or ((c > 'd000') and (c <= 'i110')) group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	c111	d111
+a	a	b	e112	h112
+b	a	a	b211	d211
+b	a	b	e212	h212
+c	a	NULL	c777	c999
+c	a	a	b311	d311
+c	a	b	e312	h312
+d	a	a	b411	d411
+d	a	b	e412	h412
+select a1,a2,b,min(c),max(c) from t1
+where exists ( select * from t2 where t2.c = t1.c )
+group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,min(c),max(c) from t1
+where exists ( select * from t2 where t2.c > 'b1' )
+group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	a111	d111
+a	a	b	e112	h112
+a	b	a	i121	l121
+a	b	b	m122	p122
+b	a	a	a211	d211
+b	a	b	e212	h212
+b	b	a	i221	l221
+b	b	b	m222	p222
+c	a	a	a311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	a411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,c,min(c), max(c) from t1
+where exists ( select * from t2 where t1.b > 'a' and t2.c > 'b1' )
+group by a1,a2,b;
+a1	a2	b	c	min(c)	max(c)
+a	a	b	e112	e112	h112
+a	b	b	m122	m122	p122
+b	a	b	e212	e212	h212
+b	b	b	m222	m222	p222
+c	a	b	e312	e312	h312
+c	b	b	m322	m322	p322
+d	a	b	e412	e412	h412
+d	b	b	m422	m422	p422
+SET @save_optimizer_switch=@@optimizer_switch;
+SET optimizer_switch='semijoin_with_cache=off';
+select a1,a2,b,c,min(c), max(c) from t1
+where exists ( select * from t2
+where t2.c in (select c from t3 where t3.c > t1.b) and
+t2.c > 'b1' )
+group by a1,a2,b;
+a1	a2	b	c	min(c)	max(c)
+a	a	a	a111	a111	d111
+a	a	b	e112	e112	h112
+a	b	a	i121	i121	l121
+a	b	b	m122	m122	p122
+b	a	a	a211	a211	d211
+b	a	b	e212	e212	h212
+b	b	a	i221	i221	l221
+b	b	b	m222	m222	p222
+c	a	a	a311	a311	d311
+c	a	b	e312	e312	h312
+c	b	a	i321	i321	l321
+c	b	b	m322	m322	p322
+d	a	a	a411	a411	d411
+d	a	b	e412	e412	h412
+d	b	a	i421	i421	l421
+d	b	b	m422	m422	p422
+SET optimizer_switch=@save_optimizer_switch;
+select a1,a2,b,c,min(c), max(c) from t1
+where exists ( select * from t2 where t1.c > 'a' and t2.c > 'b1' )
+group by a1,a2,b;
+a1	a2	b	c	min(c)	max(c)
+a	a	a	a111	a111	d111
+a	a	b	e112	e112	h112
+a	b	a	i121	i121	l121
+a	b	b	m122	m122	p122
+b	a	a	a211	a211	d211
+b	a	b	e212	e212	h212
+b	b	a	i221	i221	l221
+b	b	b	m222	m222	p222
+c	a	a	a311	a311	d311
+c	a	b	e312	e312	h312
+c	b	a	i321	i321	l321
+c	b	b	m322	m322	p322
+d	a	a	a411	a411	d411
+d	a	b	e412	e412	h412
+d	b	a	i421	i421	l421
+d	b	b	m422	m422	p422
+SET @save_optimizer_switch=@@optimizer_switch;
+SET optimizer_switch='semijoin_with_cache=off';
+select a1,a2,b,c,min(c), max(c) from t1
+where exists ( select * from t2
+where t2.c in (select c from t3 where t3.c > t1.c) and
+t2.c > 'b1' )
+group by a1,a2,b;
+a1	a2	b	c	min(c)	max(c)
+a	a	a	a111	a111	d111
+a	a	b	e112	e112	h112
+a	b	a	i121	i121	l121
+a	b	b	m122	m122	p122
+b	a	a	a211	a211	d211
+b	a	b	e212	e212	h212
+b	b	a	i221	i221	l221
+b	b	b	m222	m222	p222
+c	a	a	a311	a311	d311
+c	a	b	e312	e312	h312
+c	b	a	i321	i321	l321
+c	b	b	m322	m322	o322
+d	a	a	a411	a411	d411
+d	a	b	e412	e412	h412
+d	b	a	i421	i421	l421
+d	b	b	m422	m422	o422
+SET optimizer_switch=@save_optimizer_switch;
+select a1,a2,b,min(c),max(c) from t1 where (a1 >= 'c' or a2 < 'b') and (b > 'a') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	b	e112	h112
+b	a	b	e212	h212
+c	a	b	e312	h312
+c	b	b	m322	p322
+d	a	b	e412	h412
+d	b	b	m422	p422
+select a1,a2,b,min(c),max(c) from t1 where (a1 >= 'c' or a2 < 'b') and (c > 'b111') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	c111	d111
+a	a	b	e112	h112
+b	a	a	b211	d211
+b	a	b	e212	h212
+c	a	a	b311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	b411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,min(c),max(c) from t1 where (a2 >= 'b') and (b = 'a') and (c > 'b111') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	b	a	i121	l121
+b	b	a	i221	l221
+c	b	a	i321	l321
+d	b	a	i421	l421
+select a1,a2,b,min(c) from t1 where ((a1 > 'a') or (a1 < '9'))  and ((a2 >= 'b') and (a2 < 'z')) and (b = 'a') and ((c < 'h112') or (c = 'j121') or (c > 'k121' and c < 'm122') or (c > 'o122')) group by a1,a2,b;
+a1	a2	b	min(c)
+b	b	a	k221
+c	b	a	k321
+d	b	a	k421
+select a1,a2,b,min(c) from t1 where ((a1 > 'a') or (a1 < '9'))  and ((a2 >= 'b') and (a2 < 'z')) and (b = 'a') and ((c = 'j121') or (c > 'k121' and c < 'm122') or (c > 'o122') or (c < 'h112') or (c = 'c111')) group by a1,a2,b;
+a1	a2	b	min(c)
+b	b	a	k221
+c	b	a	k321
+d	b	a	k421
+select a1,a2,b,min(c) from t1 where (a1 > 'a') and (a2 > 'a') and (b = 'c') group by a1,a2,b;
+a1	a2	b	min(c)
+select a1,a2,b,min(c) from t1 where (ord(a1) > 97) and (ord(a2) + ord(a1) > 194) and (b = 'c') group by a1,a2,b;
+a1	a2	b	min(c)
+select a1,a2,b,min(c),max(c) from t2 where (a1 >= 'c' or a2 < 'b') and (b > 'a') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	b	e112	h112
+b	a	b	e212	h212
+c	a	b	e312	h312
+c	b	b	m322	p322
+d	a	b	e412	h412
+d	b	b	m422	p422
+e	a	b	NULL	NULL
+select a1,a2,b,min(c),max(c) from t2 where (a1 >= 'c' or a2 < 'b') and (c > 'b111') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	a	a	c111	d111
+a	a	b	e112	h112
+b	a	a	b211	d211
+b	a	b	e212	h212
+c	a	NULL	c777	c999
+c	a	a	b311	d311
+c	a	b	e312	h312
+c	b	a	i321	l321
+c	b	b	m322	p322
+d	a	a	b411	d411
+d	a	b	e412	h412
+d	b	a	i421	l421
+d	b	b	m422	p422
+select a1,a2,b,min(c),max(c) from t2 where (a2 >= 'b') and (b = 'a') and (c > 'b111') group by a1,a2,b;
+a1	a2	b	min(c)	max(c)
+a	b	a	i121	l121
+b	b	a	i221	l221
+c	b	a	i321	l321
+d	b	a	i421	l421
+select a1,a2,b,min(c) from t2 where ((a1 > 'a') or (a1 < '9'))  and ((a2 >= 'b') and (a2 < 'z')) and (b = 'a') and ((c < 'h112') or (c = 'j121') or (c > 'k121' and c < 'm122') or (c > 'o122')) group by a1,a2,b;
+a1	a2	b	min(c)
+b	b	a	k221
+c	b	a	k321
+d	b	a	k421
+select a1,a2,b,min(c) from t2 where ((a1 > 'a') or (a1 < '9'))  and ((a2 >= 'b') and (a2 < 'z')) and (b = 'a') and ((c = 'j121') or (c > 'k121' and c < 'm122') or (c > 'o122') or (c < 'h112') or (c = 'c111')) group by a1,a2,b;
+a1	a2	b	min(c)
+b	b	a	k221
+c	b	a	k321
+d	b	a	k421
+select a1,a2,b,min(c) from t2 where (a1 > 'a') and (a2 > 'a') and (b = 'c') group by a1,a2,b;
+a1	a2	b	min(c)
+select a1,a2,b from t1 where (a1 >= 'c' or a2 < 'b') and (b > 'a') group by a1,a2,b;
+a1	a2	b
+a	a	b
+b	a	b
+c	a	b
+c	b	b
+d	a	b
+d	b	b
+select a1,a2,b from t1 where (a2 >= 'b') and (b = 'a') group by a1,a2,b;
+a1	a2	b
+a	b	a
+b	b	a
+c	b	a
+d	b	a
+select a1,a2,b,c from t1 where (a2 >= 'b') and (b = 'a') and (c = 'i121') group by a1,a2,b;
+a1	a2	b	c
+a	b	a	i121
+select a1,a2,b from t1 where (a1 > 'a') and (a2 > 'a') and (b = 'c') group by a1,a2,b;
+a1	a2	b
+select a1,a2,b from t2 where (a1 >= 'c' or a2 < 'b') and (b > 'a') group by a1,a2,b;
+a1	a2	b
+a	a	b
+b	a	b
+c	a	b
+c	b	b
+d	a	b
+d	b	b
+e	a	b
+select a1,a2,b from t2 where (a2 >= 'b') and (b = 'a') group by a1,a2,b;
+a1	a2	b
+a	b	a
+b	b	a
+c	b	a
+d	b	a
+select a1,a2,b,c from t2 where (a2 >= 'b') and (b = 'a') and (c = 'i121') group by a1,a2,b;
+a1	a2	b	c
+a	b	a	i121
+select a1,a2,b from t2 where (a1 > 'a') and (a2 > 'a') and (b = 'c') group by a1,a2,b;
+a1	a2	b
+select distinct a1,a2,b from t1;
+a1	a2	b
+a	a	a
+a	a	b
+a	b	a
+a	b	b
+b	a	a
+b	a	b
+b	b	a
+b	b	b
+c	a	a
+c	a	b
+c	b	a
+c	b	b
+d	a	a
+d	a	b
+d	b	a
+d	b	b
+select distinct a1,a2,b from t1 where (a2 >= 'b') and (b = 'a');
+a1	a2	b
+a	b	a
+b	b	a
+c	b	a
+d	b	a
+select distinct a1,a2,b,c from t1 where (a2 >= 'b') and (b = 'a') and (c = 'i121');
+a1	a2	b	c
+a	b	a	i121
+select distinct a1,a2,b from t1 where (a1 > 'a') and (a2 > 'a') and (b = 'c');
+a1	a2	b
+select distinct b from t1 where (a2 >= 'b') and (b = 'a');
+b
+a
+select distinct a1,a2,b from t2;
+a1	a2	b
+a	a	NULL
+a	a	a
+a	a	b
+a	b	a
+a	b	b
+b	a	a
+b	a	b
+b	b	a
+b	b	b
+c	a	NULL
+c	a	a
+c	a	b
+c	b	a
+c	b	b
+d	a	a
+d	a	b
+d	b	a
+d	b	b
+e	a	a
+e	a	b
+select distinct a1,a2,b from t2 where (a2 >= 'b') and (b = 'a');
+a1	a2	b
+a	b	a
+b	b	a
+c	b	a
+d	b	a
+select distinct a1,a2,b,c from t2 where (a2 >= 'b') and (b = 'a') and (c = 'i121');
+a1	a2	b	c
+a	b	a	i121
+select distinct a1,a2,b from t2 where (a1 > 'a') and (a2 > 'a') and (b = 'c');
+a1	a2	b
+select distinct b from t2 where (a2 >= 'b') and (b = 'a');
+b
+a
+select distinct t_00.a1
+from t1 t_00
+where exists ( select * from t2 where a1 = t_00.a1 );
+a1
+a
+b
+c
+d
+select distinct a1,a1 from t1;
+a1	a1
+a	a
+b	b
+c	c
+d	d
+select distinct a2,a1,a2,a1 from t1;
+a2	a1	a2	a1
+a	a	a	a
+b	a	b	a
+a	b	a	b
+b	b	b	b
+a	c	a	c
+b	c	b	c
+a	d	a	d
+b	d	b	d
+select distinct t1.a1,t2.a1 from t1,t2;
+a1	a1
+a	a
+b	a
+c	a
+d	a
+a	b
+b	b
+c	b
+d	b
+a	c
+b	c
+c	c
+d	c
+a	d
+b	d
+c	d
+d	d
+a	e
+b	e
+c	e
+d	e
+select distinct a1,a2,b from t1;
+a1	a2	b
+a	a	a
+a	a	b
+a	b	a
+a	b	b
+b	a	a
+b	a	b
+b	b	a
+b	b	b
+c	a	a
+c	a	b
+c	b	a
+c	b	b
+d	a	a
+d	a	b
+d	b	a
+d	b	b
+select distinct a1,a2,b from t1 where (a2 >= 'b') and (b = 'a') group by a1,a2,b;
+a1	a2	b
+a	b	a
+b	b	a
+c	b	a
+d	b	a
+select distinct a1,a2,b,c from t1 where (a2 >= 'b') and (b = 'a') and (c = 'i121') group by a1,a2,b;
+a1	a2	b	c
+a	b	a	i121
+select distinct a1,a2,b from t1 where (a1 > 'a') and (a2 > 'a') and (b = 'c') group by a1,a2,b;
+a1	a2	b
+select distinct b from t1 where (a2 >= 'b') and (b = 'a') group by a1,a2,b;
+b
+a
+select distinct a1,a2,b from t2;
+a1	a2	b
+a	a	NULL
+a	a	a
+a	a	b
+a	b	a
+a	b	b
+b	a	a
+b	a	b
+b	b	a
+b	b	b
+c	a	NULL
+c	a	a
+c	a	b
+c	b	a
+c	b	b
+d	a	a
+d	a	b
+d	b	a
+d	b	b
+e	a	a
+e	a	b
+select distinct a1,a2,b from t2 where (a2 >= 'b') and (b = 'a') group by a1,a2,b;
+a1	a2	b
+a	b	a
+b	b	a
+c	b	a
+d	b	a
+select distinct a1,a2,b,c from t2 where (a2 >= 'b') and (b = 'a') and (c = 'i121') group by a1,a2,b;
+a1	a2	b	c
+a	b	a	i121
+select distinct a1,a2,b from t2 where (a1 > 'a') and (a2 > 'a') and (b = 'c') group by a1,a2,b;
+a1	a2	b
+select distinct b from t2 where (a2 >= 'b') and (b = 'a') group by a1,a2,b;
+b
+a
+select count(distinct a1,a2,b) from t1 where (a2 >= 'b') and (b = 'a');
+count(distinct a1,a2,b)
+4
+select count(distinct a1,a2,b,c) from t1 where (a2 >= 'b') and (b = 'a') and (c = 'i121');
+count(distinct a1,a2,b,c)
+1
+select count(distinct a1,a2,b) from t1 where (a1 > 'a') and (a2 > 'a') and (b = 'c');
+count(distinct a1,a2,b)
+0
+select count(distinct b) from t1 where (a2 >= 'b') and (b = 'a');
+count(distinct b)
+1
+select 98 + count(distinct a1,a2,b) from t1 where (a1 > 'a') and (a2 > 'a');
+98 + count(distinct a1,a2,b)
+104
+select a1,a2,b, concat(min(c), max(c)) from t1 where a1 < 'd' group by a1,a2,b;
+a1	a2	b	concat(min(c), max(c))
+a	a	a	a111d111
+a	a	b	e112h112
+a	b	a	i121l121
+a	b	b	m122p122
+b	a	a	a211d211
+b	a	b	e212h212
+b	b	a	i221l221
+b	b	b	m222p222
+c	a	a	a311d311
+c	a	b	e312h312
+c	b	a	i321l321
+c	b	b	m322p322
+select concat(a1,min(c)),b from t1 where a1 < 'd' group by a1,a2,b;
+concat(a1,min(c))	b
+aa111	a
+ae112	b
+ai121	a
+am122	b
+ba211	a
+be212	b
+bi221	a
+bm222	b
+ca311	a
+ce312	b
+ci321	a
+cm322	b
+select concat(a1,min(c)),b,max(c) from t1 where a1 < 'd' group by a1,a2,b;
+concat(a1,min(c))	b	max(c)
+aa111	a	d111
+ae112	b	h112
+ai121	a	l121
+am122	b	p122
+ba211	a	d211
+be212	b	h212
+bi221	a	l221
+bm222	b	p222
+ca311	a	d311
+ce312	b	h312
+ci321	a	l321
+cm322	b	p322
+select concat(a1,a2),b,min(c),max(c) from t1 where a1 < 'd' group by a1,a2,b;
+concat(a1,a2)	b	min(c)	max(c)
+aa	a	a111	d111
+aa	b	e112	h112
+ab	a	i121	l121
+ab	b	m122	p122
+ba	a	a211	d211
+ba	b	e212	h212
+bb	a	i221	l221
+bb	b	m222	p222
+ca	a	a311	d311
+ca	b	e312	h312
+cb	a	i321	l321
+cb	b	m322	p322
+select concat(ord(min(b)),ord(max(b))),min(b),max(b) from t1 group by a1,a2;
+concat(ord(min(b)),ord(max(b)))	min(b)	max(b)
+9798	a	b
+9798	a	b
+9798	a	b
+9798	a	b
+9798	a	b
+9798	a	b
+9798	a	b
+9798	a	b
+select distinct(a1) from t1 where ord(a2) = 98;
+a1
+a
+b
+c
+d
+select a1 from t1 where a2 = 'b' group by a1;
+a1
+a
+b
+c
+d
+select distinct a1 from t1 where a2 = 'b';
+a1
+a
+b
+c
+d
+connection child2_1;
+drop table t1,t2,t3;
+connection child2_2;
+drop table t1,t2,t3;
+connection master_1;
+drop table t1,t2,t3;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (c1 int not null,c2 int not null, primary key(c1,c2))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(c1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `c1` int(11) NOT NULL,
+  `c2` int(11) NOT NULL,
+  PRIMARY KEY (`c1`,`c2`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`c1`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+insert into t1 (c1,c2) values
+(10,1),(10,2),(10,3),(20,4),(20,5),(20,6),(30,7),(30,8),(30,9);
+select distinct c1, c2 from t1 order by c2;
+c1	c2
+10	1
+10	2
+10	3
+20	4
+20	5
+20	6
+30	7
+30	8
+30	9
+select c1,min(c2) as c2 from t1 group by c1 order by c2;
+c1	c2
+10	1
+20	4
+30	7
+select c1,c2 from t1 group by c1,c2 order by c2;
+c1	c2
+10	1
+10	2
+10	3
+20	4
+20	5
+20	6
+30	7
+30	8
+30	9
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a varchar(5), b int(11), PRIMARY KEY (a,b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` varchar(5) NOT NULL,
+  `b` int(11) NOT NULL,
+  PRIMARY KEY (`a`,`b`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`a`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1 VALUES ('AA',1), ('AA',2), ('AA',3), ('BB',1), ('AA',4);
+OPTIMIZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+auto_test_local.t1	optimize	status	OK
+SELECT a FROM t1 WHERE a='AA' GROUP BY a;
+a
+AA
+SELECT a FROM t1 WHERE a='BB' GROUP BY a;
+a
+BB
+SELECT DISTINCT a FROM t1 WHERE a='BB';
+a
+BB
+SELECT DISTINCT a FROM t1 WHERE a LIKE 'B%';
+a
+BB
+SELECT a FROM t1 WHERE a LIKE 'B%' GROUP BY a;
+a
+BB
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a int(11) NOT NULL DEFAULT '0', b varchar(16) NOT NULL DEFAULT '', PRIMARY KEY  (a,b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL DEFAULT 0,
+  `b` varchar(16) NOT NULL DEFAULT '',
+  PRIMARY KEY (`a`,`b`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`a`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+CREATE PROCEDURE a(x INT)
+BEGIN
+DECLARE rnd INT;
+DECLARE cnt INT;
+WHILE x > 0 DO
+SET rnd= x % 100;
+SET cnt = (SELECT COUNT(*) FROM t1 WHERE a = rnd);
+INSERT INTO t1(a,b) VALUES (rnd, CAST(cnt AS CHAR));
+SET x= x - 1;
+END WHILE;
+END|
+CALL a(1000);
+SELECT a FROM t1 WHERE a=0;
+a
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+SELECT DISTINCT a FROM t1 WHERE a=0;
+a
+0
+SELECT COUNT(DISTINCT a) FROM t1 WHERE a=0;
+COUNT(DISTINCT a)
+1
+DROP PROCEDURE a;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a varchar(64) NOT NULL default '', KEY(a))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` varchar(64) NOT NULL DEFAULT '',
+  KEY `a` (`a`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`a`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1 (a) VALUES 
+(''), ('CENTRAL'), ('EASTERN'), ('GREATER LONDON'),
+('NORTH CENTRAL'), ('NORTH EAST'), ('NORTH WEST'), ('SCOTLAND'),
+('SOUTH EAST'), ('SOUTH WEST'), ('WESTERN');
+SELECT DISTINCT a,a FROM t1 ORDER BY a;
+a	a
+	
+CENTRAL	CENTRAL
+EASTERN	EASTERN
+GREATER LONDON	GREATER LONDON
+NORTH CENTRAL	NORTH CENTRAL
+NORTH EAST	NORTH EAST
+NORTH WEST	NORTH WEST
+SCOTLAND	SCOTLAND
+SOUTH EAST	SOUTH EAST
+SOUTH WEST	SOUTH WEST
+WESTERN	WESTERN
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id1 INT, id2 INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (id2 INT, id3 INT, id5 INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id2) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t3;;
+CREATE TABLE t3 (id3 INT, id4 INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id3) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t3", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t3", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t4;;
+CREATE TABLE t4 (id4 INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id4) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t4", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t4", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t5;;
+CREATE TABLE t5 (id5 INT, id6 INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id5) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t5", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t5", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t6;;
+CREATE TABLE t6 (id6 INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id6) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t6", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t6", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES(1,1);
+INSERT INTO t2 VALUES(1,1,1);
+INSERT INTO t3 VALUES(1,1);
+INSERT INTO t4 VALUES(1);
+INSERT INTO t5 VALUES(1,1);
+INSERT INTO t6 VALUES(1);
+SELECT * FROM
+t1
+NATURAL JOIN
+(t2 JOIN (t3 NATURAL JOIN t4, t5 NATURAL JOIN t6)
+ON (t3.id3 = t2.id3 AND t5.id5 = t2.id5));
+id2	id1	id3	id5	id4	id3	id6	id5
+1	1	1	1	1	1	1	1
+SELECT * FROM
+t1
+NATURAL JOIN
+(((t3 NATURAL JOIN t4) join (t5 NATURAL JOIN t6) on t3.id4 = t5.id5) JOIN t2
+ON (t3.id3 = t2.id3 AND t5.id5 = t2.id5));
+id2	id1	id4	id3	id6	id5	id3	id5
+1	1	1	1	1	1	1	1
+SELECT * FROM t1 NATURAL JOIN ((t3 join (t5 NATURAL JOIN t6)) JOIN t2);
+id2	id1	id3	id4	id6	id5	id3	id5
+1	1	1	1	1	1	1	1
+SELECT * FROM
+(t2 JOIN (t3 NATURAL JOIN t4, t5 NATURAL JOIN t6)
+ON (t3.id3 = t2.id3 AND t5.id5 = t2.id5))
+NATURAL JOIN
+t1;
+id2	id3	id5	id4	id3	id6	id5	id1
+1	1	1	1	1	1	1	1
+SELECT * FROM
+(t2 JOIN ((t3 NATURAL JOIN t4) join (t5 NATURAL JOIN t6)))
+NATURAL JOIN
+t1;
+id2	id3	id5	id4	id3	id6	id5	id1
+1	1	1	1	1	1	1	1
+connection child2_1;
+DROP TABLE t1,t2,t3,t4,t5,t6;
+connection child2_2;
+DROP TABLE t1,t2,t3,t4,t5,t6;
+connection master_1;
+DROP TABLE t1,t2,t3,t4,t5,t6;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a int, b int, KEY (a,b), KEY b (b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(b) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+INSERT INTO t1 VALUES (1,1),(1,2),(1,0),(1,3);
+SELECT MAX(b), a FROM t1 WHERE b < 2 AND a = 1 GROUP BY a;
+MAX(b)	a
+1	1
+SELECT MIN(b), a FROM t1 WHERE b > 1 AND a = 1 GROUP BY a;
+MIN(b)	a
+2	1
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (a int, b int, c int, PRIMARY KEY (a,b,c))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+connection master_1;
+INSERT INTO t2 SELECT a,b,b FROM t1;
+SELECT MIN(c) FROM t2 WHERE b = 2 and a = 1 and c > 1 GROUP BY a;
+MIN(c)
+2
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a int, INDEX idx(a))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES
+(4), (2), (1), (2), (4), (2), (1), (4),
+(4), (2), (1), (2), (2), (4), (1), (4);
+SELECT DISTINCT(a) FROM t1;
+a
+1
+2
+4
+SELECT SQL_BIG_RESULT DISTINCT(a) FROM t1;
+a
+1
+2
+4
+#
+# Bug #45386: Wrong query result with MIN function in field list, 
+#  WHERE and GROUP BY clause
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT, b INT, INDEX (a,b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (2,0), (2,0), (2,1), (2,1);
+INSERT INTO t1 SELECT * FROM t1;
+INSERT INTO t1 SELECT * FROM t1;
+# test MIN
+#should return 1 row
+SELECT a, MIN(b) FROM t1 WHERE b <> 0 GROUP BY a;
+a	MIN(b)
+2	1
+# test MAX
+#should return 1 row
+SELECT a, MAX(b) FROM t1 WHERE b <> 1 GROUP BY a;
+a	MAX(b)
+2	0
+# test 3 ranges and use the middle one
+INSERT INTO t1 SELECT a, 2 FROM t1;
+#should return 1 row
+SELECT a, MAX(b) FROM t1 WHERE b > 0 AND b < 2 GROUP BY a;
+a	MAX(b)
+2	1
+#
+# Bug #48472: Loose index scan inappropriately chosen for some WHERE
+#             conditions
+# 
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT, b INT, INDEX (a,b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (2,0), (2,0), (2,1), (2,1);
+INSERT INTO t1 SELECT * FROM t1;
+SELECT a, MAX(b) FROM t1 WHERE 0=b+0 GROUP BY a;
+a	MAX(b)
+2	0
+End of 5.0 tests
+#
+# Bug #46607: Assertion failed: (cond_type == Item::FUNC_ITEM) results in
+#              server crash
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT, b INT, INDEX (a,b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (2,0), (2,0), (2,1), (2,1);
+INSERT INTO t1 SELECT * FROM t1;
+SELECT a, MAX(b) FROM t1 WHERE b GROUP BY a;
+a	MAX(b)
+2	1
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT NOT NULL, b INT NOT NULL, KEY (b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(b) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES(1,1),(2,1);
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+auto_test_local.t1	analyze	status	OK
+SELECT 1 AS c, b FROM t1 WHERE b IN (1,2) GROUP BY c, b;
+c	b
+1	1
+SELECT a FROM t1 WHERE b=1;
+a
+1
+2
+#
+# LP BUG#888456 Wrong result with DISTINCT , ANY , subquery_cache=off , NOT NULL
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a int NOT NULL)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (28),(29),(9);
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (a int, KEY (a))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+INSERT INTO t2 VALUES (1),(1),(1),(4),(4),(5),(5),(8),(8),(9);
+select (select t2.a from t2 where t2.a >= t1.a group by t2.a) from t1;
+(select t2.a from t2 where t2.a >= t1.a group by t2.a)
+NULL
+NULL
+9
+#
+# LP BUG#900375 Wrong result with derived_merge=ON, DISTINCT or GROUP BY, EXISTS
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT, b INT, KEY (b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(b) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES
+(100,10),(101,11),(102,12),(103,13),(104,14),
+(105,15),(106,16),(107,17),(108,18),(109,19);
+SELECT alias1.* FROM t1, (SELECT * FROM t1) AS alias1
+WHERE EXISTS ( SELECT DISTINCT b FROM t1 WHERE b <= alias1.a ) ORDER BY a, b;
+a	b
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+SELECT alias1.* FROM t1, t1 AS alias1
+WHERE EXISTS ( SELECT DISTINCT b FROM t1 WHERE b <= alias1.a ) ORDER BY a, b;
+a	b
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+100	10
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+101	11
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+102	12
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+103	13
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+104	14
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+105	15
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+106	16
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+107	17
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+108	18
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+109	19
+End of 5.1 tests
+#
+# MDEV-765 lp:825075 - Wrong result with GROUP BY + multipart key + MIN/MAX loose scan
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (k int primary key auto_increment, a varchar(1), b varchar(1), KEY (b,a))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(k) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1(a,b) VALUES
+('0',NULL),('9',NULL),('8','c'),('4','d'),('7','d'),(NULL,'f'),
+('7','f'),('8','g'),(NULL,'j');
+SELECT max(a) , b FROM t1 WHERE a IS NULL OR b = 'z' GROUP BY b;
+max(a)	b
+NULL	f
+NULL	j
+SELECT b, min(a) FROM t1 WHERE a = '7' OR b = 'z' GROUP BY b;
+b	min(a)
+d	7
+f	7
+SELECT b, min(a) FROM t1 WHERE (a = b OR b = 'd' OR b is NULL) GROUP BY b;
+b	min(a)
+NULL	0
+d	4
+SELECT b, min(a) FROM t1 WHERE a > ('0' = b) AND b = 'z' GROUP BY b;
+b	min(a)
+SELECT b, min(a) FROM t1 WHERE a > '0' AND (b < (a = '7')) GROUP BY b;
+b	min(a)
+d	7
+f	7
+SELECT b, min(a) FROM t1 WHERE (a > '0' AND (a > '1' OR b = 'd')) GROUP BY b;
+b	min(a)
+NULL	9
+c	8
+d	4
+f	7
+g	8
+#
+# MDEV-4140 Wrong result with GROUP BY + multipart key + MIN/MAX loose scan and a subquery
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a int, b int, KEY (b, a))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (c int)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(c) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (0,99),(9,99),(4,0),(7,0),(99,0),(7,0),(8,0),(99,0),(1,0);
+INSERT INTO t1 VALUES (0,99),(9,99),(4,0),(7,0),(99,0),(7,0),(8,0),(99,0),(1,0);
+INSERT INTO t2 VALUES (0),(1);
+SELECT MIN(a), b FROM t1 WHERE a > 0 GROUP BY b;
+MIN(a)	b
+1	0
+9	99
+SELECT MIN(a), b FROM t1 WHERE a > ( SELECT c FROM t2 WHERE c = 0 ) GROUP BY b;
+MIN(a)	b
+1	0
+9	99
+SELECT MIN(a), b FROM t1 WHERE a > ( SELECT min(c) FROM t2, t1 t1a, t1 t1b WHERE c = 0 ) GROUP BY b;
+MIN(a)	b
+1	0
+9	99
+End of 5.3 tests
+#
+# WL#3220 (Loose index scan for COUNT DISTINCT)
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT, b INT, c INT, KEY (a,b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (1,1,1), (1,2,1), (1,3,1), (1,4,1);
+INSERT INTO t1 SELECT a, b + 4, 1 FROM t1;
+INSERT INTO t1 SELECT a + 1, b, 1 FROM t1;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (a INT, b INT, c INT, d INT, e INT, f INT, KEY (a,b,c))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+INSERT INTO t2 VALUES (1,1,1,1,1,1), (1,2,1,1,1,1), (1,3,1,1,1,1), 
+(1,4,1,1,1,1);
+INSERT INTO t2 SELECT a, b + 4, c,d,e,f FROM t2;
+INSERT INTO t2 SELECT a + 1, b, c,d,e,f FROM t2;
+SELECT COUNT(DISTINCT a) FROM t1;
+COUNT(DISTINCT a)
+2
+SELECT COUNT(DISTINCT a,b) FROM t1;
+COUNT(DISTINCT a,b)
+16
+SELECT COUNT(DISTINCT b,a) FROM t1;
+COUNT(DISTINCT b,a)
+16
+SELECT COUNT(DISTINCT b) FROM t1;
+COUNT(DISTINCT b)
+8
+SELECT COUNT(DISTINCT a) FROM t1 GROUP BY a;
+COUNT(DISTINCT a)
+1
+1
+SELECT COUNT(DISTINCT b) FROM t1 GROUP BY a;
+COUNT(DISTINCT b)
+8
+8
+SELECT COUNT(DISTINCT a) FROM t1 GROUP BY b;
+COUNT(DISTINCT a)
+2
+2
+2
+2
+2
+2
+2
+2
+SELECT DISTINCT COUNT(DISTINCT a) FROM t1;
+COUNT(DISTINCT a)
+2
+SELECT COUNT(DISTINCT a, b + 0) FROM t1;
+COUNT(DISTINCT a, b + 0)
+16
+SELECT COUNT(DISTINCT a) FROM t1 HAVING COUNT(DISTINCT b) < 10;
+COUNT(DISTINCT a)
+2
+SELECT COUNT(DISTINCT a) FROM t1 HAVING COUNT(DISTINCT c) < 10;
+COUNT(DISTINCT a)
+2
+SELECT 1 FROM t1 HAVING COUNT(DISTINCT a) < 10;
+1
+1
+SELECT 1 FROM t1 GROUP BY a HAVING COUNT(DISTINCT b) > 1;
+1
+1
+1
+SELECT COUNT(DISTINCT t1_1.a) FROM t1 t1_1, t1 t1_2 GROUP BY t1_1.a;
+COUNT(DISTINCT t1_1.a)
+1
+1
+SELECT COUNT(DISTINCT a), 12 FROM t1;
+COUNT(DISTINCT a)	12
+2	12
+SELECT COUNT(DISTINCT a, b, c) FROM t2;
+COUNT(DISTINCT a, b, c)
+16
+SELECT COUNT(DISTINCT a), SUM(DISTINCT a), AVG(DISTINCT a) FROM t2;
+COUNT(DISTINCT a)	SUM(DISTINCT a)	AVG(DISTINCT a)
+2	3	1.5000
+SELECT COUNT(DISTINCT a), SUM(DISTINCT a), AVG(DISTINCT f) FROM t2;
+COUNT(DISTINCT a)	SUM(DISTINCT a)	AVG(DISTINCT f)
+2	3	1.0000
+SELECT COUNT(DISTINCT a, b), COUNT(DISTINCT b, a) FROM t2;
+COUNT(DISTINCT a, b)	COUNT(DISTINCT b, a)
+16	16
+SELECT COUNT(DISTINCT a, b), COUNT(DISTINCT b, f) FROM t2;
+COUNT(DISTINCT a, b)	COUNT(DISTINCT b, f)
+16	8
+SELECT COUNT(DISTINCT a, b), COUNT(DISTINCT b, d) FROM t2;
+COUNT(DISTINCT a, b)	COUNT(DISTINCT b, d)
+16	8
+SELECT a, c, COUNT(DISTINCT c, a, b) FROM t2 GROUP BY a, b, c;
+a	c	COUNT(DISTINCT c, a, b)
+1	1	1
+1	1	1
+1	1	1
+1	1	1
+1	1	1
+1	1	1
+1	1	1
+1	1	1
+2	1	1
+2	1	1
+2	1	1
+2	1	1
+2	1	1
+2	1	1
+2	1	1
+2	1	1
+SELECT COUNT(DISTINCT c, a, b) FROM t2
+WHERE a > 5 AND b BETWEEN 10 AND 20 GROUP BY a, b, c;
+COUNT(DISTINCT c, a, b)
+SELECT COUNT(DISTINCT b), SUM(DISTINCT b) FROM t2 WHERE a = 5
+GROUP BY b;
+COUNT(DISTINCT b)	SUM(DISTINCT b)
+SELECT a, COUNT(DISTINCT b), SUM(DISTINCT b) FROM t2 GROUP BY a;
+a	COUNT(DISTINCT b)	SUM(DISTINCT b)
+1	8	36
+2	8	36
+SELECT COUNT(DISTINCT b), SUM(DISTINCT b) FROM t2 GROUP BY a;
+COUNT(DISTINCT b)	SUM(DISTINCT b)
+8	36
+8	36
+SELECT COUNT(DISTINCT a, b) FROM t2 WHERE c = 13 AND d = 42;
+COUNT(DISTINCT a, b)
+0
+SELECT a, COUNT(DISTINCT a), SUM(DISTINCT a) FROM t2
+WHERE b = 13 AND c = 42 GROUP BY a;
+a	COUNT(DISTINCT a)	SUM(DISTINCT a)
+SELECT COUNT(DISTINCT a, b), SUM(DISTINCT a) FROM t2 WHERE b = 42;
+COUNT(DISTINCT a, b)	SUM(DISTINCT a)
+0	NULL
+SELECT SUM(DISTINCT a), MAX(b) FROM t2 GROUP BY a;
+SUM(DISTINCT a)	MAX(b)
+1	8
+2	8
+SELECT 42 * (a + c + COUNT(DISTINCT c, a, b)) FROM t2 GROUP BY a, b, c;
+42 * (a + c + COUNT(DISTINCT c, a, b))
+126
+126
+126
+126
+126
+126
+126
+126
+168
+168
+168
+168
+168
+168
+168
+168
+SELECT (SUM(DISTINCT a) + MAX(b)) FROM t2 GROUP BY a;
+(SUM(DISTINCT a) + MAX(b))
+9
+10
+# end of WL#3220 tests
+#
+# Bug#50539: Wrong result when loose index scan is used for an aggregate
+#            function with distinct
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (f1 int(11) NOT NULL DEFAULT '0', f2 char(1) NOT NULL DEFAULT '', KEY (f1,f2))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(f1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+insert into t1 values(1,'A'),(1 , 'B'), (1, 'C'), (2, 'A'), 
+(3, 'A'), (3, 'B'), (3, 'C'), (3, 'D');
+SELECT f1, COUNT(DISTINCT f2) FROM t1 GROUP BY f1;
+f1	COUNT(DISTINCT f2)
+1	3
+2	1
+3	4
+# End of test#50539.
+#
+# Bug#17217128 -  BAD INTERACTION BETWEEN MIN/MAX AND
+#                 "HAVING SUM(DISTINCT)": WRONG RESULTS.
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT, b INT, KEY(a,b))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (1,1), (2,2), (3,3), (4,4), (1,0), (3,2), (4,5);
+SELECT a, SUM(DISTINCT a), MIN(b) FROM t1 GROUP BY a;
+a	SUM(DISTINCT a)	MIN(b)
+1	1	0
+2	2	2
+3	3	2
+4	4	4
+SELECT a, SUM(DISTINCT a), MAX(b) FROM t1 GROUP BY a;
+a	SUM(DISTINCT a)	MAX(b)
+1	1	1
+2	2	2
+3	3	3
+4	4	5
+SELECT a, MAX(b) FROM t1 GROUP BY a HAVING SUM(DISTINCT a);
+a	MAX(b)
+1	1
+2	2
+3	3
+4	5
+SELECT SUM(DISTINCT a), MIN(b), MAX(b) FROM t1;
+SUM(DISTINCT a)	MIN(b)	MAX(b)
+10	0	5
+SELECT a, SUM(DISTINCT a), MIN(b), MAX(b) FROM t1 GROUP BY a;
+a	SUM(DISTINCT a)	MIN(b)	MAX(b)
+1	1	0	1
+2	2	2	2
+3	3	2	3
+4	4	4	5
+DROP TABLE t1;
+#
+# MDEV-4219 A simple select query returns random data (upstream bug#68473)
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS faulty;;
+CREATE TABLE faulty (a int(11) unsigned NOT NULL AUTO_INCREMENT, b int(11) unsigned NOT NULL, c datetime NOT NULL, PRIMARY KEY (a))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "faulty", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "faulty", srv "s_2_2",aim "1"');;
+INSERT INTO faulty (b, c) VALUES
+(1801, '2013-02-15 09:00:00'),
+(1802, '2013-02-28 09:00:00'),
+(1802, '2013-03-01 09:00:00'),
+(5,    '1990-02-15 09:00:00'),
+(5,    '2013-02-15 09:00:00'),
+(5,    '2009-02-15 17:00:00');
+SELECT DISTINCT b, c FROM faulty WHERE b='1802' ORDER BY c;
+b	c
+1802	2013-02-28 09:00:00
+1802	2013-03-01 09:00:00
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (a INT, b INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(a) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 (a, b) VALUES (1,1), (1,2), (1,3);
+INSERT INTO t1 SELECT a + 1, b FROM t1;
+INSERT INTO t1 SELECT a + 2, b FROM t1;
+CREATE INDEX break_it ON t1 (a, b);
+SELECT distinct a, b FROM t1 where a = '3' ORDER BY b;
+a	b
+3	1
+3	2
+3	3
+#
+# Start of 10.0 tests
+#
+#
+# MDEV-6991 GROUP_MIN_MAX optimization is erroneously applied in some cases
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT NOT NULL, a VARCHAR(20))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (1,'2001-01-01');
+INSERT INTO t1 VALUES (1,'2001-01-02');
+INSERT INTO t1 VALUES (1,'2001-01-03');
+INSERT INTO t1 VALUES (1,' 2001-01-04');
+INSERT INTO t1 VALUES (2,'2001-01-01');
+INSERT INTO t1 VALUES (2,'2001-01-02');
+INSERT INTO t1 VALUES (2,'2001-01-03');
+INSERT INTO t1 VALUES (2,' 2001-01-04');
+INSERT INTO t1 VALUES (3,'2001-01-01');
+INSERT INTO t1 VALUES (3,'2001-01-02');
+INSERT INTO t1 VALUES (3,'2001-01-03');
+INSERT INTO t1 VALUES (3,' 2001-01-04');
+INSERT INTO t1 VALUES (4,'2001-01-01');
+INSERT INTO t1 VALUES (4,'2001-01-02');
+INSERT INTO t1 VALUES (4,'2001-01-03');
+INSERT INTO t1 VALUES (4,' 2001-01-04');
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a>=DATE'2001-01-04' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+ALTER TABLE t1 ADD KEY(id,a);
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a>=DATE'2001-01-04' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+#
+# End of 10.0 tests
+#
+#
+# Start of 10.1 tests
+#
+#
+# MDEV-6990 GROUP_MIN_MAX optimization is not applied in some cases when it could
+#
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT NOT NULL, a DATE, KEY(id,a))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (1,'2001-01-01');
+INSERT INTO t1 VALUES (1,'2001-01-02');
+INSERT INTO t1 VALUES (1,'2001-01-03');
+INSERT INTO t1 VALUES (1,'2001-01-04');
+INSERT INTO t1 VALUES (2,'2001-01-01');
+INSERT INTO t1 VALUES (2,'2001-01-02');
+INSERT INTO t1 VALUES (2,'2001-01-03');
+INSERT INTO t1 VALUES (2,'2001-01-04');
+INSERT INTO t1 VALUES (3,'2001-01-01');
+INSERT INTO t1 VALUES (3,'2001-01-02');
+INSERT INTO t1 VALUES (3,'2001-01-03');
+INSERT INTO t1 VALUES (3,'2001-01-04');
+INSERT INTO t1 VALUES (4,'2001-01-01');
+INSERT INTO t1 VALUES (4,'2001-01-02');
+INSERT INTO t1 VALUES (4,'2001-01-03');
+INSERT INTO t1 VALUES (4,'2001-01-04');
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a>='2001-01-04' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	2001-01-04	2001-01-04
+2	2001-01-04	2001-01-04
+3	2001-01-04	2001-01-04
+4	2001-01-04	2001-01-04
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a>=20010104.0 GROUP BY id;
+id	MIN(a)	MAX(a)
+1	2001-01-04	2001-01-04
+2	2001-01-04	2001-01-04
+3	2001-01-04	2001-01-04
+4	2001-01-04	2001-01-04
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a>=20010104e0 GROUP BY id;
+id	MIN(a)	MAX(a)
+1	2001-01-04	2001-01-04
+2	2001-01-04	2001-01-04
+3	2001-01-04	2001-01-04
+4	2001-01-04	2001-01-04
+#
+# MDEV-8229 GROUP_MIN_MAX is erroneously applied for BETWEEN in some cases
+#
+SET NAMES latin1;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT NOT NULL, a VARCHAR(20))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1 VALUES (1,'2001-01-01');
+INSERT INTO t1 VALUES (1,'2001-01-02');
+INSERT INTO t1 VALUES (1,'2001-01-03');
+INSERT INTO t1 VALUES (1,' 2001-01-04');
+INSERT INTO t1 VALUES (2,'2001-01-01');
+INSERT INTO t1 VALUES (2,'2001-01-02');
+INSERT INTO t1 VALUES (2,'2001-01-03');
+INSERT INTO t1 VALUES (2,' 2001-01-04');
+INSERT INTO t1 VALUES (3,'2001-01-01');
+INSERT INTO t1 VALUES (3,'2001-01-02');
+INSERT INTO t1 VALUES (3,'2001-01-03');
+INSERT INTO t1 VALUES (3,' 2001-01-04');
+INSERT INTO t1 VALUES (4,'2001-01-01');
+INSERT INTO t1 VALUES (4,'2001-01-02');
+INSERT INTO t1 VALUES (4,'2001-01-03');
+INSERT INTO t1 VALUES (4,' 2001-01-04');
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN     ' 2001-01-04' AND    '2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	2001-01-03
+2	 2001-01-04	2001-01-03
+3	 2001-01-04	2001-01-03
+4	 2001-01-04	2001-01-03
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN     '2001-01-04' AND     '2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN DATE'2001-01-04' AND DATE'2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN DATE'2001-01-04' AND     '2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN     '2001-01-04' AND DATE'2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+ALTER TABLE t1 ADD KEY(id,a);
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN     ' 2001-01-04' AND    '2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	2001-01-03
+2	 2001-01-04	2001-01-03
+3	 2001-01-04	2001-01-03
+4	 2001-01-04	2001-01-03
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN     '2001-01-04' AND     '2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN DATE'2001-01-04' AND DATE'2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN DATE'2001-01-04' AND     '2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+SELECT id,MIN(a),MAX(a) FROM t1 WHERE a BETWEEN     '2001-01-04' AND DATE'2001-01-05' GROUP BY id;
+id	MIN(a)	MAX(a)
+1	 2001-01-04	 2001-01-04
+2	 2001-01-04	 2001-01-04
+3	 2001-01-04	 2001-01-04
+4	 2001-01-04	 2001-01-04
+DROP TABLE t1;
+#
+# End of 10.1 tests
+#
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
