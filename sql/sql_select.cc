@@ -2286,13 +2286,17 @@ int JOIN::optimize_stage2() {
     if (group_list)  // GROUP BY honoured first
                      // (DISTINCT was rewritten to GROUP BY if skippable)
     {
+      bool big_result_no_spider =
+          (select_options & SELECT_BIG_RESULT) &&
+          !(join_tab->table && join_tab->table->file &&
+            join_tab->table->file->is_spider_storage_engine());
       /*
         When there is SQL_BIG_RESULT do not sort using index for GROUP BY,
         and thus force sorting on disk unless a group min-max optimization
         is going to be used as it is applied now only for one table queries
         with covering indexes.
       */
-      if (!(select_options & SELECT_BIG_RESULT) ||
+      if (!big_result_no_spider ||
           (tab->select && tab->select->quick &&
            tab->select->quick->get_type() ==
                QUICK_SELECT_I::QS_TYPE_GROUP_MIN_MAX)) {
@@ -8390,12 +8394,16 @@ bool JOIN::get_best_combination() {
    Up to 2 tmp tables are actually used, but it's hard to tell exact number
    at this stage.
  */
+  bool big_result_no_spider =
+          (select_options & SELECT_BIG_RESULT) &&
+          !(join_tab->table && join_tab->table->file &&
+            join_tab->table->file->is_spider_storage_engine());
   uint aggr_tables =
       (group_list ? 1 : 0) +
       (select_distinct ? (tmp_table_param.using_outer_summary_function ? 2 : 1)
                        : 0) +
       (order ? 1 : 0) +
-      (select_options & (SELECT_BIG_RESULT | OPTION_BUFFER_RESULT) ? 1 : 0);
+      ((select_options & OPTION_BUFFER_RESULT) || big_result_no_spider ? 1 : 0);
 
   if (aggr_tables == 0) aggr_tables = 1; /* For group by pushdown */
 
