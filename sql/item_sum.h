@@ -367,6 +367,14 @@ public:
   int8 max_arg_level;     /* max level of unbound column references          */
   int8 max_sum_func_level;/* max level of aggregation for embedded functions */
   bool quick_group;			/* If incremental update of fields */
+  
+  /**
+    Used in reset_field(),
+    In Item_sum_hybrid::reset_field() and Item_sum_sum::reset_field()
+    it tells wether it is called by end_unique_update()
+  */
+  bool from_end_unique_update;
+
   /*
     This list is used by the check for mixing non aggregated fields and
     sum functions in the ONLY_FULL_GROUP_BY_MODE. We save all outer fields
@@ -529,6 +537,7 @@ public:
     aggr= NULL;
     with_distinct= FALSE;
     force_copy_fields= FALSE;
+    from_end_unique_update = FALSE;
   }
 
   /**

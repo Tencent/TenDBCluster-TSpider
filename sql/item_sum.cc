@@ -2687,8 +2687,6 @@ void Item_sum_hybrid::reset_field()
     tmp_item= value->get_item();
     value->store(direct_item);
     arg0= direct_item;
-    /* update args[0] */
-    args[0]= direct_item;
   }
 
   switch(result_type()) {
@@ -2772,7 +2770,8 @@ void Item_sum_hybrid::reset_field()
 
   if (unlikely(direct_added))
   {
-    direct_added= FALSE;
+    if (!from_end_unique_update)
+      direct_added= FALSE;
     value->store(tmp_item);
   }
   DBUG_VOID_RETURN;
@@ -2804,7 +2803,8 @@ void Item_sum_sum::reset_field()
 
   if (unlikely(direct_added))
   {
-    direct_added= FALSE;
+    if (!from_end_unique_update)
+      direct_added= FALSE;
     direct_reseted_field= TRUE;
     null_flag= direct_sum_is_null;
   }

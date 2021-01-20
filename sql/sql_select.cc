@@ -267,7 +267,7 @@ static bool change_refs_to_tmp_fields(THD *thd, Ref_ptr_array ref_pointer_array,
                                       List<Item> &new_list1,
                                       List<Item> &new_list2, uint elements,
                                       List<Item> &items);
-static void init_tmptable_sum_functions(Item_sum **func);
+static void init_tmptable_sum_functions(Item_sum **func, bool is_end_unique_update);
 static void update_tmptable_sum_func(Item_sum **func, TABLE *tmp_table);
 static void copy_sum_funcs(Item_sum **func_ptr, Item_sum **end);
 static bool add_ref_to_table_cond(THD *thd, JOIN_TAB *join_tab);
@@ -18344,7 +18344,7 @@ static enum_nested_loop_state end_update(JOIN *join,
     goto end;
   }
 
-  init_tmptable_sum_functions(join->sum_funcs);
+  init_tmptable_sum_functions(join->sum_funcs, FALSE);
   if (unlikely(copy_funcs(join_tab->tmp_table_param->items_to_copy, join->thd)))
     DBUG_RETURN(NESTED_LOOP_ERROR); /* purecov: inspected */
   if (unlikely((error = table->file->ha_write_tmp_row(table->record[0])))) {
@@ -18382,7 +18382,7 @@ static enum_nested_loop_state end_unique_update(JOIN *join,
 
   if (end_of_records) DBUG_RETURN(NESTED_LOOP_OK);
 
-  init_tmptable_sum_functions(join->sum_funcs);
+  init_tmptable_sum_functions(join->sum_funcs, TRUE);
   copy_fields(join_tab->tmp_table_param);  // Groups are copied twice.
   if (copy_funcs(join_tab->tmp_table_param->items_to_copy, join->thd))
     DBUG_RETURN(NESTED_LOOP_ERROR); /* purecov: inspected */
@@ -21291,9 +21291,12 @@ static bool prepare_sum_aggregators(Item_sum **func_ptr, bool need_distinct) {
   DBUG_RETURN(FALSE);
 }
 
-static void init_tmptable_sum_functions(Item_sum **func_ptr) {
+static void init_tmptable_sum_functions(Item_sum **func_ptr, bool is_end_unique_update) {
   Item_sum *func;
-  while ((func = *(func_ptr++))) func->reset_field();
+  while ((func = *(func_ptr++))) {
+    func->from_end_unique_update = is_end_unique_update;
+    func->reset_field();
+  }
 }
 
 /** Update record 0 in tmp_table from record 1. */
