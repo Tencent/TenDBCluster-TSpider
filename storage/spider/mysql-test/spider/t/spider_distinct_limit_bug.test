@@ -1,0 +1,191 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = a int(11) NOT NULL, b bigint(20) NOT NULL, c text DEFAULT NULL, d bigint(20) DEFAULT NULL, KEY ind_b (b)
+--let $TABLE_SHARD_KEY = b
+--source ../include/spider_create_table_helper.inc
+
+--echo
+--echo test
+
+--connection master_1
+SHOW CREATE TABLE t1;
+insert into t1 values (20201218,1608298440000,0,289),
+(20201218,1608265200000,0,296),
+(20201218,1608293100000,0,291),
+(20201218,1608293100000,0,291),
+(20201218,1608298380000,0,291),
+(20201218,1608265020000,0,291),
+(20201218,1608293400000,0,296),
+(20201218,1608294060000,0,289),
+(20201218,1608298620000,0,289),
+(20201218,1608298800000,0,290),
+(20201218,1608265320000,0,296),
+(20201218,1608293940000,0,290),
+(20201218,1608298920000,0,291),
+(20201218,1608298920000,0,291),
+(20201218,1608293520000,0,298),
+(20201218,1608293520000,0,298),
+(20201218,1608298980000,0,290),
+(20201218,1608299160000,0,291),
+(20201218,1608299640000,0,289),
+(20201218,1608265260000,0,295),
+(20201218,1608265260000,0,295),
+(20201218,1608299520000,0,289),
+(20201218,1608294000000,0,291),
+(20201218,1608294000000,0,291),
+(20201218,1608299040000,0,291),
+(20201218,1608299700000,0,289),
+(20201218,1608265080000,0,293),
+(20201218,1608298860000,0,291),
+(20201218,1608293700000,0,296),
+(20201218,1608293700000,0,296),
+(20201218,1608293760000,0,295),
+(20201218,1608299460000,0,289),
+(20201218,1608298500000,0,289),
+(20201218,1608264960000,0,289),
+(20201218,1608293580000,0,295),
+(20201218,1608265140000,0,293),
+(20201218,1608265140000,0,293),
+(20201218,1608293220000,0,292),
+(20201218,1608293880000,0,291),
+(20201218,1608298320000,0,290),
+(20201218,1608299280000,0,290),
+(20201218,1608265500000,0,291),
+(20201218,1608265560000,0,290),
+(20201218,1608265560000,0,290),
+(20201218,1608293160000,0,291),
+(20201218,1608293640000,0,295),
+(20201218,1608293820000,0,295),
+(20201218,1608299220000,0,289),
+(20201218,1608293340000,0,294),
+(20201218,1608293460000,0,298),
+(20201218,1608264840000,0,291),
+(20201218,1608264840000,0,291),
+(20201218,1608265440000,0,292),
+(20201218,1608293040000,0,291),
+(20201218,1608265380000,0,293),
+(20201218,1608298560000,0,289),
+(20201218,1608264900000,0,293),
+(20201218,1608264780000,0,292),
+(20201218,1608299100000,0,293);
+
+SET @save_spider_quick_mode=@@spider_quick_mode;
+SET @save_spider_semi_split_read=@@spider_semi_split_read;
+SET @save_spider_direct_order_limit=@@spider_direct_order_limit;
+
+# 1
+SET spider_quick_mode = 1;
+SET spider_semi_split_read = 1;
+SET spider_direct_order_limit = 9223372036854775807;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 2.
+SET spider_quick_mode = 0;
+SET spider_semi_split_read = 1;
+SET spider_direct_order_limit = 9223372036854775807;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 3.
+SET spider_quick_mode = 1;
+SET spider_semi_split_read = 0;
+SET spider_direct_order_limit = 9223372036854775807;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 4.
+SET spider_quick_mode = 0;
+SET spider_semi_split_read = 0;
+SET spider_direct_order_limit = 9223372036854775807;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 5.
+SET spider_quick_mode = 1;
+SET spider_semi_split_read = 1;
+SET spider_direct_order_limit = 0;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 6.
+SET spider_quick_mode = 1;
+SET spider_semi_split_read = 0;
+SET spider_direct_order_limit = 0;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 7.
+SET spider_quick_mode = 0;
+SET spider_semi_split_read = 1;
+SET spider_direct_order_limit = 0;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 8.
+SET spider_quick_mode = 0;
+SET spider_semi_split_read = 0;
+SET spider_direct_order_limit = 0;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 9.
+SET spider_quick_mode = 1;
+SET spider_semi_split_read = 1;
+SET spider_direct_order_limit = -1;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 10.
+SET spider_quick_mode = 1;
+SET spider_semi_split_read = 0;
+SET spider_direct_order_limit = -1;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 11.
+SET spider_quick_mode = 0;
+SET spider_semi_split_read = 1;
+SET spider_direct_order_limit = -1;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+# 12.
+SET spider_quick_mode = 0;
+SET spider_semi_split_read = 0;
+SET spider_direct_order_limit = -1;
+select distinct d from t1 where c=0 order by a desc limit 5;
+select distinct d from t1 order by a desc limit 5;
+select distinct d from t1 where c=0 order by a desc limit 8;
+select distinct d from t1 order by a desc limit 8;
+
+--source ../include/spider_drop_database.inc
