@@ -457,7 +457,7 @@ Field *Item_sum_hybrid_simple::create_tmp_field(bool group, TABLE *table)
   return NULL;
 }
 
-void Item_sum_hybrid_simple::reset_field()
+void Item_sum_hybrid_simple::reset_field(bool ignore_direct_reset)
 {
   switch(result_type()) {
   case STRING_RESULT:

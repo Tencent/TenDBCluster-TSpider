@@ -367,14 +367,6 @@ public:
   int8 max_arg_level;     /* max level of unbound column references          */
   int8 max_sum_func_level;/* max level of aggregation for embedded functions */
   bool quick_group;			/* If incremental update of fields */
-  
-  /**
-    Used in reset_field(),
-    In Item_sum_hybrid::reset_field() and Item_sum_sum::reset_field()
-    it tells wether it is called by end_unique_update()
-  */
-  bool from_end_unique_update;
-
   /*
     This list is used by the check for mixing non aggregated fields and
     sum functions in the ONLY_FULL_GROUP_BY_MODE. We save all outer fields
@@ -458,7 +450,7 @@ public:
     Item_sum is used only if quick_group is not null. Otherwise
     copy_or_same() is used to obtain a copy of this item.
   */
-  virtual void reset_field()=0;
+  virtual void reset_field(bool ignore_direct_reset=false)=0;
   /*
     Called for each new value in the group, when temporary table is in use.
     Similar to add(), but uses temporary table field to obtain current value,
@@ -537,7 +529,6 @@ public:
     aggr= NULL;
     with_distinct= FALSE;
     force_copy_fields= FALSE;
-    from_end_unique_update = FALSE;
   }
 
   /**
@@ -747,7 +738,7 @@ public:
   {
     return type_handler()->Item_get_date(this, ltime, fuzzydate);
   }
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
 };
 
 
@@ -806,7 +797,7 @@ public:
   { return Type_handler_hybrid_field_type::type_handler(); }
   void fix_length_and_dec_double();
   void fix_length_and_dec_decimal();
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
   void update_field();
   void no_rows_in_result() {}
   const char *func_name() const 
@@ -878,7 +869,7 @@ public:
     Item_sum::make_const();
   }
   longlong val_int();
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
   void update_field();
   void direct_add(longlong add_count);
   const char *func_name() const 
@@ -927,7 +918,7 @@ public:
   longlong val_int() { return val_int_from_real(); }
   my_decimal *val_decimal(my_decimal *);
   String *val_str(String *str);
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
   void update_field();
   Item *result_item(THD *thd, Field *field);
   void no_rows_in_result() {}
@@ -994,7 +985,7 @@ public:
   bool add();
   double val_real();
   my_decimal *val_decimal(my_decimal *);
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
   void update_field();
   Item *result_item(THD *thd, Field *field);
   void no_rows_in_result() {}
@@ -1069,7 +1060,7 @@ protected:
   longlong val_int();
   my_decimal *val_decimal(my_decimal *);
   bool get_date(MYSQL_TIME *ltime, ulonglong fuzzydate);
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
   String *val_str(String *);
   const Type_handler *real_type_handler() const
   {
@@ -1139,7 +1130,7 @@ public:
   enum Sumfunctype sum_func () const {return SUM_BIT_FUNC;}
   void clear();
   longlong val_int();
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
   void update_field();
   void fix_length_and_dec()
   { decimals= 0; max_length=21; unsigned_flag= 1; maybe_null= null_value= 0; }
@@ -1357,7 +1348,7 @@ public:
     str->copy(buf);
     return str;
   }
-  void reset_field(){DBUG_ASSERT(0);}
+  void reset_field(bool ignore_direct_reset){DBUG_ASSERT(0);}
   void update_field(){DBUG_ASSERT(0);}
   void clear();
   void cleanup();
@@ -1546,7 +1537,7 @@ public:
 
   void clear();
   bool add();
-  void reset_field() {};
+  void reset_field(bool ignore_direct_reset) {};
   void update_field() {};
   void cleanup();
   virtual void print(String *str, enum_query_type query_type);
@@ -1821,7 +1812,7 @@ public:
   }
   void clear();
   bool add();
-  void reset_field() { DBUG_ASSERT(0); }        // not used
+  void reset_field(bool ignore_direct_reset) { DBUG_ASSERT(0); }        // not used
   void update_field() { DBUG_ASSERT(0); }       // not used
   bool fix_fields(THD *,Item **);
   bool setup(THD *thd);

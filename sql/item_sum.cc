@@ -2241,7 +2241,7 @@ my_decimal *Item_sum_variance::val_decimal(my_decimal *dec_buf)
 }
 
 
-void Item_sum_variance::reset_field()
+void Item_sum_variance::reset_field(bool ignore_direct_reset)
 {
   double nr;
   uchar *res= result_field->ptr;
@@ -2656,7 +2656,7 @@ bool Item_sum_and::add()
 ** reset result of a Item_sum with is saved in a tmp_table
 *************************************************************************/
 
-void Item_sum_num::reset_field()
+void Item_sum_num::reset_field(bool ignore_direct_reset)
 {
   double nr= args[0]->val_real();
   uchar *res=result_field->ptr;
@@ -2675,7 +2675,7 @@ void Item_sum_num::reset_field()
 }
 
 
-void Item_sum_hybrid::reset_field()
+void Item_sum_hybrid::reset_field(bool ignore_direct_reset)
 {
   Item *UNINIT_VAR(tmp_item), *arg0;
   DBUG_ENTER("Item_sum_hybrid::reset_field");
@@ -2770,7 +2770,7 @@ void Item_sum_hybrid::reset_field()
 
   if (unlikely(direct_added))
   {
-    if (!from_end_unique_update)
+    if (!ignore_direct_reset)
       direct_added= FALSE;
     value->store(tmp_item);
   }
@@ -2778,7 +2778,7 @@ void Item_sum_hybrid::reset_field()
 }
 
 
-void Item_sum_sum::reset_field()
+void Item_sum_sum::reset_field(bool ignore_direct_reset)
 {
   my_bool null_flag;
   DBUG_ASSERT (aggr->Aggrtype() != Aggregator::DISTINCT_AGGREGATOR);
@@ -2803,7 +2803,7 @@ void Item_sum_sum::reset_field()
 
   if (unlikely(direct_added))
   {
-    if (!from_end_unique_update)
+    if (!ignore_direct_reset)
       direct_added= FALSE;
     direct_reseted_field= TRUE;
     null_flag= direct_sum_is_null;
@@ -2818,7 +2818,7 @@ void Item_sum_sum::reset_field()
 }
 
 
-void Item_sum_count::reset_field()
+void Item_sum_count::reset_field(bool ignore_direct_reset)
 {
   DBUG_ENTER("Item_sum_count::reset_field");
   uchar *res=result_field->ptr;
@@ -2839,7 +2839,7 @@ void Item_sum_count::reset_field()
 }
 
 
-void Item_sum_avg::reset_field()
+void Item_sum_avg::reset_field(bool ignore_direct_reset)
 {
   uchar *res=result_field->ptr;
   DBUG_ASSERT (aggr->Aggrtype() != Aggregator::DISTINCT_AGGREGATOR);
@@ -2875,7 +2875,7 @@ void Item_sum_avg::reset_field()
 }
 
 
-void Item_sum_bit::reset_field()
+void Item_sum_bit::reset_field(bool ignore_direct_reset)
 {
   reset_and_add();
   int8store(result_field->ptr, bits);

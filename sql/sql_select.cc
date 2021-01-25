@@ -21301,10 +21301,7 @@ static bool prepare_sum_aggregators(Item_sum **func_ptr, bool need_distinct) {
 
 static void init_tmptable_sum_functions(Item_sum **func_ptr, bool is_end_unique_update) {
   Item_sum *func;
-  while ((func = *(func_ptr++))) {
-    func->from_end_unique_update = is_end_unique_update;
-    func->reset_field();
-  }
+  while ((func = *(func_ptr++))) func->reset_field(is_end_unique_update);
 }
 
 /** Update record 0 in tmp_table from record 1. */
