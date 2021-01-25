@@ -1,0 +1,79 @@
+# test cases for complex select query on spider
+# including DISTINCT / GROUP BY / ORDER BY / LIMIT / AGGRs, etc
+# three spider system variables are invovled in the test, which are
+# 1. spider_quick_mode, test under [0 | 1]
+# 2. spider_semi_split_read, test under [0 | 1]
+# 3. spider_direct_order_limit, test under [-1 | 0 | 9223372036854775807]
+
+# TODO: in the future, the `spider_semi_split_read` and `spider_direct_order_limit` should be deprecated
+
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = c1 INT PRIMARY KEY, c2 INT, c3 INT, KEY kc2(c2)
+--let $TABLE_SHARD_KEY = c1
+--source ../include/spider_create_table_nocrc_helper.inc
+
+--echo
+--echo test
+
+SET @save_spider_quick_mode=@@spider_quick_mode;
+SET @save_spider_semi_split_read=@@spider_semi_split_read;
+SET @save_spider_direct_order_limit=@@spider_direct_order_limit;
+--let $quick_mode = 1
+--let $semi_split_read = 1
+--let $direct_order_limit = 9223372036854775807
+--source ../t/complex_select_spider.inc
+
+--let $quick_mode = 0
+--let $semi_split_read = 1
+--let $direct_order_limit = 9223372036854775807
+--source ../t/complex_select_spider.inc
+
+--let $quick_mode = 1
+--let $semi_split_read = 1
+--let $direct_order_limit = -1
+--source ../t/complex_select_spider.inc
+
+--let $quick_mode = 0
+--let $semi_split_read = 1
+--let $direct_order_limit = -1
+--source ../t/complex_select_spider.inc
+
+
+
+--let $quick_mode = 2
+--let $semi_split_read = 1
+--let $direct_order_limit = 9223372036854775807
+--source ../t/complex_select_spider.inc
+
+--let $quick_mode = 3
+--let $semi_split_read = 1
+--let $direct_order_limit = 9223372036854775807
+--source ../t/complex_select_spider.inc
+
+--let $quick_mode = 2
+--let $semi_split_read = 1
+--let $direct_order_limit = -1
+--source ../t/complex_select_spider.inc
+
+--let $quick_mode = 3
+--let $semi_split_read = 1
+--let $direct_order_limit = -1
+--source ../t/complex_select_spider.inc
+
+
+# reset parameters
+SET spider_quick_mode=@save_spider_quick_mode;
+SET spider_semi_split_read=@save_spider_semi_split_read;
+SET spider_direct_order_limit=@save_spider_direct_order_limit;
+
+--source ../include/spider_drop_database.inc
+# end of the test
