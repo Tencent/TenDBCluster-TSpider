@@ -1,0 +1,126 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+test
+connection master_1;
+SHOW VARIABLES LIKE '%spider%';
+Variable_name	Value
+spider_auto_increment_mode	0
+spider_auto_increment_mode_switch	ON
+spider_auto_increment_mode_value	12
+spider_auto_increment_step	17
+spider_bgs_dml	0
+spider_bgs_first_read	2
+spider_bgs_mode	0
+spider_bgs_second_read	100
+spider_bulk_size	16000
+spider_bulk_update_mode	2
+spider_bulk_update_size	16000
+spider_conn_recycle_mode	1
+spider_conn_wait_timeout	20
+spider_connect_retry_count	20
+spider_connect_retry_interval	1000
+spider_connect_timeout	6
+spider_direct_dup_insert	1
+spider_direct_insert_ignore	0
+spider_direct_limit_in_group	OFF
+spider_direct_order_limit	10000
+spider_error_when_flush_server	OFF
+spider_fetch_minimum_columns	ON
+spider_first_read	0
+spider_force_commit	2
+spider_general_log	OFF
+spider_get_sts_or_crd	OFF
+spider_group_by_handler	OFF
+spider_idle_conn_recycle_interval	300
+spider_ignore_autocommit	OFF
+spider_ignore_create_like	ON
+spider_ignore_single_select_index	ON
+spider_ignore_single_update_index	ON
+spider_index_hint_pushdown	ON
+spider_internal_limit	9223372036854775807
+spider_internal_offset	0
+spider_internal_sql_log_off	0
+spider_internal_xa	OFF
+spider_internal_xa_id_type	0
+spider_internal_xa_snapshot	0
+spider_log_result_error_with_sql	3
+spider_log_result_errors	1
+spider_low_mem_read	1
+spider_max_connections	0
+spider_max_order	32767
+spider_modify_status_interval	28800
+spider_net_read_timeout	3600
+spider_net_write_timeout	3600
+spider_not_convert_binary	ON
+spider_not_show_partition	OFF
+spider_parallel_group_order	ON
+spider_parallel_limit	OFF
+spider_query_one_shard	OFF
+spider_quick_mode	1
+spider_quick_mode_only_select	ON
+spider_quick_page_size	1000
+spider_read_only_mode	0
+spider_remote_autocommit	-1
+spider_remote_default_database	
+spider_remote_sql_log_off	0
+spider_remote_trx_isolation	-1
+spider_rone_shard_switch	ON
+spider_second_read	-1
+spider_semi_split_read	1
+spider_semi_split_read_limit	9223372036854775807
+spider_semi_trx	ON
+spider_semi_trx_isolation	-1
+spider_slow_log	OFF
+spider_split_read	9223372036854775807
+spider_status_least	3600
+spider_sync_autocommit	ON
+spider_sync_time_zone	ON
+spider_sync_trx_isolation	ON
+spider_trans_rollback	OFF
+spider_transaction_one_shard	OFF
+spider_use_all_conns_snapshot	OFF
+spider_use_consistent_snapshot	OFF
+spider_version	3.5.0
+spider_with_begin_commit	OFF
+spider_xa_register_mode	1
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

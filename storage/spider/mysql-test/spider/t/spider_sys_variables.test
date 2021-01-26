@@ -1,0 +1,16 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+
+--echo
+--echo test
+
+--connection master_1
+SHOW VARIABLES LIKE '%spider%';
+
+--source ../include/spider_drop_database.inc

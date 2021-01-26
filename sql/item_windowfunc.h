@@ -317,7 +317,7 @@ class Item_sum_hybrid_simple : public Item_sum,
   double val_real();
   longlong val_int();
   my_decimal *val_decimal(my_decimal *);
-  void reset_field();
+  void reset_field(bool ignore_direct_reset);
   String *val_str(String *);
   bool get_date(MYSQL_TIME *ltime, ulonglong fuzzydate);
   const Type_handler *type_handler() const

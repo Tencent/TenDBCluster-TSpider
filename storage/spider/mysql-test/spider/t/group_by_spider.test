@@ -1,0 +1,366 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i INT PRIMARY KEY AUTO_INCREMENT, spID int(10) unsigned, userID int(10) unsigned, score smallint(5) unsigned, lsg char(40), date date
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = userID int(10) unsigned NOT NULL auto_increment, niName char(15), passwd char(8), mail char(50), isAukt enum('N','Y') DEFAULT 'N', vName char(30), nName char(40), adr char(60), plz char(5), ort char(35), land char(20), PRIMARY KEY (userID)
+--let $TABLE_SHARD_KEY = userID
+--source ../include/spider_create_table_helper.inc
+
+--echo
+--echo test
+
+--connection master_1
+
+INSERT INTO t1(spID, userID, score, lsg, date) VALUES (1,1,1,'','0000-00-00');
+INSERT INTO t1(spID, userID, score, lsg, date) VALUES (2,2,2,'','0000-00-00');
+INSERT INTO t1(spID, userID, score, lsg, date) VALUES (2,1,1,'','0000-00-00');
+INSERT INTO t1(spID, userID, score, lsg, date) VALUES (3,3,3,'','0000-00-00');
+
+INSERT INTO t2 VALUES (1,'name','pass','mail','Y','v','n','adr','1','1','1');
+INSERT INTO t2 VALUES (2,'name','pass','mail','Y','v','n','adr','1','1','1');
+INSERT INTO t2 VALUES (3,'name','pass','mail','Y','v','n','adr','1','1','1');
+INSERT INTO t2 VALUES (4,'name','pass','mail','Y','v','n','adr','1','1','1');
+INSERT INTO t2 VALUES (5,'name','pass','mail','Y','v','n','adr','1','1','1');
+
+SELECT t2.userid, MIN(t1.score) FROM t1, t2 WHERE t1.userID=t2.userID GROUP BY t2.userid;
+SELECT t2.userid, MIN(t1.score) FROM t1, t2 WHERE t1.userID=t2.userID GROUP BY t2.userid ORDER BY NULL;
+SELECT t2.userid, MIN(t1.score) FROM t1, t2 WHERE t1.userID=t2.userID AND t1.spID=2  GROUP BY t2.userid;
+SELECT t2.userid, MIN(t1.score+0.0) FROM t1, t2 WHERE t1.userID=t2.userID AND t1.spID=2  GROUP BY t2.userid;
+SELECT t2.userid, MIN(t1.score+0.0) FROM t1, t2 WHERE t1.userID=t2.userID AND t1.spID=2  GROUP BY t2.userid ORDER BY NULL;
+
+--connection child2_1
+DROP TABLE t1,t2;
+
+--connection child2_2
+DROP TABLE t1,t2;
+
+--connection master_1
+DROP TABLE t1,t2;
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = PID int(10) unsigned NOT NULL auto_increment, payDate date DEFAULT '0000-00-00' NOT NULL, recDate datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, URID int(10) unsigned DEFAULT '0' NOT NULL, CRID int(10) unsigned DEFAULT '0' NOT NULL, amount int(10) unsigned DEFAULT '0' NOT NULL, operator int(10) unsigned, method enum('unknown','cash','dealer','check','card','lazy','delayed','test') DEFAULT 'unknown' NOT NULL, DIID int(10) unsigned, reason char(1) binary DEFAULT '' NOT NULL, code_id int(10) unsigned, qty mediumint(8) unsigned DEFAULT '0' NOT NULL, PRIMARY KEY (PID), KEY URID (URID), KEY reason (reason), KEY method (method), KEY payDate (payDate)
+--let $TABLE_SHARD_KEY = PID
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+
+INSERT INTO t1 VALUES (1,'1970-01-01','1997-10-17 00:00:00',2529,1,21000,11886,'check',0,'F',16200,6);
+
+--error 1056
+SELECT COUNT(P.URID),SUM(P.amount),P.method, MIN(PP.recdate+0) > 19980501000000   AS IsNew FROM t1 AS P JOIN t1 as PP WHERE P.URID = PP.URID GROUP BY method,IsNew;
+
+#
+# Problem with GROUP BY + ORDER BY when no match
+# Tested with locking
+#
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = cid mediumint(9) NOT NULL auto_increment, firstname varchar(32) DEFAULT '' NOT NULL, surname varchar(32) DEFAULT '' NOT NULL, PRIMARY KEY (cid)
+--let $TABLE_SHARD_KEY = cid
+--source ../include/spider_create_table_helper.inc
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = call_id mediumint(8) NOT NULL auto_increment, contact_id mediumint(8) DEFAULT '0' NOT NULL, PRIMARY KEY (call_id), KEY contact_id (contact_id)
+--let $TABLE_SHARD_KEY = call_id
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+INSERT INTO t1 VALUES (1,'That','Guy');
+INSERT INTO t1 VALUES (2,'Another','Gent');
+
+lock tables t1 read,t2 write;
+
+INSERT INTO t2 VALUES (10,2);
+INSERT INTO t2 VALUES (18,2);
+INSERT INTO t2 VALUES (62,2);
+INSERT INTO t2 VALUES (91,2);
+INSERT INTO t2 VALUES (92,2);
+
+SELECT cid, CONCAT(firstname, ' ', surname), COUNT(call_id) FROM t1 LEFT JOIN t2 ON cid=contact_id WHERE firstname like '%foo%' GROUP BY cid;
+SELECT cid, CONCAT(firstname, ' ', surname), COUNT(call_id) FROM t1 LEFT JOIN t2 ON cid=contact_id WHERE firstname like '%foo%' GROUP BY cid ORDER BY NULL;
+SELECT HIGH_PRIORITY cid, CONCAT(firstname, ' ', surname), COUNT(call_id) FROM t1 LEFT JOIN t2 ON cid=contact_id WHERE firstname like '%foo%' GROUP BY cid ORDER BY surname, firstname;
+
+--connection child2_1
+drop table t2;
+unlock tables;
+drop table t1;
+
+--connection child2_2
+drop table t2;
+unlock tables;
+drop table t1;
+
+--connection master_1
+drop table t2;
+unlock tables;
+drop table t1;
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = bug_id mediumint(9) NOT NULL auto_increment, groupset bigint(20) DEFAULT '0' NOT NULL, assigned_to mediumint(9) DEFAULT '0' NOT NULL, bug_file_loc text, bug_severity enum('blocker','critical','major','normal','minor','trivial','enhancement') DEFAULT 'blocker' NOT NULL, bug_status enum('','NEW','ASSIGNED','REOPENED','RESOLVED','VERIFIED','CLOSED') DEFAULT 'NEW' NOT NULL, creation_ts datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, delta_ts timestamp, short_desc mediumtext, long_desc mediumtext, op_sys enum('All','Windows 3.1','Windows 95','Windows 98','Windows NT','Windows 2000','Linux','other') DEFAULT 'All' NOT NULL, priority enum('P1','P2','P3','P4','P5') DEFAULT 'P1' NOT NULL, product varchar(64) DEFAULT '' NOT NULL, rep_platform enum('All','PC','VTD-8','Other'), reporter mediumint(9) DEFAULT '0' NOT NULL, version varchar(16) DEFAULT '' NOT NULL, component varchar(50) DEFAULT '' NOT NULL, resolution enum('','FIXED','INVALID','WONTFIX','LATER','REMIND','DUPLICATE','WORKSFORME') DEFAULT '' NOT NULL, target_milestone varchar(20) DEFAULT '' NOT NULL, qa_contact mediumint(9) DEFAULT '0' NOT NULL, status_whiteboard mediumtext NOT NULL, votes mediumint(9) DEFAULT '0' NOT NULL, PRIMARY KEY (bug_id), KEY assigned_to (assigned_to), KEY creation_ts (creation_ts), KEY delta_ts (delta_ts), KEY bug_severity (bug_severity), KEY bug_status (bug_status), KEY op_sys (op_sys), KEY priority (priority), KEY product (product), KEY reporter (reporter), KEY version (version), KEY component (component), KEY resolution (resolution), KEY target_milestone (target_milestone), KEY qa_contact (qa_contact), KEY votes (votes)
+--let $TABLE_SHARD_KEY = bug_id
+--source ../include/spider_create_table_helper.inc
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = id int primary key, value tinytext, program varchar(64), initialowner tinytext NOT NULL, initialqacontact tinytext NOT NULL, description mediumtext NOT NULL
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+INSERT INTO t1 VALUES (1,0,0,'','normal','','2000-02-10 09:25:12',20000321114747,'','','Linux','P1','TestProduct','PC',3,'other','TestComponent','','M1',0,'',0);
+INSERT INTO t1 VALUES (9,0,0,'','enhancement','','2000-03-10 11:49:36',20000321114747,'','','All','P5','AAAAA','PC',3,'2.00 CD - Pre','BBBBBBBBBBBBB - conversion','','',0,'',0);
+INSERT INTO t1 VALUES (10,0,0,'','enhancement','','2000-03-10 18:10:16',20000321114747,'','','All','P4','AAAAA','PC',3,'2.00 CD - Pre','BBBBBBBBBBBBB - conversion','','',0,'',0);
+INSERT INTO t1 VALUES (7,0,0,'','critical','','2000-03-09 10:50:21',20000321114747,'','','All','P1','AAAAA','PC',3,'2.00 CD - Pre','BBBBBBBBBBBBB - generic','','',0,'',0);
+INSERT INTO t1 VALUES (6,0,0,'','normal','','2000-03-09 10:42:44',20000321114747,'','','All','P2','AAAAA','PC',3,'2.00 CD - Pre','kkkkkkkkkkk lllllllllll','','',0,'',0);
+INSERT INTO t1 VALUES (8,0,0,'','major','','2000-03-09 11:32:14',20000321114747,'','','All','P3','AAAAA','PC',3,'2.00 CD - Pre','kkkkkkkkkkk lllllllllll','','',0,'',0);
+INSERT INTO t1 VALUES (5,0,0,'','enhancement','','2000-03-09 10:38:59',20000321114747,'','','All','P5','CCC/CCCCCC','PC',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (4,0,0,'','normal','','2000-03-08 18:32:14',20000321114747,'','','other','P2','TestProduct','Other',3,'other','TestComponent2','','',0,'',0);
+INSERT INTO t1 VALUES (3,0,0,'','normal','','2000-03-08 18:30:52',20000321114747,'','','other','P2','TestProduct','Other',3,'other','TestComponent','','',0,'',0);
+INSERT INTO t1 VALUES (2,0,0,'','enhancement','','2000-03-08 18:24:51',20000321114747,'','','All','P2','TestProduct','Other',4,'other','TestComponent2','','',0,'',0);
+INSERT INTO t1 VALUES (11,0,0,'','blocker','','2000-03-13 09:43:41',20000321114747,'','','All','P2','CCC/CCCCCC','PC',5,'7.00','DDDDDDDDD','','',0,'',0);
+INSERT INTO t1 VALUES (12,0,0,'','normal','','2000-03-13 16:14:31',20000321114747,'','','All','P2','AAAAA','PC',3,'2.00 CD - Pre','kkkkkkkkkkk lllllllllll','','',0,'',0);
+INSERT INTO t1 VALUES (13,0,0,'','normal','','2000-03-15 16:20:44',20000321114747,'','','other','P2','TestProduct','Other',3,'other','TestComponent','','',0,'',0);
+INSERT INTO t1 VALUES (14,0,0,'','blocker','','2000-03-15 18:13:47',20000321114747,'','','All','P1','AAAAA','PC',3,'2.00 CD - Pre','BBBBBBBBBBBBB - generic','','',0,'',0);
+INSERT INTO t1 VALUES (15,0,0,'','minor','','2000-03-16 18:03:28',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','DDDDDDDDD','','',0,'',0);
+INSERT INTO t1 VALUES (16,0,0,'','normal','','2000-03-16 18:33:41',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (17,0,0,'','normal','','2000-03-16 18:34:18',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (18,0,0,'','normal','','2000-03-16 18:34:56',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (19,0,0,'','enhancement','','2000-03-16 18:35:34',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (20,0,0,'','enhancement','','2000-03-16 18:36:23',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (21,0,0,'','enhancement','','2000-03-16 18:37:23',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (22,0,0,'','enhancement','','2000-03-16 18:38:16',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','Administration','','',0,'',0);
+INSERT INTO t1 VALUES (23,0,0,'','normal','','2000-03-16 18:58:12',20000321114747,'','','All','P2','CCC/CCCCCC','Other',5,'7.00','DDDDDDDDD','','',0,'',0);
+INSERT INTO t1 VALUES (24,0,0,'','normal','','2000-03-17 11:08:10',20000321114747,'','','All','P2','AAAAAAAA-AAA','PC',3,'2.8','Web Interface','','',0,'',0);
+INSERT INTO t1 VALUES (25,0,0,'','normal','','2000-03-17 11:10:45',20000321114747,'','','All','P2','AAAAAAAA-AAA','PC',3,'2.8','Web Interface','','',0,'',0);
+INSERT INTO t1 VALUES (26,0,0,'','normal','','2000-03-17 11:15:47',20000321114747,'','','All','P2','AAAAAAAA-AAA','PC',3,'2.8','Web Interface','','',0,'',0);
+INSERT INTO t1 VALUES (27,0,0,'','normal','','2000-03-17 17:45:41',20000321114747,'','','All','P2','CCC/CCCCCC','PC',5,'7.00','DDDDDDDDD','','',0,'',0);
+INSERT INTO t1 VALUES (28,0,0,'','normal','','2000-03-20 09:51:45',20000321114747,'','','Windows NT','P2','TestProduct','PC',8,'other','TestComponent','','',0,'',0);
+INSERT INTO t1 VALUES (29,0,0,'','normal','','2000-03-20 11:15:09',20000321114747,'','','All','P5','AAAAAAAA-AAA','PC',3,'2.8','Web Interface','','',0,'',0);
+
+INSERT INTO t2 VALUES (1, 'TestComponent','TestProduct','id0001','','');
+INSERT INTO t2 VALUES (2, 'BBBBBBBBBBBBB - conversion','AAAAA','id0001','','');
+INSERT INTO t2 VALUES (3, 'BBBBBBBBBBBBB - generic','AAAAA','id0001','','');
+INSERT INTO t2 VALUES (4, 'TestComponent2','TestProduct','id0001','','');
+INSERT INTO t2 VALUES (5, 'BBBBBBBBBBBBB - eeeeeeeee','AAAAA','id0001','','');
+INSERT INTO t2 VALUES (6, 'kkkkkkkkkkk lllllllllll','AAAAA','id0001','','');
+INSERT INTO t2 VALUES (7, 'Test Procedures','AAAAA','id0001','','');
+INSERT INTO t2 VALUES (8, 'Documentation','AAAAA','id0003','','');
+INSERT INTO t2 VALUES (9, 'DDDDDDDDD','CCC/CCCCCC','id0002','','');
+INSERT INTO t2 VALUES (10, 'Eeeeeeee Lite','CCC/CCCCCC','id0002','','');
+INSERT INTO t2 VALUES (11, 'Eeeeeeee Full','CCC/CCCCCC','id0002','','');
+INSERT INTO t2 VALUES (12, 'Administration','CCC/CCCCCC','id0002','','');
+INSERT INTO t2 VALUES (13, 'Distribution','CCC/CCCCCC','id0002','','');
+INSERT INTO t2 VALUES (14, 'Setup','CCC/CCCCCC','id0002','','');
+INSERT INTO t2 VALUES (15, 'Unspecified','CCC/CCCCCC','id0002','','');
+INSERT INTO t2 VALUES (16, 'Web Interface','AAAAAAAA-AAA','id0001','','');
+INSERT INTO t2 VALUES (17, 'Host communication','AAAAA','id0001','','');
+select value,description,bug_id from t2 left join t1 on t2.program=t1.product and t2.value=t1.component where program="AAAAA";
+select value,description,COUNT(bug_id) from t2 left join t1 on t2.program=t1.product and t2.value=t1.component where program="AAAAA" group by value;
+select value,description,COUNT(bug_id) from t2 left join t1 on t2.program=t1.product and t2.value=t1.component where program="AAAAA" group by value having COUNT(bug_id) IN (0,2);
+
+--connection child2_1
+DROP TABLE t1,t2;
+
+--connection child2_2
+DROP TABLE t1,t2;
+
+--connection master_1
+DROP TABLE t1,t2;
+
+#
+# Problem with functions and group functions when no matching rows
+#
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i INT PRIMARY KEY, foo int
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+insert into t1 values (1, 1);
+select 1+1, "a",count(*) from t1 where foo in (2);
+insert into t1 values (2, 1);
+select 1+1,"a",count(*) from t1 where foo in (2);
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = spID int(10) unsigned, userID int(10) unsigned, score smallint(5) unsigned, key (spid), key (score)
+--let $TABLE_SHARD_KEY = spid
+--source ../include/spider_create_table_helper.inc
+
+INSERT INTO t1 VALUES (1,1,1),(2,2,2),(2,1,1),(3,3,3),(4,3,3),(5,3,3),(6,3,3),(7,3,3);
+select userid,count(*) from t1 group by userid desc;
+select userid,count(*) from t1 group by userid desc having (count(*)+1) IN (4,3);
+select userid,count(*) from t1 group by userid desc having 3  IN (1,COUNT(*));
+select spid,count(*) from t1 where spid between 1 and 2 group by spid;
+select spid,count(*) from t1 where spid between 1 and 2 group by spid desc;
+select sql_big_result spid,sum(userid) from t1 group by spid desc;
+select sql_big_result score,count(*) from t1 group by score desc;
+
+# not purely group_by bug, but group_by is involved...
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i int primary key auto_increment, a date default null, b date default null
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+insert t1(a,b) values ('1999-10-01','2000-01-10'), ('1997-01-01','1998-10-01');
+select a,min(b) c,count(distinct rand()) from t1 group by a having c<a + interval 1 day;
+
+# Compare with hash keys
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i int primary key auto_increment, a char(1)
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+INSERT INTO t1(a) VALUES ('A'),('B'),('A'),('B'),('A'),('B'),(NULL),('a'),('b'),(NULL),('A'),('B'),(NULL);
+SELECT a FROM t1 GROUP BY a;
+SELECT a,count(*) FROM t1 GROUP BY a;
+SELECT a FROM t1 GROUP BY binary a;
+SELECT a,count(*) FROM t1 GROUP BY binary a;
+SELECT binary a FROM t1 GROUP BY 1;
+SELECT binary a,count(*) FROM t1 GROUP BY 1;
+# Do the same tests with MyISAM temporary tables
+SET BIG_TABLES=1;
+SELECT a FROM t1 GROUP BY a;
+SELECT a,count(*) FROM t1 GROUP BY a;
+SELECT a FROM t1 GROUP BY binary a;
+SELECT a,count(*) FROM t1 GROUP BY binary a;
+SELECT binary a FROM t1 GROUP BY 1;
+SELECT binary a,count(*) FROM t1 GROUP BY 1;
+SET BIG_TABLES=0;
+
+#
+# Test of key >= 256 bytes
+#
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i int primary key auto_increment, a char(193) default NULL, b char(63) default NULL
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+INSERT INTO t1(a, b) VALUES ('abc','def'),('hij','klm');
+SELECT CONCAT(a, b) FROM t1 GROUP BY 1;
+SELECT CONCAT(a, b),count(*) FROM t1 GROUP BY 1;
+SELECT CONCAT(a, b),count(distinct a) FROM t1 GROUP BY 1;
+SELECT 1 FROM t1 GROUP BY CONCAT(a, b);
+INSERT INTO t1(a, b) values ('hij','klm');
+SELECT CONCAT(a, b),count(*) FROM t1 GROUP BY 1;
+
+#
+# Test problem with ORDER BY on a SUM() column
+#
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i int primary key auto_increment, One int unsigned, Two int unsigned, Three int unsigned, Four int unsigned
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+insert into t1(One, Two, Three, Four) values (1,2,1,4),(1,2,2,4),(1,2,3,4),(1,2,4,4),(1,1,1,4),(1,1,2,4),(1,1,3,4),(1,1,4,4),(1,3,1,4),(1,3,2,4),(1,3,3,4),(1,3,4,4);
+select One, Two, sum(Four) from t1 group by One,Two;
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id integer primary key not null auto_increment, gender char(1)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+insert into t1 values (1, 'M'), (2, 'F'),(3, 'F'),(4, 'F'),(5, 'M');
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = i integer primary key not null auto_increment, user_id integer not null, date date
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+insert into t2 values (1, 1, '2002-06-09'),(2, 2, '2002-06-09'),(3, 1, '2002-06-09'),(4, 3, '2002-06-09'),(5, 4, '2002-06-09'),(6, 4, '2002-06-09');
+
+select u.gender as gender, count(distinct  u.id) as dist_count, (count(distinct u.id)/5*100) as percentage from t1 u, t2 l where l.user_id = u.id group by u.gender;
+select u.gender as  gender, count(distinct  u.id) as dist_count, (count(distinct u.id)/5*100) as percentage from t1 u, t2 l where l.user_id = u.id group by u.gender  order by percentage;
+
+#
+# The GROUP BY returned rows in wrong order in 3.23.51
+#
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = ID1 int, ID2 int, ID int NOT NULL AUTO_INCREMENT,PRIMARY KEY(ID)
+--let $TABLE_SHARD_KEY = ID
+--source ../include/spider_create_table_helper.inc
+
+insert into t1 values (1,244,1),(2,243,2),(134,223,3),(185,186,4);
+SET @save_optimizer_switch=@@optimizer_switch;
+SET optimizer_switch='outer_join_with_cache=off';
+select S.ID as xID, S.ID1 as xID1 from t1 as S left join t1 as yS  on S.ID1 between yS.ID1 and yS.ID2;
+select S.ID as xID, S.ID1 as xID1, repeat('*',count(distinct yS.ID)) as Level from t1 as S left join t1 as yS  on S.ID1 between yS.ID1 and yS.ID2 group by xID order by xID1;
+SET optimizer_switch=@save_optimizer_switch;
+
+#
+# Problem with MAX and LEFT JOIN
+#
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = pid int(11) unsigned NOT NULL default '0', c1id int(11) unsigned default NULL, c2id int(11) unsigned default NULL, value int(11) unsigned NOT NULL default '0', UNIQUE KEY pid2 (pid,c1id,c2id), UNIQUE KEY pid (pid,value)
+--let $TABLE_SHARD_KEY = pid
+--source ../include/spider_create_table_helper.inc
+
+INSERT INTO t1 VALUES (1, 1, NULL, 1),(1, 2, NULL, 2),(1, NULL, 3, 3),(1, 4, NULL, 4),(1, 5, NULL, 5);
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = id int(11) unsigned NOT NULL default '0', active enum('Yes','No') NOT NULL default 'Yes', PRIMARY KEY  (id)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+INSERT INTO t2 VALUES (1, 'Yes'),(2, 'No'),(4, 'Yes'),(5, 'No');
+
+--let $TABLE_NAME = t3
+--let $TABLE_BODY = id int(11) unsigned NOT NULL default '0', active enum('Yes','No') NOT NULL default 'Yes', PRIMARY KEY  (id)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+INSERT INTO t3 VALUES (3, 'Yes');
+
+select * from t1 AS m LEFT JOIN t2 AS c1 ON m.c1id = 
+c1.id AND c1.active = 'Yes' LEFT JOIN t3 AS c2 ON m.c2id = c2.id AND 
+c2.active = 'Yes' WHERE m.pid=1  AND (c1.id IS NOT NULL OR c2.id IS NOT NULL);
+select max(value) from t1 AS m LEFT JOIN t2 AS c1 ON 
+m.c1id = c1.id AND c1.active = 'Yes' LEFT JOIN t3 AS c2 ON m.c2id = 
+c2.id AND c2.active = 'Yes' WHERE m.pid=1  AND (c1.id IS NOT NULL OR c2.id IS 
+NOT NULL);
+
+#
+# Test bug in GROUP BY on BLOB that is NULL or empty
+#
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i int primary key auto_increment, a blob null
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+insert into t1(a) values (NULL),(NULL),(NULL),(NULL),(NULL),(NULL),(NULL),(NULL),(NULL),(""),(""),(""),("b");
+select a,count(*) from t1 group by a;
+set big_tables=1;
+select a,count(*) from t1 group by a;
+set big_tables=0;
+
+#
+# Test of GROUP BY ... ORDER BY NULL optimization
+#
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = i int primary key auto_increment, a int not null, b int not null
+--let $TABLE_SHARD_KEY = i
+--source ../include/spider_create_table_helper.inc
+
+insert into t1(a, b) values (1,1),(1,2),(3,1),(3,2),(2,2),(2,1);
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = a int not null, b int not null, key(a)
+--let $TABLE_SHARD_KEY = a
+--source ../include/spider_create_table_helper.inc
+
+insert into t2 values (1,3),(3,1),(2,2),(1,1);
+select t1.a,t2.b from t1,t2 where t1.a=t2.a group by t1.a,t2.b;
+select t1.a,t2.b from t1,t2 where t1.a=t2.a group by t1.a,t2.b ORDER BY NULL;
+
+--source ../include/spider_drop_database.inc

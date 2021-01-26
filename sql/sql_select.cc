@@ -267,7 +267,7 @@ static bool change_refs_to_tmp_fields(THD *thd, Ref_ptr_array ref_pointer_array,
                                       List<Item> &new_list1,
                                       List<Item> &new_list2, uint elements,
                                       List<Item> &items);
-static void init_tmptable_sum_functions(Item_sum **func);
+static void init_tmptable_sum_functions(Item_sum **func, bool is_end_unique_update);
 static void update_tmptable_sum_func(Item_sum **func, TABLE *tmp_table);
 static void copy_sum_funcs(Item_sum **func_ptr, Item_sum **end);
 static bool add_ref_to_table_cond(THD *thd, JOIN_TAB *join_tab);
@@ -2286,13 +2286,17 @@ int JOIN::optimize_stage2() {
     if (group_list)  // GROUP BY honoured first
                      // (DISTINCT was rewritten to GROUP BY if skippable)
     {
+      bool big_result_no_spider =
+          (select_options & SELECT_BIG_RESULT) &&
+          !(join_tab->table && join_tab->table->file &&
+            join_tab->table->file->is_spider_storage_engine());
       /*
         When there is SQL_BIG_RESULT do not sort using index for GROUP BY,
         and thus force sorting on disk unless a group min-max optimization
         is going to be used as it is applied now only for one table queries
         with covering indexes.
       */
-      if (!(select_options & SELECT_BIG_RESULT) ||
+      if (!big_result_no_spider ||
           (tab->select && tab->select->quick &&
            tab->select->quick->get_type() ==
                QUICK_SELECT_I::QS_TYPE_GROUP_MIN_MAX)) {
@@ -8390,12 +8394,16 @@ bool JOIN::get_best_combination() {
    Up to 2 tmp tables are actually used, but it's hard to tell exact number
    at this stage.
  */
+  bool big_result_no_spider =
+          (select_options & SELECT_BIG_RESULT) &&
+          !(join_tab->table && join_tab->table->file &&
+            join_tab->table->file->is_spider_storage_engine());
   uint aggr_tables =
       (group_list ? 1 : 0) +
       (select_distinct ? (tmp_table_param.using_outer_summary_function ? 2 : 1)
                        : 0) +
       (order ? 1 : 0) +
-      (select_options & (SELECT_BIG_RESULT | OPTION_BUFFER_RESULT) ? 1 : 0);
+      ((select_options & OPTION_BUFFER_RESULT) || big_result_no_spider ? 1 : 0);
 
   if (aggr_tables == 0) aggr_tables = 1; /* For group by pushdown */
 
@@ -18344,7 +18352,7 @@ static enum_nested_loop_state end_update(JOIN *join,
     goto end;
   }
 
-  init_tmptable_sum_functions(join->sum_funcs);
+  init_tmptable_sum_functions(join->sum_funcs, FALSE);
   if (unlikely(copy_funcs(join_tab->tmp_table_param->items_to_copy, join->thd)))
     DBUG_RETURN(NESTED_LOOP_ERROR); /* purecov: inspected */
   if (unlikely((error = table->file->ha_write_tmp_row(table->record[0])))) {
@@ -18382,7 +18390,7 @@ static enum_nested_loop_state end_unique_update(JOIN *join,
 
   if (end_of_records) DBUG_RETURN(NESTED_LOOP_OK);
 
-  init_tmptable_sum_functions(join->sum_funcs);
+  init_tmptable_sum_functions(join->sum_funcs, TRUE);
   copy_fields(join_tab->tmp_table_param);  // Groups are copied twice.
   if (copy_funcs(join_tab->tmp_table_param->items_to_copy, join->thd))
     DBUG_RETURN(NESTED_LOOP_ERROR); /* purecov: inspected */
@@ -21291,9 +21299,9 @@ static bool prepare_sum_aggregators(Item_sum **func_ptr, bool need_distinct) {
   DBUG_RETURN(FALSE);
 }
 
-static void init_tmptable_sum_functions(Item_sum **func_ptr) {
+static void init_tmptable_sum_functions(Item_sum **func_ptr, bool is_end_unique_update) {
   Item_sum *func;
-  while ((func = *(func_ptr++))) func->reset_field();
+  while ((func = *(func_ptr++))) func->reset_field(is_end_unique_update);
 }
 
 /** Update record 0 in tmp_table from record 1. */
