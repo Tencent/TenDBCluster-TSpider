@@ -80,16 +80,6 @@ extern HASH spider_open_connections;
 pthread_mutex_t spider_open_conn_mutex;
 const char spider_dig_upper[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-tm *spider_get_time(ulong &u_sec) {
-  my_hrtime_t current_time;
-  current_time = my_hrtime();
-  time_t cur_time = (time_t)time((time_t *)0);
-  struct tm lt;
-  struct tm *l_time = localtime_r(&cur_time, &lt);
-  u_sec = hrtime_sec_part(current_time);
-  return l_time;
-}
-
 int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
                       int link_idx) {
   int error_num, connect_retry_count;
@@ -168,8 +158,6 @@ int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
            (char *)server->password, server->port, (char *)server->socket,
            (char *)share->server_names[link_idx], connect_retry_count,
            connect_retry_interval))) {
-    ulong usec;
-    struct tm *l_time = spider_get_time(usec);
 
     if (conn->thd) {
       conn->connect_error_thd = conn->thd;
@@ -179,12 +167,8 @@ int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
       if ((conn->connect_error_with_message = thd->is_error()))
         strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
     }
-    fprintf(stderr,
-            "%04d%02d%02d %02d:%02d:%02d.%ld  [ERROR SPIDER RESULT] "
-            "failed to connect the hosts: %s, port: %ld, error_num:%d\n",
-            l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-            l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-            share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
+    log_spider_connect_host_failed(share->tgt_hosts[link_idx], 
+                                   share->tgt_ports[link_idx], error_num);
     DBUG_RETURN(error_num);
   }
   conn->connect_error = 0;
@@ -609,15 +593,9 @@ int spider_db_errorno(SPIDER_CONN *conn) {
       push_warning(current_thd, SPIDER_WARN_LEVEL_WARN, error_num,
                    conn->db_conn->get_error());
       if (spider_param_log_result_errors() >= 3) {
-        ulong usec;
-        struct tm *l_time = spider_get_time(usec);
-        fprintf(stderr,
-                "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-                "to %lld: %d %s\n",
-                l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-                l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-                (long long int)current_thd->thread_id, error_num,
-                conn->db_conn->get_error());
+        const char *info = "[WARN SPIDER RESULT]";
+        log_spider_error_with_info(info, (long long int)current_thd->thread_id, 
+                                   error_num, conn->db_conn->get_error());
       }
       if (!conn->mta_conn_mutex_unlock_later) {
         spider_mta_conn_mutex_unlock(conn);
@@ -634,15 +612,9 @@ int spider_db_errorno(SPIDER_CONN *conn) {
     *conn->need_mon = error_num;
     my_message(error_num, conn->db_conn->get_error(), MYF(0));
     if (spider_param_log_result_errors() >= 1) {
-      ulong usec;
-      struct tm *l_time = spider_get_time(usec);
-      fprintf(stderr,
-              "%04d%02d%02d %02d:%02d:%02d.%ld [ERROR SPIDER RESULT] "
-              "to %lld: %d %s\n",
-              l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-              l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-              (long long int)current_thd->thread_id, error_num,
-              conn->db_conn->get_error());
+      const char *info = "[ERROR SPIDER RESULT]";
+      log_spider_error_with_info(info, (long long int)current_thd->thread_id, 
+                                 error_num, conn->db_conn->get_error());
     }
     if (!conn->mta_conn_mutex_unlock_later) {
       spider_mta_conn_mutex_unlock(conn);
@@ -1944,14 +1916,9 @@ int spider_db_fetch_for_item_sum_func(SPIDER_DB_ROW *row, Item_sum *item_sum,
       if (!row->is_null())
         item_sum_count->direct_add(row->val_int());
       else {
-        ulong usec;
-        struct tm *l_time = spider_get_time(usec);
-        fprintf(stderr,
-                "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-                " from  %s\n",
-                l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-                l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-                "spider_db_fetch_for_item_sum_func");
+        const char* info = "[WARN SPIDER RESULT]";
+        const char* func_name = "spider_db_fetch_for_item_sum_func";
+        log_spider_result_with_time(info, func_name);
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       row->next();
@@ -2083,14 +2050,9 @@ int spider_db_append_match_fetch(ha_spider *spider, st_spider_ft_info *ft_first,
       if (!row->is_null())
         ft_info->score = (float)row->val_real();
       else {
-        ulong usec;
-        struct tm *l_time = spider_get_time(usec);
-        fprintf(stderr,
-                "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-                " from  %s\n",
-                l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-                l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-                "spider_db_append_match_fetch");
+        const char* info = "[WARN SPIDER RESULT]";
+        const char* func_name = "spider_db_append_match_fetch";
+        log_spider_result_with_time(info, func_name);
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       row->next();
@@ -2259,14 +2221,9 @@ int spider_db_fetch_table(ha_spider *spider, uchar *buf, TABLE *table,
       }
 #endif
       else {
-        ulong usec;
-        struct tm *l_time = spider_get_time(usec);
-        fprintf(stderr,
-                "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-                " from  %s\n",
-                l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-                l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-                "spider_db_fetch_table");
+        const char* info = "[WARN SPIDER RESULT]";
+        const char* func_name = "spider_db_fetch_table";
+        log_spider_result_with_time(info, func_name);
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       row->next();
@@ -2364,14 +2321,9 @@ int spider_db_fetch_key(ha_spider *spider, uchar *buf, TABLE *table,
     }
 #endif
     else {
-      ulong usec;
-      struct tm *l_time = spider_get_time(usec);
-      fprintf(stderr,
-              "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-              " from  %s\n",
-              l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-              l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-              "spider_db_fetch_key");
+      const char* info = "[WARN SPIDER RESULT]";
+      const char* func_name = "spider_db_fetch_key";
+      log_spider_result_with_time(info, func_name);
       DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
     }
     row->next();
@@ -2466,14 +2418,9 @@ int spider_db_fetch_minimum_columns(ha_spider *spider, uchar *buf, TABLE *table,
     }
 #endif
     else {
-      ulong usec;
-      struct tm *l_time = spider_get_time(usec);
-      fprintf(stderr,
-              "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-              " from  %s\n",
-              l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-              l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-              "spider_db_fetch_minimum_columns");
+      const char* info = "[WARN SPIDER RESULT]";
+      const char* func_name = "spider_db_fetch_minimum_columns";
+      log_spider_result_with_time(info, func_name);
       DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
     }
     row->next();
