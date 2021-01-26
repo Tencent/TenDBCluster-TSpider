@@ -93,7 +93,13 @@ public:
   Loose_scan_opt():
     try_loosescan(FALSE),
     bound_sj_equalities(0),
-    quick_uses_applicable_index(FALSE)
+    quick_uses_applicable_index(FALSE),
+    quick_max_loose_keypart(0),
+    best_loose_scan_key(0),
+    best_loose_scan_cost(0),
+    best_loose_scan_records(0),
+    best_loose_scan_start_key(NULL),
+    best_max_loose_keypart(0)
   {
     /* Protected by quick_uses_applicable_index */
     LINT_INIT(quick_max_loose_keypart);
