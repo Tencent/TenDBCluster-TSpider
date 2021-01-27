@@ -1596,7 +1596,7 @@ int JOIN::optimize_inner() {
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   {
-    TABLE_LIST *tbl, *last_tb1;
+    TABLE_LIST *tbl, *last_tb1 = NULL;
     uint spider_use_mul_partition_count = 0;
     uint table_num = 0;
     uint current_used_shard = 0;

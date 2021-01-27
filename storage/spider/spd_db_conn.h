@@ -725,4 +725,158 @@ int spider_db_close_handler(ha_spider *spider, SPIDER_CONN *conn, int link_idx,
 bool spider_db_conn_is_network_error(int error_num);
 
 CHARSET_INFO *spider_get_item_field_charset(Item *item, ha_spider *spider);
-tm *spider_get_time(ulong &u_sec);
+// tm *spider_get_time(ulong &u_sec); // deprecated
+
+/**
+  log spider result to stderr with current time and function name
+  @param  info               information about the log, e.g. "[WARN SPIDER RESULT]"
+  @param  func_name          name of the caller
+*/ 
+inline void log_spider_result_with_time(const char *info, const char *func_name) {
+  ulong usec = 0;
+  time_t cur_time;
+  struct tm l_time;
+  cur_time = (time_t)time((time_t *)0);
+  localtime_r(&cur_time, &l_time);
+  usec = hrtime_sec_part(my_hrtime());
+  fprintf(stderr,
+          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
+          " from  %s\n",
+          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
+          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
+          info, func_name);
+}
+
+
+/**
+  log spider receive result to stderr with current time and function name
+  @param  sc                 security_context, get <user, host_or_ip> here
+  @param  dst_id             destination ID
+  @param  tmp_query          the query content
+*/ 
+inline void log_spider_receive_result_with_time(Security_context* sc, 
+                                                ulong dst_id,
+                                                spider_string *tmp_query) {
+  ulong usec = 0;
+  time_t cur_time;
+  struct tm l_time;
+  cur_time = (time_t)time((time_t *)0);
+  localtime_r(&cur_time, &l_time);
+  usec = hrtime_sec_part(my_hrtime());
+  fprintf(stderr,
+          "%04d%02d%02d %02d:%02d:%02d.%ld [RECV SPIDER SQL] "
+          "from [%s][%s] to %ld:  "
+          "sql: %s\n",
+          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
+          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
+          sc->user ? sc->user : "system user",
+          sc->host_or_ip, dst_id,
+          tmp_query->c_ptr_safe());
+}
+
+/**
+  log spider send result to stderr with current time and function name
+  @param  src_id             source ID
+  @param  src_host           source host
+  @param  dst_id             destination ID
+  @param  tmp_query          the query content
+*/ 
+inline void log_spider_send_result_with_time(ulong src_id,
+                                             const char* src_host,
+                                             ulong dst_id,
+                                             spider_string *tmp_query) {
+  ulong usec = 0;
+  time_t cur_time;
+  struct tm l_time;
+  cur_time = (time_t)time((time_t *)0);
+  localtime_r(&cur_time, &l_time);
+  usec = hrtime_sec_part(my_hrtime());
+  fprintf(stderr,
+        "%04d%02d%02d %02d:%02d:%02d.%ld [SEND SPIDER SQL] "
+        "from %ld to [%s] %ld:  "
+        "sql: %s\n",
+        l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
+        l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
+        src_id, src_host,
+        dst_id, tmp_query->c_ptr_safe());
+}
+
+/**
+  warning with detailed information
+*/ 
+inline void log_spider_warn_result_detailed(const char *info,
+                                            const char *src_host,
+                                            ulong src_id,
+                                            ulong dst_id,
+                                            my_ulonglong affected_rows,
+                                            my_ulonglong insert_id,
+                                            unsigned int server_status,
+                                            unsigned int warning_count) {
+  ulong usec = 0;
+  time_t cur_time;
+  struct tm l_time;
+  cur_time = (time_t)time((time_t *)0);
+  localtime_r(&cur_time, &l_time);
+  usec = hrtime_sec_part(my_hrtime());
+  fprintf(stderr,
+          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
+          "from [%s] %ld to %ld:  "
+          "affected_rows: %llu  id: %llu  status: %u  warning_count: %u\n",
+          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
+          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
+          info, src_host, src_id, dst_id,
+          affected_rows, insert_id,
+          server_status, warning_count);
+}
+
+/**
+  log spider result to stderr with current time and function name
+  @param  info               information about the log, e.g. "[WARN SPIDER RESULT]"
+  @param  func_name          name of the caller
+*/ 
+inline void log_spider_result_with_row_info(const char *info, const char *func_name) {
+  ulong usec = 0;
+  time_t cur_time;
+  struct tm l_time;
+  cur_time = (time_t)time((time_t *)0);
+  localtime_r(&cur_time, &l_time);
+  usec = hrtime_sec_part(my_hrtime());
+  fprintf(stderr,
+          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
+          " from  %s\n",
+          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
+          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
+          info, func_name);
+}
+
+inline void log_spider_connect_host_failed(const char *host_name, long port_num, int error_num) {
+  ulong usec = 0;
+  time_t cur_time;
+  struct tm l_time;
+  cur_time = (time_t)time((time_t *)0);
+  localtime_r(&cur_time, &l_time);
+  usec = hrtime_sec_part(my_hrtime());
+  fprintf(stderr,
+          "%04d%02d%02d %02d:%02d:%02d.%ld  [ERROR SPIDER RESULT] "
+          "failed to connect the hosts: %s, port: %ld, error_num:%d\n",
+          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
+          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
+          host_name, port_num, error_num);
+}
+
+inline void log_spider_error_with_info(const char *info, /* error or warn */
+                                       long long int src_id, int error_num, 
+                                       const char *error_info) {
+  ulong usec = 0;
+  time_t cur_time;
+  struct tm l_time;
+  cur_time = (time_t)time((time_t *)0);
+  localtime_r(&cur_time, &l_time);
+  usec = hrtime_sec_part(my_hrtime());
+  fprintf(stderr,
+          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
+          "to %lld: %d %s\n",
+          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
+          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
+          info, src_id, error_num, error_info);
+}

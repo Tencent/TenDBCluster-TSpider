@@ -2500,7 +2500,7 @@ static MYSQL_SYSVAR_UINT(
     max_connections, spider_max_connections, PLUGIN_VAR_RQCMDARG,
     "the values, as the max conncetion from spider to remote mysql. Default 0, "
     "mean unlimit the connections",
-    NULL, NULL, 0, /* def */
+    NULL, NULL, 500, /* def */
     0,             /* min */
     99999,         /* max */
     0              /* blk */

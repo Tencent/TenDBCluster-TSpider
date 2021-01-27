@@ -182,7 +182,7 @@ class spider_db_mysql : public spider_db_conn {
   bool is_server_gone_error(int error_num);
   bool is_dup_entry_error(int error_num);
   bool is_xa_nota_error(int error_num);
-  void print_warnings(struct tm *l_time);
+  void print_warnings();
   spider_db_result *store_result(spider_db_result_buffer **spider_res_buf,
                                  st_spider_db_request_key *request_key,
                                  int *error_num);

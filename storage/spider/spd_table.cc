@@ -5091,7 +5091,8 @@ int spider_panic(handlerton *hton, ha_panic_function type) {
 }
 
 int spider_db_init(void *p) {
-  int error_num, roop_count;
+  int error_num = 0;
+  int roop_count;
   uint dbton_id = 0;
   handlerton *spider_hton = (handlerton *)p;
   DBUG_ENTER("spider_db_init");
@@ -7253,14 +7254,9 @@ int spider_discover_table_structure(handlerton *hton, THD *thd,
       }
     }
     if (part_info->fix_parser_data(thd)) {
-      ulong usec;
-      struct tm *l_time = spider_get_time(usec);
-      fprintf(stderr,
-              "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-              " from  %s\n",
-              l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-              l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-              "spider_discover_table_structure");
+      const char* info = "[WARN SPIDER RESULT]";
+      const char* log_func_name = "spider_discover_table_structure";
+      log_spider_result_with_time(info, log_func_name);
       DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
     }
     if (!(part_syntax = SPIDER_generate_partition_syntax(

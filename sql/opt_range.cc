@@ -7605,7 +7605,7 @@ SEL_TREE *Item_bool_func::get_full_func_mm_tree(RANGE_OPT_PARAM *param,
   table_map param_comp= ~(param->prev_tables | param->read_tables |
 		          param->current_table);
 #ifdef HAVE_SPATIAL
-  Field::geometry_type sav_geom_type;
+  Field::geometry_type sav_geom_type= Field::GEOM_GEOMETRY;
   LINT_INIT_STRUCT(sav_geom_type);
 
   if (field_item->field->type() == MYSQL_TYPE_GEOMETRY)

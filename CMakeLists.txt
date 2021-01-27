@@ -16,6 +16,11 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
 
+IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # if using GCC
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=uninitialized")
+ENDIF()
+
 # explicitly set the policy to OLD
 # (cannot use NEW, not everyone is on cmake-2.8.12 yet)
 IF(POLICY CMP0022)
