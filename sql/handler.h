@@ -1763,17 +1763,38 @@ class Ha_trx_info
 {
 public:
   /** Register this storage engine in the given transaction context. */
-  void register_ha(THD_TRANS *trans, handlerton *ht_arg)
+  bool register_ha(THD_TRANS *trans, handlerton *ht_arg)
   {
     DBUG_ASSERT(m_flags == 0);
     DBUG_ASSERT(m_ht == NULL);
     DBUG_ASSERT(m_next == NULL);
 
+    bool dead_loop= FALSE; 
     m_ht= ht_arg;
     m_flags= (int) TRX_READ_ONLY; /* Assume read-only at start. */
 
+    /* it is unclear why deadloop happen here,
+       currently we detect deadloop in ha_list when register_ha() */
+    /* TODO: how can we avoid deadloop, rather than detect it here */
+    for (Ha_trx_info *ha_info = trans->ha_list; ha_info; ha_info= ha_info->next())
+    {
+      if (ha_info == this) {
+        /* deadloop here */
+        dead_loop= TRUE;
+        Ha_trx_info *ptr= trans->ha_list;
+        while(ptr) {
+          Ha_trx_info *tmp= ptr;
+          ptr= ptr->next();
+          tmp->reset();
+        }
+        trans->ha_list= NULL;
+        break;
+      }
+    }
+
     m_next= trans->ha_list;
     trans->ha_list= this;
+    return dead_loop;
   }
 
   /** Clear, prepare for reuse. */
