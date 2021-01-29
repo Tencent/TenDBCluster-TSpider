@@ -5854,6 +5854,12 @@ static Sys_var_mybool Sys_query_cache_strip_comments(
        SESSION_VAR(query_cache_strip_comments), CMD_LINE(OPT_ARG),
        DEFAULT(FALSE));
 
+static Sys_var_mybool Sys_print_bool_as_literal(
+       "print_bool_as_literal",
+       "print 0/1 as false/true for JSON boolean value",
+       GLOBAL_VAR(opt_print_bool_as_literal), CMD_LINE(OPT_ARG), 
+       DEFAULT(FALSE));
+
 static ulonglong in_transaction(THD *thd)
 {
   return MY_TEST(thd->in_active_multi_stmt_transaction());

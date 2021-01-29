@@ -3681,15 +3681,17 @@ String *Item_int::val_str(String *str)
 
 void Item_int::print(String *str, enum_query_type query_type)
 {
-  // my_charset_bin is good enough for numbers
-  str_value.set_int(value, unsigned_flag, &my_charset_bin);
-  str->append(str_value);
-}
-
-
-void Item_bool::print(String *str, enum_query_type query_type)
-{
-  str->append((!!value) ? "true" : "false");
+  // if print_bool_as_literal = true, print boolean value as its literals
+  if (this->is_bool_type() && opt_print_bool_as_literal) 
+  {
+    str->append((!!value) ? "true" : "false");
+  }
+  else 
+  {
+    // my_charset_bin is good enough for numbers
+    str_value.set_int(value, unsigned_flag, &my_charset_bin);
+    str->append(str_value);
+  }
 }
 
 Item *Item_bool::neg_transformer(THD *thd)
