@@ -102,7 +102,7 @@ spider_trans_rollback	OFF
 spider_transaction_one_shard	OFF
 spider_use_all_conns_snapshot	OFF
 spider_use_consistent_snapshot	OFF
-spider_version	3.5.0
+spider_version	3.6.1
 spider_with_begin_commit	OFF
 spider_xa_register_mode	1
 

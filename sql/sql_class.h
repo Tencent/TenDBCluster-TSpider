@@ -6625,10 +6625,11 @@ void dbug_serve_apcs(THD *thd, int n_calls);
 class ScopedStatementReplication
 {
 public:
-  ScopedStatementReplication(THD *thd) : thd(thd),
+  ScopedStatementReplication(THD *thd) :
     saved_binlog_format(thd
                         ? thd->set_current_stmt_binlog_format_stmt()
-                        : BINLOG_FORMAT_MIXED)
+                        : BINLOG_FORMAT_MIXED),
+    thd(thd)
   {}
   ~ScopedStatementReplication()
   {
