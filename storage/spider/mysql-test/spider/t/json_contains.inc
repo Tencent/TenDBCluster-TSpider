@@ -23,6 +23,7 @@ PARTITION BY LIST (id % 2)
 
 --echo
 --echo insert data and test
+SET GLOBAl print_bool_as_literal = ON;
 INSERT INTO tbl VALUES (1, '{"a": 1, "b": 2, "c": {"d": 4}}');
 INSERT INTO tbl VALUES (2, '{"a": 3, "b": 2, "c": {"d": 4}}');
 SELECT * FROM tbl WHERE JSON_CONTAINS(j, '1', '$.a');
@@ -31,3 +32,4 @@ TRUNCATE TABLE tbl;
 INSERT INTO tbl VALUES (1, '{"a": 1, "b": 2, "c": {"d": 4}}');
 SELECT * FROM tbl WHERE JSON_CONTAINS_PATH(j, 'one', '$.a', '$.e') = 0;
 SELECT * FROM tbl WHERE JSON_CONTAINS_PATH(j, 'one', '$.a', '$.e') = 1;
+SET GLOBAl print_bool_as_literal = OFF;

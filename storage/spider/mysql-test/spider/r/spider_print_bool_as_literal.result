@@ -1,0 +1,145 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS ta_l;
+CREATE TABLE t1
+(i INT PRIMARY KEY, j JSON) ENGINE=Spider  PARTITION BY LIST (crc32(i)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');
+
+test
+connection master_1;
+INSERT INTO t1 VALUES (1, json_array(1,'abc',NULL,true));
+test print_bool_as_literal
+SET GLOBAL print_bool_as_literal = OFF;
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,true));
+i	j
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,false));
+i	j
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,true))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,false))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection master_1;
+SET GLOBAL print_bool_as_literal = ON;
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,true));
+i	j
+1	[1, "abc", null, true]
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,false));
+i	j
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,true))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,false))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,true))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,true)))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,true)))
+SELECT * FROM t1 WHERE (j = json_array(1,'abc',NULL,false))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,false)))
+mysql localhost 3306 select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,false)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,true)))
+select `i`,`j` from `auto_test_remote`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,false)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
+argument
+select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,1)))
+select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,0)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,true)))
+select `i`,`j` from `auto_test_remote_2`.`t1` where (`j` = /* <cache> */ (json_array(1,'abc',NULL,false)))
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
+reset param
+SET GLOBAL print_bool_as_literal = OFF;
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+SET GLOBAL log_output = @old_log_output;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

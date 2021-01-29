@@ -23,6 +23,7 @@ PARTITION BY LIST (id % 2)
 
 --echo
 --echo insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES(1, 'null'),(2, '"null"'),(3, '[1,2,3]');
 SELECT JSON_QUOTE(j) FROM tbl;
 TRUNCATE TABLE tbl;
@@ -40,3 +41,4 @@ SELECT * FROM tbl where j != JSON_OBJECT('name', 'nuts', 'id', 85, 'flag', false
 SELECT * FROM tbl WHERE j IS NULL;
 SELECT * FROM tbl WHERE j IS NOT NULL ORDER BY id;
 TRUNCATE TABLE tbl;
+SET GLOBAL print_bool_as_literal = OFF;
