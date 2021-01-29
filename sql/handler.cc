@@ -1061,7 +1061,9 @@ void trans_register_ha(THD *thd, bool all, handlerton *ht_arg) {
 
   if (ha_info->is_started()) DBUG_VOID_RETURN; /* already registered, return */
 
-  ha_info->register_ha(trans, ht_arg);
+  if (ha_info->register_ha(trans, ht_arg))
+    sql_print_warning("Deadloop detected when register_ha, db_type: %lu.",
+                      (ulong)ht_arg->db_type);
 
   trans->no_2pc |= (ht_arg->prepare == 0);
   if (thd->transaction.xid_state.xid.is_null())
