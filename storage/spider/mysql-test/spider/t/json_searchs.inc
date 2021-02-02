@@ -23,6 +23,7 @@ PARTITION BY LIST (id % 2)
 
 --echo
 --echo insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES (1, '{"a": 1, "b": {"c": 30}}');
 SELECT * FROM tbl WHERE JSON_KEYS(j) = JSON_KEYS('{"a": 1, "b": {"c": 30}}');
 SELECT * FROM tbl WHERE JSON_KEYS(j) = JSON_ARRAY("a", "b");
@@ -63,3 +64,4 @@ SELECT JSON_SEARCH(j, 'all', '%b%', NULL, '$[2]') FROM tbl;
 SELECT JSON_SEARCH(j, 'all', '%b%', NULL, '$[1]') FROM tbl;
 SELECT JSON_SEARCH(j, 'all', '%b%', '', '$[1]') FROM tbl;
 SELECT JSON_SEARCH(j, 'all', '%b%', '', '$[3]') FROM tbl;
+SET GLOBAL print_bool_as_literal = OFF;

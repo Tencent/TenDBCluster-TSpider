@@ -23,6 +23,7 @@ PARTITION BY LIST (id % 2)
 
 --echo
 --echo insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 SELECT Json_Array(56, 3.1416, 'My name is "Foo"', NULL);
 INSERT INTO tbl VALUES (1, JSON_ARRAY(56, 3.1416, 'My name is "Foo"', NULL));
 SELECT * FROM tbl;
@@ -37,3 +38,4 @@ SELECT * FROM tbl ORDER BY id;
 TRUNCATE TABLE tbl;
 INSERT INTO tbl VALUES(1, JSON_ARRAY_INSERT(@j, '$[1]', 'x'));
 SELECT * FROM tbl ORDER BY id;
+SET GLOBAL print_bool_as_literal = OFF;

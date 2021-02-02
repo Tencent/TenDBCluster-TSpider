@@ -405,6 +405,7 @@ my_bool opt_character_set_client_handshake= 1;
 bool opt_endinfo, using_udf_functions;
 my_bool locked_in_memory;
 bool opt_using_transactions;
+my_bool opt_print_bool_as_literal;
 bool volatile abort_loop;
 bool volatile shutdown_in_progress;
 uint volatile global_disable_checkpoint;

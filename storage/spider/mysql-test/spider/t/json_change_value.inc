@@ -23,6 +23,7 @@ PARTITION BY LIST (id % 2)
 
 --echo
 --echo insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES(1, '{"a": 1, "b": [2, 3], "c": "[true, false]"}');
 SELECT * FROM tbl WHERE j = JSON_INSERT('{ "a": 1, "b": [2, 3]}', '$.c', '[true, false]');
 TRUNCATE TABLE tbl;
@@ -55,3 +56,4 @@ INSERT INTO tbl VALUES(1, '"abc"');
 SELECT JSON_UNQUOTE(j) FROM tbl;
 SELECT * FROM tbl WHERE JSON_UNQUOTE(j) = 'abc';
 SELECT * FROM tbl WHERE JSON_UNQUOTE(j) = 'abcd';
+SET GLOBAL print_bool_as_literal = OFF;

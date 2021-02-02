@@ -43,6 +43,7 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 SELECT Json_Array(56, 3.1416, 'My name is "Foo"', NULL);
 Json_Array(56, 3.1416, 'My name is "Foo"', NULL)
 [56, 3.1416, "My name is \"Foo\"", null]
@@ -70,6 +71,7 @@ INSERT INTO tbl VALUES(1, JSON_ARRAY_INSERT(@j, '$[1]', 'x'));
 SELECT * FROM tbl ORDER BY id;
 id	j
 1	["a", "x", ["b", "c"], "d"]
+SET GLOBAL print_bool_as_literal = OFF;
 test JSON_CONTAINS() functions
 this includes JSON_CONTAINS() and JSON_CONTAINS_PATH()
 
@@ -106,6 +108,7 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
+SET GLOBAl print_bool_as_literal = ON;
 INSERT INTO tbl VALUES (1, '{"a": 1, "b": 2, "c": {"d": 4}}');
 INSERT INTO tbl VALUES (2, '{"a": 3, "b": 2, "c": {"d": 4}}');
 SELECT * FROM tbl WHERE JSON_CONTAINS(j, '1', '$.a');
@@ -122,6 +125,7 @@ id	j
 SELECT * FROM tbl WHERE JSON_CONTAINS_PATH(j, 'one', '$.a', '$.e') = 1;
 id	j
 1	{"a": 1, "b": 2, "c": {"d": 4}}
+SET GLOBAl print_bool_as_literal = OFF;
 test Functions that return JSON VALUE Attributes
 this includes JSON_DEPTH(), JSON_LENGTH(), JSON_TYPE() and JSON_VALID()
 
@@ -158,6 +162,7 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES (1, '{"a": 1, "b": 2, "c": {"d": 4}}');
 SELECT JSON_DEPTH(j) FROM tbl;
 JSON_DEPTH(j)
@@ -202,6 +207,7 @@ id	JSON_VALID(j)
 SELECT id, JSON_VALID(j) FROM tbl WHERE JSON_VALID(j) = 1;
 id	JSON_VALID(j)
 1	1
+SET GLOBAL print_bool_as_literal = OFF;
 test Functions that modify JSON values
 this includes JSON_INSERT(), JSON_MERGER(), JSON_REMOVE(), JSON_REPLACE(), JSON_SET() and JSON_UNQUOTE()
 
@@ -238,6 +244,7 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES(1, '{"a": 1, "b": [2, 3], "c": "[true, false]"}');
 SELECT * FROM tbl WHERE j = JSON_INSERT('{ "a": 1, "b": [2, 3]}', '$.c', '[true, false]');
 id	j
@@ -298,6 +305,7 @@ id	j
 1	"abc"
 SELECT * FROM tbl WHERE JSON_UNQUOTE(j) = 'abcd';
 id	j
+SET GLOBAL print_bool_as_literal = OFF;
 test Functions that relate to JSON searchs
 this includes JSON_KEYS() and JSON_SEARCH() 
 
@@ -334,6 +342,7 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES (1, '{"a": 1, "b": {"c": 30}}');
 SELECT * FROM tbl WHERE JSON_KEYS(j) = JSON_KEYS('{"a": 1, "b": {"c": 30}}');
 id	j
@@ -434,6 +443,7 @@ NULL
 SELECT JSON_SEARCH(j, 'all', '%b%', '', '$[3]') FROM tbl;
 JSON_SEARCH(j, 'all', '%b%', '', '$[3]')
 "$[3].y"
+SET GLOBAL print_bool_as_literal = OFF;
 test Functions that create JSON values
 this includes JSON_ARRAY(), JSON_QUOTE() and JSON_OBJECT()
 
@@ -470,6 +480,7 @@ PARTITION `ptbl` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "
 );
 
 insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES(1, 'null'),(2, '"null"'),(3, '[1,2,3]');
 SELECT JSON_QUOTE(j) FROM tbl;
 JSON_QUOTE(j)
@@ -511,6 +522,7 @@ id	j
 2	{"id": 85, "ext": {"id1": 86, "flag": true, "name1": "carrot"}, "flag": false, "name": "nuts"}
 3	{}
 TRUNCATE TABLE tbl;
+SET GLOBAL print_bool_as_literal = OFF;
 
 deinit
 connection master_1;

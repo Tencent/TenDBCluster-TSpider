@@ -160,6 +160,7 @@ extern plugin_ref *opt_gtid_pos_auto_plugins;
 extern bool opt_endinfo, using_udf_functions;
 extern my_bool locked_in_memory;
 extern bool opt_using_transactions;
+extern my_bool opt_print_bool_as_literal;
 extern ulong max_long_data_size;
 extern ulong current_pid;
 extern ulong expire_logs_days;

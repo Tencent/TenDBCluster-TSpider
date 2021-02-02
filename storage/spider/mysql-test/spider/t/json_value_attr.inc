@@ -23,6 +23,7 @@ PARTITION BY LIST (id % 2)
 
 --echo
 --echo insert data and test
+SET GLOBAL print_bool_as_literal = ON;
 INSERT INTO tbl VALUES (1, '{"a": 1, "b": 2, "c": {"d": 4}}');
 SELECT JSON_DEPTH(j) FROM tbl;
 SELECT * FROM tbl WHERE JSON_DEPTH(j) = 3;
@@ -41,3 +42,4 @@ SELECT id FROM tbl WHERE JSON_VALID(j) = 0;
 SELECT id FROM tbl WHERE JSON_VALID(j) = 1;
 SELECT id, JSON_VALID(j) FROM tbl WHERE JSON_VALID(j) = 0;
 SELECT id, JSON_VALID(j) FROM tbl WHERE JSON_VALID(j) = 1;
+SET GLOBAL print_bool_as_literal = OFF;
