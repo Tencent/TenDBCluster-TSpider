@@ -142,6 +142,7 @@ static int partition_initialize(void *p) {
 bool Partition_share::init(uint num_parts) {
   DBUG_ENTER("Partition_share::init");
   auto_inc_initialized = false;
+  last_insert_failed = false;
   partition_name_hash_initialized = false;
   next_auto_inc_val = 0;
   if (partitions_share_refs.init(num_parts)) {
@@ -4074,6 +4075,7 @@ int ha_partition::truncate() {
   lock_auto_increment();
   part_share->next_auto_inc_val = 0;
   part_share->auto_inc_initialized = false;
+  part_share->last_insert_failed = false;
   unlock_auto_increment();
 
   file = m_file;
@@ -4113,6 +4115,7 @@ int ha_partition::truncate_partition(Alter_info *alter_info,
   lock_auto_increment();
   part_share->next_auto_inc_val = 0;
   part_share->auto_inc_initialized = FALSE;
+  part_share->last_insert_failed = FALSE;
   unlock_auto_increment();
 
   *binlog_stmt = true;
@@ -4305,6 +4308,7 @@ int ha_partition::end_bulk_insert() {
       lock_auto_increment();
       part_share->next_auto_inc_val = 0;
       part_share->auto_inc_initialized = FALSE;
+      part_share->last_insert_failed = FALSE;
       unlock_auto_increment();
     }
   }
@@ -7235,9 +7239,11 @@ int ha_partition::info(uint flag) {
           file = *file_array;
           if (opt_spider_auto_increment_mode_switch &&
               is_spider_storage_engine()) { /* spider_auto_increment */
-            if (part_share->next_auto_inc_val == 0) { 
+            if (part_share->next_auto_inc_val == 0 ||
+                part_share->last_insert_failed) { 
               /* part_share->next_auto_inc_val  would be 0 after flush
-                 table/restart mysqld , then get this value from remote db */
+                 table/restart mysqld, or last_insert_failed, 
+                 then get this value from remote db */
               file->info(HA_STATUS_AUTO | no_lock_flag);
               set_if_bigger(auto_increment_value,
                             file->stats.auto_increment_value);
@@ -7262,6 +7268,7 @@ int ha_partition::info(uint flag) {
           set_if_bigger(part_share->next_auto_inc_val, auto_increment_value);
           /*if (can_use_for_auto_inc_init())*/
           part_share->auto_inc_initialized = true;
+          part_share->last_insert_failed = false;
           DBUG_PRINT("info", ("initializing next_auto_inc_val to %lu",
                               (ulong)part_share->next_auto_inc_val));
         }
@@ -9227,6 +9234,7 @@ int ha_partition::reset_auto_increment(ulonglong value) {
   DBUG_ENTER("ha_partition::reset_auto_increment");
   lock_auto_increment();
   part_share->auto_inc_initialized = false;
+  part_share->last_insert_failed = false;
   part_share->next_auto_inc_val = 0;
   do {
     if ((res = (*file)->ha_reset_auto_increment(value)) != 0) break;

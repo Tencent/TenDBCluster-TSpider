@@ -90,6 +90,7 @@ class Partition_share : public Handler_share
 {
 public:
   bool auto_inc_initialized;
+  bool last_insert_failed;                     /**< last auto_inc insert failed */
   mysql_mutex_t auto_inc_mutex;                /**< protecting auto_inc val */
   ulonglong next_auto_inc_val;                 /**< first non reserved value */
   /**
@@ -102,6 +103,7 @@ public:
   Parts_share_refs partitions_share_refs;
   Partition_share()
     : auto_inc_initialized(false),
+    last_insert_failed(false),
     next_auto_inc_val(0),
     partition_name_hash_initialized(false),
     partition_names(NULL)
@@ -1294,10 +1296,10 @@ private:
         else
             part_share->next_auto_inc_val = nr + 1;
     }
-    /* whatever error haaped, next auto inc val is 0 */
+    /* whatever error occurred, set last_insert_failed as TRUE */
     if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine() && error)
     {
-        part_share->next_auto_inc_val = 0;
+        part_share->last_insert_failed = TRUE;
         part_share->auto_inc_initialized = FALSE;
     }
     unlock_auto_increment();
