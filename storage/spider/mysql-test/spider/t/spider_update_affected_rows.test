@@ -1,0 +1,259 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = c1 INT PRIMARY KEY, c2 INT, c3 INT, KEY k3(c3)
+--let $TABLE_SHARD_KEY = c1
+--source ../include/spider_create_table_helper.inc
+
+--echo
+--echo test
+# First, test basic functions
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324);
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214270);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324);
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214270);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (244350);
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (244350);
+--disable_info
+SELECT * FROM t1;
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244360);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350);
+--disable_info
+TRUNCATE TABLE t1;
+
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324);
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214270);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324);
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214270);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (244350);
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (244350);
+--disable_info
+SELECT * FROM t1;
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244360);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350);
+--disable_info
+TRUNCATE TABLE t1;
+
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350, 244444, 214270);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+--disable_info
+TRUNCATE TABLE t1;
+
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350, 244444, 214270);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+--disable_info
+TRUNCATE TABLE t1;
+
+# Second, test join functions
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+CREATE TABLE t2 (c1 INT PRIMARY KEY, c2 INT, c3 INT, KEY k3(c3))ENGINE=INNODB;
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+--disable_info
+
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+--disable_info
+
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+--disable_info
+
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+--disable_info
+
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+SELECT * FROM t1;
+--enable_info
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+--disable_info
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+
+--source ../include/spider_drop_database.inc

@@ -1,0 +1,438 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (c1 INT PRIMARY KEY, c2 INT, c3 INT, KEY k3(c3))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(c1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+test
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214270);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	2	NULL
+214270	5	NULL
+244360	74	NULL
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214270);
+affected rows: 0
+info: Rows matched: 1  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	3	NULL
+214270	5	NULL
+244360	74	NULL
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	3	NULL
+214270	5	NULL
+244360	74	NULL
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244360);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+5	74	NULL
+214325	1	NULL
+214270	2	NULL
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214270);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	2
+214270	NULL	5
+244360	NULL	74
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214270);
+affected rows: 0
+info: Rows matched: 1  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	3
+214270	NULL	5
+244360	NULL	74
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	3
+214270	NULL	5
+244360	NULL	74
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244360);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+5	NULL	74
+214325	NULL	1
+214270	NULL	2
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	2	NULL
+214270	2	NULL
+244360	75	NULL
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	5	NULL
+214270	2	NULL
+244360	5	NULL
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	6	NULL
+214270	2	NULL
+244360	6	NULL
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c2 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	5	NULL
+214270	2	NULL
+244360	5	NULL
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c2 = c2 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	7	NULL
+214270	2	NULL
+244360	7	NULL
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214325	1	NULL
+214270	2	NULL
+244361	74	NULL
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350, 244444, 214270);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	2
+214270	NULL	2
+244360	NULL	75
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	5
+214270	NULL	2
+244360	NULL	5
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	6
+214270	NULL	2
+244360	NULL	6
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c3 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	5
+214270	NULL	2
+244360	NULL	5
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c3 = c3 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	7
+214270	NULL	2
+244360	NULL	7
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (214324, 244360, 233333);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214325	NULL	1
+214270	NULL	2
+244361	NULL	74
+UPDATE t1 SET c1 = c1 + 1 WHERE c1 IN (244350, 244444, 214270);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+UPDATE t1 SET c1 = 5 WHERE c1 IN (244350, 244444, 214270);
+affected rows: 0
+info: Rows matched: 0  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+CREATE TABLE t2 (c1 INT PRIMARY KEY, c2 INT, c3 INT, KEY k3(c3))ENGINE=INNODB;
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	3	NULL
+214270	2	NULL
+244360	74	NULL
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+affected rows: 0
+info: Rows matched: 1  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	3	NULL
+214270	4	NULL
+244360	74	NULL
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	3	NULL
+214270	2	NULL
+244360	74	NULL
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324);
+affected rows: 0
+info: Rows matched: 1  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c2) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c2) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	3	NULL
+214270	4	NULL
+244360	74	NULL
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c2=t2.c2 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	3
+214270	NULL	2
+244360	NULL	74
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+affected rows: 0
+info: Rows matched: 1  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	3
+214270	NULL	4
+244360	NULL	74
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	3
+214270	NULL	2
+244360	NULL	74
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324);
+affected rows: 0
+info: Rows matched: 1  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+INSERT INTO t1(c1,c3) VALUES(214324,1), (244360, 74), (214270, 2);
+INSERT INTO t2(c1,c3) VALUES(214324,3), (214270, 4);
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+SELECT * FROM t1;
+c1	c2	c3
+214324	NULL	3
+214270	NULL	4
+244360	NULL	74
+update t1 inner join t2 on t1.c1 = t2.c1 set t1.c1=t2.c1, t1.c3=t2.c3 where t1.c1 in (214324,244360,24444,214270,23333);
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+TRUNCATE TABLE t1;
+TRUNCATE TABLE t2;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
