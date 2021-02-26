@@ -7176,8 +7176,8 @@ int ha_spider::update_row(const uchar *old_data, const uchar *new_data) {
     }
     pthread_mutex_unlock(&share->lgtm_tblhnd_share->auto_increment_mutex);
   }
-  // if (update_rows == 0) /* no row affected */
-  //    DBUG_RETURN(HA_ERR_RECORD_IS_THE_SAME);
+  if (update_rows == 0) /* no row affected */
+    DBUG_RETURN(HA_ERR_RECORD_IS_THE_SAME);
   DBUG_RETURN(0);
 }
 
