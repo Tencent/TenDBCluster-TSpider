@@ -1,0 +1,133 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT PRIMARY KEY, a INT, b BLOB, c CHAR(20), f FLOAT, v VARCHAR(200))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+test
+connection master_1;
+CREATE TABLE t2(id INT PRIMARY KEY, a INT, b BLOB, c CHAR(20), f FLOAT, v VARCHAR(200));
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) DEFAULT NULL,
+  `b` blob DEFAULT NULL,
+  `c` char(20) DEFAULT NULL,
+  `f` float DEFAULT NULL,
+  `v` varchar(200) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1 VALUES(61,76,'b','c',4.86947,'v'), (60,33,'b','c',0,'v'), (24,75,'b','c',4.61755,'v');
+INSERT INTO t2 VALUES(61,75,'b','c',4.86947,'v'), (60,32,'b','c',0,'v'), (24,33,'b','c',4.61755,'v');
+SET GLOBAL spider_update_with_primary_key_first = OFF;
+SELECT id, a, f FROM t1;
+id	a	f
+60	33	0
+61	76	4.86947
+24	75	4.61755
+update t1
+inner join t2
+set t1.id = t2.id, t1.a = t2.a, t1.b = t2.b, t1.c = t2.c, t1.f = t2.f, t1.v = t2.v
+where t1.id in (61, 25, 60, 27, 56) and t1.id = t2.id;
+affected rows: 1
+info: Rows matched: 2  Changed: 1  Warnings: 0
+SELECT id, a, f FROM t1;
+id	a	f
+60	32	0
+61	76	4.86947
+24	75	4.61755
+update t1
+inner join t2
+set t1.id = t2.id, t1.a = t2.a, t1.b = t2.b, t1.c = t2.c, t1.f = t2.f, t1.v = t2.v
+where t1.id in (61, 25, 60, 27, 56) and t1.id = t2.id;
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+id	a	b	c	f	v
+60	32	b	c	0	v
+61	76	b	c	4.86947	v
+24	75	b	c	4.61755	v
+TRUNCATE TABLE t1;
+INSERT INTO t1 VALUES(61,76,'b','c',4.86947,'v'), (60,33,'b','c',0,'v'), (24,75,'b','c',4.61755,'v');
+SET GLOBAL spider_update_with_primary_key_first = OFF;
+SELECT id, a, f FROM t1;
+id	a	f
+60	33	0
+61	76	4.86947
+24	75	4.61755
+update t1
+inner join t2
+set t1.id = t2.id, t1.a = t2.a, t1.b = t2.b, t1.c = t2.c, t1.f = t2.f, t1.v = t2.v
+where t1.id in (61, 25, 60, 27, 56) and t1.id = t2.id;
+affected rows: 1
+info: Rows matched: 2  Changed: 1  Warnings: 0
+SELECT id, a, f FROM t1;
+id	a	f
+60	32	0
+61	76	4.86947
+24	75	4.61755
+update t1
+inner join t2
+set t1.id = t2.id, t1.a = t2.a, t1.b = t2.b, t1.c = t2.c, t1.f = t2.f, t1.v = t2.v
+where t1.id in (61, 25, 60, 27, 56) and t1.id = t2.id;
+affected rows: 0
+info: Rows matched: 2  Changed: 0  Warnings: 0
+SELECT * FROM t1;
+id	a	b	c	f	v
+60	32	b	c	0	v
+61	76	b	c	4.86947	v
+24	75	b	c	4.61755	v
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

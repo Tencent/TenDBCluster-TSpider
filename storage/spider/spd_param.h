@@ -15,6 +15,7 @@
 
 my_bool spider_param_support_xa();
 my_bool spider_param_connect_mutex();
+my_bool spider_param_update_with_primary_key_first();
 uint spider_param_connect_error_interval();
 uint spider_param_table_init_error_interval();
 int spider_param_use_table_charset(int use_table_charset);

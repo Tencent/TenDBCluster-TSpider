@@ -100,6 +100,7 @@ spider_sync_time_zone	ON
 spider_sync_trx_isolation	ON
 spider_trans_rollback	OFF
 spider_transaction_one_shard	OFF
+spider_update_with_primary_key_first	ON
 spider_use_all_conns_snapshot	OFF
 spider_use_consistent_snapshot	OFF
 spider_version	3.6.1

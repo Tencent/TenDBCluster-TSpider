@@ -7481,6 +7481,53 @@ bool TABLE_LIST::process_index_hints(TABLE *tbl)
   //   /* clear all keys */
   // }
 
+  // Since tspider-3.6.2, clear all keys if `spider_ignore_single_select_index = ON` and
+  // NOT SELECT and is_spider_storage_engine()
+  if (opt_spider_ignore_single_select_index && /* this option is on */
+      thd && thd->lex && thd->lex->sql_command != SQLCOM_SELECT && /* ALL SQL type except SELECT */
+      !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) && /* NOT describe */
+      tbl->file && tbl->file->is_spider_storage_engine() /* only clear keys for spider engine*/)
+  {
+    uint idx;
+    bool with_fulltext = FALSE;
+    KEY *key_info = tbl->key_info;
+    KEY_PART_INFO *key_part;
+    for (idx = 0; idx < tbl->s->keys; idx++, key_info++)
+    {
+      if (key_info->flags & HA_FULLTEXT) {
+        with_fulltext = TRUE;
+        break;
+      }
+    }
+    if (!with_fulltext)
+    {
+      /* if the table has no FULLTEXT index, clear all keys in use */
+      tbl->keys_in_use_for_query.clear_all();
+      tbl->keys_in_use_for_order_by.clear_all();
+      tbl->keys_in_use_for_group_by.clear_all();
+    }
+    else
+    {
+      for (uint i = 0; i < tbl->s->keys; i++)
+      {
+        key_info = tbl->key_info + i;
+        key_part = key_info->key_part;
+        for (uint j = 0; j < key_info->user_defined_key_parts; j++, key_part++)
+        {
+          if (!(key_info->flags & HA_FULLTEXT) &&
+               (key_part->field && key_part->length !=
+                tbl->s->field[key_part->fieldnr - 1]->key_length()))
+          {
+            /* if the table has FULLTEXT index, clear all keys except FULLTEXT keys */
+            tbl->keys_in_use_for_query.clear_bit(i);
+				    tbl->keys_in_use_for_order_by.clear_bit(i);
+				    tbl->keys_in_use_for_group_by.clear_bit(i);
+          }
+        }
+      }
+    }
+  }
+
   /* make sure covering_keys don't include indexes disabled with a hint */
   tbl->covering_keys.intersect(tbl->keys_in_use_for_query);
   return 0;

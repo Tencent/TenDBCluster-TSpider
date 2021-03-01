@@ -220,6 +220,37 @@ static const char *spider_db_timefunc_interval_str[] = {" year",
                                                         " minute_microsecond",
                                                         " second_microsecond"};
 
+/* returns true if the field is part of the primary key or a unique key */
+static bool field_is_primary_or_unique_key(const TABLE *table, Field *field) {
+  KEY *key_info = table->key_info;
+  /* 1. check if the field is part of the primary key */
+  if (table->s->primary_key != MAX_KEY) { /* have primary key */
+    KEY *primary_key_info = table->key_info + table->s->primary_key;
+    KEY_PART_INFO *key_part = primary_key_info->key_part;
+    for (uint j = 0; j < primary_key_info->user_defined_key_parts; j++, key_part++) {
+      uint16 i = key_part->field->field_index;
+      if (field->field_index == i) /* field is part of the primary key */
+        return TRUE;
+    }
+  }
+  /* 2. check if the field is a unique key */
+  if (table->key_info) {
+    for (uint i=0; i < table->s->keys; i++, key_info++) {
+      if (key_info->flags & HA_NOSAME) {
+        /* unique key */
+        KEY_PART_INFO *key_part = key_info->key_part;
+        for (uint j = 0; j < key_info->user_defined_key_parts; j++, key_part++) {
+          uint16 i = key_part->field->field_index;
+          if (field->field_index == i)
+          return TRUE;
+        }
+      }
+    }
+  }
+  /* the field is neither part of primary key, nor a unique key */
+  return FALSE;
+}
+
 int spider_mysql_init() {
   DBUG_ENTER("spider_mysql_init");
   DBUG_RETURN(0);
@@ -7310,20 +7341,45 @@ int spider_mysql_handler::append_update_where(spider_string *str,
                                               const TABLE *table,
                                               my_ptrdiff_t ptr_diff) {
   uint field_name_length;
+  bool table_has_unique_key = FALSE;
   Field **field;
   SPIDER_SHARE *share = spider->share;
+  KEY *key_info = table->key_info;
   DBUG_ENTER("spider_mysql_handler::append_update_where");
   DBUG_PRINT("info", ("spider table->s->primary_key=%s",
                       table->s->primary_key != MAX_KEY ? "TRUE" : "FALSE"));
   if (str->reserve(SPIDER_SQL_WHERE_LEN)) DBUG_RETURN(HA_ERR_OUT_OF_MEM);
   str->q_append(SPIDER_SQL_WHERE_STR, SPIDER_SQL_WHERE_LEN);
+
+  if (table->s->primary_key != MAX_KEY) {
+    /* table has primary key(s) */
+    table_has_unique_key = TRUE;
+  } else if (spider_param_update_with_primary_key_first()) {
+    /* The only way to know weather this table has any unique key(s) is to
+     traverse all fields */
+    for (uint i=0; i < table->s->keys; i++, key_info++) {
+      if (key_info->flags & HA_NOSAME) {
+        /* unique key */
+        table_has_unique_key = TRUE;
+        break;
+      }
+    }
+  }   
+
   for (field = table->field; *field; field++) {
     DBUG_PRINT("info", ("spider bitmap=%s",
                         bitmap_is_set(table->read_set, (*field)->field_index)
                             ? "TRUE"
                             : "FALSE"));
-    if (table->s->primary_key == MAX_KEY ||
-        bitmap_is_set(table->read_set, (*field)->field_index)) {
+    /* if spider_update_with_primary_key_first = ON
+        we only append the column when 
+        1. table has no unique keys nor primary keys, or
+        2. table has unique key(s) and the field is one of them, or
+        3. table has primary key(s) and the field is one of them.
+    */
+    if (/* table->s->primary_key == MAX_KEY */ !table_has_unique_key ||
+        (spider_param_update_with_primary_key_first() && field_is_primary_or_unique_key(table, *field)) ||
+        (!spider_param_update_with_primary_key_first() && bitmap_is_set(table->read_set, (*field)->field_index))) {
       field_name_length =
           mysql_share->column_name_str[(*field)->field_index].length();
       if ((*field)->is_null(ptr_diff)) {
@@ -7339,7 +7395,12 @@ int spider_mysql_handler::append_update_where(spider_string *str,
                          SPIDER_SQL_EQUAL_LEN))
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
         mysql_share->append_column_name(str, (*field)->field_index);
-        str->q_append(SPIDER_SQL_EQUAL_STR, SPIDER_SQL_EQUAL_LEN);
+        if ((*field)->type() == MYSQL_TYPE_FLOAT || (*field)->type() == MYSQL_TYPE_DOUBLE) {
+          /* it is a FLOAT or DOUBLE field, use LIKE instead */
+          str->q_append(SPIDER_SQL_LIKE_STR, SPIDER_SQL_LIKE_LEN);
+        } else {
+          str->q_append(SPIDER_SQL_EQUAL_STR, SPIDER_SQL_EQUAL_LEN);
+        }
         (*field)->move_field_offset(ptr_diff);
         if (spider_db_mysql_utility.append_column_value(
                 spider, str, *field, NULL, share->access_charset) ||
