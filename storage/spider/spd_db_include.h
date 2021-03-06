@@ -710,7 +710,7 @@ class spider_db_handler {
   SPIDER_LINK_IDX_CHAIN *link_idx_chain;
 #endif
   spider_db_handler(ha_spider *spider, spider_db_share *db_share)
-      : spider(spider), db_share(db_share), first_link_idx(-1) {}
+      : spider(spider), db_share(db_share), first_link_idx(0) {}
   virtual ~spider_db_handler() {}
   virtual int init() = 0;
   virtual int append_index_hint(spider_string *str, int link_idx,
