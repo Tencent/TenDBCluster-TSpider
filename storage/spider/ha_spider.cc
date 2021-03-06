@@ -9953,6 +9953,7 @@ void ha_spider::sync_from_clone_source_base(ha_spider *spider) {
   DBUG_VOID_RETURN;
 }
 
+// no use, do nothing
 void ha_spider::set_first_link_idx() {
   int roop_count, all_link_idx;
   uint roop_count2, dbton_id;
@@ -9982,6 +9983,7 @@ void ha_spider::set_first_link_idx() {
   DBUG_VOID_RETURN;
 }
 
+// no use, do nothing
 void ha_spider::reset_first_link_idx() {
   int all_link_idx;
   uint roop_count2, dbton_id;
@@ -9993,7 +9995,7 @@ void ha_spider::reset_first_link_idx() {
     for (roop_count2 = 0; roop_count2 < share->use_dbton_count; roop_count2++) {
       dbton_id = share->use_dbton_ids[roop_count2];
       dbton_hdl = dbton_handler[dbton_id];
-      dbton_hdl->first_link_idx = -1;
+     dbton_hdl->first_link_idx = -1;
     }
     all_link_idx = conn_link_idx[search_link_idx];
     dbton_id = share->sql_dbton_ids[all_link_idx];
