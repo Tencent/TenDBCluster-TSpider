@@ -7354,7 +7354,7 @@ int spider_mysql_handler::append_update_where(spider_string *str,
   if (table->s->primary_key != MAX_KEY) {
     /* table has primary key(s) */
     table_has_unique_key = TRUE;
-  } else if (spider_param_update_with_primary_key_first()) {
+  } else {
     /* The only way to know weather this table has any unique key(s) is to
      traverse all fields */
     for (uint i=0; i < table->s->keys; i++, key_info++) {
