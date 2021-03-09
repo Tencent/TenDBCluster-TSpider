@@ -1,0 +1,178 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = id INT primary key, a INT, b BLOB, f FLOAT
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+--echo
+--echo test
+
+--connection master_1
+
+CREATE TABLE t1 (id INT PRIMARY KEY, a INT, b BLOB, f FLOAT)ENGINE=INNODB;
+INSERT INTO t1 VALUES(61,76,'b2',3.14159), (60,33,'b3',2.33333), (24,75,'b4',6.66666), (63,76,'b5',2.33333);
+INSERT INTO t2 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = 67 where t1.id = t2.id and t1.id = 63;                # update primary key, but in same partition
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = 28, t2.f = t1.f where t1.id = t2.id and t1.id = 24;   # update primary key, but in same partition
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = 66 where t1.id = t2.id and t1.id = 61;                # update primary key, requires change of partition
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = 59, t2.f = t1.f where t1.id = t2.id and t1.id = 60;   # update primary key, requires change of partition
+SELECT * FROM t2 order by id;
+TRUNCATE TABLE t2;
+INSERT INTO t2 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = t1.id, t2.f = t1.f where t1.id = t2.id and t1.id = 63;
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = t1.id, t2.a = t1.a, t2.b = t1.b, t2.f = t1.f where t1.id = t2.id and t2.id = 24;
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = t1.id, t2.f = t1.f where t1.id = t2.id and t1.id = 61;
+SELECT * FROM t2 order by id;
+update t2 inner join t1 set t2.id = t1.id, t2.a = t1.a, t2.b = t1.b, t2.f = t1.f where t1.id = t2.id and t2.id = 60;
+SELECT * FROM t2 order by id;
+
+
+--let $TABLE_NAME = t4
+--let $TABLE_BODY = id INT unique key, a INT, b BLOB, f FLOAT
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+CREATE TABLE t3 (id INT unique KEY, a INT, b BLOB, f FLOAT)ENGINE=INNODB;
+INSERT INTO t3 VALUES(61,76,'b2',3.14159), (60,33,'b3',2.33333), (24,75,'b4',6.66666), (63,76,'b5',2.33333);
+INSERT INTO t4 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = 67 where t3.id = t4.id and t3.id = 63;                # update unique key, but in same partition
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = 28, t4.f = t3.f where t3.id = t4.id and t3.id = 24;   # update unique key, but in same partition
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = 66 where t3.id = t4.id and t3.id = 61;                # update unique key, requires change of partition
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = 59, t4.f = t3.f where t3.id = t4.id and t3.id = 60;   # update unique key, requires change of partition
+SELECT * FROM t4 order by id;
+TRUNCATE TABLE t4;
+INSERT INTO t4 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = t3.id, t4.f = t3.f where t3.id = t4.id and t3.id = 63;
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = t3.id, t4.a = t3.a, t4.b = t3.b, t4.f = t3.f where t3.id = t4.id and t4.id = 24;
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = t3.id, t4.f = t3.f where t3.id = t4.id and t3.id = 61;
+SELECT * FROM t4 order by id;
+update t4 inner join t3 set t4.id = t3.id, t4.a = t3.a, t4.b = t3.b, t4.f = t3.f where t3.id = t4.id and t4.id = 60;
+SELECT * FROM t4 order by id;
+
+--let $TABLE_NAME = t6
+--let $TABLE_BODY = id INT, a INT, b BLOB, f FLOAT
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+CREATE TABLE t5 (id INT, a INT, b BLOB, f FLOAT)ENGINE=INNODB;
+INSERT INTO t5 VALUES(61,76,'b2',3.14159), (60,33,'b3',2.33333), (24,75,'b4',6.66666), (63,76,'b5',2.33333);
+INSERT INTO t6 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = 67 where t5.id = t6.id and t5.id = 63;                # update shard key, but in same partition
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = 28, t6.f = t5.f where t5.id = t6.id and t5.id = 24;   # update shard key, but in same partition
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = 66 where t5.id = t6.id and t5.id = 61;                # update shard key, requires change of partition
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = 59, t6.f = t5.f where t5.id = t6.id and t5.id = 60;   # update shard key, requires change of partition
+SELECT * FROM t6 order by id;
+TRUNCATE TABLE t6;
+INSERT INTO t6 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = t5.id, t6.f = t5.f where t5.id = t6.id and t5.id = 63;
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = t5.id, t6.a = t5.a, t6.b = t5.b, t6.f = t5.f where t5.id = t6.id and t6.id = 24;
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = t5.id, t6.f = t5.f where t5.id = t6.id and t5.id = 61;
+SELECT * FROM t6 order by id;
+update t6 inner join t5 set t6.id = t5.id, t6.a = t5.a, t6.b = t5.b, t6.f = t5.f where t5.id = t6.id and t6.id = 60;
+SELECT * FROM t6 order by id;
+
+--let $TABLE_NAME = t8
+--let $TABLE_BODY = id1 INT, id2 INT, a INT, b BLOB, f FLOAT, PRIMARY KEY (id1, id2)
+--let $TABLE_SHARD_KEY = id1
+--source ../include/spider_create_table_nocrc_helper.inc
+
+CREATE TABLE t7(id1 INT, id2 INT, a INT, b BLOB, f FLOAT, PRIMARY KEY (id1, id2))ENGINE=INNODB;
+INSERT INTO t7 VALUES(61,61,5,'b1',4.86947), (61,62,4,'b5',5.66666), (60,60,33,'b4',2.33333), (24,24,75,'b2',0), (25,24,75,'b1',3.22222), (63,63,76,'b6',4.86944);
+
+INSERT INTO t8 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = 65 where t8.id1 = t7.id1 and t8.id1 = 61;   # update shard key, but in same partition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = 64 where t8.id1 = t7.id1 and t7.id1 = 60;    # update shard key, but in same partition
+SELECT * FROM t8 ORDER BY id1, id2;
+truncate table t8;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = 67 where t8.id1 = t7.id1 and t8.id1 = 61;   # update shard key, requires change of partition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = 68 where t8.id1 = t7.id1 and t7.id1 = 63;    # update shard key, requires change of partition
+SELECT * FROM t8 ORDER BY id1, id2;
+TRUNCATE TABLE t8;
+INSERT INTO t8 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id2 = t7.id2, t8.b = t7.b where t8.id1 = 24;
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = t7.id1, t8.b = t7.b where t8.id2 = 63;
+SELECT * FROM t8 ORDER BY id1, id2;
+TRUNCATE TABLE t8;
+INSERT INTO t8 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = t7.id1, t8.id2 = t7.id2, t8.b = 'b6' where t8.id1 = 60 and t8.id2 = 60;
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = t7.id1, t8.id2 = t7.id2, t8.b = t7.b, t8.f = 2.33333 where t8.id1 = 60 and t8.id2 = 60;
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.id1 = t7.id1, t8.id2 = t7.id2, t8.f = t7.f, t8.a = t7.a, t8.b = t7.b where t8.b = 'b3';
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 join t7 on t8.id1 = t7.id1 and t8.id2 = t7.id2 set t8.f = t7.f, t8.id2 = t7.id2, t8.a = t7.a, t8.b = t7.b, t8.id1 = t7.id1 where t8.b = 'b2';
+SELECT * FROM t8 ORDER BY id1, id2;
+
+--let $TABLE_NAME = t10
+--let $TABLE_BODY = id1 INT, id2 INT, a INT, b BLOB, f FLOAT, UNIQUE KEY (id1, id2)
+--let $TABLE_SHARD_KEY = id1
+--source ../include/spider_create_table_nocrc_helper.inc
+
+CREATE TABLE t9(id1 INT, id2 INT, a INT, b BLOB, f FLOAT, UNIQUE KEY (id1, id2))ENGINE=INNODB;
+INSERT INTO t9 VALUES(61,61,5,'b1',4.86947), (61,62,4,'b5',5.66666), (60,60,33,'b4',2.33333), (24,24,75,'b2',0), (25,24,75,'b1',3.22222), (63,63,76,'b6',4.86944);
+
+INSERT INTO t10 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = 65 where t10.id1 = t9.id1 and t10.id1 = 61;   # update shard key, but in same partition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = 64 where t10.id1 = t9.id1 and t9.id1 = 60;    # update shard key, but in same partition
+SELECT * FROM t10 ORDER BY id1, id2;
+truncate table t10;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = 67 where t10.id1 = t9.id1 and t10.id1 = 61;   # update shard key, requires change of partition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = 68 where t10.id1 = t9.id1 and t9.id1 = 63;    # update shard key, requires change of partition
+SELECT * FROM t10 ORDER BY id1, id2;
+TRUNCATE TABLE t10;
+INSERT INTO t10 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id2 = t9.id2, t10.b = t9.b where t10.id1 = 24;
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = t9.id1, t10.b = t9.b where t10.id2 = 63;
+SELECT * FROM t10 ORDER BY id1, id2;
+TRUNCATE TABLE t10;
+INSERT INTO t10 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = t9.id1, t10.id2 = t9.id2, t10.b = 'b6' where t10.id1 = 60 and t10.id2 = 60;
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = t9.id1, t10.id2 = t9.id2, t10.b = t9.b, t10.f = 2.33333 where t10.id1 = 60 and t10.id2 = 60;
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.id1 = t9.id1, t10.id2 = t9.id2, t10.f = t9.f, t10.a = t9.a, t10.b = t9.b where t10.b = 'b3';
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 join t9 on t10.id1 = t9.id1 and t10.id2 = t9.id2 set t10.f = t9.f, t10.id2 = t9.id2, t10.a = t9.a, t10.b = t9.b, t10.id1 = t9.id1 where t10.b = 'b2';
+SELECT * FROM t10 ORDER BY id1, id2;
+
+--source ../include/spider_drop_database.inc

@@ -1,0 +1,224 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT primary key, a INT, b BLOB
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+--echo
+--echo test
+
+--connection master_1
+INSERT INTO t1 VALUES(61,76,'b1'), (60,33,'b2'), (24,75,'b3'), (63,76,'b4');
+SELECT * FROM t1 ORDER BY id;
+update t1 set id = 68 where id = 60;   # update primary key, but in same partition
+SELECT * FROM t1 ORDER BY id;
+update t1 set id = 67 where id = 61;   # update primary key, requires change of partition
+SELECT * FROM t1 ORDER BY id;
+update t1 set b = 'b5' where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t1 ORDER BY id;
+update t1 set b = 'b6' where b = 'b4'; # update normal field, normal field as condition
+SELECT * FROM t1 ORDER BY id;
+
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = id INT primary key, a INT, b BLOB, f FLOAT
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t2 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+update t2 set id = 68 where id = 60;   # update primary key, but in same partition
+SELECT * FROM t2 ORDER BY id;
+update t2 set id = 67 where id = 61;   # update primary key, requires change of partition
+SELECT * FROM t2 ORDER BY id;
+update t2 set b = 'b5' where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t2 ORDER BY id;
+update t2 set b = 'b6' where b = 'b4'; # update normal field, normal field as condition
+SELECT * FROM t2 ORDER BY id;
+update t2 set f = 4.86946 where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t2 ORDER BY id;
+update t2 set f = 4.86948 where b = 'b6'; # update normal field, normal field as condition
+SELECT * FROM t2 ORDER BY id;
+
+--let $TABLE_NAME = t3
+--let $TABLE_BODY = id INT unique key, a INT, b BLOB
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t3 VALUES(61,76,'b1'), (60,33,'b2'), (24,75,'b3'), (63,76,'b4');
+update t3 set id = 68 where id = 60;   # update shard key, but in same partition
+SELECT * FROM t3 ORDER BY id;
+update t3 set id = 67 where id = 61;   # update shard key, requires change of partition
+SELECT * FROM t3 ORDER BY id;
+update t3 set b = 'b5' where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t3 ORDER BY id;
+update t3 set b = 'b6' where b = 'b4'; # update normal field, normal field as condition
+SELECT * FROM t3 ORDER BY id;
+
+--let $TABLE_NAME = t4
+--let $TABLE_BODY = id INT unique key, a INT, b BLOB, f FLOAT
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t4 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+update t4 set id = 68 where id = 60;   # update shard key, but in same partition
+SELECT * FROM t4 ORDER BY id;
+update t4 set id = 67 where id = 61;   # update shard key, requires change of partition
+SELECT * FROM t4 ORDER BY id;
+update t4 set b = 'b5' where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t4 ORDER BY id;
+update t4 set b = 'b6' where b = 'b4'; # update normal field, normal field as condition
+SELECT * FROM t4 ORDER BY id;
+update t4 set f = 4.86946 where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t4 ORDER BY id;
+update t4 set f = 4.86948 where b = 'b6'; # update normal field, normal field as condition
+SELECT * FROM t4 ORDER BY id;
+
+--let $TABLE_NAME = t5
+--let $TABLE_BODY = id INT, a INT, b BLOB, KEY kid(id)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t5 VALUES(61,76,'b1'), (60,33,'b2'), (24,75,'b3'), (63,76,'b4');
+SELECT * FROM t5 ORDER BY id;
+update t5 set id = 68 where id = 60;   # update shard key, but in same partition
+SELECT * FROM t5 ORDER BY id;
+update t5 set id = 67 where id = 61;   # update shard key, requires change of partition
+SELECT * FROM t5 ORDER BY id;
+update t5 set b = 'b5' where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t5 ORDER BY id;
+update t5 set b = 'b6' where b = 'b4'; # update normal field, normal field as condition
+SELECT * FROM t5 ORDER BY id;
+
+--let $TABLE_NAME = t6
+--let $TABLE_BODY = id INT, a INT, b BLOB, f FLOAT
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t6 VALUES(61,76,'b1',4.86947), (60,33,'b2',0), (24,75,'b3',4.61755), (63,76,'b4',4.86947);
+update t6 set id = 68 where id = 60;   # update shard key, but in same partition
+SELECT * FROM t6 ORDER BY id;
+update t6 set id = 67 where id = 61;   # update shard key, requires change of partition
+SELECT * FROM t6 ORDER BY id;
+update t6 set id = 25 where id = 24;   # update shard key, requires change of partition
+SELECT * FROM t6 ORDER BY id;
+update t6 set b = 'b5' where id = 24;  # update normal field, primary key as condition
+SELECT * FROM t6 ORDER BY id;
+update t6 set b = 'b6' where b = 'b4'; # update normal field, normal field as condition
+SELECT * FROM t6 ORDER BY id;
+update t6 set f = 4.86946 where id = 25;  # update normal field, primary key as condition
+SELECT * FROM t6 ORDER BY id;
+update t6 set f = 4.86948 where b = 'b6'; # update normal field, normal field as condition
+SELECT * FROM t6 ORDER BY id;
+
+--let $TABLE_NAME = t7
+--let $TABLE_BODY = id1 INT, id2 INT, a INT, b BLOB, PRIMARY KEY(id1, id2)
+--let $TABLE_SHARD_KEY = id1
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t7 VALUES(61,61,76,'b1'), (61,62,76,'b2'), (60,60,33,'b3'), (24,24,75,'b3'), (25,24,75,'b5'), (63,63,76,'b4');
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set id1 = 65 where id1 = 61;   # update shard key, but in same partition
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set id1 = 64 where id1 = 60;   # update shard key, but in same partition
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set id1 = 67 where id1 = 65;   # update shard key, requires change of partition
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set id1 = 68 where id1 = 63;   # update shard key, requires change of partition
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set b = 'b5' where id1 = 24;   # update normal field, part of primary keys as condition
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set b = 'b7' where id2 = 63;   # update normal field, part of primary keys as condition
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set b = 'b6' where id1 = 64 and id2 = 60; # update normal field, all primary keys as condition
+SELECT * FROM t7 ORDER BY id1, id2;
+update t7 set b = 'b6' where b = 'b7';   # update normal field, normal field as condition
+SELECT * FROM t7 ORDER BY id1, id2;
+
+
+--let $TABLE_NAME = t8
+--let $TABLE_BODY = id1 INT, id2 INT, a INT, b BLOB, f FLOAT, PRIMARY KEY(id1, id2)
+--let $TABLE_SHARD_KEY = id1
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t8 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+update t8 set id1 = 65 where id1 = 61;   # update shard key, but in same partition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set id1 = 64 where id1 = 60;   # update shard key, but in same partition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set id1 = 67 where id1 = 65;   # update shard key, requires change of partition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set id1 = 68 where id1 = 63;   # update shard key, requires change of partition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set b = 'b5' where id1 = 24;   # update normal field, part of primary keys as condition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set b = 'b7' where id2 = 63;   # update normal field, part of primary keys as condition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set b = 'b6' where id1 = 64 and id2 = 60; # update normal field, all primary keys as condition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set f = 2.33333 where id1 = 64 and id2 = 60; # update float field, all primary keys as condition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set b = 'b6' where b = 'b7';   # update normal field, normal field as condition
+SELECT * FROM t8 ORDER BY id1, id2;
+update t8 set f = 6.66666 where b = 'b6';   # update float field, normal field as condition
+SELECT * FROM t8 ORDER BY id1, id2;
+
+--let $TABLE_NAME = t9
+--let $TABLE_BODY = id1 INT, id2 INT, a INT, b BLOB, PRIMARY KEY(id1, id2)
+--let $TABLE_SHARD_KEY = id1
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t9 VALUES(61,61,76,'b1'), (61,62,76,'b2'), (60,60,33,'b3'), (24,24,75,'b3'), (25,24,75,'b5'), (63,63,76,'b4');
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set id1 = 65 where id1 = 61;   # update shard key, but in same partition
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set id1 = 64 where id1 = 60;   # update shard key, but in same partition
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set id1 = 67 where id1 = 65;   # update shard key, requires change of partition
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set id1 = 68 where id1 = 63;   # update shard key, requires change of partition
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set b = 'b5' where id1 = 24;   # update normal field, part of primary keys as condition
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set b = 'b7' where id2 = 63;   # update normal field, part of primary keys as condition
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set b = 'b6' where id1 = 64 and id2 = 60; # update normal field, all primary keys as conditionA
+SELECT * FROM t9 ORDER BY id1, id2;
+update t9 set b = 'b6' where b = 'b7';   # update normal field, normal field as condition
+SELECT * FROM t9 ORDER BY id1, id2;
+
+
+--let $TABLE_NAME = t10
+--let $TABLE_BODY = id1 INT, id2 INT, a INT, b BLOB, f FLOAT, PRIMARY KEY(id1, id2)
+--let $TABLE_SHARD_KEY = id1
+--source ../include/spider_create_table_nocrc_helper.inc
+
+INSERT INTO t10 VALUES(61,61,76,'b1',4.86947), (61,62,76,'b2',4.61755), (60,60,33,'b3',4.61755), (24,24,75,'b3',0), (25,24,75,'b5',0), (63,63,76,'b4',4.86947);
+update t10 set id1 = 65 where id1 = 61;   # update shard key, but in same partition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set id1 = 64 where id1 = 60;   # update shard key, but in same partition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set id1 = 67 where id1 = 65;   # update shard key, requires change of partition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set id1 = 68 where id1 = 63;   # update shard key, requires change of partition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set b = 'b5' where id1 = 24;   # update normal field, part of primary keys as condition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set b = 'b7' where id2 = 63;   # update normal field, part of primary keys as condition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set b = 'b6' where id1 = 64 and id2 = 60; # update normal field, all primary keys as condition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set f = 2.33333 where id1 = 64 and id2 = 60; # update float field, all primary keys as condition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set b = 'b6' where b = 'b7';   # update normal field, normal field as condition
+SELECT * FROM t10 ORDER BY id1, id2;
+update t10 set f = 6.66666 where b = 'b6';   # update float field, normal field as condition
+SELECT * FROM t10 ORDER BY id1, id2;
+
+--source ../include/spider_drop_database.inc
