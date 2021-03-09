@@ -2526,6 +2526,17 @@ uint spider_param_conn_wait_timeout() {
   DBUG_RETURN(spider_conn_wait_timeout);
 }
 
+/* append primary key first as where condition when not direct update*/
+static my_bool spider_update_with_primary_key_first;
+static MYSQL_SYSVAR_BOOL(update_with_primary_key_first,
+                         spider_update_with_primary_key_first,
+                         PLUGIN_VAR_OPCMDARG, "", NULL, NULL, TRUE);
+
+my_bool spider_param_update_with_primary_key_first() {
+  DBUG_ENTER("spider_param_update_with_primary_key_first");
+  DBUG_RETURN(spider_update_with_primary_key_first);
+}
+
 static my_bool spider_fetch_minimum_columns;
 static MYSQL_SYSVAR_BOOL(fetch_minimum_columns, spider_fetch_minimum_columns,
                          PLUGIN_VAR_OPCMDARG, "spider_fetch_minimum_columns",
@@ -2868,6 +2879,7 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(with_begin_commit),
     MYSQL_SYSVAR(get_conn_from_idx),
     MYSQL_SYSVAR(get_sts_or_crd),
+    MYSQL_SYSVAR(update_with_primary_key_first),
     MYSQL_SYSVAR(client_found_rows),
     MYSQL_SYSVAR(local_lock_table),
     MYSQL_SYSVAR(use_pushdown_udf),
