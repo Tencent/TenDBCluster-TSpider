@@ -4298,18 +4298,18 @@ int ha_partition::end_bulk_insert() {
   bitmap_clear_all(&m_bulk_insert_started);
   if (error) {
     /**
-    if error happened, reset the next_auto_inc_val,
+    if error happened in TSpider, set last_insert_failed = TRUE,
     get the max_value from the remotedb next time
     */
     if (opt_spider_auto_increment_mode_switch &&
-        is_spider_storage_engine()) { /* if error happened, set
-                                         next_auto_inc_val = 0, then get max
-                                         next time */
+        is_spider_storage_engine()) {
       lock_auto_increment();
-      part_share->next_auto_inc_val = 0;
       part_share->auto_inc_initialized = FALSE;
-      part_share->last_insert_failed = FALSE;
+      part_share->last_insert_failed = TRUE;
       unlock_auto_increment();
+      sql_print_information(
+          "AUTO_INCREMENT: set last_insert_failed=true, error number is %d",
+          error);
     }
   }
   DBUG_RETURN(error);
