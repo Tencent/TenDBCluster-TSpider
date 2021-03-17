@@ -22,8 +22,30 @@
 #define SPIDER_BG_SIMPLE_DISCONNECT 2
 #define SPIDER_BG_SIMPLE_RECORDS 3
 
+class SPIDER_CONN_POOL {
+public:
+  SPIDER_CONN_POOL(){}
+
+  bool init(my_hash_get_key get_key, uint init_cap, CHARSET_INFO *charset);
+  void destroy();
+  bool put_conn(SPIDER_CONN *conn);
+  SPIDER_CONN *get_conn(my_hash_value_type v, uchar *conn, uint key_len);
+  SPIDER_CONN *get_conn_by_key(uchar *conn, uint key_len);
+  void iterate(my_hash_delegate_func iter_func, void *param);
+
+  my_hash_value_type calc_hash(const uchar *key, size_t length);
+
+private:
+  HASH connections; /* like std::*/
+  mysql_rwlock_t rw_lock;
+  bool conn_inited;
+};
+
 uchar *spider_conn_get_key(SPIDER_CONN *conn, size_t *length,
                            my_bool not_used __attribute__((unused)));
+
+uchar *spider_conn_pool_get_key(void *record, size_t *length,
+                                my_bool not_used __attribute__((unused)));
 
 uchar *spider_ipport_conn_get_key(SPIDER_IP_PORT_CONN *ip_port, size_t *length,
                                   my_bool not_used __attribute__((unused)));

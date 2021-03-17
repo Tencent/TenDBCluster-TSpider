@@ -50,14 +50,14 @@ typedef my_bool (*my_hash_walk_action)(void *,void *);
 
 typedef struct st_hash {
   size_t key_offset,key_length;		/* Length of key if const length */
-  size_t blength;
-  ulong records;
-  uint flags;
-  DYNAMIC_ARRAY array;				/* Place for hash_keys */
-  my_hash_get_key get_key;
-  my_hash_function hash_function;
-  void (*free)(void *);
-  CHARSET_INFO *charset;
+  size_t blength;                 /* Buffmax length, 2^n */
+  ulong records;                  /* Number of elements */
+  uint flags;                     /* 0 | HASH_UNIQUE | HASH_THREAD_SPECIFIC */
+  DYNAMIC_ARRAY array;				    /* Place for all hash_keys in this single array */
+  my_hash_get_key get_key;        /* get_key function, if null, use key_offset and key_length */
+  my_hash_function hash_function; /* hash_function, default use my_hash_sort() */
+  void (*free)(void *);           /* if no need, leave it as NULL */
+  CHARSET_INFO *charset;          /* character set */
 } HASH;
 
 /* A search iterator state */

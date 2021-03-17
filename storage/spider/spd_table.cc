@@ -122,6 +122,8 @@ extern SPIDER_DBTON spider_dbton_mysql;
 SPIDER_THREAD *spider_table_sts_threads;
 SPIDER_THREAD *spider_table_crd_threads;
 
+const int SPIDER_CONN_POOL_HASH_INIT_SIZE = 32;
+
 #ifdef HAVE_PSI_INTERFACE
 PSI_mutex_key spd_key_mutex_tbl;
 PSI_mutex_key spd_key_mutex_init_error_tbl;
@@ -129,6 +131,7 @@ PSI_mutex_key spd_key_mutex_init_error_tbl;
 PSI_mutex_key spd_key_mutex_pt_share;
 #endif
 PSI_mutex_key spd_key_mutex_lgtm_tblhnd_share;
+// spd_key_mutex_conn is deprecated since we re-design the conn pool
 PSI_mutex_key spd_key_mutex_conn;
 PSI_mutex_key spd_key_mutex_conn_meta;
 PSI_mutex_key spd_key_mutex_open_conn;
@@ -265,13 +268,14 @@ static PSI_thread_info all_spider_threads[] = {
 };
 #endif
 
-extern HASH spider_open_connections;
+extern SPIDER_CONN_POOL spd_connect_pools;
+// extern HASH spider_open_connections;
 extern HASH spider_ipport_conns;
 extern uint spider_open_connections_id;
 extern const char *spider_open_connections_func_name;
 extern const char *spider_open_connections_file_name;
 extern ulong spider_open_connections_line_no;
-extern pthread_mutex_t spider_conn_mutex;
+// extern pthread_mutex_t spider_conn_mutex;
 extern pthread_mutex_t spider_conn_meta_mutex;
 extern HASH *spider_udf_table_mon_list_hash;
 extern uint spider_udf_table_mon_list_hash_id;
@@ -3284,9 +3288,9 @@ int spider_create_conn_keys(SPIDER_SHARE *share) {
       tmp_name = strmov(tmp_name + 1, share->server_names[roop_count]);
     tmp_name += 23;
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
-    share->conn_keys_hash_value[roop_count] = my_calc_hash(
-        &spider_open_connections, (uchar *)share->conn_keys[roop_count],
-        share->conn_keys_lengths[roop_count]);
+    share->conn_keys_hash_value[roop_count] = 
+        spd_connect_pools.calc_hash((uchar *)share->conn_keys[roop_count], 
+                                    share->conn_keys_lengths[roop_count]);
 #endif
 
     bool get_sql_id = FALSE;
@@ -3346,9 +3350,8 @@ int spider_update_conn_keys(SPIDER_SHARE *share, int link_idx) {
     share->conn_keys_lengths[link_idx] = strlen(tmp_key);
 
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
-    share->conn_keys_hash_value[link_idx] = my_calc_hash(
-        &spider_open_connections, (uchar *)share->conn_keys[link_idx],
-        share->conn_keys_lengths[link_idx]);
+    share->conn_keys_hash_value[link_idx] = spd_connect_pools.calc_hash(
+        (uchar *)share->conn_keys[link_idx], share->conn_keys_lengths[link_idx]);
 #endif
 
     share->conn_key_version = server_version;
@@ -4993,12 +4996,13 @@ int spider_db_done(void *p) {
   }
   pthread_mutex_unlock(&spider_allocated_thds_mutex);
 
-  pthread_mutex_lock(&spider_conn_mutex);
-  while ((conn = (SPIDER_CONN *)my_hash_element(&spider_open_connections, 0))) {
-    my_hash_delete(&spider_open_connections, (uchar *)conn);
-    spider_free_conn(conn);
-  }
-  pthread_mutex_unlock(&spider_conn_mutex);
+  // pthread_mutex_lock(&spider_conn_mutex);
+  // use LF_HASH::destroy() can also delete all elements
+  // while ((conn = (SPIDER_CONN *)my_hash_element(&spider_open_connections, 0))) {
+  //   my_hash_delete(&spider_open_connections, (uchar *)conn);
+  //   spider_free_conn(conn);
+  // }
+  // pthread_mutex_unlock(&spider_conn_mutex);
   pthread_mutex_lock(&spider_lgtm_tblhnd_share_mutex);
   while ((lgtm_tblhnd_share = (SPIDER_LGTM_TBLHND_SHARE *)my_hash_element(
               &spider_lgtm_tblhnd_share_hash, 0))) {
@@ -5013,10 +5017,8 @@ int spider_db_done(void *p) {
                        spider_allocated_thds.array.max_element *
                            spider_allocated_thds.array.size_of_element);
   my_hash_free(&spider_allocated_thds);
-  spider_free_mem_calc(spider_current_trx, spider_open_connections_id,
-                       spider_open_connections.array.max_element *
-                           spider_open_connections.array.size_of_element);
-  my_hash_free(&spider_open_connections);
+  // my_hash_free(&spider_open_connections);
+  spd_connect_pools.destroy();
   my_hash_free(&spider_ipport_conns);
   my_hash_free(&spider_for_sts_conns);
   spider_free_mem_calc(spider_current_trx, spider_lgtm_tblhnd_share_hash_id,
@@ -5048,7 +5050,7 @@ int spider_db_done(void *p) {
   pthread_mutex_destroy(&spider_mon_table_cache_mutex);
   pthread_mutex_destroy(&spider_allocated_thds_mutex);
   pthread_mutex_destroy(&spider_open_conn_mutex);
-  pthread_mutex_destroy(&spider_conn_mutex);
+  // pthread_mutex_destroy(&spider_conn_mutex);
   pthread_mutex_destroy(&spider_lgtm_tblhnd_share_mutex);
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   pthread_mutex_destroy(&spider_pt_share_mutex);
@@ -5320,12 +5322,14 @@ int spider_db_init(void *p) {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_lgtm_tblhnd_share_mutex_init;
   }
-#if MYSQL_VERSION_ID < 50500
-  if (pthread_mutex_init(&spider_conn_mutex, MY_MUTEX_INIT_FAST))
-#else
-  if (mysql_mutex_init(spd_key_mutex_conn, &spider_conn_mutex,
-                       MY_MUTEX_INIT_FAST))
-#endif
+  if (spd_connect_pools.init((my_hash_get_key)spider_conn_pool_get_key,
+      SPIDER_CONN_POOL_HASH_INIT_SIZE, spd_charset_utf8_bin))
+// #if MYSQL_VERSION_ID < 50500
+//   if (pthread_mutex_init(&spider_conn_mutex, MY_MUTEX_INIT_FAST))
+// #else
+//   if (mysql_mutex_init(spd_key_mutex_conn, &spider_conn_mutex,
+//                        MY_MUTEX_INIT_FAST))
+// #endif
   {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_conn_mutex_init;
@@ -5422,11 +5426,11 @@ int spider_db_init(void *p) {
       NULL, spider_lgtm_tblhnd_share_hash,
       spider_lgtm_tblhnd_share_hash.array.max_element *
           spider_lgtm_tblhnd_share_hash.array.size_of_element);
-  if (my_hash_init(&spider_open_connections, spd_charset_utf8_bin, 256, 0, 0,
-                   (my_hash_get_key)spider_conn_get_key, 0, 0)) {
-    error_num = HA_ERR_OUT_OF_MEM;
-    goto error_open_connections_hash_init;
-  }
+  // if (my_hash_init(&spider_open_connections, spd_charset_utf8_bin, 256, 0, 0,
+  //                  (my_hash_get_key)spider_conn_get_key, 0, 0)) {
+  //   error_num = HA_ERR_OUT_OF_MEM;
+  //   goto error_open_connections_hash_init;
+  // }
   if (my_hash_init(&spider_conn_meta_info, spd_charset_utf8_bin, 32, 0, 0,
                    (my_hash_get_key)spider_conn_meta_get_key,
                    spider_free_conn_meta, 0)) {
@@ -5454,10 +5458,6 @@ int spider_db_init(void *p) {
     goto error_xid_cache_hash_init;
   }
 #endif
-  spider_alloc_calc_mem_init(spider_open_connections, 146);
-  spider_alloc_calc_mem(NULL, spider_open_connections,
-                        spider_open_connections.array.max_element *
-                            spider_open_connections.array.size_of_element);
   if (my_hash_init(&spider_allocated_thds, spd_charset_utf8_bin, 32, 0, 0,
                    (my_hash_get_key)spider_allocated_thds_get_key, 0, 0)) {
     error_num = HA_ERR_OUT_OF_MEM;
@@ -5610,10 +5610,7 @@ error_xid_cache_hash_init:
 error_sts_for_conn_hash_init:
   my_hash_free(&spider_conn_meta_info);
 error_conn_meta_hash_init:
-  spider_free_mem_calc(NULL, spider_open_connections_id,
-                       spider_open_connections.array.max_element *
-                           spider_open_connections.array.size_of_element);
-  my_hash_free(&spider_open_connections);
+  // my_hash_free(&spider_open_connections);
 error_open_connections_hash_init:
   spider_free_mem_calc(NULL, spider_lgtm_tblhnd_share_hash_id,
                        spider_lgtm_tblhnd_share_hash.array.max_element *
@@ -5647,7 +5644,7 @@ error_allocated_thds_mutex_init:
 error_open_conn_mutex_init:
   pthread_mutex_destroy(&spider_conn_meta_mutex);
 error_conn_meta_mutex_init:
-  pthread_mutex_destroy(&spider_conn_mutex);
+  spd_connect_pools.destroy();
 error_conn_mutex_init:
   pthread_mutex_destroy(&spider_lgtm_tblhnd_share_mutex);
 error_lgtm_tblhnd_share_mutex_init:
