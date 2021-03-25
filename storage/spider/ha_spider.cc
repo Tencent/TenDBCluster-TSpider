@@ -594,22 +594,6 @@ int ha_spider::close() {
     mrr_key_buff = NULL;
   }
 #endif
-#ifdef HA_CAN_BULK_ACCESS
-  if (bulk_access_link_first) {
-    do {
-      DBUG_PRINT("info", ("spider bulk_access_link->spider=%p",
-                          bulk_access_link_first->spider));
-      DBUG_PRINT("info", ("spider bulk_access_link->spider->dbton_handler=%p",
-                          bulk_access_link_first->spider->dbton_handler));
-      DBUG_PRINT("info",
-                 ("spider ptr bulk_access_link->spider->dbton_handler=%p",
-                  &bulk_access_link_first->spider->dbton_handler));
-      bulk_access_link_current = bulk_access_link_first->next;
-      delete_bulk_access_link(bulk_access_link_first);
-      bulk_access_link_first = bulk_access_link_current;
-    } while (bulk_access_link_first);
-  }
-#endif
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
   while (direct_aggregate_item_first) {
     direct_aggregate_item_current = direct_aggregate_item_first->next;
@@ -650,6 +634,11 @@ int ha_spider::close() {
   }
 
   spider_db_free_result(this, TRUE);
+
+  if (conns) {
+    spider_free(spider_current_trx, conns, MYF(0));
+    conns = NULL;
+  }
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   if (partition_handler_share && pt_handler_share_creator == this) {
     partition_share = share->partition_share;
@@ -691,15 +680,6 @@ int ha_spider::close() {
   }
 
   spider_free_share(share);
-#ifdef HA_CAN_BULK_ACCESS
-/*
-  if (init_ha_mem_root)
-  {
-    free_root(&ha_mem_root, MYF(0));
-    init_ha_mem_root = FALSE;
-  }
-*/
-#endif
   is_clone = FALSE;
   pt_clone_source_handler = NULL;
   share = NULL;
@@ -9775,7 +9755,8 @@ void ha_spider::check_pre_call(bool use_parallel) {
     longlong offset_limit;
     spider_get_select_limit_from_select_lex(select_lex, &select_limit,
                                             &offset_limit);
-    if (select_lex && (!select_lex->explicit_limit || !select_limit)) {
+    if (select_lex && !offset_limit &&
+      (!select_lex->explicit_limit || !select_limit || (select_limit && opt_spider_parallel_limit))) {
       use_pre_call = TRUE;
     }
   }

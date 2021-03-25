@@ -6273,40 +6273,24 @@ bool ha_partition::check_parallel_search() {
   while (table_list->parent_l) table_list = table_list->parent_l;
 
   select_lex = table_list->select_lex;
-  DBUG_PRINT("info", ("partition select_lex: %p", select_lex));
   if (!select_lex) goto not_parallel;
   if (!select_lex->explicit_limit) {
-    DBUG_PRINT("info", ("partition not using explicit_limit"));
     goto parallel;
   }
 
   join = select_lex->join;
-  DBUG_PRINT("info", ("partition join: %p", join));
   if (join && join->skip_sort_order) {
-    DBUG_PRINT("info", ("partition order_list.elements: %u",
-                        select_lex->order_list.elements));
     if (select_lex->order_list.elements) {
       Item *item = *select_lex->order_list.first->item;
-      DBUG_PRINT("info", ("partition item: %p", item));
-      DBUG_PRINT("info", ("partition item->type(): %u", item->type()));
-      DBUG_PRINT("info", ("partition m_part_info->part_type: %u",
-                          m_part_info->part_type));
-      DBUG_PRINT("info", ("partition m_is_sub_partitioned: %s",
-                          m_is_sub_partitioned ? "TRUE" : "FALSE"));
-      DBUG_PRINT("info", ("partition m_part_info->part_expr: %p",
-                          m_part_info->part_expr));
       if (item->type() == Item::FIELD_ITEM &&
           m_part_info->part_type == RANGE_PARTITION && !m_is_sub_partitioned &&
           (!m_part_info->part_expr ||
            m_part_info->part_expr->type() == Item::FIELD_ITEM)) {
         Field *order_field = ((Item_field *)item)->field;
-        DBUG_PRINT("info", ("partition order_field: %p", order_field));
         if (order_field && order_field->table == table_list->table) {
           Field *part_field = m_part_info->full_part_field_array[0];
           if (set_top_table_fields)
             order_field = top_table_field[order_field->field_index];
-          DBUG_PRINT("info", ("partition order_field: %p", order_field));
-          DBUG_PRINT("info", ("partition part_field: %p", part_field));
           if (part_field == order_field) {
             /*
               We are using ORDER BY partition_field LIMIT #
@@ -6314,65 +6298,40 @@ bool ha_partition::check_parallel_search() {
               likely that the query can be satisfied from the first
               partition
             */
-            DBUG_PRINT("info", ("partition with ORDER on partition field"));
             goto not_parallel;
           }
         }
       }
-      DBUG_PRINT("info", ("partition have order"));
       goto parallel;
     }
 
-    DBUG_PRINT("info", ("partition group_list.elements: %u",
-                        select_lex->group_list.elements));
     if (select_lex->group_list.elements) {
       Item *item = *select_lex->group_list.first->item;
-      DBUG_PRINT("info", ("partition item: %p", item));
-      DBUG_PRINT("info", ("partition item->type(): %u", item->type()));
-      DBUG_PRINT("info", ("partition m_part_info->part_type: %u",
-                          m_part_info->part_type));
-      DBUG_PRINT("info", ("partition m_is_sub_partitioned: %s",
-                          m_is_sub_partitioned ? "TRUE" : "FALSE"));
-      DBUG_PRINT("info", ("partition m_part_info->part_expr: %p",
-                          m_part_info->part_expr));
       if (item->type() == Item::FIELD_ITEM &&
           m_part_info->part_type == RANGE_PARTITION && !m_is_sub_partitioned &&
           (!m_part_info->part_expr ||
            m_part_info->part_expr->type() == Item::FIELD_ITEM)) {
         Field *group_field = ((Item_field *)item)->field;
-        DBUG_PRINT("info", ("partition group_field: %p", group_field));
         if (group_field && group_field->table == table_list->table) {
           Field *part_field = m_part_info->full_part_field_array[0];
           if (set_top_table_fields)
             group_field = top_table_field[group_field->field_index];
-          DBUG_PRINT("info", ("partition group_field: %p", group_field));
-          DBUG_PRINT("info", ("partition part_field: %p", part_field));
           if (part_field == group_field) {
-            DBUG_PRINT("info", ("partition with GROUP BY on partition field"));
             goto not_parallel;
           }
         }
       }
-      DBUG_PRINT("info", ("partition with GROUP BY"));
       goto parallel;
     }
   } else if (select_lex->order_list.elements ||
              select_lex->group_list.elements) {
-    DBUG_PRINT("info", ("partition is not skip_order"));
-    DBUG_PRINT("info", ("partition order_list.elements: %u",
-                        select_lex->order_list.elements));
-    DBUG_PRINT("info", ("partition group_list.elements: %u",
-                        select_lex->group_list.elements));
     goto parallel;
   }
-  DBUG_PRINT("info", ("partition is not skip_order"));
 
 not_parallel:
-  DBUG_PRINT("return", ("partition FALSE"));
   DBUG_RETURN(FALSE);
 
 parallel:
-  DBUG_PRINT("return", ("partition TRUE"));
   DBUG_RETURN(TRUE);
 }
 
