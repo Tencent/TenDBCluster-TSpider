@@ -6169,6 +6169,12 @@ static Sys_var_mybool Sys_spider_direct_limit_in_group(
     "limit with group would not direct send limit to remote when FALSE",
     GLOBAL_VAR(opt_spider_direct_limit_in_group), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
 
+static Sys_var_mybool Sys_spider_direct_limit_in_select(
+    "spider_direct_limit_in_select",
+    "select with limit would send limit to remote directly when TRUE and spider_parallel_limit is TURE",
+    GLOBAL_VAR(opt_spider_direct_limit_in_select), CMD_LINE(OPT_ARG),
+    DEFAULT(TRUE));
+
 static Sys_var_uint Sys_spider_modify_status_interval(
     "spider_modify_status_interval",
     "the values means the interval update spider_table_status",

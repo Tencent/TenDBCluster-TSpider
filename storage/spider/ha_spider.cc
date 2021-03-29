@@ -9758,6 +9758,10 @@ void ha_spider::check_pre_call(bool use_parallel) {
     if (select_lex && !offset_limit &&
       (!select_lex->explicit_limit || !select_limit || (select_limit && opt_spider_parallel_limit))) {
       use_pre_call = TRUE;
+      if (select_limit && opt_spider_direct_limit_in_select && opt_spider_parallel_limit) {
+        result_list.internal_limit = select_limit + offset_limit;
+        result_list.split_read = select_limit + offset_limit;
+      }
     }
   }
 
@@ -9765,8 +9769,7 @@ void ha_spider::check_pre_call(bool use_parallel) {
        thd_test_options(thd, OPTION_BEGIN)) ||
       thd->sql_use_partition_count < 2 || is_spider_select_limit_x_y(this) ||
       is_spider_select_mul_table(this) ||
-      thd->lex->spider_rone_shard_flag) /* use option spider_rone_shard,  choose
-                                           only one remote shard by random */
+      thd->lex->spider_rone_shard_flag) /* use option spider_rone_shard,  choose only one remote shard by random */
   {
     use_pre_call = FALSE;
     DBUG_VOID_RETURN;
