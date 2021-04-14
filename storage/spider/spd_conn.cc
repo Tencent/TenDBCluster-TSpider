@@ -56,9 +56,9 @@ inline void SPIDER_set_next_thread_id(THD *A) {
 
 extern handlerton *spider_hton_ptr;
 extern SPIDER_DBTON spider_dbton[SPIDER_DBTON_SIZE];
-pthread_mutex_t spider_conn_id_mutex;
+// pthread_mutex_t spider_conn_id_mutex;
 pthread_mutex_t spider_ipport_conn_mutex;
-ulonglong spider_conn_id = 1;
+volatile longlong spider_conn_id = 0;
 
 extern pthread_attr_t spider_pt_attr;
 
@@ -649,10 +649,8 @@ SPIDER_CONN *spider_create_conn(SPIDER_SHARE *share, ha_spider *spider,
   spider_conn_queue_connect(share, conn, link_idx);
   conn->ping_time = (time_t)time((time_t *)0);
   conn->connect_error_time = conn->ping_time;
-  pthread_mutex_lock(&spider_conn_id_mutex);
+  my_atomic_add64(&spider_conn_id, 1LL);
   conn->conn_id = spider_conn_id;
-  ++spider_conn_id;
-  pthread_mutex_unlock(&spider_conn_id_mutex);
 
   pthread_mutex_lock(&spider_ipport_conn_mutex);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE

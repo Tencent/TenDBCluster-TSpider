@@ -62,9 +62,9 @@ extern SPIDER_CONN_POOL spd_connect_pools;
 // extern HASH spider_open_connections;
 extern HASH spider_ipport_conns;
 // extern pthread_mutex_t spider_conn_mutex;
-extern pthread_mutex_t spider_conn_id_mutex;
+// extern pthread_mutex_t spider_conn_id_mutex;
 extern pthread_mutex_t spider_ipport_conn_mutex;
-extern ulonglong spider_conn_id;
+extern volatile longlong spider_conn_id;
 
 uint spider_udf_calc_hash(char *key, uint mod) {
   uint sum = 0;
@@ -421,10 +421,8 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
     goto error;
   conn->ping_time = (time_t)time((time_t *)0);
   conn->connect_error_time = conn->ping_time;
-  pthread_mutex_lock(&spider_conn_id_mutex);
+  my_atomic_add64(&spider_conn_id, 1LL);
   conn->conn_id = spider_conn_id;
-  ++spider_conn_id;
-  pthread_mutex_unlock(&spider_conn_id_mutex);
 
   pthread_mutex_lock(&spider_ipport_conn_mutex);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
@@ -439,7 +437,7 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
   { /* exists, +1 */
     pthread_mutex_unlock(&spider_ipport_conn_mutex);
     pthread_mutex_lock(&ip_port_conn->mutex);
-    if (spider_param_max_connections()) { /* enable conncetion pool */
+    if (spider_param_max_connections()) { /* enable connection pool */
       if (ip_port_conn->ip_port_count >=
           spider_param_max_connections()) { /* bigger than the max num of
                                                connections, free conn and return
