@@ -7158,6 +7158,7 @@ int ha_partition::compare_number_of_records(ha_partition *me, const uint32 *a,
 */
 
 int ha_partition::info(uint flag) {
+  THD *thd = ha_thd();
   uint no_lock_flag = flag & HA_STATUS_NO_LOCK;
   uint extra_var_flag = flag & HA_STATUS_VARIABLE_EXTRA;
   DBUG_ENTER("ha_partition::info");
@@ -7227,7 +7228,12 @@ int ha_partition::info(uint flag) {
           set_if_bigger(part_share->next_auto_inc_val, auto_increment_value);
           /*if (can_use_for_auto_inc_init())*/
           part_share->auto_inc_initialized = true;
-          part_share->last_insert_failed = false;
+          if (thd_sql_command(thd) == SQLCOM_INSERT        ||
+              thd_sql_command(thd) == SQLCOM_REPLACE       ||
+              thd_sql_command(thd) == SQLCOM_INSERT_SELECT ||
+              thd_sql_command(thd) == SQLCOM_REPLACE_SELECT) {
+            part_share->last_insert_failed = false;
+          }
           DBUG_PRINT("info", ("initializing next_auto_inc_val to %lu",
                               (ulong)part_share->next_auto_inc_val));
         }

@@ -6108,6 +6108,11 @@ int ha_spider::info(uint flag) {
       if (stats.records <= 1 /* && (flag & HA_STATUS_NO_LOCK) */)
         stats.records = 2;
     }
+    if (sql_command == SQLCOM_SHOW_TABLE_STATUS) {
+      /* stats.auto_increment_value will not be updated */
+      DBUG_RETURN(error_num);
+    }
+
     if (flag & HA_STATUS_AUTO) {
 #ifdef HANDLER_HAS_CAN_USE_FOR_AUTO_INC_INIT
       auto_inc_temporary = FALSE;
