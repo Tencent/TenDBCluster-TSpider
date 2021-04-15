@@ -434,6 +434,7 @@ my_bool opt_spider_not_convert_binary;
 my_bool opt_spider_parallel_group_order;
 my_bool opt_spider_parallel_limit;
 my_bool opt_spider_internal_xa;
+ulonglong opt_spider_log_ignore_err_nums;
 /*
   True if the bootstrap thread is running. Protected by LOCK_start_thread.
   Used in bootstrap() function to determine if the bootstrap thread
