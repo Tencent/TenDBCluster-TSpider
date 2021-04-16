@@ -69,8 +69,8 @@ update tbl_a set name='x22' order by id desc limit 10;
 SELECT argument  FROM mysql.general_log;
 argument
 update tbl_a set name='x22' order by id desc limit 10
-mysql localhost 3306 select `id`,`name` from `auto_test_remote`.`tbl_a` order by `id` desc limit 10 for update
-mysql localhost 3306 select `id`,`name` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 10 for update
+mysql localhost 3306 select `id`,`t`,`name` from `auto_test_remote`.`tbl_a` order by `id` desc limit 10 for update
+mysql localhost 3306 select `id`,`t`,`name` from `auto_test_remote_2`.`tbl_a` order by `id` desc limit 10 for update
 mysql localhost 3306 update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 7 limit 1;update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 6 limit 1;update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 5 limit 1;update `auto_test_remote`.`tbl_a` set `name` = 'x22' where `id` = 4 limit 1
 mysql localhost 3306 update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 10 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 9 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 8 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 3 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 2 limit 1;update `auto_test_remote_2`.`tbl_a` set `name` = 'x22' where `id` = 1 limit 1
 SELECT argument  FROM mysql.general_log
@@ -98,21 +98,21 @@ update tbl_a  set id =(@i:=@i+1) where id > 0 limit 10
 mysql localhost 3306 select `id`,`t`,`name` from `auto_test_remote`.`tbl_a` where (`id` > 0) limit 10 for update
 mysql localhost 3306 select `id`,`t`,`name` from `auto_test_remote_2`.`tbl_a` where (`id` > 0) limit 10 for update
 mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(12,1,'x22')
-mysql localhost 3306 delete from `auto_test_remote`.`tbl_a` where `id` = 4 and `t` = 1 and `name` = 'x22' limit 1
+mysql localhost 3306 delete from `auto_test_remote`.`tbl_a` where `id` = 4 limit 1
 mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`id`,`t`,`name`)values(13,1,'x22')
-mysql localhost 3306 delete from `auto_test_remote`.`tbl_a` where `id` = 5 and `t` = 1 and `name` = 'x22' limit 1
-mysql localhost 3306 update `auto_test_remote`.`tbl_a` set `id` = 14 where `id` = 6 and `t` = 1 and `name` = 'x22' limit 1
-mysql localhost 3306 update `auto_test_remote`.`tbl_a` set `id` = 15 where `id` = 7 and `t` = 1 and `name` = 'x22' limit 1
+mysql localhost 3306 delete from `auto_test_remote`.`tbl_a` where `id` = 5 limit 1
+mysql localhost 3306 update `auto_test_remote`.`tbl_a` set `id` = 14 where `id` = 6 limit 1
+mysql localhost 3306 update `auto_test_remote`.`tbl_a` set `id` = 15 where `id` = 7 limit 1
 mysql localhost 3306 insert high_priority into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(16,1,'x22')
-mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 1 and `t` = 1 and `name` = 'x22' limit 1
+mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 1 limit 1
 mysql localhost 3306 insert high_priority into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(17,1,'x22')
-mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 2 and `t` = 1 and `name` = 'x22' limit 1
-mysql localhost 3306 update `auto_test_remote_2`.`tbl_a` set `id` = 18 where `id` = 3 and `t` = 1 and `name` = 'x22' limit 1
-mysql localhost 3306 update `auto_test_remote_2`.`tbl_a` set `id` = 19 where `id` = 8 and `t` = 1 and `name` = 'x22' limit 1
+mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 2 limit 1
+mysql localhost 3306 update `auto_test_remote_2`.`tbl_a` set `id` = 18 where `id` = 3 limit 1
+mysql localhost 3306 update `auto_test_remote_2`.`tbl_a` set `id` = 19 where `id` = 8 limit 1
 mysql localhost 3306 insert high_priority into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(20,1,'x22')
-mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 9 and `t` = 1 and `name` = 'x22' limit 1
+mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 9 limit 1
 mysql localhost 3306 insert high_priority into `auto_test_remote`.`tbl_a`(`id`,`t`,`name`)values(21,1,'x22')
-mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 10 and `t` = 1 and `name` = 'x22' limit 1
+mysql localhost 3306 delete from `auto_test_remote_2`.`tbl_a` where `id` = 10 limit 1
 SELECT argument  FROM mysql.general_log
 TRUNCATE TABLE mysql.general_log;
 
