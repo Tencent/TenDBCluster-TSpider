@@ -1,0 +1,137 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT primary key auto_increment, a INT, b INT)ENGINE=Spider DEFAULT CHARSET=utf8 AUTO_INCREMENT=118 PARTITION BY LIST (id % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+test
+SHOW TABLE STATUS LIKE 't1';
+Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment	Max_index_length	Temporary
+t1	SPIDER	10	Fixed	4	0	0	0	0	0	0	NULL	NULL	NULL	utf8_general_ci	0	partitioned		0	N
+INSERT INTO t1(id) VALUES (0),(0),(0);
+SELECT * FROM t1;
+id	a	b
+12	NULL	NULL
+46	NULL	NULL
+29	NULL	NULL
+SHOW TABLE STATUS LIKE 't1';
+Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment	Max_index_length	Temporary
+t1	SPIDER	10	Fixed	4	0	0	0	0	0	63	NULL	NULL	NULL	utf8_general_ci	0	partitioned		0	N
+TRUNCATE TABLE t1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT primary key auto_increment, a INT, b INT)ENGINE=Spider DEFAULT CHARSET=utf8 AUTO_INCREMENT=118 PARTITION BY LIST (id % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (`id` MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1(id) VALUES (0),(0),(0);
+SELECT * FROM t1;
+id	a	b
+12	NULL	NULL
+46	NULL	NULL
+29	NULL	NULL
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER AUTO_INCREMENT=63 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (`id` MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+TRUNCATE TABLE t1;
+
+test2
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT primary key auto_increment, a INT, b INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (id % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+INSERT INTO t1(id) VALUES (0),(0),(0),(0);
+SELECT * FROM t1;
+id	a	b
+12	NULL	NULL
+46	NULL	NULL
+29	NULL	NULL
+63	NULL	NULL
+INSERT INTO t1(id) VALUES(29);
+ERROR 23000: Duplicate entry '29' for key 'PRIMARY'
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (`id` MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+connection child2_1;
+INSERT INTO t1(id) VALUES(80);
+connection master_1;
+INSERT INTO t1(id) VALUES(0);
+SELECT * FROM t1;
+id	a	b
+12	NULL	NULL
+46	NULL	NULL
+80	NULL	NULL
+29	NULL	NULL
+63	NULL	NULL
+97	NULL	NULL
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
