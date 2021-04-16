@@ -6223,3 +6223,20 @@ static Sys_var_mybool Sys_spider_not_show_partition(
   "spider_not_show_partition",
   "show create table for spider without partition information",
   SESSION_VAR(spider_not_show_partition), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+
+static const char *spider_ignore_error_number_names[]= 
+{
+  "1062", "12701", "12723", "1477",
+  "1429", "1067", "1292", "1366",
+  "1411", "1159", "2014", 0
+};
+
+
+static Sys_var_set Sys_spider_log_ignore_err_numbers(
+       "spider_log_ignore_err_numbers",
+       "The array of error numbers which spider will not ouput erorr log.",
+    GLOBAL_VAR(opt_spider_log_ignore_err_nums), CMD_LINE(REQUIRED_ARG),
+       spider_ignore_error_number_names,
+       /* by default we log all queries except 'not_using_index' */
+       DEFAULT(0));
+

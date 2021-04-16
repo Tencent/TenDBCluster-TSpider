@@ -211,6 +211,7 @@ enum vers_alter_history_enum
 extern char *mysql_home_ptr, *pidfile_name_ptr;
 extern char *tdbctl_wrapper_name;
 extern char *tdbctl_skip_ddl_convert_db;
+extern ulonglong opt_spider_log_ignore_err_nums;
 extern MYSQL_PLUGIN_IMPORT char glob_hostname[HOSTNAME_LENGTH + 1];
 extern char mysql_home[FN_REFLEN];
 extern char pidfile_name[FN_REFLEN], system_time_zone[30], *opt_init_file;

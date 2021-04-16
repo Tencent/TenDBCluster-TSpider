@@ -291,6 +291,27 @@
 #define SPIDER_UDF_PING_TABLE_USE_WHERE (1 << 1)
 #define SPIDER_UDF_PING_TABLE_USE_ALL_MONITORING_NODES (1 << 2)
 
+/* defined in sys_vars.cc
+static const char *spider_ignore_error_number_names[]=
+{
+  "1062", "12701", "12723", "1477",
+  "1429", "1067", "1292", "1366",
+  "1411", "1159", "2014", 0
+};*/
+
+static const ulonglong SPD_ERR_DUPLICATE       = 1U << 0; // 1062
+static const ulonglong SPD_ERR_GONE_AWAWY      = 1U << 1; // 12701
+static const ulonglong SPD_ERR_TOO_MANY_CONN   = 1U << 2; // 12723
+static const ulonglong SPD_ERR_NO_REMOTE_EXIST = 1U << 3; // 1477
+static const ulonglong SPD_ERR_CONN_REMOTE     = 1U << 4; // 1429
+static const ulonglong SPD_ERR_INVALID_DEFAULT = 1U << 5; // 1067
+static const ulonglong SPD_ERR_INVALID_DATE    = 1U << 6; // 1292
+static const ulonglong SPD_ERR_TRUNCATE_VALUE  = 1U << 7; // 1366
+static const ulonglong SPD_ERR_BAD_TYPE_VALUE  = 1U << 8; // 1411
+static const ulonglong SPD_ERR_NET_TIMEOUT     = 1U << 9; // 1159
+static const ulonglong SPD_ERR_COM_OUT_OF_SYNC = 1U << 10;// 2014
+
+
 int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
                       int link_idx);
 
@@ -829,6 +850,48 @@ inline void log_spider_warn_result_detailed(const char *info,
           server_status, warning_count);
 }
 
+static bool is_error_ignored_by_spider_log(int err_number) {
+  switch (err_number) {
+    case 1062:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_DUPLICATE) return true;
+      break;
+    case 12701:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_GONE_AWAWY) return true;
+      break;
+    case 12723:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_TOO_MANY_CONN) return true;
+      break;
+    case 1477:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_NO_REMOTE_EXIST) return true;
+      break;
+    case 1429:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_CONN_REMOTE) return true;
+      break;
+    case 1067:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_INVALID_DEFAULT) return true;
+      break;
+    case 1292:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_INVALID_DATE) return true;
+      break;
+    case 1366:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_TRUNCATE_VALUE) return true;
+      break;
+    case 1411:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_BAD_TYPE_VALUE) return true;
+      break;
+    case 1159:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_NET_TIMEOUT) return true;
+      break;
+    case 2014:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_COM_OUT_OF_SYNC) return true;
+      break;
+    default:
+      /* empty */
+      break;
+  }
+  return false;
+}
+
 /**
   log spider result to stderr with current time and function name
   @param  info               information about the log, e.g. "[WARN SPIDER RESULT]"
@@ -850,6 +913,7 @@ inline void log_spider_result_with_row_info(const char *info, const char *func_n
 }
 
 inline void log_spider_connect_host_failed(const char *host_name, long port_num, int error_num) {
+  if (is_error_ignored_by_spider_log(error_num)) return;
   ulong usec = 0;
   time_t cur_time;
   struct tm l_time;
@@ -867,6 +931,7 @@ inline void log_spider_connect_host_failed(const char *host_name, long port_num,
 inline void log_spider_error_with_info(const char *info, /* error or warn */
                                        long long int src_id, int error_num, 
                                        const char *error_info) {
+  if (is_error_ignored_by_spider_log(error_num)) return;
   ulong usec = 0;
   time_t cur_time;
   struct tm l_time;
