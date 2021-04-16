@@ -1,0 +1,144 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT primary key auto_increment, a INT, b INT
+--let $TABLE_SHARD_KEY = id
+
+--let $CHILD2_1_DROP_TABLES = DROP TABLE IF EXISTS t1;
+--let $CHILD2_2_DROP_TABLES = $CHILD2_1_DROP_TABLES
+--let $MASTER_DROP_TABLES1 = $CHILD2_1_DROP_TABLES
+--let $CHILD2_1_CREATE_TABLES = CREATE TABLE $TABLE_NAME ($TABLE_BODY)$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+--let $CHILD2_2_CREATE_TABLES = CREATE TABLE $TABLE_NAME ($TABLE_BODY)$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+--let $MASTER_CREATE_TABLES1 = CREATE TABLE $TABLE_NAME ($TABLE_BODY)$MASTER_1_ENGINE $MASTER_1_CHARSET AUTO_INCREMENT=118 PARTITION BY LIST ($TABLE_SHARD_KEY % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "$TABLE_NAME", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "$TABLE_NAME", srv "s_2_2",aim "1"');
+--let $MASTER_CREATE_TABLES2 = CREATE TABLE $TABLE_NAME ($TABLE_BODY)$MASTER_1_ENGINE $MASTER_1_CHARSET PARTITION BY LIST ($TABLE_SHARD_KEY % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "$TABLE_NAME", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "$TABLE_NAME", srv "s_2_2",aim "1"');
+
+--let $OUTPUT_CHILD_GROUP2_BACKUP= $OUTPUT_CHILD_GROUP2
+--let $OUTPUT_CHILD_GROUP2= 1
+
+--enable_warnings
+
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+
+eval $MASTER_DROP_TABLES1;
+
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+eval $MASTER_CREATE_TABLES1;
+
+--echo
+--echo test
+
+SHOW TABLE STATUS LIKE 't1';
+INSERT INTO t1(id) VALUES (0),(0),(0);
+SELECT * FROM t1;
+SHOW TABLE STATUS LIKE 't1';
+TRUNCATE TABLE t1;
+eval $MASTER_DROP_TABLES1;
+eval $MASTER_CREATE_TABLES1;
+SHOW CREATE TABLE t1;
+INSERT INTO t1(id) VALUES (0),(0),(0);
+SELECT * FROM t1;
+SHOW CREATE TABLE t1;
+TRUNCATE TABLE t1;
+
+--echo
+--echo test2
+eval $MASTER_DROP_TABLES1;
+
+eval $MASTER_CREATE_TABLES2;
+INSERT INTO t1(id) VALUES (0),(0),(0),(0);
+SELECT * FROM t1;
+
+--error 1062
+INSERT INTO t1(id) VALUES(29);
+
+SHOW CREATE TABLE t1;
+
+--connection child2_1
+INSERT INTO t1(id) VALUES(80);
+
+--connection master_1
+INSERT INTO t1(id) VALUES(0);
+SELECT * FROM t1;
+
+TRUNCATE TABLE t1;
+SHOW CREATE TABLE t1;
+INSERT INTO t1(id) VALUES (0),(0),(0);
+FLUSH TABLES;
+INSERT INTO t1(id) VALUES (0),(0),(0);
+SHOW TABLE STATUS;
+INSERT INTO t1(id) VALUES(0);
+SELECT * FROM t1;
+
+--source ../include/spider_drop_database.inc

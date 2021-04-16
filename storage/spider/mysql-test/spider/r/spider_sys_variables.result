@@ -45,6 +45,7 @@ spider_connect_timeout	6
 spider_direct_dup_insert	1
 spider_direct_insert_ignore	0
 spider_direct_limit_in_group	OFF
+spider_direct_limit_in_select	ON
 spider_direct_order_limit	10000
 spider_error_when_flush_server	OFF
 spider_fetch_minimum_columns	ON
@@ -65,6 +66,7 @@ spider_internal_sql_log_off	0
 spider_internal_xa	OFF
 spider_internal_xa_id_type	0
 spider_internal_xa_snapshot	0
+spider_log_ignore_err_numbers	
 spider_log_result_error_with_sql	3
 spider_log_result_errors	1
 spider_low_mem_read	1
