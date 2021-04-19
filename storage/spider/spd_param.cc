@@ -1613,7 +1613,8 @@ double spider_param_ping_interval_at_trx_start(THD *thd) {
   2 :set 0 value
  */
 static MYSQL_THDVAR_INT(auto_increment_mode,                       /* name */
-                        PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY, /* opt */
+                        PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY
+                            | PLUGIN_VAR_NOSYSVAR,                 /* opt */
                         "Mode of auto increment.",                 /* comment */
                         NULL,                                      /* check */
                         NULL,                                      /* update */

@@ -6133,25 +6133,14 @@ int ha_spider::info(uint flag) {
           DBUG_PRINT("info", ("spider auto_increment_value=%llu",
                               share->lgtm_tblhnd_share->auto_increment_value));
           stats.auto_increment_value = first_value;
-        } else if (tmp_auto_increment_mode == 1 &&
-                   !share->lgtm_tblhnd_share->auto_increment_init) {
-          DBUG_PRINT("info", ("spider auto_increment_value=%llu",
-                              share->lgtm_tblhnd_share->auto_increment_value));
-          share->lgtm_tblhnd_share->auto_increment_lclval =
-              share->lgtm_tblhnd_share->auto_increment_value;
-          share->lgtm_tblhnd_share->auto_increment_init = TRUE;
-          stats.auto_increment_value =
-              share->lgtm_tblhnd_share->auto_increment_value;
         } else {
           DBUG_PRINT("info", ("spider auto_increment_value=%llu",
                               share->lgtm_tblhnd_share->auto_increment_value));
-          stats.auto_increment_value =
-              share->lgtm_tblhnd_share->auto_increment_value;
+          stats.auto_increment_value = 0;
         }
       } else {
 #endif
-        stats.auto_increment_value =
-            share->lgtm_tblhnd_share->auto_increment_value;
+        stats.auto_increment_value = 0;
 #ifdef WITH_PARTITION_STORAGE_ENGINE
       }
 #endif
@@ -6655,16 +6644,6 @@ int ha_spider::update_auto_increment() {
   DBUG_PRINT("info", ("spider auto_increment_mode=%d", auto_increment_mode));
   DBUG_PRINT("info", ("spider next_number_field=%lld",
                       table->next_number_field->val_int()));
-  if (auto_increment_mode == 1 &&
-      !(table->next_number_field->val_int() != 0 ||
-        (table->auto_increment_field_not_null &&
-         thd->variables.sql_mode & MODE_NO_AUTO_VALUE_ON_ZERO))) {
-    lock_here = TRUE;
-    pthread_mutex_lock(&share->lgtm_tblhnd_share->auto_increment_mutex);
-    next_insert_id = share->lgtm_tblhnd_share->auto_increment_value;
-    DBUG_PRINT("info", ("spider auto_increment_value=%llu",
-                        share->lgtm_tblhnd_share->auto_increment_value));
-  }
   if ((error_num = handler::update_auto_increment())) {
     if (lock_here)
       pthread_mutex_unlock(&share->lgtm_tblhnd_share->auto_increment_mutex);
