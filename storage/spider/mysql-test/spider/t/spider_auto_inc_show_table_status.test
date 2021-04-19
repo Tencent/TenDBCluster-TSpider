@@ -141,4 +141,17 @@ SHOW TABLE STATUS;
 INSERT INTO t1(id) VALUES(0);
 SELECT * FROM t1;
 
+TRUNCATE TABLE t1;
+SHOW CREATE TABLE t1;
+INSERT INTO t1(id) VALUES (0),(0),(0);
+FLUSH TABLES;
+INSERT INTO t1(id) VALUES (0),(0),(0);
+--disable_warnings
+--disable_query_log
+SELECT * FROM information_schema.tables WHERE TABLE_SCHEMA = 'auto_test_local';
+--enable_query_log
+--enable_warnings
+INSERT INTO t1(id) VALUES(0);
+SELECT * FROM t1;
+
 --source ../include/spider_drop_database.inc

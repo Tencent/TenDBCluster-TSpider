@@ -46,7 +46,6 @@ connection master_1;
 DROP TABLE IF EXISTS ta_l;
 show variables like "%spider_auto_increment%";
 Variable_name	Value
-spider_auto_increment_mode	0
 spider_auto_increment_mode_switch	ON
 spider_auto_increment_mode_value	12
 spider_auto_increment_step	17
