@@ -57,7 +57,8 @@ inline void SPIDER_set_next_thread_id(THD *A) {
 extern handlerton *spider_hton_ptr;
 extern SPIDER_DBTON spider_dbton[SPIDER_DBTON_SIZE];
 // pthread_mutex_t spider_conn_id_mutex;
-pthread_mutex_t spider_ipport_conn_mutex;
+// pthread_mutex_t spider_ipport_conn_mutex;
+mysql_rwlock_t spider_ipport_conn_rwlock;
 volatile longlong spider_conn_id = 0;
 
 extern pthread_attr_t spider_pt_attr;
@@ -99,7 +100,8 @@ const char *spider_open_connections_func_name;
 const char *spider_open_connections_file_name;
 ulong spider_open_connections_line_no;
 // pthread_mutex_t spider_conn_mutex;
-pthread_mutex_t spider_conn_meta_mutex;
+// pthread_mutex_t spider_conn_meta_mutex;
+mysql_rwlock_t spider_conn_meta_rwlock;
 HASH spider_conn_meta_info;
 
 extern PSI_thread_key spd_key_thd_conn_rcyc;
@@ -652,7 +654,7 @@ SPIDER_CONN *spider_create_conn(SPIDER_SHARE *share, ha_spider *spider,
   my_atomic_add64(&spider_conn_id, 1LL);
   conn->conn_id = spider_conn_id;
 
-  pthread_mutex_lock(&spider_ipport_conn_mutex);
+  mysql_rwlock_rdlock(&spider_ipport_conn_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if ((ip_port_conn = (SPIDER_IP_PORT_CONN *)my_hash_search_using_hash_value(
            &spider_ipport_conns, conn->conn_key_hash_value,
@@ -663,7 +665,7 @@ SPIDER_CONN *spider_create_conn(SPIDER_SHARE *share, ha_spider *spider,
            conn->conn_key_length)))
 #endif
   { /* exists, +1 */
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
     pthread_mutex_lock(&ip_port_conn->mutex);
     if (spider_param_max_connections()) { /* enable conncetion pool */
       if (ip_port_conn->ip_port_count >=
@@ -679,17 +681,18 @@ SPIDER_CONN *spider_create_conn(SPIDER_SHARE *share, ha_spider *spider,
     pthread_mutex_unlock(&ip_port_conn->mutex);
   } else {  // do not exist
     ip_port_conn = spider_create_ipport_conn(conn);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
     if (!ip_port_conn) {
       /* failed, always do not effect 'create conn' */
-      pthread_mutex_unlock(&spider_ipport_conn_mutex);
       DBUG_RETURN(conn);
     }
+    mysql_rwlock_wrlock(&spider_ipport_conn_rwlock);
     if (my_hash_insert(&spider_ipport_conns, (uchar *)ip_port_conn)) {
       /* insert failed, always do not effect 'create conn' */
-      pthread_mutex_unlock(&spider_ipport_conn_mutex);
+      mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
       DBUG_RETURN(conn);
     }
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
   }
   conn->current_key_version = share->conn_key_version;
   conn->ip_port_conn = ip_port_conn;
@@ -3425,7 +3428,7 @@ SPIDER_CONN *spider_get_conn_from_idle_connection(
 
   set_timespec(abstime, 0);
 
-  pthread_mutex_lock(&spider_ipport_conn_mutex);
+  mysql_rwlock_rdlock(&spider_ipport_conn_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if ((ip_port_conn = (SPIDER_IP_PORT_CONN *)my_hash_search_using_hash_value(
            &spider_ipport_conns, share->conn_keys_hash_value[link_idx],
@@ -3437,11 +3440,11 @@ SPIDER_CONN *spider_get_conn_from_idle_connection(
            share->conn_keys_lengths[link_idx])))
 #endif
   { /* exists */
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
     pthread_mutex_lock(&ip_port_conn->mutex);
     ip_port_count = ip_port_conn->ip_port_count;
   } else {
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
   }
 
   if (ip_port_conn && ip_port_count >= spider_max_connections &&
@@ -3848,7 +3851,7 @@ DBUG_RETURN(FALSE);
 my_bool spider_add_conn_meta_info(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_add_conn_meta_info");
   SPIDER_CONN_META_INFO *meta_info;
-  pthread_mutex_lock(&spider_conn_meta_mutex);
+  mysql_rwlock_rdlock(&spider_conn_meta_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if (!(meta_info = (SPIDER_CONN_META_INFO *)my_hash_search_using_hash_value(
             &spider_conn_meta_info, conn->conn_key_hash_value,
@@ -3859,20 +3862,20 @@ my_bool spider_add_conn_meta_info(SPIDER_CONN *conn) {
             conn->conn_key_length)))
 #endif
   {
-    pthread_mutex_unlock(&spider_conn_meta_mutex);
+    mysql_rwlock_unlock(&spider_conn_meta_rwlock);
     meta_info = spider_create_conn_meta(conn);
     if (!meta_info) {
       DBUG_RETURN(FALSE);
     }
-    pthread_mutex_lock(&spider_conn_meta_mutex);
+    mysql_rwlock_wrlock(&spider_conn_meta_rwlock);
     if (my_hash_insert(&spider_conn_meta_info, (uchar *)meta_info)) {
       /* insert failed */
-      pthread_mutex_unlock(&spider_conn_meta_mutex);
+      mysql_rwlock_unlock(&spider_conn_meta_rwlock);
       DBUG_RETURN(FALSE);
     }
-    pthread_mutex_unlock(&spider_conn_meta_mutex);
+    mysql_rwlock_unlock(&spider_conn_meta_rwlock);
   } else {
-    pthread_mutex_unlock(&spider_conn_meta_mutex);
+    mysql_rwlock_unlock(&spider_conn_meta_rwlock);
     /* exist already */
     if (SPIDER_CONN_IS_INVALID(meta_info)) {
       meta_info->alloc_tm = time(NULL);
@@ -3891,7 +3894,7 @@ my_bool spider_add_conn_meta_info(SPIDER_CONN *conn) {
 void spider_update_conn_meta_info(SPIDER_CONN *conn, uint new_status) {
   DBUG_ENTER("spider_update_conn_meta_info");
   SPIDER_CONN_META_INFO *meta_info;
-  pthread_mutex_lock(&spider_conn_meta_mutex);
+  mysql_rwlock_rdlock(&spider_conn_meta_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if (!(meta_info = (SPIDER_CONN_META_INFO *)my_hash_search_using_hash_value(
             &spider_conn_meta_info, conn->conn_key_hash_value,
@@ -3902,10 +3905,10 @@ void spider_update_conn_meta_info(SPIDER_CONN *conn, uint new_status) {
             conn->conn_key_length)))
 #endif
   {
-    pthread_mutex_unlock(&spider_conn_meta_mutex);
+    mysql_rwlock_unlock(&spider_conn_meta_rwlock);
     DBUG_VOID_RETURN;
   } else {
-    pthread_mutex_unlock(&spider_conn_meta_mutex);
+    mysql_rwlock_unlock(&spider_conn_meta_rwlock);
     /* exist already */
     if (!SPIDER_CONN_IS_INVALID(meta_info)) {
       if (new_status == SPIDER_CONN_ACTIVE_STATUS) {

@@ -134,6 +134,7 @@ PSI_mutex_key spd_key_mutex_lgtm_tblhnd_share;
 // spd_key_mutex_conn is deprecated since we re-design the conn pool
 PSI_mutex_key spd_key_mutex_conn;
 PSI_mutex_key spd_key_mutex_conn_meta;
+PSI_rwlock_key spd_rwlock_key_conn_meta;
 PSI_mutex_key spd_key_mutex_open_conn;
 PSI_mutex_key spd_key_mutex_allocated_thds;
 PSI_mutex_key spd_key_mutex_mon_table_cache;
@@ -162,7 +163,7 @@ PSI_mutex_key spd_key_mutex_udf_table;
 PSI_mutex_key spd_key_mutex_mem_calc;
 PSI_mutex_key spd_key_thread_id;
 PSI_mutex_key spd_key_conn_id;
-PSI_mutex_key spd_key_mutex_ipport_count;
+PSI_rwlock_key spd_key_rwlock_ipport_conn;
 PSI_mutex_key spd_key_mutex_xid_cache;
 PSI_mutex_key spd_key_mutex_xid;
 PSI_mutex_key spd_key_mutex_conn_i;
@@ -185,7 +186,7 @@ static PSI_mutex_info all_spider_mutexes[] = {
     {&spd_key_mutex_mem_calc, "mem_calc", PSI_FLAG_GLOBAL},
     {&spd_key_thread_id, "thread_id", PSI_FLAG_GLOBAL},
     {&spd_key_conn_id, "conn_id", PSI_FLAG_GLOBAL},
-    {&spd_key_mutex_ipport_count, "ipport_count", PSI_FLAG_GLOBAL},
+    {&spd_key_rwlock_ipport_conn, "ipport_count", PSI_FLAG_GLOBAL},
     {&spd_key_mutex_xid, "xid", PSI_FLAG_GLOBAL},
     {&spd_key_mutex_xid_cache, "xid_cache", PSI_FLAG_GLOBAL},
     {&spd_key_mutex_bg_stss, "bg_stss", PSI_FLAG_GLOBAL},
@@ -276,7 +277,8 @@ extern const char *spider_open_connections_func_name;
 extern const char *spider_open_connections_file_name;
 extern ulong spider_open_connections_line_no;
 // extern pthread_mutex_t spider_conn_mutex;
-extern pthread_mutex_t spider_conn_meta_mutex;
+// extern pthread_mutex_t spider_conn_meta_mutex;
+extern mysql_rwlock_t spider_conn_meta_rwlock;
 extern HASH *spider_udf_table_mon_list_hash;
 extern uint spider_udf_table_mon_list_hash_id;
 extern const char *spider_udf_table_mon_list_hash_func_name;
@@ -307,7 +309,8 @@ pthread_mutex_t spider_init_error_tbl_mutex;
 
 extern pthread_mutex_t spider_thread_id_mutex;
 // extern pthread_mutex_t spider_conn_id_mutex;
-extern pthread_mutex_t spider_ipport_conn_mutex;
+// extern pthread_mutex_t spider_ipport_conn_mutex;
+extern mysql_rwlock_t spider_ipport_conn_rwlock;
 
 #ifdef WITH_PARTITION_STORAGE_ENGINE
 HASH spider_open_pt_share;
@@ -5057,7 +5060,7 @@ int spider_db_done(void *p) {
 #endif
   pthread_mutex_destroy(&spider_init_error_tbl_mutex);
   // pthread_mutex_destroy(&spider_conn_id_mutex);
-  pthread_mutex_destroy(&spider_ipport_conn_mutex);
+  mysql_rwlock_destroy(&spider_ipport_conn_rwlock);
   pthread_mutex_destroy(&spider_thread_id_mutex);
   pthread_mutex_destroy(&spider_tbl_mutex);
   pthread_attr_destroy(&spider_pt_attr);
@@ -5083,7 +5086,7 @@ int spider_db_done(void *p) {
   */
   spider_free_conn_recycle_thread();
   my_hash_free(&spider_conn_meta_info);
-  pthread_mutex_destroy(&spider_conn_meta_mutex);
+  mysql_rwlock_destroy(&spider_conn_meta_rwlock);
   DBUG_RETURN(0);
 }
 
@@ -5257,13 +5260,18 @@ int spider_db_init(void *p) {
 //     error_num = HA_ERR_OUT_OF_MEM;
 //     goto error_conn_id_mutex_init;
 //   }
-#if MYSQL_VERSION_ID < 50500
-  if (pthread_mutex_init(&spider_ipport_conn_mutex, MY_MUTEX_INIT_FAST))
-#else
-  if (mysql_mutex_init(spd_key_mutex_ipport_count, &spider_ipport_conn_mutex,
-                       MY_MUTEX_INIT_FAST))
-#endif
-  {
+// #if MYSQL_VERSION_ID < 50500
+//   if (pthread_mutex_init(&spider_ipport_conn_mutex, MY_MUTEX_INIT_FAST))
+// #else
+//   if (mysql_mutex_init(spd_key_mutex_ipport_count, &spider_ipport_conn_mutex,
+//                        MY_MUTEX_INIT_FAST))
+// #endif
+//   {
+//     error_num = HA_ERR_OUT_OF_MEM;
+//     goto error_ipport_count_mutex_init;
+//   }
+  if (mysql_rwlock_init(spd_key_rwlock_ipport_conn, 
+                        &spider_ipport_conn_rwlock)) {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_ipport_count_mutex_init;
   }
@@ -5334,13 +5342,7 @@ int spider_db_init(void *p) {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_conn_mutex_init;
   }
-#if MYSQL_VERSION_ID < 50500
-  if (pthread_mutex_init(&spider_conn_meta_mutex, MY_MUTEX_INIT_FAST))
-#else
-  if (mysql_mutex_init(spd_key_mutex_conn_meta, &spider_conn_meta_mutex,
-                       MY_MUTEX_INIT_FAST))
-#endif
-  {
+  if (mysql_rwlock_init(spd_rwlock_key_conn_meta, &spider_conn_meta_rwlock)) {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_conn_meta_mutex_init;
   }
@@ -5642,7 +5644,7 @@ error_mon_table_cache_mutex_init:
 error_allocated_thds_mutex_init:
   pthread_mutex_destroy(&spider_open_conn_mutex);
 error_open_conn_mutex_init:
-  pthread_mutex_destroy(&spider_conn_meta_mutex);
+  mysql_rwlock_destroy(&spider_conn_meta_rwlock);
 error_conn_meta_mutex_init:
   spd_connect_pools.destroy();
 error_conn_mutex_init:
@@ -5661,7 +5663,7 @@ error_spider_xid_mutex_init:
   pthread_mutex_destroy(&spd_db_att_xid_cache_mutex);
 error_spd_xid_cache_mutex_init:
 #endif
-  pthread_mutex_destroy(&spider_ipport_conn_mutex);
+  mysql_rwlock_destroy(&spider_ipport_conn_rwlock);
 error_ipport_count_mutex_init:
   // pthread_mutex_destroy(&spider_conn_id_mutex);
 error_conn_id_mutex_init:

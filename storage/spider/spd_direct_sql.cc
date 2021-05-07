@@ -63,7 +63,8 @@ extern SPIDER_CONN_POOL spd_connect_pools;
 extern HASH spider_ipport_conns;
 // extern pthread_mutex_t spider_conn_mutex;
 // extern pthread_mutex_t spider_conn_id_mutex;
-extern pthread_mutex_t spider_ipport_conn_mutex;
+// extern pthread_mutex_t spider_ipport_conn_mutex;
+extern mysql_rwlock_t spider_ipport_conn_rwlock;
 extern volatile longlong spider_conn_id;
 
 uint spider_udf_calc_hash(char *key, uint mod) {
@@ -423,8 +424,8 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
   conn->connect_error_time = conn->ping_time;
   my_atomic_add64(&spider_conn_id, 1LL);
   conn->conn_id = spider_conn_id;
-
-  pthread_mutex_lock(&spider_ipport_conn_mutex);
+  
+  mysql_rwlock_rdlock(&spider_ipport_conn_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if ((ip_port_conn = (SPIDER_IP_PORT_CONN *)my_hash_search_using_hash_value(
            &spider_ipport_conns, conn->conn_key_hash_value,
@@ -435,7 +436,7 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
            conn->conn_key_length)))
 #endif
   { /* exists, +1 */
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
     pthread_mutex_lock(&ip_port_conn->mutex);
     if (spider_param_max_connections()) { /* enable connection pool */
       if (ip_port_conn->ip_port_count >=
@@ -450,17 +451,18 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
     pthread_mutex_unlock(&ip_port_conn->mutex);
   } else {  // do not exist
     ip_port_conn = spider_create_ipport_conn(conn);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
     if (!ip_port_conn) {
       /* failed, always do not effect 'create conn' */
-      pthread_mutex_unlock(&spider_ipport_conn_mutex);
       DBUG_RETURN(conn);
     }
+    mysql_rwlock_wrlock(&spider_ipport_conn_rwlock);
     if (my_hash_insert(&spider_ipport_conns, (uchar *)ip_port_conn)) {
       /* insert failed, always do not effect 'create conn' */
-      pthread_mutex_unlock(&spider_ipport_conn_mutex);
+      mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
       DBUG_RETURN(conn);
     }
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
   }
   conn->ip_port_conn = ip_port_conn;
 
