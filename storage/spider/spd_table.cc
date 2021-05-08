@@ -122,7 +122,7 @@ extern SPIDER_DBTON spider_dbton_mysql;
 SPIDER_THREAD *spider_table_sts_threads;
 SPIDER_THREAD *spider_table_crd_threads;
 
-const int SPIDER_CONN_POOL_HASH_INIT_SIZE = 32;
+const int SPIDER_CONN_POOL_HASH_INIT_SIZE = 128;
 
 #ifdef HAVE_PSI_INTERFACE
 PSI_mutex_key spd_key_mutex_tbl;

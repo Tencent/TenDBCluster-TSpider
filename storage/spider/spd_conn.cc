@@ -112,6 +112,9 @@ extern PSI_thread_key spd_key_thd_get_status;
 volatile bool get_status_init = FALSE;
 pthread_t get_status_thread;
 
+static const uint spider_conn_queue_init_size = 64;
+static const uint spider_conn_queue_increase_size = 64;
+
 /**
   conn_queue is a queue (actually stack) to store SPIDER_CONN
   in order to reduce memcpy the whole SPIDER_CONN, we insert
@@ -195,7 +198,9 @@ bool SPIDER_CONN_POOL::put_conn(SPIDER_CONN *conn) {
     cq->mtx_inited = true;
     cq->q_ptr = (DYNAMIC_ARRAY *)my_malloc(sizeof(DYNAMIC_ARRAY), MY_WME);
     if (!cq->q_ptr) { my_free(cq); cq->mtx_inited = false; return true; /* OOM */ }
-    if (my_init_dynamic_array(cq->q_ptr, sizeof(SPIDER_CONN **), 64, 64, MYF(0))) {
+    if (my_init_dynamic_array(cq->q_ptr, sizeof(SPIDER_CONN **),
+                              spider_conn_queue_init_size,
+                              spider_conn_queue_increase_size, MYF(0))) {
       my_free(cq); cq->mtx_inited = false; return true;
     }
     cq->hash_key = conn->conn_key;
@@ -721,7 +726,6 @@ error_alloc_conn:
 SPIDER_CONN *spider_get_conn(SPIDER_SHARE *share, int link_idx, SPIDER_TRX *trx,
                              ha_spider *spider, bool another, bool thd_chg,
                              uint conn_kind, int *error_num) {
-  THD *thd = current_thd;
   SPIDER_CONN *conn = NULL;
   int base_link_idx = link_idx;
   ulong current_server_version = get_modify_server_version();
@@ -3414,7 +3418,6 @@ SPIDER_CONN *spider_get_conn_from_idle_connection(
     SPIDER_SHARE *share, int link_idx, char *conn_key, ha_spider *spider,
     uint conn_kind, int base_link_idx, int *error_num) {
   DBUG_ENTER("spider_get_conn_from_idle_connection");
-  THD *thd = current_thd;
   SPIDER_IP_PORT_CONN *ip_port_conn;
   SPIDER_CONN *conn = NULL;
   uint spider_max_connections = spider_param_max_connections();
@@ -3662,7 +3665,6 @@ static my_bool poll_last_visited(uchar *entry, void *data) {
 }
 
 static void *spider_conn_recycle_action(void *arg) {
-  THD *thd = current_thd;
   DBUG_ENTER("spider_conn_recycle_action");
   DYNAMIC_STRING_ARRAY idle_conn_key_hash_value_arr;
   DYNAMIC_STRING_ARRAY idle_conn_key_arr;
@@ -4261,7 +4263,6 @@ SPIDER_FOR_STS_CONN *spider_create_sts_conn(char *key, ulong key_len,
 }
 
 void spider_free_conn_by_servername(char *servername) {
-  THD *thd = current_thd;
   SPIDER_CONN *conn = NULL;
   char conn_key[SPIDER_CONN_META_BUF_LEN + 2] = {0};
   uint conn_key_len = strlen(servername) + 1;

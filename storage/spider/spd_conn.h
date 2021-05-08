@@ -36,9 +36,9 @@ public:
   my_hash_value_type calc_hash(const uchar *key, size_t length);
 
 private:
-  HASH connections; /* like std::*/
-  mysql_rwlock_t rw_lock;
-  bool conn_inited;
+  HASH connections;       /* like unordered_map<string, queue<conn*> > */
+  mysql_rwlock_t rw_lock; /* Read-Write Lock to secure the hash */
+  bool conn_inited;       /* whether the hash and rwlock hash inited */
 };
 
 uchar *spider_conn_get_key(SPIDER_CONN *conn, size_t *length,

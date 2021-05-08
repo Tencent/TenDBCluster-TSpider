@@ -483,7 +483,6 @@ error_alloc_conn:
 
 SPIDER_CONN *spider_udf_direct_sql_get_conn(const SPIDER_DIRECT_SQL *direct_sql,
                                             SPIDER_TRX *trx, int *error_num) {
-  THD *thd = current_thd;
   SPIDER_CONN *conn = NULL;
   DBUG_ENTER("spider_udf_direct_sql_get_conn");
 
