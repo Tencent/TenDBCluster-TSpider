@@ -58,12 +58,14 @@ extern PSI_mutex_key spd_key_mutex_bg_direct_sql;
 extern PSI_cond_key spd_key_cond_bg_direct_sql;
 #endif
 
-extern HASH spider_open_connections;
+extern SPIDER_CONN_POOL spd_connect_pools;
+// extern HASH spider_open_connections;
 extern HASH spider_ipport_conns;
-extern pthread_mutex_t spider_conn_mutex;
-extern pthread_mutex_t spider_conn_id_mutex;
-extern pthread_mutex_t spider_ipport_conn_mutex;
-extern ulonglong spider_conn_id;
+// extern pthread_mutex_t spider_conn_mutex;
+// extern pthread_mutex_t spider_conn_id_mutex;
+// extern pthread_mutex_t spider_ipport_conn_mutex;
+extern mysql_rwlock_t spider_ipport_conn_rwlock;
+extern volatile longlong spider_conn_id;
 
 uint spider_udf_calc_hash(char *key, uint mod) {
   uint sum = 0;
@@ -278,8 +280,8 @@ int spider_udf_direct_sql_create_conn_key(SPIDER_DIRECT_SQL *direct_sql) {
   }
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   direct_sql->conn_key_hash_value =
-      my_calc_hash(&spider_open_connections, (uchar *)direct_sql->conn_key,
-                   direct_sql->conn_key_length);
+      spd_connect_pools.calc_hash((uchar *)direct_sql->conn_key,
+                                  direct_sql->conn_key_length);
 #endif
   DBUG_RETURN(0);
 }
@@ -420,12 +422,10 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
     goto error;
   conn->ping_time = (time_t)time((time_t *)0);
   conn->connect_error_time = conn->ping_time;
-  pthread_mutex_lock(&spider_conn_id_mutex);
+  my_atomic_add64(&spider_conn_id, 1LL);
   conn->conn_id = spider_conn_id;
-  ++spider_conn_id;
-  pthread_mutex_unlock(&spider_conn_id_mutex);
-
-  pthread_mutex_lock(&spider_ipport_conn_mutex);
+  
+  mysql_rwlock_rdlock(&spider_ipport_conn_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if ((ip_port_conn = (SPIDER_IP_PORT_CONN *)my_hash_search_using_hash_value(
            &spider_ipport_conns, conn->conn_key_hash_value,
@@ -436,9 +436,9 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
            conn->conn_key_length)))
 #endif
   { /* exists, +1 */
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
     pthread_mutex_lock(&ip_port_conn->mutex);
-    if (spider_param_max_connections()) { /* enable conncetion pool */
+    if (spider_param_max_connections()) { /* enable connection pool */
       if (ip_port_conn->ip_port_count >=
           spider_param_max_connections()) { /* bigger than the max num of
                                                connections, free conn and return
@@ -451,17 +451,18 @@ SPIDER_CONN *spider_udf_direct_sql_create_conn(
     pthread_mutex_unlock(&ip_port_conn->mutex);
   } else {  // do not exist
     ip_port_conn = spider_create_ipport_conn(conn);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
     if (!ip_port_conn) {
       /* failed, always do not effect 'create conn' */
-      pthread_mutex_unlock(&spider_ipport_conn_mutex);
       DBUG_RETURN(conn);
     }
+    mysql_rwlock_wrlock(&spider_ipport_conn_rwlock);
     if (my_hash_insert(&spider_ipport_conns, (uchar *)ip_port_conn)) {
       /* insert failed, always do not effect 'create conn' */
-      pthread_mutex_unlock(&spider_ipport_conn_mutex);
+      mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
       DBUG_RETURN(conn);
     }
-    pthread_mutex_unlock(&spider_ipport_conn_mutex);
+    mysql_rwlock_unlock(&spider_ipport_conn_rwlock);
   }
   conn->ip_port_conn = ip_port_conn;
 
@@ -497,24 +498,17 @@ SPIDER_CONN *spider_udf_direct_sql_get_conn(const SPIDER_DIRECT_SQL *direct_sql,
   {
     if (((spider_param_conn_recycle_mode(trx->thd) & 1) ||
          spider_param_conn_recycle_strict(trx->thd))) {
-      pthread_mutex_lock(&spider_conn_mutex);
-#ifdef SPIDER_HAS_HASH_VALUE_TYPE
-      if (!(conn = (SPIDER_CONN *)my_hash_search_using_hash_value(
-                &spider_open_connections, direct_sql->conn_key_hash_value,
+      // pthread_mutex_lock(&spider_conn_mutex);
+      if (!(conn = spd_connect_pools.get_conn(direct_sql->conn_key_hash_value,
                 (uchar *)direct_sql->conn_key, direct_sql->conn_key_length)))
-#else
-      if (!(conn = (SPIDER_CONN *)my_hash_search(&spider_open_connections,
-                                                 (uchar *)direct_sql->conn_key,
-                                                 direct_sql->conn_key_length)))
-#endif
       {
-        pthread_mutex_unlock(&spider_conn_mutex);
+        // pthread_mutex_unlock(&spider_conn_mutex);
         DBUG_PRINT("info", ("spider create new conn"));
         if (!(conn = spider_udf_direct_sql_create_conn(direct_sql, error_num)))
           goto error;
       } else {
-        my_hash_delete(&spider_open_connections, (uchar *)conn);
-        pthread_mutex_unlock(&spider_conn_mutex);
+        // my_hash_delete(&spider_open_connections, (uchar *)conn);
+        // pthread_mutex_unlock(&spider_conn_mutex);
         DBUG_PRINT("info", ("spider get global conn"));
       }
     } else {

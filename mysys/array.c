@@ -32,7 +32,7 @@
 
   DESCRIPTION
     init_dynamic_array() initiates array and allocate space for
-    init_alloc eilements.
+    init_alloc elements.
     Array is usable even if space allocation failed, hence, the
     function never returns TRUE.
 

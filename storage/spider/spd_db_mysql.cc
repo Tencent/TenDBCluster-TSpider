@@ -52,7 +52,8 @@ extern bool volatile *spd_abort_loop;
 
 extern handlerton *spider_hton_ptr;
 extern pthread_mutex_t spider_open_conn_mutex;
-extern HASH spider_open_connections;
+extern SPIDER_CONN_POOL spd_connect_pools;
+// extern HASH spider_open_connections;
 extern HASH spider_ipport_conns;
 extern SPIDER_DBTON spider_dbton[SPIDER_DBTON_SIZE];
 extern const char spider_dig_upper[];
@@ -4924,8 +4925,8 @@ int spider_mysql_share::create_table_names_str() {
       if ((error_num = append_table_name(str, roop_count))) goto error;
     }
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
-    db_table_str_hash_value[roop_count] = my_calc_hash(
-        &spider_open_connections, (uchar *)str->ptr(), str->length());
+    db_table_str_hash_value[roop_count] = spd_connect_pools.calc_hash(
+      (uchar *)str->ptr(), str->length());
 #endif
   }
   DBUG_RETURN(0);

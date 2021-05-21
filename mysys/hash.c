@@ -60,17 +60,18 @@ my_hash_value_type my_hash_sort(CHARSET_INFO *cs, const uchar *key,
   dynamic array that is part of the hash will allocate memory
   as required during insertion.
 
-  @param[in,out] hash         The hash that is initialized
-  @param[in[     growth_size  size incrememnt for the underlying dynarray
-  @param[in]     charset      The character set information
-  @param[in]     size         The hash size
-  @param[in]     key_offest   The key offset for the hash
-  @param[in]     key_length   The length of the key used in
-                              the hash
-  @param[in]     get_key      get the key for the hash
-  @param[in]     free_element pointer to the function that
-                              does cleanup
-  @param[in]     flags        flags set in the hash
+  @param[in,out] hash           The hash that is initialized
+  @param[in]     growth_size    size increment for the underlying dynarray
+  @param[in]     charset        The character set information
+  @param[in]     size           The hash size
+  @param[in]     key_offset     The key offset for the hash
+  @param[in]     key_length     The length of the key used in
+                                the hash
+  @param[in]     get_key        get the key for the hash
+  @param[in]     hash_function  hash_function, default my_hash_sort
+  @param[in]     free_element   pointer to the function that
+                                does cleanup
+  @param[in]     flags          flags set in the hash
   @return        indicates success or failure of initialization
     @retval 0 success
     @retval 1 failure
@@ -129,6 +130,16 @@ static inline void my_hash_free_elements(HASH *hash)
       (*hash->free)((data++)->data);
   }
 }
+
+/*
+  Call func() on all elements in hash.
+
+  SYNOPSIS
+    my_hash_delegate()
+    hash     hash table
+    func     the function want to call
+    func_arg one argument in func
+*/
 
 void
 my_hash_delegate(HASH * hash, my_hash_delegate_func func, void* func_arg)
@@ -484,29 +495,29 @@ my_bool my_hash_insert(HASH *info, const uchar *record)
       }
       else
       {						/* key will be moved */
-	if (!(flag & HIGHFIND))
-	{
-	  flag= (flag & LOWFIND) | HIGHFIND;
-	  /* key shall be moved to the last (empty) position */
-	  gpos2= empty;
-          empty= pos;
-	  rec2_data=    pos->data;
-          rec2_hash_nr= pos->hash_nr;
-	}
-	else
-	{
-	  if (!(flag & HIGHUSED))
-	  {
-	    /* Change link of previous hash-key and save */
-	    gpos2->data=    rec2_data;
-	    gpos2->hash_nr= rec2_hash_nr;
-	    gpos2->next=    (uint) (pos-data);
-	    flag= (flag & LOWFIND) | (HIGHFIND | HIGHUSED);
-	  }
-	  gpos2= pos;
-	  rec2_data=    pos->data;
-          rec2_hash_nr= pos->hash_nr;
-	}
+        if (!(flag & HIGHFIND))
+        {
+          flag= (flag & LOWFIND) | HIGHFIND;
+          /* key shall be moved to the last (empty) position */
+          gpos2= empty;
+                empty= pos;
+          rec2_data=    pos->data;
+                rec2_hash_nr= pos->hash_nr;
+        }
+        else
+        {
+          if (!(flag & HIGHUSED))
+          {
+            /* Change link of previous hash-key and save */
+            gpos2->data=    rec2_data;
+            gpos2->hash_nr= rec2_hash_nr;
+            gpos2->next=    (uint) (pos-data);
+            flag= (flag & LOWFIND) | (HIGHFIND | HIGHUSED);
+          }
+          gpos2= pos;
+          rec2_data=    pos->data;
+                rec2_hash_nr= pos->hash_nr;
+        }
       }
     }
     while ((idx=pos->next) != NO_RECORD);

@@ -361,6 +361,11 @@ void lf_hash_init(LF_HASH *hash, uint element_size, uint flags,
   DBUG_ASSERT(get_key ? !key_offset && !key_length : key_length);
 }
 
+
+/*
+  DESCRIPTION
+    deinit the HASH
+*/
 void lf_hash_destroy(LF_HASH *hash)
 {
   LF_SLIST *el, **head= (LF_SLIST **)lf_dynarray_value(&hash->array, 0);

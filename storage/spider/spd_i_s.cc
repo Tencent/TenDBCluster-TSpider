@@ -42,7 +42,8 @@ extern ulonglong spider_alloc_mem_count[SPIDER_MEM_CALC_LIST_NUM];
 extern ulonglong spider_free_mem_count[SPIDER_MEM_CALC_LIST_NUM];
 
 extern HASH spider_conn_meta_info;
-extern pthread_mutex_t spider_conn_meta_mutex;
+// extern pthread_mutex_t spider_conn_meta_mutex;
+extern mysql_rwlock_t spider_conn_meta_rwlock;
 extern void spider_free_conn_meta(void *);
 extern int spider_param_conn_meta_max_invalid_duration();
 
@@ -217,12 +218,12 @@ static int spider_i_s_conn_pool_fill_table(THD *thd, TABLE_LIST *tables,
   DYNAMIC_STRING_ARRAY invalid_meta_key_arr;
   init_dynamic_string_array(&invalid_meta_hash_value_arr, 64, 64);
   init_dynamic_string_array(&invalid_meta_key_arr, 64, 64);
-  pthread_mutex_lock(&spider_conn_meta_mutex);
+  mysql_rwlock_rdlock(&spider_conn_meta_rwlock);
   my_hash_delegate_nargs(&spider_conn_meta_info, my_record_and_fill_field,
                          (void *)tables->table, (void *)thd,
                          (void *)&invalid_meta_hash_value_arr,
                          (void *)&invalid_meta_key_arr);
-  pthread_mutex_unlock(&spider_conn_meta_mutex);
+  mysql_rwlock_unlock(&spider_conn_meta_rwlock);
   /* need delete invalid item from spider_conn_meta_info hash table */
   for (size_t i = 0; i < invalid_meta_key_arr.cur_idx; ++i) {
     my_hash_value_type *tmp_ptr = NULL;
@@ -243,7 +244,7 @@ static int spider_i_s_conn_pool_fill_table(THD *thd, TABLE_LIST *tables,
           "[ERROR] fill meta_key pointer from invalid_meta_key_arr error!\n");
       break;
     }
-    pthread_mutex_lock(&spider_conn_meta_mutex);
+    mysql_rwlock_wrlock(&spider_conn_meta_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
     SPIDER_CONN_META_INFO *meta =
         (SPIDER_CONN_META_INFO *)my_hash_search_using_hash_value(
@@ -260,7 +261,7 @@ static int spider_i_s_conn_pool_fill_table(THD *thd, TABLE_LIST *tables,
         my_hash_delete(&spider_conn_meta_info, (uchar *)meta);
       }
     }
-    pthread_mutex_unlock(&spider_conn_meta_mutex);
+    mysql_rwlock_unlock(&spider_conn_meta_rwlock);
   }
 
   free_dynamic_string_array(&invalid_meta_hash_value_arr);
