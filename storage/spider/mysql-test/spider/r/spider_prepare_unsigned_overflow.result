@@ -1,0 +1,115 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (c1 BIGINT(20) UNSIGNED DEFAULT NULL)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(c1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+test
+connection master_1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `c1` bigint(20) unsigned DEFAULT NULL
+) ENGINE=SPIDER DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`c1`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1(c1) VALUES(6800281190650363904),(6800293877182906368),(17864960750176564435),(17864220750176564435);
+SELECT * FROM t1 ORDER BY c1;
+c1
+6800281190650363904
+6800293877182906368
+17864220750176564435
+17864960750176564435
+SELECT * FROM t1 WHERE c1 = 17864960750176564435;
+c1
+17864960750176564435
+PREPARE p1 FROM 'select * from t1 where c1 = ?';
+EXECUTE p1 USING 17864960750176564435;
+c1
+17864960750176564435
+EXECUTE p1 USING '17864960750176564435';
+c1
+17864960750176564435
+DEALLOCATE PREPARE p1;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (c1 BIGINT(20) UNSIGNED PRIMARY KEY, c2 INT DEFAULT NULL)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(c1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+INSERT INTO t2(c1) VALUES(6800281190650363904),(6800293877182906368),(17864960750176564435),(17864220750176564435);
+SELECT * FROM t2 ORDER BY c1;
+c1	c2
+6800281190650363904	NULL
+6800293877182906368	NULL
+17864220750176564435	NULL
+17864960750176564435	NULL
+SELECT * FROM t2 WHERE c1 = 17864960750176564435;
+c1	c2
+17864960750176564435	NULL
+PREPARE p1 FROM 'select * from t2 where c1 = ?';
+EXECUTE p1 USING 17864960750176564435;
+c1	c2
+17864960750176564435	NULL
+EXECUTE p1 USING '17864960750176564435';
+c1	c2
+17864960750176564435	NULL
+DEALLOCATE PREPARE p1;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
