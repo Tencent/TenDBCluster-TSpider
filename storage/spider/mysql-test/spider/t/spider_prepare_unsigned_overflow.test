@@ -1,0 +1,43 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = c1 BIGINT(20) UNSIGNED DEFAULT NULL
+--let $TABLE_SHARD_KEY = c1
+--source ../include/spider_create_table_helper.inc
+
+--echo
+--echo test
+
+--connection master_1
+SHOW CREATE TABLE t1;
+INSERT INTO t1(c1) VALUES(6800281190650363904),(6800293877182906368),(17864960750176564435),(17864220750176564435);
+SELECT * FROM t1 ORDER BY c1;
+
+SELECT * FROM t1 WHERE c1 = 17864960750176564435;
+
+PREPARE p1 FROM 'select * from t1 where c1 = ?';
+EXECUTE p1 USING 17864960750176564435;
+EXECUTE p1 USING '17864960750176564435';
+DEALLOCATE PREPARE p1;
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = c1 BIGINT(20) UNSIGNED PRIMARY KEY, c2 INT DEFAULT NULL
+--let $TABLE_SHARD_KEY = c1
+--source ../include/spider_create_table_helper.inc
+INSERT INTO t2(c1) VALUES(6800281190650363904),(6800293877182906368),(17864960750176564435),(17864220750176564435);
+SELECT * FROM t2 ORDER BY c1;
+
+SELECT * FROM t2 WHERE c1 = 17864960750176564435;
+
+PREPARE p1 FROM 'select * from t2 where c1 = ?';
+EXECUTE p1 USING 17864960750176564435;
+EXECUTE p1 USING '17864960750176564435';
+DEALLOCATE PREPARE p1;
+
+--source ../include/spider_drop_database.inc
