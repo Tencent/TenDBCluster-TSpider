@@ -3415,6 +3415,8 @@ class Item_param :public Item_basic_value,
     longlong val_int(const Type_std_attributes *attr) const;
     my_decimal *val_decimal(my_decimal *dec, const Type_std_attributes *attr);
     String *val_str(String *str, const Type_std_attributes *attr);
+    String *val_str(String *str, const Type_std_attributes *attr,
+                    bool val_is_unsigned);
   };
 
   PValue value;
@@ -3462,7 +3464,7 @@ public:
   }
   String *val_str(String *str)
   {
-    return can_return_value() ? value.val_str(str, this) : NULL;
+    return can_return_value() ? value.val_str(str, this, unsigned_flag) : NULL;
   }
   bool get_date(MYSQL_TIME *tm, ulonglong fuzzydate);
   int  save_in_field(Field *field, bool no_conversions);
