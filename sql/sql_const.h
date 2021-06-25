@@ -149,7 +149,7 @@
  151 is larger than Apache's default max children,
  to avoid "too many connections" error in a common setup.
 */
-#define MAX_CONNECTIONS_DEFAULT 151
+#define MAX_CONNECTIONS_DEFAULT 2000
 
 /*
   Stack reservation.
