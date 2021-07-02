@@ -6632,7 +6632,7 @@ static void create_new_thread(CONNECT *connect)
   mysql_mutex_lock(&LOCK_connection_count);
 
   if (*connect->scheduler->connection_count >=
-      *connect->scheduler->max_connections + 1|| abort_loop)
+      *connect->scheduler->max_connections + 10 || abort_loop)
   {
     DBUG_PRINT("error",("Too many connections"));
 
