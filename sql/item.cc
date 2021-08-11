@@ -4525,13 +4525,15 @@ bool Item_param::get_date(MYSQL_TIME *res, ulonglong fuzzydate)
 }
 
 
-double Item_param::PValue::val_real() const
+double Item_param::PValue::val_real(const Type_std_attributes *attr) const
 {
   switch (type_handler()->cmp_type()) {
   case REAL_RESULT:
     return real;
   case INT_RESULT:
-    return (double) integer;
+    return attr->unsigned_flag
+      ? (double) (ulonglong) integer
+      : (double) integer;
   case DECIMAL_RESULT:
   {
     double result;
@@ -4613,7 +4615,7 @@ String *Item_param::PValue::val_str(String *str,
     str->set_real(real, NOT_FIXED_DEC, &my_charset_bin);
     return str;
   case INT_RESULT:
-    str->set(integer, &my_charset_bin);
+    str->set_int(integer, attr->unsigned_flag, &my_charset_bin);
     return str;
   case DECIMAL_RESULT:
     if (my_decimal2string(E_DEC_FATAL_ERROR, &m_decimal, 0, 0, 0, str) <= 1)
@@ -4631,43 +4633,6 @@ String *Item_param::PValue::val_str(String *str,
   case ROW_RESULT:
     DBUG_ASSERT(0);
     break;
-  }
-  return NULL;
-}
-
-
-String *Item_param::PValue::val_str(String *str,
-                                    const Type_std_attributes *attr,
-                                    bool val_is_unsigned) {
-  ulonglong uinteger = 0ULL;
-  switch (type_handler()->cmp_type()) {
-    case STRING_RESULT:
-      return &m_string_ptr;
-    case REAL_RESULT:
-      str->set_real(real, NOT_FIXED_DEC, &my_charset_bin);
-      return str;
-    case INT_RESULT:
-      if (val_is_unsigned) {
-        uinteger = static_cast<ulonglong>(integer);
-        str->set(uinteger, &my_charset_bin);
-      } else {
-        str->set(integer, &my_charset_bin);
-      }
-      return str;
-    case DECIMAL_RESULT:
-      if (my_decimal2string(E_DEC_FATAL_ERROR, &m_decimal, 0, 0, 0, str) <= 1)
-        return str;
-      return NULL;
-    case TIME_RESULT: {
-      if (str->reserve(MAX_DATE_STRING_REP_LENGTH)) return NULL;
-      str->length(
-          (uint)my_TIME_to_str(&time, (char *)str->ptr(), attr->decimals));
-      str->set_charset(&my_charset_bin);
-      return str;
-    }
-    case ROW_RESULT:
-      DBUG_ASSERT(0);
-      break;
   }
   return NULL;
 }
