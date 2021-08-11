@@ -3411,12 +3411,10 @@ class Item_param :public Item_basic_value,
       m_string.swap(other.m_string);
       m_string_ptr.swap(other.m_string_ptr);
     }
-    double val_real() const;
+    double val_real(const Type_std_attributes *attr) const;
     longlong val_int(const Type_std_attributes *attr) const;
     my_decimal *val_decimal(my_decimal *dec, const Type_std_attributes *attr);
     String *val_str(String *str, const Type_std_attributes *attr);
-    String *val_str(String *str, const Type_std_attributes *attr,
-                    bool val_is_unsigned);
   };
 
   PValue value;
@@ -3452,7 +3450,7 @@ public:
 
   double val_real()
   {
-    return can_return_value() ? value.val_real() : 0e0;
+    return can_return_value() ? value.val_real(this) : 0e0;
   }
   longlong val_int()
   {
@@ -3464,7 +3462,7 @@ public:
   }
   String *val_str(String *str)
   {
-    return can_return_value() ? value.val_str(str, this, unsigned_flag) : NULL;
+    return can_return_value() ? value.val_str(str, this) : NULL;
   }
   bool get_date(MYSQL_TIME *tm, ulonglong fuzzydate);
   int  save_in_field(Field *field, bool no_conversions);
