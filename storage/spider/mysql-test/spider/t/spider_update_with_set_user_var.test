@@ -1,0 +1,104 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT PRIMARY KEY, a INT
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+if ($USE_GENERAL_LOG)
+{
+    --connection master_1
+    SET @old_log_output = @@global.log_output;
+    SET @old_spider_general_log = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE';
+    SET GLOBAL spider_general_log=1;
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_1
+    SET @old_log_output = @@global.log_output;
+    SET GLOBAL log_output = 'TABLE';
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_2
+    SET @old_log_output = @@global.log_output;
+    SET GLOBAL log_output = 'TABLE';
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--connection master_1
+USE auto_test_local;
+INSERT INTO t1 VALUES (1,10), (2,11), (3,12), (4,13), (5,14), (6,15), (7,16), (8,17), (9,18), (10,19);
+
+# update only limited rows
+SET @i=100;
+UPDATE t1 SET a=(@i:=@i+1) LIMIT 5;
+SELECT * FROM t1;
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+--connection master_1
+SET @i=1000;
+UPDATE t1 SET a=(@i:=@i+1);
+SELECT * FROM t1;
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+# cleanup
+if ($USE_GENERAL_LOG)
+{
+    --connection master_1
+    SET GLOBAL log_output = @old_log_output;
+    SET GLOBAL spider_general_log = @old_spider_general_log;
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_1
+    SET GLOBAL log_output = @old_log_output;
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_2
+    SET GLOBAL log_output = @old_log_output;
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--let @USE_GENERAL_LOG= $USE_GENERAL_LOG_BACKUP
+
+--source ../include/spider_drop_database.inc
+

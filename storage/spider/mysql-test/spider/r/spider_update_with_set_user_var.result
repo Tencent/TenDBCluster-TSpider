@@ -1,0 +1,151 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT PRIMARY KEY, a INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SET @old_log_output = @@global.log_output;
+SET @old_spider_general_log = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SET @old_log_output = @@global.log_output;
+SET GLOBAL log_output = 'TABLE';
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SET @old_log_output = @@global.log_output;
+SET GLOBAL log_output = 'TABLE';
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+USE auto_test_local;
+INSERT INTO t1 VALUES (1,10), (2,11), (3,12), (4,13), (5,14), (6,15), (7,16), (8,17), (9,18), (10,19);
+SET @i=100;
+UPDATE t1 SET a=(@i:=@i+1) LIMIT 5;
+SELECT * FROM t1;
+id	a
+4	101
+5	102
+6	103
+7	104
+1	105
+2	11
+3	12
+8	17
+9	18
+10	19
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+argument
+UPDATE t1 SET a=(@i:=@i+1) LIMIT 5
+mysql localhost 3306 select `id`,`a` from `auto_test_remote`.`t1` limit 5 for update
+mysql localhost 3306 select `id`,`a` from `auto_test_remote_2`.`t1` limit 5 for update
+mysql localhost 3306 update `auto_test_remote`.`t1` set `a` = 101 where `id` = 4 limit 1;update `auto_test_remote`.`t1` set `a` = 102 where `id` = 5 limit 1;update `auto_test_remote`.`t1` set `a` = 103 where `id` = 6 limit 1;update `auto_test_remote`.`t1` set `a` = 104 where `id` = 7 limit 1
+mysql localhost 3306 update `auto_test_remote_2`.`t1` set `a` = 105 where `id` = 1 limit 1
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a` from `auto_test_remote`.`t1` limit 5 for update
+update `auto_test_remote`.`t1` set `a` = 101 where `id` = 4 limit 1;update `auto_test_remote`.`t1` set `a` = 102 where `id` = 5 limit 1;update `auto_test_remote`.`t1` set `a` = 103 where `id` = 6 limit 1;update `auto_test_remote`.`t1` set `a` = 104 where `id` = 7 limit 1
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a` from `auto_test_remote_2`.`t1` limit 5 for update
+update `auto_test_remote_2`.`t1` set `a` = 105 where `id` = 1 limit 1
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET @i=1000;
+UPDATE t1 SET a=(@i:=@i+1);
+SELECT * FROM t1;
+id	a
+4	1001
+5	1002
+6	1003
+7	1004
+1	1005
+2	1006
+3	1007
+8	1008
+9	1009
+10	1010
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+argument
+UPDATE t1 SET a=(@i:=@i+1)
+mysql localhost 3306 select `id`,`a` from `auto_test_remote`.`t1` for update
+mysql localhost 3306 select `id`,`a` from `auto_test_remote_2`.`t1` for update
+mysql localhost 3306 update `auto_test_remote`.`t1` set `a` = 1001 where `id` = 4 limit 1;update `auto_test_remote`.`t1` set `a` = 1002 where `id` = 5 limit 1;update `auto_test_remote`.`t1` set `a` = 1003 where `id` = 6 limit 1;update `auto_test_remote`.`t1` set `a` = 1004 where `id` = 7 limit 1
+mysql localhost 3306 update `auto_test_remote_2`.`t1` set `a` = 1005 where `id` = 1 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1006 where `id` = 2 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1007 where `id` = 3 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1008 where `id` = 8 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1009 where `id` = 9 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1010 where `id` = 10 limit 1
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a` from `auto_test_remote`.`t1` for update
+update `auto_test_remote`.`t1` set `a` = 1001 where `id` = 4 limit 1;update `auto_test_remote`.`t1` set `a` = 1002 where `id` = 5 limit 1;update `auto_test_remote`.`t1` set `a` = 1003 where `id` = 6 limit 1;update `auto_test_remote`.`t1` set `a` = 1004 where `id` = 7 limit 1
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%update%' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a` from `auto_test_remote_2`.`t1` for update
+update `auto_test_remote_2`.`t1` set `a` = 1005 where `id` = 1 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1006 where `id` = 2 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1007 where `id` = 3 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1008 where `id` = 8 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1009 where `id` = 9 limit 1;update `auto_test_remote_2`.`t1` set `a` = 1010 where `id` = 10 limit 1
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_spider_general_log;
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SET GLOBAL log_output = @old_log_output;
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SET GLOBAL log_output = @old_log_output;
+TRUNCATE TABLE mysql.general_log;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

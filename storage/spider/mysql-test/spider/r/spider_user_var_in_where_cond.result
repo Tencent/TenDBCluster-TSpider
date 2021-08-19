@@ -1,0 +1,440 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT PRIMARY KEY, a INT, f FLOAT, do DOUBLE, de DECIMAL(20,10), b BLOB, c CHAR(20), v VARCHAR(200), t TEXT, d DATETIME)ENGINE=Spider CHARACTER SET utf8mb4 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (id INT PRIMARY KEY, t TEXT, b BLOB)ENGINE=Spider CHARACTER SET utf8mb4 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+connection master_1;
+SET @old_log_output = @@global.log_output;
+SET @old_spider_general_log = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SET @old_log_output = @@global.log_output;
+SET GLOBAL log_output = 'TABLE';
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SET @old_log_output = @@global.log_output;
+SET GLOBAL log_output = 'TABLE';
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET NAMES utf8mb4;
+USE auto_test_local;
+INSERT INTO t1 VALUES(1, 1, 3.14, 3.14159, 3.141592653, "blob hello", "chars hello", "varchars hello", "text hello", "2021-01-01 13:33:33");
+SET @id1=1, @a1=1, @f1=3.14, @do1=3.14159, @de1=3.141592653, @b1="blob hello", @c1="chars hello", @v1="varchars hello", @t1="text hello", @d1=TIMESTAMP("2021-01-01 13:33:33");
+SET @id2=2, @a2=2, @f2=6.14, @do2=6.14159, @de2=6.141592653, @b2="blob hey", @c2="chars hey", @v2="varchars hey", @t2="text hey", @d2=TIMESTAMP("2021-10-01 08:08:08");
+SELECT * FROM t1 WHERE id=@id1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE a=@a1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE b=@b1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE f=@f1;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE do=@do1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE de=@de1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE c=@c1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE v=@v1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE t=@t1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE d=@d1;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT * FROM t1 WHERE id=@id1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where `id` = 1
+SELECT * FROM t1 WHERE a=@a1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`a` = 1)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`a` = 1)
+SELECT * FROM t1 WHERE b=@b1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`b` = 'blob hello')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`b` = 'blob hello')
+SELECT * FROM t1 WHERE f=@f1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`f` = 3.14)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`f` = 3.14)
+SELECT * FROM t1 WHERE do=@do1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`do` = 3.14159)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`do` = 3.14159)
+SELECT * FROM t1 WHERE de=@de1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`de` = 3.141592653)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`de` = 3.141592653)
+SELECT * FROM t1 WHERE c=@c1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`c` = 'chars hello')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`c` = 'chars hello')
+SELECT * FROM t1 WHERE v=@v1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`v` = 'varchars hello')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`v` = 'varchars hello')
+SELECT * FROM t1 WHERE t=@t1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`t` = 'text hello')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`t` = 'text hello')
+SELECT * FROM t1 WHERE d=@d1
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`d` = TIMESTAMP'2021-01-01 13:33:33')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`d` = TIMESTAMP'2021-01-01 13:33:33')
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`a` = 1)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`b` = 'blob hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`f` = 3.14)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`do` = 3.14159)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`de` = 3.141592653)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`c` = 'chars hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`v` = 'varchars hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`t` = 'text hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`d` = TIMESTAMP'2021-01-01 13:33:33')
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where `id` = 1
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`a` = 1)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`b` = 'blob hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`f` = 3.14)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`do` = 3.14159)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`de` = 3.141592653)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`c` = 'chars hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`v` = 'varchars hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`t` = 'text hello')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`d` = TIMESTAMP'2021-01-01 13:33:33')
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SELECT * FROM t1 WHERE id=@id2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE a=@a2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE b=@b2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE f=@f2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE do=@do2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE de=@de2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE c=@c2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE v=@v2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE t=@t2;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE d=@d2;
+id	a	f	do	de	b	c	v	t	d
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT * FROM t1 WHERE id=@id2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where `id` = 2
+SELECT * FROM t1 WHERE a=@a2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`a` = 2)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`a` = 2)
+SELECT * FROM t1 WHERE b=@b2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`b` = 'blob hey')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`b` = 'blob hey')
+SELECT * FROM t1 WHERE f=@f2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`f` = 6.14)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`f` = 6.14)
+SELECT * FROM t1 WHERE do=@do2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`do` = 6.14159)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`do` = 6.14159)
+SELECT * FROM t1 WHERE de=@de2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`de` = 6.141592653)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`de` = 6.141592653)
+SELECT * FROM t1 WHERE c=@c2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`c` = 'chars hey')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`c` = 'chars hey')
+SELECT * FROM t1 WHERE v=@v2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`v` = 'varchars hey')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`v` = 'varchars hey')
+SELECT * FROM t1 WHERE t=@t2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`t` = 'text hey')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`t` = 'text hey')
+SELECT * FROM t1 WHERE d=@d2
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`d` = TIMESTAMP'2021-10-01 08:08:08')
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`d` = TIMESTAMP'2021-10-01 08:08:08')
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`a` = 2)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`b` = 'blob hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`f` = 6.14)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`do` = 6.14159)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`de` = 6.141592653)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`c` = 'chars hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`v` = 'varchars hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`t` = 'text hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (`d` = TIMESTAMP'2021-10-01 08:08:08')
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where `id` = 2
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`a` = 2)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`b` = 'blob hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`f` = 6.14)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`do` = 6.14159)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`de` = 6.141592653)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`c` = 'chars hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`v` = 'varchars hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`t` = 'text hey')
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (`d` = TIMESTAMP'2021-10-01 08:08:08')
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SELECT * FROM t1 WHERE @d1 > d;
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE TIMESTAMP(@d1) > TIMESTAMP(d);
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE TIME(@d1) > TIME(d);
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE DATE(@d1) > DATE(d);
+id	a	f	do	de	b	c	v	t	d
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT * FROM t1 WHERE @d1 > d
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where ('2021-01-01 13:33:33' > `d`)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where ('2021-01-01 13:33:33' > `d`)
+SELECT * FROM t1 WHERE TIMESTAMP(@d1) > TIMESTAMP(d)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as datetime)) > cast(`d` as datetime))
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as datetime)) > cast(`d` as datetime))
+SELECT * FROM t1 WHERE TIME(@d1) > TIME(d)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as time)) > cast(`d` as time))
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as time)) > cast(`d` as time))
+SELECT * FROM t1 WHERE DATE(@d1) > DATE(d)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as date)) > cast(`d` as date))
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as date)) > cast(`d` as date))
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where ('2021-01-01 13:33:33' > `d`)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as datetime)) > cast(`d` as datetime))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as time)) > cast(`d` as time))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as date)) > cast(`d` as date))
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where ('2021-01-01 13:33:33' > `d`)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as datetime)) > cast(`d` as datetime))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as time)) > cast(`d` as time))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-01-01 13:33:33' as date)) > cast(`d` as date))
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SELECT * FROM t1 WHERE @d2 > d;
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE TIMESTAMP(@d2) > TIMESTAMP(d);
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT * FROM t1 WHERE TIME(@d2) > TIME(d);
+id	a	f	do	de	b	c	v	t	d
+SELECT * FROM t1 WHERE DATE(@d2) > DATE(d);
+id	a	f	do	de	b	c	v	t	d
+1	1	3.14	3.14159	3.1415926530	blob hello	chars hello	varchars hello	text hello	2021-01-01 13:33:33
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT * FROM t1 WHERE @d2 > d
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where ('2021-10-01 08:08:08' > `d`)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where ('2021-10-01 08:08:08' > `d`)
+SELECT * FROM t1 WHERE TIMESTAMP(@d2) > TIMESTAMP(d)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as datetime)) > cast(`d` as datetime))
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as datetime)) > cast(`d` as datetime))
+SELECT * FROM t1 WHERE TIME(@d2) > TIME(d)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as time)) > cast(`d` as time))
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as time)) > cast(`d` as time))
+SELECT * FROM t1 WHERE DATE(@d2) > DATE(d)
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as date)) > cast(`d` as date))
+mysql localhost 3306 select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as date)) > cast(`d` as date))
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where ('2021-10-01 08:08:08' > `d`)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as datetime)) > cast(`d` as datetime))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as time)) > cast(`d` as time))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as date)) > cast(`d` as date))
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where ('2021-10-01 08:08:08' > `d`)
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as datetime)) > cast(`d` as datetime))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as time)) > cast(`d` as time))
+select `id`,`a`,`f`,`do`,`de`,`b`,`c`,`v`,`t`,`d` from `auto_test_remote_2`.`t1` where (/* <cache> */ (cast('2021-10-01 08:08:08' as date)) > cast(`d` as date))
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET NAMES utf8mb4;
+SET @utf8_hello="你好", @utf8_world="世界";
+INSERT INTO t2 VALUES (1, "你好", "你好"), (2, "世界", "世界");
+SELECT 1 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t="你好";
+seq	id	HEX(t)	HEX(b)
+1	1	E4BDA0E5A5BD	E4BDA0E5A5BD
+SELECT 2 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b="你好";
+seq	id	HEX(t)	HEX(b)
+2	1	E4BDA0E5A5BD	E4BDA0E5A5BD
+SELECT 3 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t=@utf8_hello;
+seq	id	HEX(t)	HEX(b)
+3	1	E4BDA0E5A5BD	E4BDA0E5A5BD
+SELECT 4 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b=@utf8_hello;
+seq	id	HEX(t)	HEX(b)
+4	1	E4BDA0E5A5BD	E4BDA0E5A5BD
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT 1 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t="你好"
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '你好')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '你好')
+SELECT 2 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b="你好"
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '你好')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '你好')
+SELECT 3 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t=@utf8_hello
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '你好')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '你好')
+SELECT 4 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b=@utf8_hello
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '你好')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '你好')
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '??')
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '??')
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '??')
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '??')
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '??')
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '??')
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '??')
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '??')
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET NAMES gbk;
+SET @gbk_hello="���";
+SELECT 5 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t="���";
+seq	id	HEX(t)	HEX(b)
+5	1	E4BDA0E5A5BD	E4BDA0E5A5BD
+SELECT 6 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b="���";
+seq	id	HEX(t)	HEX(b)
+SELECT 7 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t=@gbk_hello;
+seq	id	HEX(t)	HEX(b)
+7	1	E4BDA0E5A5BD	E4BDA0E5A5BD
+SELECT 8 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b=@gbk_hello;
+seq	id	HEX(t)	HEX(b)
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT 5 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t="\xC4\xE3\xBA\xC3"
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '���')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '���')
+SELECT 6 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b="\xC4\xE3\xBA\xC3"
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '���')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '���')
+SELECT 7 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t=@gbk_hello
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = /* <cache> */ ('���'))
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = /* <cache> */ ('���'))
+SELECT 8 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b=@gbk_hello
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '??')
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '??')
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = /* <cache> */ ('??'))
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '??')
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '??')
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = /* <cache> */ ('??'))
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_spider_general_log;
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SET GLOBAL log_output = @old_log_output;
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SET GLOBAL log_output = @old_log_output;
+TRUNCATE TABLE mysql.general_log;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

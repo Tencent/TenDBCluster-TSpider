@@ -166,6 +166,7 @@ select * from  tbl_a  where id>0 and date(now())-date(start_time)>0;
 --echo select for master
 if ($USE_GENERAL_LOG)
 {
+    --replace_regex /[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2} [[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}/<TIMESTAMP>/
     SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
 }
 if ($USE_CHILD_GROUP2)
@@ -173,11 +174,13 @@ if ($USE_CHILD_GROUP2)
   --connection child2_1
   if ($USE_GENERAL_LOG)
   {
+    --replace_regex /[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2} [[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}/<TIMESTAMP>/
     SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
   }
   --connection child2_2
   if ($USE_GENERAL_LOG)
   {
+    --replace_regex /[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2} [[:digit:]]{2}:[[:digit:]]{2}:[[:digit:]]{2}/<TIMESTAMP>/
     SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %';
   }
 }

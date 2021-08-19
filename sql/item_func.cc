@@ -5511,6 +5511,11 @@ bool Item_func_get_user_var::const_item() const
 
 void Item_func_get_user_var::print(String *str, enum_query_type query_type)
 {
+  String buff, *ret;
+  if ((query_type & QT_SPD_PRINT_USER_VAR_VALUE) && (ret = val_str(&buff))) {
+    append_unescaped(str, ret->ptr(), ret->length());
+    return;
+  }
   str->append(STRING_WITH_LEN("@"));
   append_identifier(current_thd, str, &name);
 }

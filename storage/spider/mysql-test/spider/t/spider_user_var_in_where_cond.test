@@ -1,0 +1,229 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--let $MASTER_1_CHARSET_BACKUP= $MASTER_1_CHARSET
+--let $CHILD2_1_CHARSET_BACKUP= $CHILD2_1_CHARSET
+--let $CHILD2_2_CHARSET_BACKUP= $CHILD2_2_CHARSET
+--let $MASTER_1_CHARSET= CHARACTER SET utf8mb4
+--let $CHILD2_1_CHARSET= CHARACTER SET utf8mb4
+--let $CHILD2_2_CHARSET= CHARACTER SET utf8mb4
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT PRIMARY KEY, a INT, f FLOAT, do DOUBLE, de DECIMAL(20,10), b BLOB, c CHAR(20), v VARCHAR(200), t TEXT, d DATETIME
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = id INT PRIMARY KEY, t TEXT, b BLOB
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+if ($USE_GENERAL_LOG)
+{
+    --connection master_1
+    SET @old_log_output = @@global.log_output;
+    SET @old_spider_general_log = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE';
+    SET GLOBAL spider_general_log=1;
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_1
+    SET @old_log_output = @@global.log_output;
+    SET GLOBAL log_output = 'TABLE';
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_2
+    SET @old_log_output = @@global.log_output;
+    SET GLOBAL log_output = 'TABLE';
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--connection master_1
+SET NAMES utf8mb4; # default character set
+USE auto_test_local;
+INSERT INTO t1 VALUES(1, 1, 3.14, 3.14159, 3.141592653, "blob hello", "chars hello", "varchars hello", "text hello", "2021-01-01 13:33:33");
+
+SET @id1=1, @a1=1, @f1=3.14, @do1=3.14159, @de1=3.141592653, @b1="blob hello", @c1="chars hello", @v1="varchars hello", @t1="text hello", @d1=TIMESTAMP("2021-01-01 13:33:33");
+SET @id2=2, @a2=2, @f2=6.14, @do2=6.14159, @de2=6.141592653, @b2="blob hey", @c2="chars hey", @v2="varchars hey", @t2="text hey", @d2=TIMESTAMP("2021-10-01 08:08:08");
+
+# test user var (for strings, without conversion of charsets)
+SELECT * FROM t1 WHERE id=@id1;
+SELECT * FROM t1 WHERE a=@a1;
+SELECT * FROM t1 WHERE b=@b1;
+SELECT * FROM t1 WHERE f=@f1;
+SELECT * FROM t1 WHERE do=@do1;
+SELECT * FROM t1 WHERE de=@de1;
+SELECT * FROM t1 WHERE c=@c1;
+SELECT * FROM t1 WHERE v=@v1;
+SELECT * FROM t1 WHERE t=@t1;
+SELECT * FROM t1 WHERE d=@d1;
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+--connection master_1
+SELECT * FROM t1 WHERE id=@id2;
+SELECT * FROM t1 WHERE a=@a2;
+SELECT * FROM t1 WHERE b=@b2;
+SELECT * FROM t1 WHERE f=@f2;
+SELECT * FROM t1 WHERE do=@do2;
+SELECT * FROM t1 WHERE de=@de2;
+SELECT * FROM t1 WHERE c=@c2;
+SELECT * FROM t1 WHERE v=@v2;
+SELECT * FROM t1 WHERE t=@t2;
+SELECT * FROM t1 WHERE d=@d2;
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+# test temporal type cast
+--connection master_1
+SELECT * FROM t1 WHERE @d1 > d;
+SELECT * FROM t1 WHERE TIMESTAMP(@d1) > TIMESTAMP(d);
+SELECT * FROM t1 WHERE TIME(@d1) > TIME(d);
+SELECT * FROM t1 WHERE DATE(@d1) > DATE(d);
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+--connection master_1
+SELECT * FROM t1 WHERE @d2 > d;
+SELECT * FROM t1 WHERE TIMESTAMP(@d2) > TIMESTAMP(d);
+SELECT * FROM t1 WHERE TIME(@d2) > TIME(d);
+SELECT * FROM t1 WHERE DATE(@d2) > DATE(d);
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+--connection master_1
+SET NAMES utf8mb4;
+SET @utf8_hello="你好", @utf8_world="世界";
+INSERT INTO t2 VALUES (1, "你好", "你好"), (2, "世界", "世界");
+
+SELECT 1 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t="你好";
+SELECT 2 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b="你好";
+SELECT 3 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t=@utf8_hello;
+SELECT 4 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b=@utf8_hello;
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+--connection master_1
+SET NAMES gbk;
+SET @gbk_hello="���";
+
+SELECT 5 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t="���";
+SELECT 6 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b="���";
+SELECT 7 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t=@gbk_hello;
+SELECT 8 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b=@gbk_hello;
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+    if ($USE_CHILD_GROUP2)
+    {
+        --connection child2_1
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+        --connection child2_2
+        SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+        TRUNCATE TABLE mysql.general_log;
+    }
+}
+
+# cleanup
+if ($USE_GENERAL_LOG)
+{
+    --connection master_1
+    SET GLOBAL log_output = @old_log_output;
+    SET GLOBAL spider_general_log = @old_spider_general_log;
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_1
+    SET GLOBAL log_output = @old_log_output;
+    TRUNCATE TABLE mysql.general_log;
+
+    --connection child2_2
+    SET GLOBAL log_output = @old_log_output;
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--let @USE_GENERAL_LOG= $USE_GENERAL_LOG_BACKUP
+
+--let $MASTER_1_CHARSET= $MASTER_1_CHARSET_BACKUP
+--let $CHILD2_1_CHARSET= $CHILD2_1_CHARSET_BACKUP
+--let $CHILD2_2_CHARSET= $CHILD2_2_CHARSET_BACKUP
+
+--source ../include/spider_drop_database.inc

@@ -3907,18 +3907,23 @@ int spider_db_mysql_util::open_item_func(Item_func *item_func,
                                            use_fields, fields, field_charset));
     case Item_func::TRIG_COND_FUNC:
       DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
-    case Item_func::GUSERVAR_FUNC:
+    case Item_func::SUSERVAR_FUNC:
+      /*
+        We never want to push clauses like @i:=(?) directly to remotes,
+        because remotes do not know what the user var @i is.
+      */
       DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
-      /**
-    if (str)
-      str->length(str->length() - SPIDER_SQL_OPEN_PAREN_LEN);
-    if (item_func->result_type() == STRING_RESULT)
-      DBUG_RETURN(spider_db_open_item_string(item_func, spider, str,
-        alias, alias_length, dbton_id, use_fields, fields, field_charset));
-    else
-      DBUG_RETURN(spider_db_open_item_int(item_func, spider, str,
-        alias, alias_length, dbton_id, use_fields, fields));
-        ***/
+    case Item_func::GUSERVAR_FUNC:
+      if (str) str->length(str->length() - SPIDER_SQL_OPEN_PAREN_LEN);
+      if (item_func->result_type() == STRING_RESULT) /* string and time fall here */
+        DBUG_RETURN(spider_db_open_item_string(
+            item_func, spider, str, alias, alias_length, dbton_id, use_fields,
+            fields, field_charset));
+      else /* int, float, real and decimal fall here */
+        DBUG_RETURN(spider_db_open_item_int(item_func, spider, str, alias,
+                                            alias_length, dbton_id, use_fields,
+                                            fields));
+      break;
     case Item_func::FT_FUNC:
       if (spider_db_check_ft_idx(item_func, spider) == MAX_KEY)
         DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
