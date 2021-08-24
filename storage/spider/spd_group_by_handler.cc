@@ -210,8 +210,7 @@ int spider_fields::make_link_idx_chain(int link_status) {
                                               share->link_count, link_status)) {
     conn = spider->spider_get_conn_by_idx(roop_count);
     if (!conn) {
-      error_num = ER_SPIDER_CON_COUNT_ERROR;
-      DBUG_RETURN(error_num);
+      DBUG_RETURN(spider->store_error_num);
     }
     if (!conn->conn_holder_for_direct_join) {
       continue;
@@ -285,8 +284,7 @@ int spider_fields::make_link_idx_chain(int link_status) {
                share->link_count, link_status)) {
         conn = spider->spider_get_conn_by_idx(roop_count);
         if (!conn) {
-          error_num = ER_SPIDER_CON_COUNT_ERROR;
-          DBUG_RETURN(error_num);
+          DBUG_RETURN(spider->store_error_num);
         }
         if (!conn->conn_holder_for_direct_join) {
           continue;

@@ -4284,10 +4284,19 @@ int ha_partition::end_bulk_insert() {
     if (bitmap_is_set(&m_bulk_insert_started, i) &&
         (tmp = m_file[i]->ha_end_bulk_insert())) {
       error = tmp;
+      if (m_file[i]->is_spider_storage_engine())
+        /*
+          Normally SEs only do clean-ups in their end_bulk_insert(), so if one
+          fails, the others can still continue and there's no problem. But in
+          the case of Spider, the actual bulk insert is carried out in
+          end_bulk_insert(), so we need to break here if anyone fails.
+        */
+        break;
     }
   }
 
-  for (i = bitmap_get_first_set(&m_bulk_insert_started); i < m_tot_parts;
+  for (i = bitmap_get_first_set(&m_bulk_insert_started);
+       !error && i < m_tot_parts;
        i = bitmap_get_next_set(&m_bulk_insert_started, i)) {
     int tmp;
     if (bitmap_is_set(&m_bulk_insert_started, i) &&
