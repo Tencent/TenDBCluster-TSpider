@@ -3419,6 +3419,24 @@ void Item_func_conv_charset::fix_length_and_dec()
 
 void Item_func_conv_charset::print(String *str, enum_query_type query_type)
 {
+  if (query_type & QT_SPD_PRINT_USER_VAR_VALUE) {
+    String tmp;
+    uint conv_errors;
+    /*
+      It is safe to say str_value must have the same charset as to str,
+      because in the preparation stage all the converting is already done.
+      Even if it does not here, copy() can still convert content of str_value
+      to the charset of str, then write it to tmp.
+    */
+    if (tmp.copy(&str_value, str->charset(), &conv_errors) || conv_errors) {
+      sql_print_warning(
+          "Errors occurred when converting charset from %s to %s, the printed "
+          "string value might be incorrect.",
+          str_value.charset()->name, str->charset()->name);
+    }
+    append_unescaped(str, tmp.ptr(), tmp.length());
+    return;
+  }
   str->append(STRING_WITH_LEN("convert("));
   args[0]->print(str, query_type);
   str->append(STRING_WITH_LEN(" using "));

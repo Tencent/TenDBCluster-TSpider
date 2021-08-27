@@ -6617,17 +6617,22 @@ int spider_db_open_item_string(Item *item, ha_spider *spider,
           /* text have charset, blob don't */
           if (field_charset &&
               my_charset_same(field_charset, &my_charset_bin)) {
-            item->print(str->get_str(), (enum_query_type)QT_ORDINARY);
+            item->print(
+                str->get_str(),
+                (enum_query_type)(QT_ORDINARY | QT_SPD_PRINT_USER_VAR_VALUE));
           } else if (!field_charset && opt_spider_not_convert_binary &&
                      item->type() == Item::STRING_ITEM &&
                      item->val_str()->ptr() && item->val_str()->charset() &&
                      my_charset_same(
                          item->val_str()->charset(),
                          &my_charset_bin)) { /*  binary as a where condition */
-            item->print(str->get_str(), (enum_query_type)QT_ORDINARY);
+            item->print(
+                str->get_str(),
+                (enum_query_type)(QT_ORDINARY | QT_SPD_PRINT_USER_VAR_VALUE));
           } else {
             item->print(str->get_str(),
-                        (enum_query_type)QT_TO_SPECIFIED_CHARSET);
+                        (enum_query_type)(QT_TO_SPECIFIED_CHARSET |
+                                          QT_SPD_PRINT_USER_VAR_VALUE));
           }
           str->mem_calc();
           break;

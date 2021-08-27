@@ -1702,16 +1702,27 @@ bool Item_func_now::fix_fields(THD *thd, Item **items)
 
 void Item_func_now::print(String *str, enum_query_type query_type)
 {
-    const char *name_str = func_name();
-    const char *cur_str = "CURRENT_TIMESTAMP";
+  const char *name_str = func_name();
+  const char *cur_str = "CURRENT_TIMESTAMP";
+  String buff;
+
+  if ((query_type & QT_SPD_PRINT_USER_VAR_VALUE) &&
+      !my_TIME_to_str(&ltime, &buff, decimals)) {
+    str->append(STRING_WITH_LEN("cast("));
+    append_unescaped(str, buff.ptr(), buff.length());
+    str->append(STRING_WITH_LEN(" as datetime"));
+  } else
     str->append(func_name());
-    if (decimals ||  strcasecmp(cur_str, name_str))
-    {
-        str->append('(');
-        if (decimals)
-            str->append_ulonglong(decimals);
-        str->append(')');
-    }
+
+  if (decimals ||  strcasecmp(cur_str, name_str))
+  {
+    str->append('(');
+    if (decimals)
+        str->append_ulonglong(decimals);
+    str->append(')');
+  }
+  if (buff.length())
+    str->append(')');
 }
 
 
@@ -2397,8 +2408,16 @@ bool Item_char_typecast::eq(const Item *item, bool binary_cmp) const
 void Item_temporal_typecast::print(String *str, enum_query_type query_type)
 {
   char buf[32];
+  String *ret, buff;
+
   str->append(STRING_WITH_LEN("cast("));
-  args[0]->print(str, query_type);
+
+  if ((query_type & QT_SPD_PRINT_USER_VAR_VALUE) &&
+      (ret = args[0]->val_str(&buff))) {
+    append_unescaped(str, ret->ptr(), ret->length());
+  } else
+    args[0]->print(str, query_type);
+
   str->append(STRING_WITH_LEN(" as "));
   str->append(cast_type());
   if (decimals && decimals != NOT_FIXED_DEC)

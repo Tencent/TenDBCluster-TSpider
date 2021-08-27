@@ -780,7 +780,15 @@ enum enum_query_type
   // it evaluates to. Should be used for error messages, so that they
   // don't reveal values.
   QT_NO_DATA_EXPANSION= (1 << 9),
+
+  // Used only by Spider.
+  // This value means a string needs charset conversion when printing.
   QT_TO_SPECIFIED_CHARSET = ((1 << 10) | QT_WITHOUT_INTRODUCERS),
+  // This value means to print value of a user variable to queries
+  // when Spider propagate queries to remotes. Note that in some cases,
+  // some conversion should be performed on the value. So the value cannot be
+  // printed directly as it is.
+  QT_SPD_PRINT_USER_VAR_VALUE = ((1 << 11) | QT_WITHOUT_INTRODUCERS),
 };
 
 
