@@ -9759,6 +9759,30 @@ void ha_spider::check_pre_call(bool use_parallel) {
     DBUG_VOID_RETURN;
   }
 
+  if (use_pre_call && thd->lex->sql_command == SQLCOM_SELECT) {
+    /*
+      When a SELECT can get a huge load of results, propagating queries to
+      remotes *in parallel* may lead to feeding Spider too much for it to
+      process at once, which can directly cause network timeout.
+
+      Here we add a constraint to only allow parallel propagation of queries
+      when:
+      1. The query has compute-intensive clauses (e.g. GROUP BY), so
+      that letting the computation be done in parallel on remotes could gain us
+      better efficiency.
+      2. The query is likely to give us a relatively small result set due to
+      some sort of filtering (e.g. WHERE, LIMIT).
+      3. Both conditions are satisfied. (e.g. aggregate functions)
+    */
+    if (unlikely(!select_lex || !select_lex->join)) DBUG_VOID_RETURN;
+    if (select_lex->join->sum_funcs && *select_lex->join->sum_funcs)
+      /* Has aggregate function(s) */
+      DBUG_VOID_RETURN;
+    if (select_lex->join->group || select_lex->explicit_limit) DBUG_VOID_RETURN;
+    if (select_lex->where) DBUG_VOID_RETURN;
+    use_pre_call = FALSE;
+  }
+
   DBUG_VOID_RETURN;
 }
 
