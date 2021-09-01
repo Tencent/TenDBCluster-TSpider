@@ -1627,7 +1627,12 @@ void spider_bg_all_conn_break(ha_spider *spider) {
     if (conn && result_list->bgs_working) spider_bg_conn_break(conn, spider);
     if (conn && spider->quick_targets[roop_count]) {
       spider_db_free_one_quick_result((SPIDER_RESULT *)result_list->current);
-      DBUG_ASSERT(spider->quick_targets[roop_count] == conn->quick_target);
+      /*
+        conn->quick_target could already be filled with junk bytes here because
+        of spider_free_conn(), this happens when one of the remotes switches to
+        another instance, while a query is being executed and heading into
+        commit stage (trans_commit_stmt()).
+      */
       DBUG_PRINT("info", ("spider conn[%p]->quick_target=NULL", conn));
       conn->quick_target = NULL;
       spider->quick_targets[roop_count] = NULL;
