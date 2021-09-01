@@ -676,7 +676,7 @@ class ha_spider : public handler {
   }
   bool is_spider_storage_engine() { return TRUE; }
   bool is_spider_config_table() {
-    if (this->share->tgt_config_table && this->share->tgt_config_table[0] &&
+    if (this->share && this->share->tgt_config_table && this->share->tgt_config_table[0] &&
         !strncasecmp(this->share->tgt_config_table[0], "true",
                      this->share->tgt_config_table_lengths[0]))
       return true;
