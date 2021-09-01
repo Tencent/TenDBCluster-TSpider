@@ -4307,9 +4307,6 @@ int ha_partition::end_bulk_insert() {
       part_share->auto_inc_initialized = FALSE;
       part_share->last_insert_failed = TRUE;
       unlock_auto_increment();
-      sql_print_information(
-          "AUTO_INCREMENT: set last_insert_failed=true, error number is %d",
-          error);
     }
   }
   DBUG_RETURN(error);
