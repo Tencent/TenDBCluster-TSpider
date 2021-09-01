@@ -115,6 +115,11 @@ pthread_t get_status_thread;
 static const uint spider_conn_queue_init_size = 64;
 static const uint spider_conn_queue_increase_size = 64;
 
+const char *const SPIDER_LOG_ER_WAIT_GET_CONN =
+    "Spider: failed when waiting for an opening in the connection pool, errno: %d";
+const char *const SPIDER_LOG_ER_GET_CONN_FROM_POOL = "Spider: failed to get a connection from the pool with conn_key: %s";
+const char *const SPIDER_LOG_ER_CREATE_CONN = "Spider: failed to create a connection, error_num: %d";
+
 /**
   conn_queue is a queue (actually stack) to store SPIDER_CONN
   in order to reduce memcpy the whole SPIDER_CONN, we insert
@@ -781,8 +786,10 @@ SPIDER_CONN *spider_get_conn(SPIDER_SHARE *share, int link_idx, SPIDER_TRX *trx,
         } else { /* did not enable conncetion pool , create_conn */
           DBUG_PRINT("info", ("spider create new conn"));
           if (!(conn = spider_create_conn(share, spider, link_idx,
-                                          base_link_idx, conn_kind, error_num)))
+                                          base_link_idx, conn_kind, error_num))) {
+            sql_print_error(SPIDER_LOG_ER_CREATE_CONN, *error_num);
             goto error;
+          }
           *conn->conn_key = *(share->conn_keys[link_idx]);
           if (spider) {
             spider->conns[base_link_idx] = conn;
@@ -804,8 +811,10 @@ SPIDER_CONN *spider_get_conn(SPIDER_SHARE *share, int link_idx, SPIDER_TRX *trx,
       DBUG_PRINT("info", ("spider create new conn"));
       /* conn_recycle_strict = 0 and conn_recycle_mode = 0 or 2 */
       if (!(conn = spider_create_conn(share, spider, link_idx, base_link_idx,
-                                      conn_kind, error_num)))
+                                      conn_kind, error_num))) {
+        sql_print_error(SPIDER_LOG_ER_CREATE_CONN, *error_num);
         goto error;
+      }
       *conn->conn_key = *(share->conn_keys[link_idx]);
       if (spider) {
         spider->conns[base_link_idx] = conn;
@@ -889,8 +898,7 @@ int spider_check_and_get_casual_read_conn(THD *thd, ha_spider *spider,
   if (spider->result_list.casual_read[link_idx]) {
     SPIDER_CONN *conn = spider->spider_get_conn_by_idx(link_idx);
     if (!conn) {
-      error_num = ER_SPIDER_CON_COUNT_ERROR;
-      DBUG_RETURN(error_num);
+      DBUG_RETURN(spider->store_error_num);
     }
     if (conn->casual_read_query_id != thd->query_id) {
       conn->casual_read_query_id = thd->query_id;
@@ -944,8 +952,7 @@ int spider_check_and_init_casual_read(THD *thd, ha_spider *spider,
     }
     conn = spider->spider_get_conn_by_idx(link_idx);
     if (!conn) {
-      error_num = ER_SPIDER_CON_COUNT_ERROR;
-      DBUG_RETURN(error_num);
+      DBUG_RETURN(spider->store_error_num);
     }
     if (conn->casual_read_base_conn &&
         (error_num = spider_create_conn_thread(conn))) {
@@ -1312,8 +1319,9 @@ int spider_set_conn_bg_param(ha_spider *spider) {
                share->link_count,
                spider->lock_mode ? SPIDER_LINK_STATUS_RECOVERY
                                  : SPIDER_LINK_STATUS_OK)) {
-        if ((error_num = spider_create_conn_thread(
-                 spider->spider_get_conn_by_idx(roop_count))))
+        SPIDER_CONN *conn = spider->spider_get_conn_by_idx(roop_count);
+        if (!conn) DBUG_RETURN(spider->store_error_num);
+        if ((error_num = spider_create_conn_thread(conn)))
           DBUG_RETURN(error_num);
       }
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
@@ -1371,8 +1379,9 @@ int spider_set_conn_bg_param_for_dml(ha_spider *spider) {
              share->link_count,
              spider->lock_mode ? SPIDER_LINK_STATUS_RECOVERY
                                : SPIDER_LINK_STATUS_OK)) {
-      if ((error_num = spider_create_conn_thread(
-               spider->spider_get_conn_by_idx(roop_count))))
+      SPIDER_CONN *conn = spider->spider_get_conn_by_idx(roop_count);
+      if (!conn) DBUG_RETURN(spider->store_error_num);
+      if ((error_num = spider_create_conn_thread(conn)))
         DBUG_RETURN(error_num);
     }
   }
@@ -1676,14 +1685,12 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
   DBUG_PRINT("info", ("spider spider=%p", spider));
   conn = spider->spider_get_conn_by_idx(link_idx);
   if (!conn) {
-    error_num = ER_SPIDER_CON_COUNT_ERROR;
-    DBUG_RETURN(error_num);
+    DBUG_RETURN(spider->store_error_num);
   }
   with_lock = (spider_conn_lock_mode(spider) != SPIDER_LOCK_MODE_NO_LOCK);
   first_conn = spider->spider_get_conn_by_idx(first_link_idx);
   if (!first_conn) {
-    error_num = ER_SPIDER_CON_COUNT_ERROR;
-    DBUG_RETURN(error_num);
+    DBUG_RETURN(spider->store_error_num);
   }
   if (first) {
     if (spider->use_pre_call) {
@@ -3476,6 +3483,7 @@ SPIDER_CONN *spider_get_conn_from_idle_connection(
       --ip_port_conn->waiting_count;
       pthread_mutex_unlock(&ip_port_conn->mutex);
       if (error == ETIMEDOUT || error == ETIME || error != 0) {
+        sql_print_error(SPIDER_LOG_ER_WAIT_GET_CONN, error);
         *error_num = ER_SPIDER_CON_COUNT_ERROR;
         DBUG_RETURN(NULL);
       }
@@ -3499,14 +3507,17 @@ SPIDER_CONN *spider_get_conn_from_idle_connection(
         DBUG_RETURN(conn);
       } else {
         // pthread_mutex_unlock(&spider_conn_mutex);
+        sql_print_error(SPIDER_LOG_ER_GET_CONN_FROM_POOL, share->conn_keys[link_idx]);
       }
     }
   } else { /* create conn */
     if (ip_port_conn) pthread_mutex_unlock(&ip_port_conn->mutex);
     DBUG_PRINT("info", ("spider create new conn"));
     if (!(conn = spider_create_conn(share, spider, link_idx, base_link_idx,
-                                    conn_kind, error_num)))
+                                    conn_kind, error_num))) {
+      sql_print_error(SPIDER_LOG_ER_CREATE_CONN, *error_num);
       DBUG_RETURN(conn);
+    }
     *conn->conn_key = *conn_key;
     if (spider) {
       spider->conns[base_link_idx] = conn;

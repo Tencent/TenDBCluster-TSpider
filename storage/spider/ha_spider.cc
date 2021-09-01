@@ -103,6 +103,7 @@ ha_spider::ha_spider() : handler(spider_hton_ptr, NULL) {
   ft_init_without_index_init = FALSE;
   sql_kinds = 0;
   error_mode = 0;
+  store_error_num = 0;
   use_spatial_index = FALSE;
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
   use_fields = FALSE;
@@ -199,6 +200,7 @@ ha_spider::ha_spider(handlerton *hton, TABLE_SHARE *table_arg)
   ft_init_without_index_init = FALSE;
   sql_kinds = 0;
   error_mode = 0;
+  store_error_num = 0;
   use_spatial_index = FALSE;
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
   use_fields = FALSE;
@@ -860,7 +862,7 @@ THR_LOCK_DATA **ha_spider::store_lock(THD *thd, THR_LOCK_DATA **to,
           SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
           int appended = 0;
           if (!conn) {
-            store_error_num = ER_SPIDER_CON_COUNT_ERROR;
+            /* store_error_num is written by spider_get_conn_by_idx() */
             DBUG_RETURN(to);
           }
           if ((error_num =
@@ -1031,7 +1033,6 @@ int ha_spider::reset() {
   result_list.is_get_increment = FALSE;
 #endif
   result_list.direct_distinct = FALSE;
-  store_error_num = 0;
 #ifdef WITH_PARTITION_STORAGE_ENGINE
   if (partition_handler_share && partition_handler_share->searched_bitmap) {
     if (!is_clone) {
@@ -1136,6 +1137,7 @@ int ha_spider::reset() {
   use_fields = FALSE;
 #endif
   error_mode = 0;
+  store_error_num = 0;
   total_inserted_rows = 0;
 
   for (roop_count = 0; roop_count < (int)share->link_count; roop_count++) {
@@ -1491,8 +1493,7 @@ int ha_spider::index_read_map_internal(uchar *buf, const uchar *key,
       ulong sql_type;
       conn = spider_get_conn_by_idx(roop_count);
       if (!conn) {
-        error_num = ER_SPIDER_CON_COUNT_ERROR;
-        DBUG_RETURN(error_num);
+        DBUG_RETURN(store_error_num);
       }
       if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
         sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -1656,8 +1657,7 @@ int ha_spider::index_read_map(uchar *buf, const uchar *key,
                  share->link_count, SPIDER_LINK_STATUS_RECOVERY)) {
           conn = spider_get_conn_by_idx(roop_count);
           if (!conn) {
-            error_num = ER_SPIDER_CON_COUNT_ERROR;
-            DBUG_RETURN(error_num);
+            DBUG_RETURN(store_error_num);
           }
           if ((tmp_error_num = spider_db_bulk_store_result(
                    this, conn, roop_count, (roop_count != link_ok)))) {
@@ -1826,8 +1826,7 @@ int ha_spider::index_read_last_map_internal(uchar *buf, const uchar *key,
       ulong sql_type;
       conn = spider_get_conn_by_idx(roop_count);
       if (!conn) {
-        error_num = ER_SPIDER_CON_COUNT_ERROR;
-        DBUG_RETURN(error_num);
+        DBUG_RETURN(store_error_num);
       }
       if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
         sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -2151,8 +2150,7 @@ int ha_spider::index_first_internal(uchar *buf) {
         ulong sql_type;
         conn = spider_get_conn_by_idx(roop_count);
         if (!conn) {
-          error_num = ER_SPIDER_CON_COUNT_ERROR;
-          DBUG_RETURN(error_num);
+          DBUG_RETURN(store_error_num);
         }
         if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
           sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -2416,8 +2414,7 @@ int ha_spider::index_last_internal(uchar *buf) {
         ulong sql_type;
         conn = spider_get_conn_by_idx(roop_count);
         if (!conn) {
-          error_num = ER_SPIDER_CON_COUNT_ERROR;
-          DBUG_RETURN(error_num);
+          DBUG_RETURN(store_error_num);
         }
         if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
           sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -2721,8 +2718,7 @@ int ha_spider::read_range_first_internal(uchar *buf, const key_range *start_key,
       ulong sql_type;
       conn = spider_get_conn_by_idx(roop_count);
       if (!conn) {
-        error_num = ER_SPIDER_CON_COUNT_ERROR;
-        DBUG_RETURN(error_num);
+        DBUG_RETURN(store_error_num);
       }
       if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
         sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -3158,8 +3154,7 @@ int ha_spider::read_multi_range_first_internal(uchar *buf,
           ulong sql_type;
           conn = spider_get_conn_by_idx(roop_count);
           if (!conn) {
-            error_num = ER_SPIDER_CON_COUNT_ERROR;
-            DBUG_RETURN(error_num);
+            DBUG_RETURN(store_error_num);
           }
           if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
             sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -3810,8 +3805,7 @@ int ha_spider::read_multi_range_first_internal(uchar *buf,
           ulong sql_type;
           conn = spider_get_conn_by_idx(roop_count);
           if (!conn) {
-            error_num = ER_SPIDER_CON_COUNT_ERROR;
-            DBUG_RETURN(error_num);
+            DBUG_RETURN(store_error_num);
           }
           if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
             sql_type = SPIDER_SQL_TYPE_SELECT_SQL | SPIDER_SQL_TYPE_TMP_SQL;
@@ -4305,8 +4299,7 @@ int ha_spider::read_multi_range_next(KEY_MULTI_RANGE **found_range_p)
           ulong sql_type;
           conn = spider_get_conn_by_idx(roop_count);
           if (!conn) {
-            error_num = ER_SPIDER_CON_COUNT_ERROR;
-            DBUG_RETURN(error_num);
+            DBUG_RETURN(store_error_num);
           }
           if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
             sql_type = SPIDER_SQL_TYPE_SELECT_SQL;
@@ -4944,8 +4937,7 @@ int ha_spider::read_multi_range_next(KEY_MULTI_RANGE **found_range_p)
           ulong sql_type;
           conn = spider_get_conn_by_idx(roop_count);
           if (!conn) {
-            error_num = ER_SPIDER_CON_COUNT_ERROR;
-            DBUG_RETURN(error_num);
+            DBUG_RETURN(store_error_num);
           }
           if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
             sql_type = SPIDER_SQL_TYPE_SELECT_SQL | SPIDER_SQL_TYPE_TMP_SQL;
@@ -5216,8 +5208,7 @@ int ha_spider::rnd_init(bool scan) {
                  share->link_count, SPIDER_LINK_STATUS_RECOVERY)) {
           conn = spider_get_conn_by_idx(roop_count);
           if (!conn) {
-            error_num = ER_SPIDER_CON_COUNT_ERROR;
-            DBUG_RETURN(error_num);
+            DBUG_RETURN(store_error_num);
           }
           if (conn && result_list.bgs_working) spider_bg_conn_break(conn, this);
           if (quick_targets[roop_count]) {
@@ -5451,8 +5442,7 @@ int ha_spider::rnd_next_internal(uchar *buf) {
       } else {
         SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
         if (!conn) {
-          error_num = ER_SPIDER_CON_COUNT_ERROR;
-          DBUG_RETURN(error_num);
+          DBUG_RETURN(store_error_num);
         }
         ulong sql_type;
         if (sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
@@ -5923,8 +5913,7 @@ int ha_spider::ft_read_internal(uchar *buf) {
         spider_db_handler *dbton_hdl = dbton_handler[dbton_id];
         SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
         if (!conn) {
-          error_num = ER_SPIDER_CON_COUNT_ERROR;
-          DBUG_RETURN(error_num);
+          DBUG_RETURN(store_error_num);
         }
         if (dbton_hdl->need_lock_before_set_sql_for_exec(
                 SPIDER_SQL_TYPE_SELECT_SQL)) {
@@ -6761,8 +6750,11 @@ void ha_spider::start_bulk_insert(ha_rows rows, uint flags)
 }
 
 int ha_spider::get_bg_result() {
-  SPIDER_CONN *conn = this->spider_get_conn_by_idx(0);
+  DBUG_ENTER("ha_spider::get_bg_result: INSERT");
+  SPIDER_CONN *conn = this->spider_get_conn_by_idx(
+      0);  // TODO: is it safe enough to only check conns[0]?
 
+  if (unlikely(!conn)) DBUG_RETURN(store_error_num);
   if (conn->bg_conn_working) {
     // wait backgroud thread end
     spider_bg_all_conn_break(this);
@@ -6773,15 +6765,18 @@ int ha_spider::get_bg_result() {
   if (result_list.bgs_error && result_list.bgs_error_with_message)
     my_message(result_list.bgs_error, result_list.bgs_error_msg, MYF(0));
 
-  return result_list.bgs_error;
+  DBUG_RETURN(result_list.bgs_error);
 }
 
 int ha_spider::get_bg_result(ha_rows *update_rows, ha_rows *found_rows) {
+  DBUG_ENTER("ha_spider::get_bg_result: UPDATE");
+
   SPIDER_CONN *conn = this->spider_get_conn_by_idx(0);
   SPIDER_SHARE *share = this->share;
   int roop_count;
-  DBUG_ENTER("get_bg_result");
   bool counted = FALSE;
+
+  if (unlikely(!conn)) DBUG_RETURN(store_error_num);
   if (conn->bg_conn_working) {
     // wait backgroud thread end
     spider_bg_all_conn_break(this);
@@ -6812,12 +6807,15 @@ int ha_spider::get_bg_result(ha_rows *update_rows, ha_rows *found_rows) {
   }
   DBUG_RETURN(result_list.bgs_error);
 }
+
 int ha_spider::get_bg_result(ha_rows *delete_rows) {
+  DBUG_ENTER("ha_spider::get_bg_result: DELETE");
   SPIDER_CONN *conn = this->spider_get_conn_by_idx(0);
   SPIDER_SHARE *share = this->share;
   int roop_count;
-  DBUG_ENTER("get_bg_result");
   bool counted = FALSE;
+
+  if (unlikely(!conn)) DBUG_RETURN(store_error_num);
   if (conn->bg_conn_working) {
     // wait backgroud thread end
     spider_bg_all_conn_break(this);
@@ -6857,6 +6855,12 @@ int ha_spider::end_bulk_insert() {
   backup_error_status();
   DBUG_ENTER("ha_spider::end_bulk_insert");
   DBUG_PRINT("info", ("spider this=%p", this));
+
+  if (store_error_num)
+    /* An error could have occurred before this stage (e.g. did not get a valid
+     * connection). If so, abort the insert. */
+    DBUG_RETURN(store_error_num);
+
   bulk_insert = FALSE;
   if (bulk_size == -1) DBUG_RETURN(0);
   if ((error_num = spider_db_bulk_insert(this, table, TRUE)))
@@ -9343,8 +9347,7 @@ int ha_spider::drop_tmp_tables() {
         spider_db_handler *dbton_hdl = dbton_handler[dbton_id];
         SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
         if (!conn) {
-          error_num = ER_SPIDER_CON_COUNT_ERROR;
-          DBUG_RETURN(error_num);
+          DBUG_RETURN(store_error_num);
         }
         if (dbton_hdl->need_lock_before_set_sql_for_exec(
                 SPIDER_SQL_TYPE_TMP_SQL)) {
@@ -9443,8 +9446,7 @@ int ha_spider::close_opened_handler(int link_idx, bool release_conn) {
   if (spider_bit_is_set(m_handler_opened, link_idx)) {
     conn = spider_get_conn_by_idx(link_idx);
     if (!conn) {
-      error_num = ER_SPIDER_CON_COUNT_ERROR;
-      DBUG_RETURN(error_num);
+      DBUG_RETURN(store_error_num);
     }
     if ((error_num2 = spider_db_close_handler(this, conn, link_idx,
                                               SPIDER_CONN_KIND_MYSQL))) {
@@ -9495,8 +9497,7 @@ int ha_spider::index_handler_init() {
              SPIDER_LINK_STATUS_RECOVERY)) {
       SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
       if (!conn) {
-        error_num = ER_SPIDER_CON_COUNT_ERROR;
-        DBUG_RETURN(error_num);
+        DBUG_RETURN(store_error_num);
       }
       if (spider_conn_use_handler(this, lock_mode, roop_count) &&
           spider_conn_need_open_handler(this, active_index, roop_count)) {
@@ -9565,8 +9566,7 @@ int ha_spider::rnd_handler_init() {
              SPIDER_LINK_STATUS_RECOVERY)) {
       SPIDER_CONN *conn = spider_get_conn_by_idx(roop_count);
       if (!conn) {
-        error_num = ER_SPIDER_CON_COUNT_ERROR;
-        DBUG_RETURN(error_num);
+        DBUG_RETURN(store_error_num);
       }
       if (spider_conn_use_handler(this, lock_mode, roop_count) &&
           spider_conn_need_open_handler(this, MAX_KEY, roop_count)) {
@@ -11352,7 +11352,7 @@ int ha_spider::set_union_table_name_pos_sql() {
 
 /* create conn when using, not always as spider_get_share */
 SPIDER_CONN *ha_spider::spider_get_conn_by_idx(int link_idx) {
-  int error_num;
+  int error_num = 0;
   assert(this->conns);
   if (this && this->conns && this->conns[link_idx]) {
     trans_register_ha(trx->thd, FALSE, spider_hton_ptr);
@@ -11369,6 +11369,11 @@ SPIDER_CONN *ha_spider::spider_get_conn_by_idx(int link_idx) {
       //			share->init_error_time = (time_t) time((time_t*)
       // 0); 			share->init = TRUE;
       // spider_free_share(share);
+      DBUG_ASSERT(error_num != 0);
+      if (unlikely(!error_num))
+        store_error_num = ER_SPIDER_UNKNOWN_NUM;
+      else
+        store_error_num = error_num;
       return this->conns[link_idx]; /* return NULL if failed  to get_conn */
     }
 
