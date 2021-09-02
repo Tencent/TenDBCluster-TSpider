@@ -1684,14 +1684,14 @@ int spider_db_mysql::exec_query(const char *query, uint length,
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
         tmp_query_str.q_append(thd->query(), query_length);
         log_spider_receive_result_with_time(security_ctx, (ulong)thd->thread_id,
-                                            &tmp_query_str);
+                                            &tmp_query_str, mysql_errno(db_conn));
       }
       if (log_result_error_with_sql & 1) {
         tmp_query_str.length(0);
         if (tmp_query_str.reserve(length + 1)) DBUG_RETURN(HA_ERR_OUT_OF_MEM);
         tmp_query_str.q_append(query, length);
         log_spider_send_result_with_time((ulong)thd->thread_id, conn->tgt_host,
-                                         (ulong)db_conn->thread_id, &tmp_query_str);
+                                         (ulong)db_conn->thread_id, &tmp_query_str, mysql_errno(db_conn));
       }
     }
     if (log_result_errors >= 2 && db_conn->warning_count > 0) {
