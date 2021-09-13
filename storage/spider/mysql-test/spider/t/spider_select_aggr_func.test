@@ -1,0 +1,66 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT PRIMARY KEY, vc VARCHAR(120)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
+--let $USE_GENERAL_LOG= 1
+
+if ($USE_GENERAL_LOG)
+{
+    --connection master_1
+    SET @old_log_output = @@global.log_output;
+    SET @old_spider_general_log = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE';
+    SET GLOBAL spider_general_log=1;
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--connection master_1
+USE auto_test_local;
+INSERT INTO t1 VALUES
+(1, "hello"),
+(2, "hello"),
+(3, "hello"),
+(4, "hey"),
+(5, "hey"),
+(6, "hey"),
+(7, "hey"),
+(8, "hi"),
+(9, "hi");
+
+SELECT MAX(id) FROM t1;
+SELECT MAX(id), id FROM t1;
+SELECT MAX(id), MAX(vc) FROM t1;
+SELECT MAX(id), vc FROM t1;
+SELECT MAX(id), vc FROM t1 GROUP BY vc;
+
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+}
+
+# cleanup
+if ($USE_GENERAL_LOG)
+{
+    --connection master_1
+    SET GLOBAL log_output = @old_log_output;
+    SET GLOBAL spider_general_log = @old_spider_general_log;
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--let @USE_GENERAL_LOG= $USE_GENERAL_LOG_BACKUP
+
+--source ../include/spider_drop_database.inc

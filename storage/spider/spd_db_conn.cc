@@ -6800,6 +6800,27 @@ int spider_db_append_update_columns(ha_spider *spider, spider_string *str,
 }
 #endif
 
+#ifdef HANDLER_HAS_DIRECT_AGGREGATE
+bool spider_db_check_select_colum_in_group(st_select_lex *select_lex,
+                                           Field *field) {
+  ORDER *group;
+  Item_field *item_field;
+  DBUG_ENTER("spider_db_check_select_colum_in_group");
+  for (group = (ORDER *)select_lex->group_list.first; group;
+       group = group->next) {
+    Item *item = *group->item;
+    if (item->type() == Item::FIELD_ITEM) {
+      item_field = (Item_field *)item;
+      if (item_field->field == field) {
+        /* This field can be used directly */
+        DBUG_RETURN(TRUE);
+      }
+    }
+  }
+  DBUG_RETURN(FALSE);
+}
+#endif
+
 uint spider_db_check_ft_idx(Item_func *item_func, ha_spider *spider) {
   uint roop_count, roop_count2, part_num;
   uint item_count = item_func->argument_count();

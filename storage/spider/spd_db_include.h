@@ -187,6 +187,8 @@ typedef st_spider_result SPIDER_RESULT;
 #define SPIDER_SQL_LCL_NAME_QUOTE_STR "`"
 #define SPIDER_SQL_LCL_NAME_QUOTE_LEN \
   (sizeof(SPIDER_SQL_LCL_NAME_QUOTE_STR) - 1)
+#define SPIDER_SQL_MIN_STR "min"
+#define SPIDER_SQL_MIN_LEN (sizeof(SPIDER_SQL_MIN_STR) - 1)
 
 #define SPIDER_CONN_KIND_MYSQL (1 << 0)
 #define SPIDER_SQL_KIND_SQL (1 << 0)

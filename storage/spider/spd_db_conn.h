@@ -675,6 +675,11 @@ int spider_db_append_update_columns(ha_spider *spider, spider_string *str,
                                     spider_fields *fields);
 #endif
 
+#ifdef HANDLER_HAS_DIRECT_AGGREGATE
+bool spider_db_check_select_colum_in_group(st_select_lex *select_lex,
+                                           Field *field);
+#endif
+
 uint spider_db_check_ft_idx(Item_func *item_func, ha_spider *spider);
 
 int spider_db_udf_fetch_row(SPIDER_TRX *trx, Field *field, SPIDER_DB_ROW *row,

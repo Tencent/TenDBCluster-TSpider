@@ -1,0 +1,112 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT PRIMARY KEY, vc VARCHAR(120))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SET @old_log_output = @@global.log_output;
+SET @old_spider_general_log = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+USE auto_test_local;
+INSERT INTO t1 VALUES
+(1, "hello"),
+(2, "hello"),
+(3, "hello"),
+(4, "hey"),
+(5, "hey"),
+(6, "hey"),
+(7, "hey"),
+(8, "hi"),
+(9, "hi");
+SELECT MAX(id) FROM t1;
+MAX(id)
+9
+SELECT MAX(id), id FROM t1;
+MAX(id)	id
+9	1
+SELECT MAX(id), MAX(vc) FROM t1;
+MAX(id)	MAX(vc)
+9	hi
+SELECT MAX(id), vc FROM t1;
+MAX(id)	vc
+9	hello
+SELECT MAX(id), vc FROM t1 GROUP BY vc;
+MAX(id)	vc
+3	hello
+7	hey
+9	hi
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT MAX(id) FROM t1
+mysql localhost 3306 select max(`id`),min(`id`) from `auto_test_remote`.`t1`
+mysql localhost 3306 select max(`id`),min(`id`) from `auto_test_remote_2`.`t1`
+SELECT MAX(id), id FROM t1
+mysql localhost 3306 select max(`id`),min(`id`) from `auto_test_remote`.`t1`
+mysql localhost 3306 select max(`id`),min(`id`) from `auto_test_remote_2`.`t1`
+SELECT MAX(id), MAX(vc) FROM t1
+mysql localhost 3306 select max(`id`),max(`vc`),min(`id`),min(`vc`) from `auto_test_remote`.`t1`
+mysql localhost 3306 select max(`id`),max(`vc`),min(`id`),min(`vc`) from `auto_test_remote_2`.`t1`
+SELECT MAX(id), vc FROM t1
+mysql localhost 3306 select max(`id`),min(`id`),min(`vc`) from `auto_test_remote`.`t1`
+mysql localhost 3306 select max(`id`),min(`id`),min(`vc`) from `auto_test_remote_2`.`t1`
+SELECT MAX(id), vc FROM t1 GROUP BY vc
+mysql localhost 3306 select max(`id`),min(`id`),`vc` from `auto_test_remote`.`t1` group by `vc`
+mysql localhost 3306 select max(`id`),min(`id`),`vc` from `auto_test_remote_2`.`t1` group by `vc`
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_spider_general_log;
+TRUNCATE TABLE mysql.general_log;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
