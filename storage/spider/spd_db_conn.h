@@ -529,8 +529,7 @@ int spider_db_bulk_update_end(ha_spider *spider, ha_rows *dup_key_found);
 int spider_db_bulk_update(ha_spider *spider, TABLE *table,
                           my_ptrdiff_t ptr_diff);
 
-int spider_db_update(ha_spider *spider, TABLE *table, const uchar *old_data,
-                     uint *update_rows, uint *found_rows);
+int spider_db_update(ha_spider *spider, TABLE *table, const uchar *old_data);
 
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS_WITH_HS

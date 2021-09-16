@@ -4812,8 +4812,7 @@ int spider_db_bulk_update(ha_spider *spider, TABLE *table,
   DBUG_RETURN(0);
 }
 
-int spider_db_update(ha_spider *spider, TABLE *table, const uchar *old_data,
-                     uint *update_rows, uint *found_rows) {
+int spider_db_update(ha_spider *spider, TABLE *table, const uchar *old_data) {
   int error_num, roop_count;
   SPIDER_SHARE *share = spider->share;
   SPIDER_CONN *conn;
@@ -4826,6 +4825,7 @@ int spider_db_update(ha_spider *spider, TABLE *table, const uchar *old_data,
   if ((error_num = spider->append_update_sql(table, ptr_diff, FALSE)))
     DBUG_RETURN(error_num);
 
+  uint updated_rows = 0, found_rows = 0;
   for (roop_count = spider_conn_link_idx_next(
            share->link_statuses, spider->conn_link_idx, -1, share->link_count,
            SPIDER_LINK_STATUS_RECOVERY);
@@ -4891,8 +4891,6 @@ int spider_db_update(ha_spider *spider, TABLE *table, const uchar *old_data,
       }
       DBUG_RETURN(error_num);
     }
-    *update_rows = conn->db_conn->affected_rows();
-    *found_rows = conn->db_conn->matched_rows();
     if (!conn->db_conn->affected_rows() &&
         share->link_statuses[roop_count] == SPIDER_LINK_STATUS_RECOVERY &&
         spider->pk_update) {
@@ -4930,8 +4928,12 @@ int spider_db_update(ha_spider *spider, TABLE *table, const uchar *old_data,
     conn->mta_conn_mutex_unlock_later = FALSE;
     spider_mta_conn_mutex_unlock(conn);
     result_list->update_sqls[roop_count].length(0);
+    updated_rows += conn->db_conn->affected_rows();
+    found_rows += conn->db_conn->matched_rows();
   }
   spider->reset_sql_sql(SPIDER_SQL_TYPE_UPDATE_SQL);
+
+  if (!updated_rows) DBUG_RETURN(HA_ERR_RECORD_IS_THE_SAME);
   DBUG_RETURN(0);
 }
 
