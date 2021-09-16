@@ -1,0 +1,57 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT PRIMARY KEY, vc varchar(120)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--echo create functions
+DELIMITER //;
+CREATE FUNCTION `plusone`( param INT ) RETURNS int
+BEGIN
+    RETURN param + 1;
+END //
+
+CREATE FUNCTION `addcom`( domain_name TEXT ) RETURNS text CHARSET utf8mb4
+BEGIN
+RETURN CONCAT(domain_name, ".com");
+END //
+DELIMITER ;//
+
+--connection master_1
+USE auto_test_local;
+INSERT INTO t1 VALUES (1, "a.com"), (2, "b.com"), (3, "c.com"), (4, "d.com"), (5, "e.com");
+
+SELECT * from t1;
+
+--echo ##### test SELECTs #####
+SELECT * FROM t1 WHERE id = plusone(1);
+SELECT * FROM t1 WHERE vc = addcom("b");
+SELECT * FROM t1 WHERE id IN (plusone(1), plusone(2), plusone(3)) AND vc = addcom("c");
+
+--echo ##### test UPDATEs #####
+UPDATE t1 SET vc = addcom("bbbbb") WHERE id = plusone(1);
+SELECT * FROM t1;
+UPDATE t1 SET vc = addcom("ccccc") WHERE id IN (plusone(1), plusone(2), plusone(3)) AND vc = addcom("c");
+SELECT * FROM t1;
+
+--echo ##### test DELETEs #####
+DELETE FROM t1 WHERE id = plusone(1);
+SELECT * FROM t1;
+DELETE FROM t1 WHERE id IN (plusone(1), plusone(2), plusone(3)) AND vc = addcom("d");
+SELECT * FROM t1;
+
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--let @USE_GENERAL_LOG= $USE_GENERAL_LOG_BACKUP
+
+--source ../include/spider_drop_database.inc
+
+
