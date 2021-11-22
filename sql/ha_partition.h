@@ -1300,9 +1300,6 @@ private:
     if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine() && error)
     {
         part_share->last_insert_failed = TRUE;
-        sql_print_information(
-          "AUTO_INCREMENT: set last_insert_failed=true, error number is %d",
-          error);
         part_share->auto_inc_initialized = FALSE;
     }
     unlock_auto_increment();
