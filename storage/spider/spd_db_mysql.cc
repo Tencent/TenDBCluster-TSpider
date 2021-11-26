@@ -3045,7 +3045,6 @@ int spider_db_mysql_util::open_item_func(Item_func *item_func,
   int func_name_length = SPIDER_SQL_NULL_CHAR_LEN,
       separete_str_length = SPIDER_SQL_NULL_CHAR_LEN,
       last_str_length = SPIDER_SQL_NULL_CHAR_LEN;
-  int use_pushdown_udf;
   bool merge_func = FALSE;
   CHARSET_INFO *tmp_ics = field_charset;
   DBUG_ENTER("spider_db_mysql_util::open_item_func");
@@ -3883,27 +3882,15 @@ int spider_db_mysql_util::open_item_func(Item_func *item_func,
         separete_str_length = SPIDER_SQL_AND_LEN;
       }
       break;
+    case Item_func::FUNC_SP:
     case Item_func::UDF_FUNC:
-      use_pushdown_udf = spider_param_use_pushdown_udf(
-          spider->trx->thd, spider->share->use_pushdown_udf);
-      if (!use_pushdown_udf) DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
-      if (str) {
-        func_name = (char *)item_func->func_name();
-        func_name_length = strlen(func_name);
-        DBUG_PRINT("info", ("spider func_name = %s", func_name));
-        DBUG_PRINT("info", ("spider func_name_length = %d", func_name_length));
-        if (str->reserve(func_name_length + SPIDER_SQL_OPEN_PAREN_LEN))
-          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-        str->q_append(func_name, func_name_length);
-        str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
-      }
-      func_name = SPIDER_SQL_COMMA_STR;
-      func_name_length = SPIDER_SQL_COMMA_LEN;
-      separete_str = SPIDER_SQL_COMMA_STR;
-      separete_str_length = SPIDER_SQL_COMMA_LEN;
-      last_str = SPIDER_SQL_CLOSE_PAREN_STR;
-      last_str_length = SPIDER_SQL_CLOSE_PAREN_LEN;
-      break;
+      /*
+        UDF and stored function conditions should never be pushed down, because
+        1. Remote data nodes may not have the definition of the function.
+        2. The function may access tables the remote data nodes do not have,
+        making it error-prone.
+      */
+      DBUG_RETURN(ER_SPIDER_COND_SKIP_NUM);
 #ifdef MARIADB_BASE_VERSION
     case Item_func::XOR_FUNC:
 #else
