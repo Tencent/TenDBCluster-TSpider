@@ -237,3 +237,7 @@ uchar *spider_for_sts_conn_get_key(SPIDER_FOR_STS_CONN *sts_conn,
                                    size_t *length,
                                    my_bool not_used __attribute__((unused)));
 void spider_free_for_sts_conn(void *info);
+
+ulong spider_get_conn_thread_id(SPIDER_CONN *conn);
+
+int spider_send_kill(SPIDER_CONN *, enum killed_state);

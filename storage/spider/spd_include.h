@@ -443,6 +443,9 @@ typedef struct st_spider_conn {
   int error_mode;
   spider_string default_database;
 
+  /* Note: only set in spider_get_conn() */
+  SPIDER_SHARE *share;
+
   char *server_name;
   char *tgt_host;
   char *tgt_username;

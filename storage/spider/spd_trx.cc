@@ -2841,6 +2841,23 @@ int spider_rollback(handlerton *hton, THD *thd, bool all) {
   trx->bulk_access_conn_first = NULL;
 #endif
 
+  if (thd->last_killed != NOT_KILLED) {
+    /* Received kill command, propagate it to the backend threads */
+    if ((conn = spider_tree_first(trx->join_trx_top))) {
+      do {
+        /* For now, we do not check the returned error since there is virtually
+         * nothing we can do when the kill failed. */
+        spider_send_kill(conn, thd->last_killed);
+      } while ((conn = spider_tree_next(conn)));
+    }
+    if (thd->last_killed >= KILL_CONNECTION) {
+      /* No need to free conns here, spider_free_trx_conn() does the job when
+       * the server is closing current_thd */
+      trx->join_trx_top = NULL;
+      DBUG_RETURN(error_num);
+    }
+  }
+
   if (all || (!thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))) {
     if (trx->trx_start) {
       if (trx->trx_xa) {

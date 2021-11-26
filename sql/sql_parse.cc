@@ -5856,6 +5856,7 @@ finish:
         /* If we already sent 'ok', we can ignore any kill query statements */
         if (!thd->get_stmt_da()->is_set()) thd->send_kill_message();
       }
+      thd->record_last_killed();
       thd->reset_kill_query();
     }
     if (unlikely(thd->is_error()) ||
@@ -5891,6 +5892,8 @@ finish:
     ha_maria::implicit_commit(thd, FALSE);
 #endif
   }
+
+  thd->reset_last_killed();
 
   /* Free tables. Set stage 'closing tables' */
   close_thread_tables(thd);

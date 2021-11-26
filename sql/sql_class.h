@@ -3086,6 +3086,11 @@ public:
   killed_state volatile killed;
 
   /*
+    Record this->killed before it's reset.
+  */
+  killed_state volatile last_killed;
+
+  /*
     The following is used if one wants to have a specific error number and
     text for the kill
   */
@@ -4065,6 +4070,12 @@ public:
       my_message(err, killed_err ? killed_err->msg : ER_THD(this, err),
                  MYF(0));
     mysql_mutex_unlock(&LOCK_thd_kill);
+  }
+  inline void record_last_killed() {
+    last_killed = killed;
+  }
+  inline void reset_last_killed() {
+    last_killed = NOT_KILLED;
   }
   /* return TRUE if we will abort query if we make a warning now */
   inline bool really_abort_on_warning()

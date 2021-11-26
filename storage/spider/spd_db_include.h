@@ -668,6 +668,7 @@ class spider_db_conn {
   virtual void set_dup_key_idx(ha_spider *spider, int link_idx) = 0;
   virtual bool cmp_request_key_to_snd(
       st_spider_db_request_key *request_key) = 0;
+  virtual ulong thread_id() const = 0;
 };
 
 class spider_db_share {
