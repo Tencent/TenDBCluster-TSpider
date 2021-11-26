@@ -6685,6 +6685,17 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
 #endif
     }
 
+    if (opt_spider_parallel_limit &&
+        (
+#ifdef HANDLER_HAS_DIRECT_AGGREGATE
+            !spider->result_list.direct_aggregate &&
+#endif
+            (select_lex->group_list.elements || select_lex->with_sum_func))) {
+      spider->result_list.internal_limit = 9223372036854775807LL;
+      spider->result_list.split_read = spider->result_list.internal_limit;
+      DBUG_RETURN(FALSE);
+    }
+
     longlong direct_order_limit =
         spider_param_direct_order_limit(thd, share->direct_order_limit);
     DBUG_PRINT("info", ("spider direct_order_limit=%lld", direct_order_limit));
