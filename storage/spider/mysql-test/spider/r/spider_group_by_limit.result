@@ -86,18 +86,18 @@ t	count(*)
 SELECT argument FROM mysql.general_log;
 argument
 select t, count(*) from tbl_a group by t order by id  desc limit 2
-mysql localhost 3306 select count(0),`id`,`t` from `auto_test_remote`.`tbl_a` group by `t`
-mysql localhost 3306 select count(0),`id`,`t` from `auto_test_remote_2`.`tbl_a` group by `t`
+mysql localhost 3306 select count(0),min(`id`),`t` from `auto_test_remote`.`tbl_a` group by `t`
+mysql localhost 3306 select count(0),min(`id`),`t` from `auto_test_remote_2`.`tbl_a` group by `t`
 SELECT argument FROM mysql.general_log
 connection child2_1;
 SELECT argument FROM mysql.general_log;
 argument
-select count(0),`id`,`t` from `auto_test_remote`.`tbl_a` group by `t`
+select count(0),min(`id`),`t` from `auto_test_remote`.`tbl_a` group by `t`
 SELECT argument FROM mysql.general_log
 connection child2_2;
 SELECT argument FROM mysql.general_log;
 argument
-select count(0),`id`,`t` from `auto_test_remote_2`.`tbl_a` group by `t`
+select count(0),min(`id`),`t` from `auto_test_remote_2`.`tbl_a` group by `t`
 SELECT argument FROM mysql.general_log
 
 deinit

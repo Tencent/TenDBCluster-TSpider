@@ -6614,6 +6614,14 @@ int spider_mysql_handler::append_minimum_select(spider_string *str,
   Field **field;
   int field_length;
   bool appended = FALSE;
+#ifdef HANDLER_HAS_DIRECT_AGGREGATE
+  st_select_lex *select_lex = NULL;
+  if (spider->result_list.direct_aggregate) {
+    select_lex = spider_get_select_lex(spider);
+    if (!(*select_lex->join->sum_funcs) && !select_lex->group_list.elements)
+      select_lex = NULL;
+  }
+#endif
   DBUG_ENTER("spider_mysql_handler::append_minimum_select");
   minimum_select_bitmap_create();
   for (field = table->field; *field; field++) {
@@ -6623,11 +6631,39 @@ int spider_mysql_handler::append_minimum_select(spider_string *str,
       */
       field_length =
           mysql_share->column_name_str[(*field)->field_index].length();
-      if (str->reserve(field_length +
-                       /* SPIDER_SQL_NAME_QUOTE_LEN */ 2 +
-                       SPIDER_SQL_COMMA_LEN))
-        DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-      mysql_share->append_column_name(str, (*field)->field_index);
+#ifdef HANDLER_HAS_DIRECT_AGGREGATE
+      if (select_lex &&
+          !spider_db_check_select_colum_in_group(select_lex, *field)) {
+        /*
+          We get to this branch only when:
+          1. there is one or more aggr functions in select list;
+          2. current field is not in the GROUP BY clause.
+          In this case, the retrieved value for this field does not matter.
+
+          Simply getting the minimum should be fine, and has two benefits:
+          1. no errors are returned when the data node has
+          sql_mode=ONLY_FULL_GROUP_BY enabled;
+          2. the data node does not need to do a full table scan when there is
+          an index on this field.
+        */
+        if (str->reserve(SPIDER_SQL_MIN_LEN + SPIDER_SQL_OPEN_PAREN_LEN +
+                         field_length + /* SPIDER_SQL_NAME_QUOTE_LEN */ 2 +
+                         SPIDER_SQL_CLOSE_PAREN_LEN + SPIDER_SQL_COMMA_LEN))
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        str->q_append(SPIDER_SQL_MIN_STR, SPIDER_SQL_MIN_LEN);
+        str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
+        mysql_share->append_column_name(str, (*field)->field_index);
+        str->q_append(SPIDER_SQL_CLOSE_PAREN_STR, SPIDER_SQL_CLOSE_PAREN_LEN);
+      } else {
+#endif
+        if (str->reserve(field_length +
+                         /* SPIDER_SQL_NAME_QUOTE_LEN */ 2 +
+                         SPIDER_SQL_COMMA_LEN))
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        mysql_share->append_column_name(str, (*field)->field_index);
+#ifdef HANDLER_HAS_DIRECT_AGGREGATE
+      }
+#endif
       str->q_append(SPIDER_SQL_COMMA_STR, SPIDER_SQL_COMMA_LEN);
       appended = TRUE;
     }
