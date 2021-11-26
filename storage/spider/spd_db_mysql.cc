@@ -1668,7 +1668,15 @@ int spider_db_mysql::exec_query(const char *query, uint length,
     this->conn->last_visited = (time_t)time((time_t *)0);
     spider_update_conn_meta_info(this->conn, SPIDER_CONN_ACTIVE_STATUS);
   }
-  if ((error_num && log_result_errors >= 1) ||
+
+  bool has_error = error_num;
+  if (error_num && conn->ignore_dup_key && is_dup_entry_error(get_errno())) {
+    /* When an INSERT on backends returns DUP_KEY error in the case of INSERT
+     * IGNORE, it should not be regarded as a real execution error. */
+    has_error = FALSE;
+  }
+
+  if ((has_error && log_result_errors >= 1) ||
       (log_result_errors >= 2 && db_conn->warning_count > 0) ||
       (log_result_errors >= 4)) {
     THD *thd = current_thd;
