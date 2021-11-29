@@ -698,6 +698,7 @@ THD::THD(my_thread_id id, bool is_wsrep_applier, bool skip_global_sys_var_lock)
   password = 0;
   query_start_sec_part_used = 0;
   count_cuted_fields = CHECK_FIELD_IGNORE;
+  last_killed = NOT_KILLED;
   killed = NOT_KILLED;
   killed_err = 0;
   col_access = 0;

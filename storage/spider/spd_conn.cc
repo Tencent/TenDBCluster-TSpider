@@ -869,6 +869,8 @@ SPIDER_CONN *spider_get_conn(SPIDER_SHARE *share, int link_idx, SPIDER_TRX *trx,
       conn->queued_ping = FALSE;
   }
 
+  conn->share = share;
+
   DBUG_PRINT("info", ("spider conn=%p", conn));
   DBUG_RETURN(conn);
 
@@ -4289,4 +4291,104 @@ void spider_free_conn_by_servername(char *servername) {
       conn_key_len)) {
     spider_free_conn(conn);
   }
+}
+
+ulong spider_get_conn_thread_id(SPIDER_CONN *conn) {
+  if (!conn || !conn->db_conn) return 0;
+  return conn->db_conn->thread_id();
+}
+
+/**
+  @brief Send a KILL command to a backend connection.
+
+  This function is called when a query on a Spider table receives a kill signal,
+  in order to propagate the kill signal to the backend connections that are
+  performing the actual execution. However, for now, the limitation is that only
+  queries that return a result set (e.g. SELECTs) can be killed in time because
+  Spider does not need to hang on mysql_real_query() for the full result, hence
+  it is able to process the kill. Say Spider is executing a direct UPDATE that
+  the backend can take a long time to finish, then it cannot beware of the
+  killed status until the UPDATE on the backend returns.
+
+  @TODO Overcome the limitation mentioned above if needed, maybe by invoking
+  another thread to check thd->killed and perform KILLs.
+
+  @param  to_kill     - The backend connection to send KILL to
+  @param  kill_signal - The kill signal received by current_thd, should be
+                        either KILL_QUERY(_HARD) or KILL_CONNECTION(_HARD)
+                        in almost all cases
+
+  @return 0 on success, error otherwise
+*/
+int spider_send_kill(SPIDER_CONN *to_kill, enum killed_state kill_signal) {
+  DBUG_ENTER("spider_send_kill");
+  DBUG_PRINT("info", ("Spider received kill signal: %d", kill_signal));
+
+  int error;
+  ulong thread_id;
+  bool is_kill_conn;
+  const char *base_cmd;
+  char kill_cmd[128];
+  SPIDER_CONN *killer = NULL;
+
+  if (kill_signal >= KILL_CONNECTION) {
+    is_kill_conn = TRUE;
+    base_cmd = SPIDER_SQL_KILL_CONN_STR;
+  } else {
+    is_kill_conn = FALSE;
+    base_cmd = SPIDER_SQL_KILL_QUERY_STR;
+  }
+
+  if (!(thread_id = spider_get_conn_thread_id(to_kill))) {
+    sql_print_error(
+        "Spider: Failed to get thread_id from backend %s:%ld, aborting kill",
+        to_kill->tgt_host, to_kill->tgt_port);
+    DBUG_RETURN(-1);
+  }
+  bzero(kill_cmd, sizeof(kill_cmd));
+  sprintf(kill_cmd, "%s%lu", base_cmd, thread_id);
+
+  /*
+    To send the kill command, we need an extra conn to the same address, aka the
+    killer. Try to get it from the connection pool to avoid the overhead of
+    creating a new conn.
+  */
+  if (!(killer = spd_connect_pools.get_conn_by_key((uchar *)to_kill->conn_key,
+                                                   to_kill->conn_key_length))) {
+    /* No idle conns in the pool, create a new conn */
+    if (!(killer = spider_create_conn(to_kill->share, NULL, 0, 0,
+                                      SPIDER_CONN_KIND_MYSQL, &error))) {
+      goto failed;
+    }
+    if ((error = spider_db_connect(to_kill->share, killer, 0))) {
+      /* Connect failed */
+      goto failed;
+    }
+    killer->queued_connect = FALSE;
+    killer->server_lost = FALSE;
+  }
+
+  DBUG_PRINT("info", ("killing thread %lu on connection %s:%ld", thread_id,
+                      to_kill->tgt_host, to_kill->tgt_port));
+  if ((error = killer->db_conn->exec_query(kill_cmd, strlen(kill_cmd), 1))) {
+    sql_print_error("Spider: Failed to kill backend thread %lu on %s:%ld: %s",
+                    thread_id, to_kill->tgt_host, to_kill->tgt_port,
+                    killer->db_conn->get_error());
+    goto failed;
+  }
+
+  if (is_kill_conn) {
+    to_kill->server_lost = TRUE;
+  }
+
+  /* Valid conn can be reused in the future */
+  if (spd_connect_pools.put_conn(killer))
+    spider_free_conn(killer);
+  DBUG_RETURN(0);
+
+failed:
+  if (killer)
+    /* Something could be wrong with the killer conn, avoid reusing it */
+    spider_free_conn(killer);
+  DBUG_RETURN(error);
 }

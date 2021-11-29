@@ -240,6 +240,7 @@ class spider_db_mysql : public spider_db_conn {
   void reset_opened_handler();
   void set_dup_key_idx(ha_spider *spider, int link_idx);
   bool cmp_request_key_to_snd(st_spider_db_request_key *request_key);
+  ulong thread_id() const;
 };
 
 class spider_mysql_share : public spider_db_share {

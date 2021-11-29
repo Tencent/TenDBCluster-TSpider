@@ -1571,6 +1571,11 @@ int spider_db_mysql::connect(char *tgt_host, char *tgt_username,
   DBUG_RETURN(0);
 }
 
+ulong spider_db_mysql::thread_id() const {
+  if (!db_conn) return 0;
+  return db_conn->thread_id;
+}
+
 int spider_db_mysql::ping() {
   DBUG_ENTER("spider_db_mysql::ping");
   DBUG_PRINT("info", ("spider this=%p", this));
