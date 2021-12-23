@@ -116,9 +116,12 @@ static const uint spider_conn_queue_init_size = 64;
 static const uint spider_conn_queue_increase_size = 64;
 
 const char *const SPIDER_LOG_ER_WAIT_GET_CONN =
-    "Spider: failed when waiting for an opening in the connection pool, errno: %d";
-const char *const SPIDER_LOG_ER_GET_CONN_FROM_POOL = "Spider: failed to get a connection from the pool with conn_key: %s";
-const char *const SPIDER_LOG_ER_CREATE_CONN = "Spider: failed to create a connection, error_num: %d";
+    "Spider: failed when waiting for an idle connection (conn_key:%s) in the "
+    "pool, errno: %d";
+const char *const SPIDER_LOG_ER_GET_CONN_FROM_POOL =
+    "Spider: failed to get a connection from the pool with conn_key: %s";
+const char *const SPIDER_LOG_ER_CREATE_CONN =
+    "Spider: failed to create a connection, error_num: %d";
 
 /**
   conn_queue is a queue (actually stack) to store SPIDER_CONN
@@ -191,29 +194,35 @@ bool SPIDER_CONN_POOL::put_conn(SPIDER_CONN *conn) {
   conn_queue *cq;
   my_bool ret;
   my_hash_value_type v = conn->conn_key_hash_value;
-  
+
   mysql_rwlock_rdlock(&rw_lock);
-  while (!(record = my_hash_search_using_hash_value(&connections, v,
-          (uchar *)conn->conn_key, conn->conn_key_length))) {
+  while (!(record = my_hash_search_using_hash_value(
+            &connections, v, (uchar *)conn->conn_key, conn->conn_key_length))) {
     mysql_rwlock_unlock(&rw_lock);
     // if not exists, we need to create and insert a queue into the hash
-    cq = (conn_queue *)my_malloc(sizeof(conn_queue), MY_ZEROFILL | MY_WME);
-    if (!cq) return true; /* OOM */
+    if (!(cq = (conn_queue *)my_malloc(sizeof(conn_queue), MY_ZEROFILL | MY_WME)))
+      goto alloc_failed;
     mysql_mutex_init(0, &cq->mtx, MY_MUTEX_INIT_FAST);
     cq->mtx_inited = true;
-    cq->q_ptr = (DYNAMIC_ARRAY *)my_malloc(sizeof(DYNAMIC_ARRAY), MY_WME);
-    if (!cq->q_ptr) { my_free(cq); cq->mtx_inited = false; return true; /* OOM */ }
+
+    if (!(cq->q_ptr = (DYNAMIC_ARRAY *)my_malloc(sizeof(DYNAMIC_ARRAY), MY_WME)))
+      goto alloc_failed;
     if (my_init_dynamic_array(cq->q_ptr, sizeof(SPIDER_CONN **),
                               spider_conn_queue_init_size,
-                              spider_conn_queue_increase_size, MYF(0))) {
-      my_free(cq); cq->mtx_inited = false; return true;
-    }
-    cq->hash_key = conn->conn_key;
+                              spider_conn_queue_increase_size, MYF(0)))
+      goto alloc_failed;
+
     cq->key_len = conn->conn_key_length;
+    if (!(cq->hash_key = (char *)my_malloc(cq->key_len + 1, MY_ZEROFILL | MY_WME)))
+      goto alloc_failed;
+    memcpy(cq->hash_key, conn->conn_key, cq->key_len);
+
     mysql_rwlock_wrlock(&rw_lock);
     if (my_hash_insert(&connections, (uchar *)cq)) {
       /* insert failed means some other thread has inserted it for us*/
+      delete_dynamic(cq->q_ptr);
       my_free(cq->q_ptr);
+      my_free(cq->hash_key);
       my_free(cq);
     } else {
       record = (void *)cq;
@@ -226,7 +235,18 @@ bool SPIDER_CONN_POOL::put_conn(SPIDER_CONN *conn) {
   pthread_mutex_lock(&cq->mtx);
   ret = insert_dynamic(cq->q_ptr, (void *)(&conn)); /* SPIDER_CONN ** */
   pthread_mutex_unlock(&cq->mtx);
-  return !!ret; // return TRUE means OOM
+  return !!ret;  // return TRUE means OOM
+
+alloc_failed:
+  if (cq) {
+    if (cq->hash_key) my_free(cq->hash_key);
+    if (cq->q_ptr) {
+      delete_dynamic(cq->q_ptr);
+      my_free(cq->q_ptr);
+    }
+    my_free(cq);
+  }
+  return TRUE;
 }
 
 /**
@@ -3485,7 +3505,8 @@ SPIDER_CONN *spider_get_conn_from_idle_connection(
       --ip_port_conn->waiting_count;
       pthread_mutex_unlock(&ip_port_conn->mutex);
       if (error == ETIMEDOUT || error == ETIME || error != 0) {
-        sql_print_error(SPIDER_LOG_ER_WAIT_GET_CONN, error);
+        sql_print_error(SPIDER_LOG_ER_WAIT_GET_CONN, share->conn_keys[link_idx],
+                        error);
         *error_num = ER_SPIDER_CON_COUNT_ERROR;
         DBUG_RETURN(NULL);
       }
