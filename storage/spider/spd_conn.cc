@@ -1560,6 +1560,27 @@ void spider_free_conn_thread(SPIDER_CONN *conn) {
   DBUG_VOID_RETURN;
 }
 
+/**
+* @brief Set a bgs error message for a Spider handler.
+*
+* If the errno (bgs_error) is unknown to Spider, then bgs_error_with_message
+* will be set FALSE so the server can take charge and decide the error message.
+*/
+static void spider_set_bgs_errmsg(ha_spider *spider,
+                                  SPIDER_RESULT_LIST *result_list) {
+  DBUG_ENTER("spider_set_bgs_errmsg");
+  if (!result_list->bgs_error) DBUG_VOID_RETURN;
+
+  String buf;
+  spider->get_error_message(result_list->bgs_error, &buf);
+  if ((result_list->bgs_error_with_message =
+           !!strcmp(buf.ptr(), ER_SPIDER_UNKNOWN_STR))) {
+    strmov(result_list->bgs_error_msg, buf.ptr());
+  }  // else: Unknown errno to Spider, let server handle it
+
+  DBUG_VOID_RETURN;
+}
+
 void spider_bg_conn_wait(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_bg_conn_wait");
   if (conn->bg_init) {
@@ -2077,8 +2098,9 @@ void *spider_bg_conn_action(void *arg) {
         if ((error_num = dbton_handler->set_sql_for_exec(
                  result_list->sql_type, conn->link_idx, true))) {
           result_list->bgs_error = error_num;
-          if ((result_list->bgs_error_with_message = thd->is_error()))
-            strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
+          spider_set_bgs_errmsg(spider, result_list);
+          //if ((result_list->bgs_error_with_message = thd->is_error()))
+          //  strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
         }
         set_sql = true;
       }
@@ -2150,15 +2172,17 @@ void *spider_bg_conn_action(void *arg) {
               (error_num = dbton_handler->set_sql_for_exec(
                    sql_type, conn->link_idx, conn->link_idx_chain))) {
             result_list->bgs_error = error_num;
-            if ((result_list->bgs_error_with_message = thd->is_error()))
-              strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
+            spider_set_bgs_errmsg(spider, result_list);
+            //if ((result_list->bgs_error_with_message = thd->is_error()))
+            //  strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
           }
         } else {
           if (!set_sql && (error_num = dbton_handler->set_sql_for_exec(
                                sql_type, conn->link_idx))) {
             result_list->bgs_error = error_num;
-            if ((result_list->bgs_error_with_message = thd->is_error()))
-              strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
+            spider_set_bgs_errmsg(spider, result_list);
+            //if ((result_list->bgs_error_with_message = thd->is_error()))
+            //  strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
           }
         }
         if (!dbton_handler->need_lock_before_set_sql_for_exec(sql_type)) {
@@ -2194,9 +2218,10 @@ void *spider_bg_conn_action(void *arg) {
                         SPIDER_SQL_TYPE_TMP_SQL, conn, -1,
                         &spider->need_mons[conn->link_idx])) {
                   result_list->bgs_error = spider_db_errorno(conn);
-                  if ((result_list->bgs_error_with_message = thd->is_error()))
-                    strmov(result_list->bgs_error_msg,
-                           spider_stmt_da_message(thd));
+                  spider_set_bgs_errmsg(spider, result_list);
+                  //if ((result_list->bgs_error_with_message = thd->is_error()))
+                  //  strmov(result_list->bgs_error_msg,
+                  //         spider_stmt_da_message(thd));
                 } else
                   spider_db_discard_multiple_result(spider, conn->link_idx,
                                                     conn);
@@ -2208,9 +2233,10 @@ void *spider_bg_conn_action(void *arg) {
                         sql_type, conn, result_list->quick_mode,
                         &spider->need_mons[conn->link_idx])) {
                   result_list->bgs_error = spider_db_errorno(conn);
-                  if ((result_list->bgs_error_with_message = thd->is_error()))
-                    strmov(result_list->bgs_error_msg,
-                           spider_stmt_da_message(thd));
+                  spider_set_bgs_errmsg(spider, result_list);
+                  //if ((result_list->bgs_error_with_message = thd->is_error()))
+                  //  strmov(result_list->bgs_error_msg,
+                  //         spider_stmt_da_message(thd));
                 } else {
                   spider->connection_ids[conn->link_idx] = conn->connection_id;
                   if (!conn->bg_discard_result) {
@@ -2218,10 +2244,11 @@ void *spider_bg_conn_action(void *arg) {
                               spider, conn->link_idx, result_list->table)))
                       spider->result_link_idx = conn->link_idx;
                     else {
-                      if ((result_list->bgs_error_with_message =
-                               thd->is_error()))
-                        strmov(result_list->bgs_error_msg,
-                               spider_stmt_da_message(thd));
+                      spider_set_bgs_errmsg(spider, result_list);
+                      //if ((result_list->bgs_error_with_message =
+                      //         thd->is_error()))
+                      //  strmov(result_list->bgs_error_msg,
+                      //         spider_stmt_da_message(thd));
                     }
                   } else {
                     result_list->bgs_error = 0;
@@ -2230,8 +2257,9 @@ void *spider_bg_conn_action(void *arg) {
                 }
               }
             } else {
-              if ((result_list->bgs_error_with_message = thd->is_error()))
-                strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
+              spider_set_bgs_errmsg(spider, result_list);
+              //if ((result_list->bgs_error_with_message = thd->is_error()))
+              //  strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
             }
 #ifdef HA_CAN_BULK_ACCESS
           }
@@ -2247,8 +2275,9 @@ void *spider_bg_conn_action(void *arg) {
         conn->mta_conn_mutex_unlock_later = TRUE;
         result_list->bgs_error =
             spider_db_store_result(spider, conn->link_idx, result_list->table);
-        if ((result_list->bgs_error_with_message = thd->is_error()))
-          strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
+        spider_set_bgs_errmsg(spider, result_list);
+        //if ((result_list->bgs_error_with_message = thd->is_error()))
+        //  strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
         conn->mta_conn_mutex_unlock_later = FALSE;
       }
       conn->bg_search = FALSE;

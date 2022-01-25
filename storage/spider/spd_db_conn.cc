@@ -624,6 +624,24 @@ int spider_db_errorno(SPIDER_CONN *conn) {
   DBUG_RETURN(0);
 }
 
+/**
+* @brief Convert errno from a backend conn error, if present, to Spider errno.
+*
+* @return converted Spider errno, or original errno if not handled
+*/
+int spider_convert_errno(int error_num) {
+  DBUG_ENTER("spider_convert_errno");
+  switch(error_num) {
+    case CR_SERVER_GONE_ERROR:
+    case CR_SERVER_LOST:
+      DBUG_RETURN(ER_SPIDER_REMOTE_SERVER_GONE_AWAY_NUM);
+
+    default:
+      break;
+  }
+  DBUG_RETURN(error_num);
+}
+
 int spider_db_set_trx_isolation(SPIDER_CONN *conn, int trx_isolation,
                                 int *need_mon) {
   DBUG_ENTER("spider_db_set_trx_isolation");
@@ -2182,7 +2200,7 @@ int spider_db_fetch_table(ha_spider *spider, uchar *buf, TABLE *table,
     SPIDER_DB_RESULT *result = current->result;
     if (!(row = result->fetch_row())) {
       table->status = STATUS_NOT_FOUND;
-      DBUG_RETURN(HA_ERR_END_OF_FILE);
+      DBUG_RETURN(spider_convert_errno(result->get_errno()));
     }
   } else {
     if (result_list->current_row_num < result_list->quick_page_size) {
@@ -2283,7 +2301,7 @@ int spider_db_fetch_key(ha_spider *spider, uchar *buf, TABLE *table,
     SPIDER_DB_RESULT *result = current->result;
     if (!(row = result->fetch_row())) {
       table->status = STATUS_NOT_FOUND;
-      DBUG_RETURN(HA_ERR_END_OF_FILE);
+      DBUG_RETURN(spider_convert_errno(result->get_errno()));
     }
   } else {
     if (result_list->current_row_num < result_list->quick_page_size) {
@@ -2373,7 +2391,7 @@ int spider_db_fetch_minimum_columns(ha_spider *spider, uchar *buf, TABLE *table,
     SPIDER_DB_RESULT *result = current->result;
     if (!(row = result->fetch_row())) {
       table->status = STATUS_NOT_FOUND;
-      DBUG_RETURN(HA_ERR_END_OF_FILE);
+      DBUG_RETURN(spider_convert_errno(result->get_errno()));
     }
   } else {
     if (result_list->current_row_num < result_list->quick_page_size) {
@@ -2967,8 +2985,9 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
         result_list->current_row_num = 0;
         table->status = STATUS_NOT_FOUND;
       }
-      if (error_num)
-        DBUG_RETURN(error_num);
+      if (error_num) {
+        DBUG_RETURN(spider_convert_errno(error_num));
+      }
       else if (result_list->quick_phase > 0)
         DBUG_RETURN(0);
       DBUG_RETURN(HA_ERR_END_OF_FILE);
@@ -3003,9 +3022,12 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
       position++;
       roop_count++;
     } while (page_size > roop_count && (row = current->result->fetch_row()));
+    if (!row && (error_num = current->result->get_errno()) &&
+        error_num != HA_ERR_END_OF_FILE) {
+      DBUG_RETURN(spider_convert_errno(error_num));
+    }
     if (result_list->quick_mode == 3 && page_size == roop_count &&
-        result_list->limit_num > roop_count &&
-        (row = current->result->fetch_row())) {
+        result_list->limit_num > roop_count) {
       THD *thd = current_thd;
       char buf[MAX_FIELD_WIDTH];
       spider_string tmp_str(buf, MAX_FIELD_WIDTH, &my_charset_bin);
@@ -3022,14 +3044,18 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
       TABLE *tmp_tbl = current->result_tmp_tbl;
       tmp_tbl->file->extra(HA_EXTRA_WRITE_CACHE);
       tmp_tbl->file->ha_start_bulk_insert((ha_rows)0);
-      do {
+      while (result_list->limit_num > roop_count &&
+             (row = current->result->fetch_row())) {
         if ((error_num = row->store_to_tmp_table(tmp_tbl, &tmp_str))) {
           tmp_tbl->file->ha_end_bulk_insert();
           DBUG_RETURN(error_num);
         }
         roop_count++;
-      } while (result_list->limit_num > roop_count &&
-               (row = current->result->fetch_row()));
+      }
+      if (!row && (error_num = current->result->get_errno()) &&
+          error_num != HA_ERR_END_OF_FILE) {
+        DBUG_RETURN(spider_convert_errno(error_num));
+      }
       tmp_tbl->file->ha_end_bulk_insert();
       page_size = result_list->limit_num;
     }
@@ -6879,7 +6905,8 @@ int spider_db_udf_fetch_table(SPIDER_TRX *trx, SPIDER_CONN *conn, TABLE *table,
   Field **field;
   uint roop_count;
   DBUG_ENTER("spider_db_udf_fetch_table");
-  if (!(row = result->fetch_row())) DBUG_RETURN(HA_ERR_END_OF_FILE);
+  if (!(row = result->fetch_row()))
+    DBUG_RETURN(spider_convert_errno(result->get_errno()));
 
 #ifndef DBUG_OFF
   my_bitmap_map *tmp_map = dbug_tmp_use_all_columns(table, table->write_set);
