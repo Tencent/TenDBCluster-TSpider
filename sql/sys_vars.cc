@@ -1167,7 +1167,7 @@ static Sys_var_keycache Sys_key_buffer_size(
        "afford",
        KEYCACHE_VAR(param_buff_size),
        CMD_LINE(REQUIRED_ARG, OPT_KEY_BUFFER_SIZE),
-       VALID_RANGE(0, SIZE_T_MAX), DEFAULT(KEY_CACHE_SIZE),
+       VALID_RANGE(0, SIZE_T_MAX), DEFAULT(0),
        BLOCK_SIZE(IO_SIZE), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0),
        ON_UPDATE(update_buffer_size));
 

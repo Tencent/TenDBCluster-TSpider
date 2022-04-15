@@ -3429,10 +3429,6 @@ SPIDER_SHARE *spider_create_share(const char *table_name,
                    table_share->path.length);
 #endif
 #endif
-  share->table.s = table_share;
-  share->table.field = table_share->field;
-  share->table.key_info = table_share->key_info;
-  share->table.read_set = &table_share->all_set;
 
   if (table_share->keys > 0 &&
       !(share->key_hint = new spider_string[table_share->keys])) {
@@ -3629,6 +3625,8 @@ SPIDER_SHARE *spider_get_share(const char *table_name, TABLE *table, THD *thd,
                                       error_num))) {
       goto error_alloc_share;
     }
+    /* spider_crd code needs this, not sure why */
+    share->table = table;
 
     uint old_elements = spider_open_tables.array.max_element;
     if (my_hash_insert(&spider_open_tables, (uchar *)share)) {
@@ -7326,7 +7324,7 @@ int spider_create_spider_object_for_share(SPIDER_TRX *trx, SPIDER_SHARE *share,
   }
   DBUG_PRINT("info", ("spider need_mons=%p", need_mons));
   (*spider)->trx = trx;
-  (*spider)->change_table_ptr(&share->table, share->table_share);
+  (*spider)->change_table_ptr(share->table, share->table_share);
   (*spider)->share = share;
   (*spider)->conns = conns;
   (*spider)->conn_link_idx = conn_link_idx;
@@ -7738,7 +7736,7 @@ void *spider_table_bg_crd_action(void *arg) {
     share->crd_working = TRUE;
     pthread_mutex_unlock(&thread->mutex);
 
-    table = &share->table;
+    table = share->table;
     spider = share->crd_spider;
     conns = spider->conns;
     if (spider->search_link_idx < 0) {

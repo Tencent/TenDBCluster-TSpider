@@ -790,7 +790,7 @@ typedef struct st_spider_share {
   pthread_cond_t *bg_mon_conds;
   pthread_cond_t *bg_mon_sleep_conds;
   /* static bg thread for sts and crd */
-  TABLE table;
+  TABLE *table;
   ha_spider *sts_spider;
   ha_spider *crd_spider;
   SPIDER_THREAD *sts_thread;
