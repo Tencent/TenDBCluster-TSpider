@@ -336,6 +336,8 @@ int spider_db_query(SPIDER_CONN *conn, const char *query, uint length,
 
 int spider_db_errorno(SPIDER_CONN *conn);
 
+int spider_convert_errno(int error_num);
+
 int spider_db_set_trx_isolation(SPIDER_CONN *conn, int trx_isolation,
                                 int *need_mon);
 
