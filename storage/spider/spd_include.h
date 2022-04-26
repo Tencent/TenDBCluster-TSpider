@@ -490,6 +490,7 @@ typedef struct st_spider_conn {
   volatile bool bg_exec_sql;
   volatile bool bg_get_job_stack;
   volatile bool bg_get_job_stack_off;
+  volatile bool bg_conn_finish_exec; /* Identify if bg sql execution is finished */
   volatile uint bg_simple_action;
   THD *bg_thd;
   pthread_t bg_thread;
@@ -499,6 +500,11 @@ typedef struct st_spider_conn {
   pthread_mutex_t bg_conn_sync_mutex;
   pthread_mutex_t bg_conn_chain_mutex;
   pthread_mutex_t *bg_conn_chain_mutex_ptr;
+
+  /* Protect bg_conn_finish_exec */
+  pthread_mutex_t bg_conn_finish_exec_mutex;
+  pthread_cond_t bg_conn_finish_exec_cond;
+
   volatile void *bg_target;
   volatile int *bg_error_num;
   volatile ulong bg_sql_type;

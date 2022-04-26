@@ -3409,6 +3409,7 @@ public:
    { return 0; }
   virtual int pre_rnd_next(bool use_parallel)
    { return 0; }
+  virtual int pre_sync_parallel() { return 0; }
   int ha_pre_rnd_init(bool scan)
   {
     int result;
