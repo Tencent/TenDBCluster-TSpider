@@ -23,7 +23,8 @@ class spider_db_mysql_util : public spider_db_util {
   bool is_name_quote(const char head_code);
   int append_escaped_name_quote(spider_string *str);
   int append_column_value(ha_spider *spider, spider_string *str, Field *field,
-                          const uchar *new_ptr, CHARSET_INFO *access_charset);
+                          const uchar *new_ptr, bool is_like,
+                          CHARSET_INFO *access_charset);
   int append_from_with_alias(spider_string *str, const char **table_names,
                              uint *table_name_lengths,
                              const char **table_aliases,
