@@ -330,6 +330,7 @@ class ha_spider : public handler {
                            bool eq_range, bool sorted, bool use_parallel);
   int pre_ft_read(bool use_parallel);
   int pre_rnd_next(bool use_parallel);
+  int pre_sync_parallel();
   int info(uint flag);
   ha_rows records_in_range(uint inx, key_range *start_key, key_range *end_key);
   int check_crd();

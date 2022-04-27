@@ -169,6 +169,7 @@ PSI_mutex_key spd_key_mutex_xid;
 PSI_mutex_key spd_key_mutex_conn_i;
 PSI_mutex_key spd_key_mutex_bg_stss;
 PSI_mutex_key spd_key_mutex_bg_crds;
+PSI_mutex_key spd_key_mutex_conn_finish_exec;
 
 static PSI_mutex_info all_spider_mutexes[] = {
     {&spd_key_mutex_tbl, "tbl", PSI_FLAG_GLOBAL},
@@ -196,6 +197,7 @@ static PSI_mutex_info all_spider_mutexes[] = {
     {&spd_key_mutex_bg_conn_chain, "bg_conn_chain", 0},
     {&spd_key_mutex_bg_conn_sync, "bg_conn_sync", 0},
     {&spd_key_mutex_bg_conn, "bg_conn", 0},
+    {&spd_key_mutex_conn_finish_exec, "bg_conn_finish_exec", 0},
     {&spd_key_mutex_bg_job_stack, "bg_job_stack", 0},
     {&spd_key_mutex_bg_mon, "bg_mon", 0},
     {&spd_key_mutex_bg_direct_sql, "bg_direct_sql", 0},
@@ -230,10 +232,12 @@ PSI_cond_key spd_key_cond_bg_stss;
 PSI_cond_key spd_key_cond_bg_sts_syncs;
 PSI_cond_key spd_key_cond_bg_crds;
 PSI_cond_key spd_key_cond_bg_crd_syncs;
+PSI_cond_key spd_key_cond_conn_finish_exec;
 
 static PSI_cond_info all_spider_conds[] = {
     {&spd_key_cond_bg_conn_sync, "bg_conn_sync", 0},
     {&spd_key_cond_bg_conn, "bg_conn", 0},
+    {&spd_key_cond_conn_finish_exec, "bg_conn_finish_exec", 0},
     {&spd_key_cond_bg_sts, "bg_sts", 0},
     {&spd_key_cond_bg_sts_sync, "bg_sts_sync", 0},
     {&spd_key_cond_bg_crd, "bg_crd", 0},

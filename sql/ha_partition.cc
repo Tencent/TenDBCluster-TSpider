@@ -6391,6 +6391,13 @@ int ha_partition::handle_pre_scan(bool reverse_order, bool use_parallel) {
     if (error == HA_ERR_END_OF_FILE) error = 0;
     if (unlikely(error)) DBUG_RETURN(error);
   }
+  for (i = m_part_spec.start_part; i <= m_part_spec.end_part; i++) {
+    if (!use_parallel) break;
+    if (!(bitmap_is_set(&(m_part_info->read_partitions), i))) continue;
+
+    /* Returned error is intentionally ignored here */
+    m_file[i]->pre_sync_parallel();
+  }
   table->status = 0;
   DBUG_RETURN(0);
 }

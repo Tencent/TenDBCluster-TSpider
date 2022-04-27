@@ -11535,3 +11535,36 @@ void ha_spider::spider_destory_pins() {
   /*if (conn_pins)
       lf_hash_put_pins(conn_pins);*/
 }
+
+/**
+ *  Sync parallel search in a partition during pre_scan.
+ *
+ *  If this step is not taken, the main thread could finish before the execution
+ *  of queries in backends even start, which is likely to happen to SELECTs that
+ *  has a small LIMIT. This could cause race condition where a conn's bg thread
+ *  is going to execute the search query, and meanwhile it is acquired by
+ *  another transaction executing another query.
+ * */
+int ha_spider::pre_sync_parallel() {
+  SPIDER_CONN *conn;
+  DBUG_ENTER("ha_spider::pre_sync_parallel");
+
+  /* Non-parallel, ignore it */
+  if (!result_list.bgs_phase) DBUG_RETURN(0);
+
+  /* In TSpider, a partition/shard corresponds to one and only backend data
+   * node, which means only ONE conn (link_idx=0) is present */
+  conn = spider_get_conn_by_idx(0);
+  if (unlikely(!conn)) DBUG_RETURN(store_error_num);
+
+  DBUG_ASSERT(conn->bg_init);
+  if (unlikely(!conn->bg_init || conn->bg_kill)) DBUG_RETURN(0);
+
+  pthread_mutex_lock(&conn->bg_conn_finish_exec_mutex);
+  while (!conn->bg_conn_finish_exec) {
+    pthread_cond_wait(&conn->bg_conn_finish_exec_cond, &conn->bg_conn_finish_exec_mutex);
+  }
+  pthread_mutex_unlock(&conn->bg_conn_finish_exec_mutex);
+
+  DBUG_RETURN(0);
+}

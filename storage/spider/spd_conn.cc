@@ -84,6 +84,9 @@ extern PSI_thread_key spd_key_thd_bg;
 extern PSI_thread_key spd_key_thd_bg_sts;
 extern PSI_thread_key spd_key_thd_bg_crd;
 extern PSI_thread_key spd_key_thd_bg_mon;
+
+extern PSI_mutex_key spd_key_mutex_conn_finish_exec;
+extern PSI_cond_key spd_key_cond_conn_finish_exec;
 #endif
 
 extern pthread_mutex_t spider_tbl_mutex;
@@ -1418,6 +1421,26 @@ int spider_create_conn_thread(SPIDER_CONN *conn) {
   }
   if (conn && !conn->bg_init) {
 #if MYSQL_VERSION_ID < 50500
+    if (pthread_mutex_init(&conn->bg_conn_finish_exec_mutex, MY_MUTEX_INIT_FAST))
+#else
+    if (mysql_mutex_init(spd_key_mutex_conn_finish_exec,
+                         &conn->bg_conn_finish_exec_mutex, MY_MUTEX_INIT_FAST))
+#endif
+    {
+      error_num = HA_ERR_OUT_OF_MEM;
+      goto error_finish_exec_mutex_init;
+    }
+#if MYSQL_VERSION_ID < 50500
+    if (pthread_cond_init(&conn->bg_conn_finish_exec_cond, NULL))
+#else
+    if (mysql_cond_init(spd_key_cond_conn_finish_exec,
+                        &conn->bg_conn_finish_exec_cond, NULL))
+#endif
+    {
+      error_num = HA_ERR_OUT_OF_MEM;
+      goto error_finish_exec_cond_init;
+    }
+#if MYSQL_VERSION_ID < 50500
     if (pthread_mutex_init(&conn->bg_conn_chain_mutex, MY_MUTEX_INIT_FAST))
 #else
     if (mysql_mutex_init(spd_key_mutex_bg_conn_chain,
@@ -1529,6 +1552,10 @@ error_mutex_init:
 error_sync_mutex_init:
   pthread_mutex_destroy(&conn->bg_conn_chain_mutex);
 error_chain_mutex_init:
+  pthread_cond_destroy(&conn->bg_conn_finish_exec_cond);
+error_finish_exec_cond_init:
+  pthread_mutex_destroy(&conn->bg_conn_finish_exec_mutex);
+error_finish_exec_mutex_init:
   DBUG_RETURN(error_num);
 }
 
@@ -1856,6 +1883,7 @@ int spider_bg_conn_search(ha_spider *spider, int link_idx, int first_link_idx,
 #ifdef SPIDER_HAS_GROUP_BY_HANDLER
         conn->link_idx_chain = spider->link_idx_chain;
 #endif
+        conn->bg_conn_finish_exec = FALSE;
         thd_proc_info(thd, "Starting bg action");
         pthread_mutex_lock(&conn->bg_conn_sync_mutex);
         pthread_cond_signal(&conn->bg_conn_cond);  // send signal => backend to execute sql
@@ -2287,6 +2315,12 @@ void *spider_bg_conn_action(void *arg) {
         pthread_cond_signal(&conn->bg_conn_sync_cond);
         pthread_mutex_unlock(&conn->bg_conn_sync_mutex);
       }
+
+      /* Set finish flag and notify the main thread the execution is finished */
+      pthread_mutex_lock(&conn->bg_conn_finish_exec_mutex);
+      conn->bg_conn_finish_exec = TRUE;
+      pthread_cond_signal(&conn->bg_conn_finish_exec_cond);
+      pthread_mutex_unlock(&conn->bg_conn_finish_exec_mutex);
       continue;
     }
     if (conn->bg_direct_sql) {  // if not udf
