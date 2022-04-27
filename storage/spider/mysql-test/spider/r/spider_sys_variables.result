@@ -104,7 +104,7 @@ spider_transaction_one_shard	OFF
 spider_update_with_primary_key_first	ON
 spider_use_all_conns_snapshot	OFF
 spider_use_consistent_snapshot	OFF
-spider_version	3.7.1
+spider_version	3.7.5
 spider_with_begin_commit	OFF
 spider_xa_register_mode	1
 
