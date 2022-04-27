@@ -8627,7 +8627,8 @@ int spider_mysql_handler::append_insert_values(spider_string *str) {
   str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
   for (field = table->field; *field; field++) {
     DBUG_PRINT("info", ("spider field_index=%u", (*field)->field_index));
-    if (bitmap_is_set(table->write_set, (*field)->field_index) ||
+    if (bitmap_is_set(table->write_set, (*field)->field_index) &&
+      (!table->vcol_set || !bitmap_is_set(table->vcol_set,(*field)->field_index))||
         bitmap_is_set(table->read_set, (*field)->field_index)) {
 #ifndef DBUG_OFF
       my_bitmap_map *tmp_map = dbug_tmp_use_all_columns(table, table->read_set);
@@ -8714,7 +8715,8 @@ int spider_mysql_handler::append_into(spider_string *str) {
                                    SPIDER_SQL_TYPE_INSERT_SQL);
   str->q_append(SPIDER_SQL_OPEN_PAREN_STR, SPIDER_SQL_OPEN_PAREN_LEN);
   for (field = table->field; *field; field++) {
-    if (bitmap_is_set(table->write_set, (*field)->field_index) ||
+    if ((bitmap_is_set(table->write_set, (*field)->field_index) &&
+      (!table->vcol_set || !bitmap_is_set(table->vcol_set, (*field)->field_index)))||
         bitmap_is_set(table->read_set, (*field)->field_index)) {
       field_name_length =
           mysql_share->column_name_str[(*field)->field_index].length();
