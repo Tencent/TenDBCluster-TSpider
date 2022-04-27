@@ -113,7 +113,7 @@ test for master
 SELECT argument FROM mysql.general_log;
 argument
 select isvisible, prename,  name, publicip as ip,  port, tbl_a1.zone as zone, maxonline, onlinenum from tbl_a2,tbl_a1 where tbl_a2.zone=tbl_a1.zone and isvisible  = 1 and account = 'o110W5yqygj8LeFHXT2FEr-Ft_Zc'
-mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_0` where `account` = 'o110W5yqygj8LeFHXT2FEr-Ft_Zc'
+mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_0` where `account` like 'o110W5yqygj8LeFHXT2FEr-Ft_Zc%'
 mysql localhost 3306 select `zone`,`prename`,`name`,`publicip`,`port`,`isvisible`,`maxonline`,`onlinenum` from `auto_test_remote`.`tbl_a1_11` where `zone` = 1
 select * from tbl_a2
 mysql localhost 3306 select `account`,`zone` from `auto_test_remote`.`tbl_a2_0`
@@ -132,7 +132,7 @@ SELECT argument FROM mysql.general_log
 connection child2_1;
 SELECT argument FROM mysql.general_log;
 argument
-select `account`,`zone` from `auto_test_remote`.`tbl_a2_0` where `account` = 'o110W5yqygj8LeFHXT2FEr-Ft_Zc'
+select `account`,`zone` from `auto_test_remote`.`tbl_a2_0` where `account` like 'o110W5yqygj8LeFHXT2FEr-Ft_Zc%'
 select `zone`,`prename`,`name`,`publicip`,`port`,`isvisible`,`maxonline`,`onlinenum` from `auto_test_remote`.`tbl_a1_11` where `zone` = 1
 select `account`,`zone` from `auto_test_remote`.`tbl_a2_0`
 select `account`,`zone` from `auto_test_remote`.`tbl_a2_1`
