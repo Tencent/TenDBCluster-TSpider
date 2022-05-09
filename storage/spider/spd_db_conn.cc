@@ -1215,6 +1215,7 @@ int spider_db_append_key_where_internal(
   Field *field;
   bool use_both = TRUE, key_eq;
   uint sql_kind;
+  bool is_like;
   spider_db_handler *dbton_hdl = spider->dbton_handler[dbton_id];
   spider_db_share *dbton_share = share->dbton_share[dbton_id];
   DBUG_ENTER("spider_db_append_key_where_internal");
@@ -1354,13 +1355,14 @@ int spider_db_append_key_where_internal(
         DBUG_PRINT("info", ("spider key_eq"));
         if (sql_kind == SPIDER_SQL_KIND_SQL) {
           if (str->reserve(store_length + key_name_length +
-                           /* SPIDER_SQL_NAME_QUOTE_LEN */ 2 +
-                           SPIDER_SQL_EQUAL_LEN + SPIDER_SQL_AND_LEN))
+                           /* SPIDER_SQL_NAME_QUOTE_LEN */ 2))
             DBUG_RETURN(HA_ERR_OUT_OF_MEM);
           dbton_share->append_column_name(str, field->field_index);
-          str->q_append(SPIDER_SQL_EQUAL_STR, SPIDER_SQL_EQUAL_LEN);
+          if (spider_dbton[dbton_id].db_util->append_key_equal_or_like(spider, str, field, key_part,
+                                                                       &is_like))
+            DBUG_RETURN(HA_ERR_OUT_OF_MEM);
           if (spider_dbton[dbton_id].db_util->append_column_value(
-                  spider, str, field, ptr, false, share->access_charset))
+                  spider, str, field, ptr, is_like, share->access_charset))
             DBUG_RETURN(HA_ERR_OUT_OF_MEM);
         } else if (sql_kind == SPIDER_SQL_KIND_HANDLER) {
           if (str_part2->reserve(store_length + key_name_length +
@@ -1381,7 +1383,6 @@ int spider_db_append_key_where_internal(
         }
       } else {
         DBUG_PRINT("info", ("spider start_key->flag=%d", start_key->flag));
-        bool is_string_result = (field->result_type() == STRING_RESULT);
         switch (start_key->flag) {
 #if defined(MARIADB_BASE_VERSION) && MYSQL_VERSION_ID >= 100000
           case HA_READ_PREFIX_LAST:
@@ -1395,15 +1396,11 @@ int spider_db_append_key_where_internal(
                 DBUG_RETURN(HA_ERR_OUT_OF_MEM);
 
               dbton_share->append_column_name(str, field->field_index);
-              if (is_string_result) {
-                if (str->append(SPIDER_SQL_LIKE_STR, SPIDER_SQL_LIKE_LEN))
-                  DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-              } else {
-                if (str->append(SPIDER_SQL_EQUAL_STR, SPIDER_SQL_EQUAL_LEN))
-                  DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-              }
+              if (spider_dbton[dbton_id].db_util->append_key_equal_or_like(spider, str, field, key_part,
+                                                                           &is_like))
+                DBUG_RETURN(HA_ERR_OUT_OF_MEM);
               if (spider_dbton[dbton_id].db_util->append_column_value(
-                      spider, str, field, ptr, is_string_result,
+                      spider, str, field, ptr, is_like,
                       share->access_charset))
                 DBUG_RETURN(HA_ERR_OUT_OF_MEM);
             } else if (sql_kind == SPIDER_SQL_KIND_HANDLER) {

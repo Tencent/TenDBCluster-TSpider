@@ -96,6 +96,7 @@ spider_semi_trx_isolation	-1
 spider_slow_log	OFF
 spider_split_read	9223372036854775807
 spider_status_least	3600
+spider_string_key_equal_to_like	ON
 spider_sync_autocommit	ON
 spider_sync_time_zone	ON
 spider_sync_trx_isolation	ON

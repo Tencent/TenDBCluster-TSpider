@@ -1,0 +1,258 @@
+#
+# MDEV-27172 Prefix indices on Spider tables may lead to wrong query results
+# This test is for TSpider.
+#
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+id varchar(32), c1 varchar(32), c2 varchar(32), c3 varchar(32), c4 varchar(32), c5 varchar(32), flag int, primary key(id), key(c1), key(c2(4)), key(c3(8), c4(12), c5(16))
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id varchar(32), c1 varchar(32), c2 varchar(32), c3 varchar(32), c4 varchar(32), c5 varchar(32), flag int, primary key(id), key(c1), key(c2(4)), key(c3(8), c4(12), c5(16)))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (id varchar(32), c1 varchar(32), c2 varchar(32), c3 varchar(32), c4 varchar(32), c5 varchar(32), flag int, primary key(id), key(c1), key(c2(4)), key(c3(8), c4(12), c5(16)))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t3;;
+CREATE TABLE t3 (id1 varchar(32), id2 varchar(32), flag int, primary key(id1, id2(4)))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t3", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t3", srv "s_2_2",aim "1"');;
+connection master_1;
+SET @ignore_single_select_index_backup = @@global.spider_ignore_single_select_index;
+SET @join_cache_level_backup = @@join_cache_level;
+SET @spider_string_key_equal_to_like_backup = @@spider_string_key_equal_to_like;
+SET GLOBAL spider_ignore_single_select_index=OFF;
+SET join_cache_level=0;
+SET spider_string_key_equal_to_like=ON;
+SET @old_log_output = @@global.log_output;
+SET @old_general_log = @@global.general_log;
+SET @old_spider_general_log = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL general_log = 1;
+SET GLOBAL spider_general_log = 1;
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+USE auto_test_local;
+INSERT INTO t1(id, c1, c2, c3, c4, c5, flag) VALUES
+(
+"abcdefghijklmnopqrstuvwxyz_1",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+1
+);
+INSERT INTO t2(id, c1, c2, c3, c4, c5, flag) VALUES
+(
+"abcdefghijklmnopqrstuvwxyz_2",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+"abcdefghijklmnopqrstuvwxyz",
+2
+);
+INSERT INTO t3(id1, id2, flag) VALUES
+(
+"abcdefghijklmnopqrstuvwxyz_3",
+"abcdefghijklmnopqrstuvwxyz",
+3
+);
+
+# Using primary key, operator should be EQUAL
+SELECT id, flag FROM t1 WHERE id = "abcdefghijklmnopqrstuvwxyz_1";
+id	flag
+abcdefghijklmnopqrstuvwxyz_1	1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, flag FROM t1 WHERE id = "abcdefghijklmnopqrstuvwxyz_1"
+mysql localhost 3306 select `id`,`flag` from `auto_test_remote`.`t1` where `id` = 'abcdefghijklmnopqrstuvwxyz_1'
+TRUNCATE TABLE mysql.general_log;
+
+# Using non-prefix key, operator should be EQUAL
+SELECT id, flag FROM t1 WHERE c1 = "abcdefghijklmnopqrstuvwxyz";
+id	flag
+abcdefghijklmnopqrstuvwxyz_1	1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, flag FROM t1 WHERE c1 = "abcdefghijklmnopqrstuvwxyz"
+mysql localhost 3306 select `id`,`c1`,`flag` from `auto_test_remote`.`t1` where `c1` = 'abcdefghijklmnopqrstuvwxyz' and (`c1` = 'abcdefghijklmnopqrstuvwxyz')
+mysql localhost 3306 select `id`,`c1`,`flag` from `auto_test_remote_2`.`t1` where `c1` = 'abcdefghijklmnopqrstuvwxyz' and (`c1` = 'abcdefghijklmnopqrstuvwxyz')
+TRUNCATE TABLE mysql.general_log;
+
+# Using single prefix key, operator should be LIKE
+SELECT id, flag FROM t1 WHERE c2 = "abcdefghijklmnopqrstuvwxyz";
+id	flag
+abcdefghijklmnopqrstuvwxyz_1	1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, flag FROM t1 WHERE c2 = "abcdefghijklmnopqrstuvwxyz"
+mysql localhost 3306 select `id`,`c2`,`flag` from `auto_test_remote`.`t1` where `c2` like 'abcd%' and (`c2` = 'abcdefghijklmnopqrstuvwxyz')
+mysql localhost 3306 select `id`,`c2`,`flag` from `auto_test_remote_2`.`t1` where `c2` like 'abcd%' and (`c2` = 'abcdefghijklmnopqrstuvwxyz')
+TRUNCATE TABLE mysql.general_log;
+
+# Both c3 and c4 should be index conditions
+SELECT id, flag FROM t1 WHERE c3 = "abcdefghijklmnopqrstuvwxyz" AND c4 = "abcdefghijklmnopqrstuvwxyz";
+id	flag
+abcdefghijklmnopqrstuvwxyz_1	1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, flag FROM t1 WHERE c3 = "abcdefghijklmnopqrstuvwxyz" AND c4 = "abcdefghijklmnopqrstuvwxyz"
+mysql localhost 3306 select `id`,`c3`,`c4`,`c5`,`flag` from `auto_test_remote`.`t1` where `c3` like 'abcdefgh%' and `c4` like 'abcdefghijkl%' and ((`c3` = 'abcdefghijklmnopqrstuvwxyz') and (`c4` = 'abcdefghijklmnopqrstuvwxyz')) order by `c5`
+mysql localhost 3306 select `id`,`c3`,`c4`,`c5`,`flag` from `auto_test_remote_2`.`t1` where `c3` like 'abcdefgh%' and `c4` like 'abcdefghijkl%' and ((`c3` = 'abcdefghijklmnopqrstuvwxyz') and (`c4` = 'abcdefghijklmnopqrstuvwxyz')) order by `c5`
+TRUNCATE TABLE mysql.general_log;
+
+# Only c3 should be an index condition
+SELECT id, flag FROM t1 WHERE c3 = "abcdefghijklmnopqrstuvwxyz" AND c5 = "abcdefghijklmnopqrstuvwxyz";
+id	flag
+abcdefghijklmnopqrstuvwxyz_1	1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, flag FROM t1 WHERE c3 = "abcdefghijklmnopqrstuvwxyz" AND c5 = "abcdefghijklmnopqrstuvwxyz"
+mysql localhost 3306 select `id`,`c3`,`c4`,`c5`,`flag` from `auto_test_remote`.`t1` where `c3` like 'abcdefgh%' and ((`c3` = 'abcdefghijklmnopqrstuvwxyz') and (`c5` = 'abcdefghijklmnopqrstuvwxyz')) order by `c4`,`c5`
+mysql localhost 3306 select `id`,`c3`,`c4`,`c5`,`flag` from `auto_test_remote_2`.`t1` where `c3` like 'abcdefgh%' and ((`c3` = 'abcdefghijklmnopqrstuvwxyz') and (`c5` = 'abcdefghijklmnopqrstuvwxyz')) order by `c4`,`c5`
+TRUNCATE TABLE mysql.general_log;
+
+# Joining on primary key
+SELECT a.id, a.flag, b.id, b.flag FROM t1 a JOIN t2 b ON a.id = b.id;
+id	flag	id	flag
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT a.id, a.flag, b.id, b.flag FROM t1 a JOIN t2 b ON a.id = b.id
+mysql localhost 3306 select `id`,`flag` from `auto_test_remote`.`t1`
+mysql localhost 3306 select `id`,`flag` from `auto_test_remote`.`t2` where `id` = 'abcdefghijklmnopqrstuvwxyz_1'
+mysql localhost 3306 select `id`,`flag` from `auto_test_remote_2`.`t1`
+TRUNCATE TABLE mysql.general_log;
+
+# Joining on non-prefix key
+SELECT a.id, a.flag, b.id, b.flag FROM t1 a JOIN t2 b ON a.c1 = b.c1;
+id	flag	id	flag
+abcdefghijklmnopqrstuvwxyz_1	1	abcdefghijklmnopqrstuvwxyz_2	2
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT a.id, a.flag, b.id, b.flag FROM t1 a JOIN t2 b ON a.c1 = b.c1
+mysql localhost 3306 select `id`,`c1`,`flag` from `auto_test_remote`.`t1` where (`c1` is not null)
+mysql localhost 3306 select `id`,`c1`,`flag` from `auto_test_remote`.`t2` where `c1` = 'abcdefghijklmnopqrstuvwxyz'
+mysql localhost 3306 select `id`,`c1`,`flag` from `auto_test_remote_2`.`t2` where `c1` = 'abcdefghijklmnopqrstuvwxyz'
+mysql localhost 3306 select `id`,`c1`,`flag` from `auto_test_remote_2`.`t1` where (`c1` is not null)
+TRUNCATE TABLE mysql.general_log;
+
+# Joining on prefix key
+SELECT a.id, a.flag, b.id, b.flag FROM t1 a JOIN t2 b ON a.c2 = b.c2;
+id	flag	id	flag
+abcdefghijklmnopqrstuvwxyz_1	1	abcdefghijklmnopqrstuvwxyz_2	2
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT a.id, a.flag, b.id, b.flag FROM t1 a JOIN t2 b ON a.c2 = b.c2
+mysql localhost 3306 select `id`,`c2`,`flag` from `auto_test_remote`.`t1` where (`c2` is not null)
+mysql localhost 3306 select `id`,`c2`,`flag` from `auto_test_remote`.`t2` where `c2` like 'abcd%'
+mysql localhost 3306 select `id`,`c2`,`flag` from `auto_test_remote_2`.`t2` where `c2` like 'abcd%'
+mysql localhost 3306 select `id`,`c2`,`flag` from `auto_test_remote_2`.`t1` where (`c2` is not null)
+TRUNCATE TABLE mysql.general_log;
+
+# First part of primary key is non-prefix, should be EQUAL
+SELECT id1, id2, flag FROM t3 WHERE id1 = "abcdefghijklmnopqrstuvwxyz_3";
+id1	id2	flag
+abcdefghijklmnopqrstuvwxyz_3	abcdefghijklmnopqrstuvwxyz	3
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id1, id2, flag FROM t3 WHERE id1 = "abcdefghijklmnopqrstuvwxyz_3"
+mysql localhost 3306 select `id1`,`id2`,`flag` from `auto_test_remote`.`t3` where `id1` = 'abcdefghijklmnopqrstuvwxyz_3' and (`id1` = 'abcdefghijklmnopqrstuvwxyz_3') order by `id2`
+TRUNCATE TABLE mysql.general_log;
+
+# Only second part of primary key is in the condition, should not be using key
+SELECT id1, id2, flag FROM t3 WHERE id2 = "abcdefghijklmnopqrstuvwxyz";
+id1	id2	flag
+abcdefghijklmnopqrstuvwxyz_3	abcdefghijklmnopqrstuvwxyz	3
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id1, id2, flag FROM t3 WHERE id2 = "abcdefghijklmnopqrstuvwxyz"
+mysql localhost 3306 select `id1`,`id2`,`flag` from `auto_test_remote`.`t3` where (`id2` = 'abcdefghijklmnopqrstuvwxyz')
+mysql localhost 3306 select `id1`,`id2`,`flag` from `auto_test_remote_2`.`t3` where (`id2` = 'abcdefghijklmnopqrstuvwxyz')
+TRUNCATE TABLE mysql.general_log;
+
+# First part of primary key is still EQUAL; second part is prefix, should be LIKE.
+SELECT id1, id2, flag FROM t3 WHERE id1 = "abcdefghijklmnopqrstuvwxyz_3" AND id2 = "abcdefghijklmnopqrstuvwxyz";
+id1	id2	flag
+abcdefghijklmnopqrstuvwxyz_3	abcdefghijklmnopqrstuvwxyz	3
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id1, id2, flag FROM t3 WHERE id1 = "abcdefghijklmnopqrstuvwxyz_3" AND id2 = "abcdefghijklmnopqrstuvwxyz"
+mysql localhost 3306 select `id1`,`id2`,`flag` from `auto_test_remote`.`t3` where `id1` = 'abcdefghijklmnopqrstuvwxyz_3' and `id2` like 'abcd%'
+TRUNCATE TABLE mysql.general_log;
+SET GLOBAL spider_ignore_single_select_index = @ignore_single_select_index_backup;
+SET spider_string_key_equal_to_like = @spider_string_key_equal_to_like_backup;
+SET join_cache_level = @join_cache_level_backup;
+connection master_1;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL general_log = @old_general_log;
+SET GLOBAL spider_general_log = @old_spider_general_log;
+TRUNCATE TABLE mysql.general_log;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

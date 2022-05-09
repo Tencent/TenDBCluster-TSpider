@@ -2689,6 +2689,50 @@ int spider_db_mysql_util::append_escaped_name_quote(spider_string *str) {
   DBUG_RETURN(0);
 }
 
+int spider_db_mysql_util::append_key_equal_or_like(ha_spider *spider,
+                                                   spider_string *str,
+                                                   Field *field,
+                                                   KEY_PART_INFO *key_part,
+                                                   bool *is_like) {
+  DBUG_ENTER("spider_db_mysql_util::append_key_equal_or_like");
+
+  TABLE *table;
+  TABLE_SHARE *table_share;
+  Field *orig_field;
+  bool str_eq_to_like = FALSE;
+
+  DBUG_ASSERT(spider->trx && spider->trx->thd);
+  if (unlikely(!spider->trx || !spider->trx->thd)) DBUG_RETURN(HA_ERR_GENERIC);
+  if (field->result_type() != STRING_RESULT ||
+      !spider_param_string_key_equal_to_like(spider->trx->thd))
+    goto append;
+
+  table = spider->get_table();
+  table_share = table->s;
+  orig_field = table_share->field[field->field_index];
+
+  if (key_part->length < orig_field->field_length) {
+    /*
+      We replace EQUAL with LIKE to prevent from truncated values, only when the key length is smaller than
+      field length, since only this way the value is possible to be truncated.
+    */
+    str_eq_to_like = TRUE;
+  }
+
+append:
+  if (str_eq_to_like) {
+    *is_like = TRUE;
+    if (str->append(SPIDER_SQL_LIKE_STR, SPIDER_SQL_LIKE_LEN))
+      DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+  } else {
+    *is_like = FALSE;
+    if (str->append(SPIDER_SQL_EQUAL_STR, SPIDER_SQL_EQUAL_LEN))
+      DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+  }
+
+  DBUG_RETURN(0);
+}
+
 int spider_db_mysql_util::append_column_value(ha_spider *spider,
                                               spider_string *str, Field *field,
                                               const uchar *new_ptr,

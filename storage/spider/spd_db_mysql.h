@@ -22,6 +22,11 @@ class spider_db_mysql_util : public spider_db_util {
                                uint name_length, CHARSET_INFO *name_charset);
   bool is_name_quote(const char head_code);
   int append_escaped_name_quote(spider_string *str);
+  int append_key_equal_or_like(ha_spider *spider,
+                               spider_string *str,
+                               Field *field,
+                               KEY_PART_INFO *key_part,
+                               bool *is_like);
   int append_column_value(ha_spider *spider, spider_string *str, Field *field,
                           const uchar *new_ptr, bool is_like,
                           CHARSET_INFO *access_charset);

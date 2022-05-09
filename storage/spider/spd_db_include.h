@@ -486,6 +486,11 @@ class spider_db_util {
                                        CHARSET_INFO *name_charset) = 0;
   virtual bool is_name_quote(const char head_code) = 0;
   virtual int append_escaped_name_quote(spider_string *str) = 0;
+  virtual int append_key_equal_or_like(ha_spider *spider,
+                                       spider_string *str,
+                                       Field *field,
+                                       KEY_PART_INFO *key_part,
+                                       bool *is_like) = 0;
   virtual int append_column_value(ha_spider *spider, spider_string *str,
                                   Field *field, const uchar *new_ptr,
                                   bool is_like,
