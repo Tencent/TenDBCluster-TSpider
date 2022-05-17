@@ -1571,6 +1571,11 @@ ulong spider_db_mysql::thread_id() const {
   return db_conn->thread_id;
 }
 
+const char *spider_db_mysql::get_db() const {
+  if (!db_conn) return NULL;
+  return db_conn->db;
+}
+
 int spider_db_mysql::ping() {
   DBUG_ENTER("spider_db_mysql::ping");
   DBUG_PRINT("info", ("spider this=%p", this));
@@ -1668,6 +1673,12 @@ int spider_db_mysql::exec_query(const char *query, uint length,
 
   if (!spider_param_dry_access()) {  // TODO.  if the conn if changed, do dry
                                      // access
+    /*
+      This is done before mysql_real_query(), so that if the call blocks, we
+      still can see the query info from SPIDER_ACTIVE_CONNS.
+    */
+    spider_conn_set_last_query(conn, query, length, &my_charset_bin);
+
     error_num = mysql_real_query(db_conn, query, length);
     this->conn->last_visited = (time_t)time((time_t *)0);
     spider_update_conn_meta_info(this->conn, SPIDER_CONN_ACTIVE_STATUS);
@@ -9754,6 +9765,7 @@ int spider_mysql_handler::execute_sql(ulong sql_type, SPIDER_CONN *conn,
       DBUG_PRINT("info", ("spider default"));
       DBUG_RETURN(0);
   }
+  spider_conn_set_state(conn, SPIDER_CONN_STATE_EXEC_QUERY);
   DBUG_RETURN(
       spider_db_query(conn, tgt_sql->ptr(), tgt_length, quick_mode, need_mon));
 }

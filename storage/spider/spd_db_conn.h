@@ -339,6 +339,8 @@ int spider_db_ping(ha_spider *spider, SPIDER_CONN *conn, int link_idx);
 
 void spider_db_disconnect(SPIDER_CONN *conn);
 
+void spider_db_reset_thd(SPIDER_CONN *conn);
+
 int spider_db_conn_queue_action(SPIDER_CONN *conn);
 
 int spider_db_before_query(SPIDER_CONN *conn, int *need_mon);

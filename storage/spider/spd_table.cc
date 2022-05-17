@@ -170,6 +170,8 @@ PSI_mutex_key spd_key_mutex_conn_i;
 PSI_mutex_key spd_key_mutex_bg_stss;
 PSI_mutex_key spd_key_mutex_bg_crds;
 PSI_mutex_key spd_key_mutex_conn_finish_exec;
+PSI_mutex_key spd_key_mutex_conn_status;
+PSI_mutex_key spd_key_mutex_active_conns;
 
 static PSI_mutex_info all_spider_mutexes[] = {
     {&spd_key_mutex_tbl, "tbl", PSI_FLAG_GLOBAL},
@@ -215,6 +217,8 @@ static PSI_mutex_info all_spider_mutexes[] = {
     {&spd_key_mutex_pt_handler, "pt_handler", 0},
 #endif
     {&spd_key_mutex_udf_table, "udf_table", 0},
+    {&spd_key_mutex_conn_status, "conn_status", 0},
+    {&spd_key_mutex_active_conns, "active_conns", 0},
 };
 
 PSI_cond_key spd_key_cond_bg_conn_sync;
@@ -276,6 +280,8 @@ static PSI_thread_info all_spider_threads[] = {
 extern SPIDER_CONN_POOL spd_connect_pools;
 // extern HASH spider_open_connections;
 extern HASH spider_ipport_conns;
+extern mysql_mutex_t spider_active_conns_mutex;
+extern HASH spider_active_conns;
 extern uint spider_open_connections_id;
 extern const char *spider_open_connections_func_name;
 extern const char *spider_open_connections_file_name;
@@ -5454,6 +5460,17 @@ int spider_db_init(void *p) {
     error_num = HA_ERR_OUT_OF_MEM;
     goto error_ipport_conn__hash_init;
   }
+  if (my_hash_init(&spider_active_conns, spd_charset_utf8_bin,
+                   (spider_param_enable_active_conns_view() ? 128 : 0), 0, 0,
+                   NULL, NULL, 0)) {
+    error_num = HA_ERR_OUT_OF_MEM;
+    goto error_active_conns_hash_init;
+  }
+  if (mysql_mutex_init(spd_key_mutex_active_conns, &spider_active_conns_mutex,
+                       MY_MUTEX_INIT_FAST)) {
+    error_num = HA_ERR_OUT_OF_MEM;
+    goto error_active_conns_mutex_init;
+  }
 #ifdef SPIDER_XID_USES_xid_cache_iterate
 #else
   if (my_hash_init(&spd_db_att_xid_cache, spd_charset_utf8_bin, 32, 0, 0,
@@ -5603,6 +5620,10 @@ error_mon_table_cache_array_init:
                            spider_allocated_thds.array.size_of_element);
   my_hash_free(&spider_allocated_thds);
 error_allocated_thds_hash_init:
+  mysql_mutex_destroy(&spider_active_conns_mutex);
+error_active_conns_mutex_init:
+  my_hash_free(&spider_active_conns);
+error_active_conns_hash_init:
   my_hash_free(&spider_ipport_conns);
 error_ipport_conn__hash_init:
 #ifdef SPIDER_XID_USES_xid_cache_iterate

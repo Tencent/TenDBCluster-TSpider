@@ -684,6 +684,7 @@ class spider_db_conn {
   virtual SPIDER_CONN *get_conn() const = 0;
   virtual uint server_status() const = 0;
   virtual uint warning_count() const = 0;
+  virtual const char *get_db() const = 0;
 };
 
 class spider_db_share {

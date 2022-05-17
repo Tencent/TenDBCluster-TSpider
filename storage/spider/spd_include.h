@@ -270,6 +270,16 @@ typedef struct st_spider_share SPIDER_SHARE;
 typedef struct st_spider_table_mon_list SPIDER_TABLE_MON_LIST;
 typedef struct st_spider_ip_port_conn SPIDER_IP_PORT_CONN;
 
+enum spider_conn_command {
+  SPD_COM_SLEEP = 0,
+  SPD_COM_FREE,
+  SPD_COM_DISCONNECT, /* Not used, set STATE instead */
+  SPD_COM_KILLED,
+  SPD_COM_CONNECT, /* Not used, set STATE instead */
+  SPD_COM_QUERY,
+  SPD_COM_END
+};
+
 typedef struct st_spider_thread {
   uint thread_idx;
   THD *thd;
@@ -566,6 +576,22 @@ typedef struct st_spider_conn {
   SPIDER_IP_PORT_CONN *ip_port_conn;
   time_t last_visited;
   ulong current_key_version;
+
+  /*
+    Major status of connection, e.g. SPD_COM_QUERY meaning the connection is
+    actively involved in a query execution.
+  */
+  enum spider_conn_command m_command;
+  /*
+    Current state indicator, all possible values are defined by
+    SPIDER_CONN_STATE_* macros.
+  */
+  const char *m_state;
+  /* Last executed query on this connection is copied into it */
+  String m_last_query;
+  /* Protect status-related members */
+  mysql_mutex_t m_status_mutex;
+  ulonglong m_start_utime; /* status timer */
 } SPIDER_CONN;
 
 typedef struct st_spider_lgtm_tblhnd_share {

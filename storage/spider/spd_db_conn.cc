@@ -91,6 +91,7 @@ int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
   DBUG_ASSERT(conn->conn_kind != SPIDER_CONN_KIND_MYSQL || conn->need_mon);
   DBUG_PRINT("info", ("spider link_idx=%d", link_idx));
   DBUG_PRINT("info", ("spider conn=%p", conn));
+  spider_conn_set_state(conn, SPIDER_CONN_STATE_CONNECT);
   if (!share->server_names[link_idx]) {
     *conn->need_mon = ER_CONNECT_TO_FOREIGN_DATA_SOURCE;
     my_error(ER_CONNECT_TO_FOREIGN_DATA_SOURCE, MYF(0), "localhost");
@@ -246,9 +247,23 @@ void spider_db_disconnect(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_db_disconnect");
   DBUG_PRINT("info", ("spider conn=%p", conn));
   DBUG_PRINT("info", ("spider conn->conn_kind=%u", conn->conn_kind));
+  bool need_status_lock = spider_param_enable_active_conns_view();
+  spider_conn_set_state(conn, SPIDER_CONN_STATE_DISCONNECT);
+  if (need_status_lock) mysql_mutex_lock(&conn->m_status_mutex);
   if (conn->db_conn->is_connected()) {
     conn->db_conn->disconnect();
   }
+  if (need_status_lock) mysql_mutex_unlock(&conn->m_status_mutex);
+  DBUG_VOID_RETURN;
+}
+
+void spider_db_reset_thd(SPIDER_CONN *conn) {
+  DBUG_ENTER("spider_db_reset_thd");
+  DBUG_PRINT("info", ("spider conn=%p", conn));
+  bool need_status_lock = spider_param_enable_active_conns_view();
+  if (need_status_lock) mysql_mutex_lock(&conn->m_status_mutex);
+  conn->thd = NULL;
+  if (need_status_lock) mysql_mutex_unlock(&conn->m_status_mutex);
   DBUG_VOID_RETURN;
 }
 
@@ -865,6 +880,7 @@ int spider_db_start_transaction(SPIDER_CONN *conn, int *need_mon) {
 int spider_db_commit(SPIDER_CONN *conn) {
   int need_mon = 0, error_num;
   DBUG_ENTER("spider_db_commit");
+  spider_conn_set_state(conn, SPIDER_CONN_STATE_COMMIT);
   if (!conn->queued_connect && !conn->queued_trx_start) {
     if (conn->use_for_active_standby && conn->server_lost) {
       my_message(ER_SPIDER_LINK_IS_FAILOVER_NUM, ER_SPIDER_LINK_IS_FAILOVER_STR,
@@ -883,6 +899,7 @@ int spider_db_commit(SPIDER_CONN *conn) {
 int spider_db_rollback(SPIDER_CONN *conn) {
   int error_num, need_mon = 0;
   DBUG_ENTER("spider_db_rollback");
+  spider_conn_set_state(conn, SPIDER_CONN_STATE_ROLLBACK);
   if (!conn->queued_connect && !conn->queued_trx_start) {
     if ((error_num = conn->db_conn->rollback(&need_mon))) {
       DBUG_RETURN(error_num);
@@ -2803,6 +2820,7 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
     }
     DBUG_RETURN(ER_SPIDER_REMOTE_SERVER_GONE_AWAY_NUM);
   }
+  spider_conn_set_state(conn, SPIDER_CONN_STATE_STORE_RESULT);
   db_conn = conn->db_conn;
   if (!result_list->current) {
     if (!result_list->first) {
@@ -2910,6 +2928,7 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
       DBUG_PRINT("info", ("spider set finish_flg point 1"));
       DBUG_PRINT("info", ("spider current->finish_flg = TRUE"));
       DBUG_PRINT("info", ("spider result_list->finish_flg = TRUE"));
+      spider_conn_set_state(conn, SPIDER_CONN_STATE_STORE_RESULT_END);
       current->finish_flg = TRUE;
       result_list->finish_flg = TRUE;
       if (result_list->bgs_phase <= 1) {
@@ -2940,6 +2959,7 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
         DBUG_PRINT("info", ("spider set finish_flg point 2"));
         DBUG_PRINT("info", ("spider current->finish_flg = TRUE"));
         DBUG_PRINT("info", ("spider result_list->finish_flg = TRUE"));
+        spider_conn_set_state(conn, SPIDER_CONN_STATE_STORE_RESULT_END);
         current->finish_flg = TRUE;
         result_list->finish_flg = TRUE;
       }
@@ -2992,6 +3012,7 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
       DBUG_PRINT("info", ("spider set finish_flg point 3"));
       DBUG_PRINT("info", ("spider current->finish_flg = TRUE"));
       DBUG_PRINT("info", ("spider result_list->finish_flg = TRUE"));
+      spider_conn_set_state(conn, SPIDER_CONN_STATE_STORE_RESULT_END);
       current->finish_flg = TRUE;
       result_list->finish_flg = TRUE;
       current->result->free_result();
@@ -3085,6 +3106,7 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
       DBUG_PRINT("info", ("spider set finish_flg point 4"));
       DBUG_PRINT("info", ("spider current->finish_flg = TRUE"));
       DBUG_PRINT("info", ("spider result_list->finish_flg = TRUE"));
+      spider_conn_set_state(conn, SPIDER_CONN_STATE_STORE_RESULT_END);
       current->finish_flg = TRUE;
       result_list->finish_flg = TRUE;
       current->result->free_result();

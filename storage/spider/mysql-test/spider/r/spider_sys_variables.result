@@ -26,6 +26,7 @@ test
 connection master_1;
 SHOW VARIABLES LIKE '%spider%';
 Variable_name	Value
+spider_active_conns_view_info_length	128
 spider_auto_increment_mode_switch	ON
 spider_auto_increment_mode_value	12
 spider_auto_increment_step	17
@@ -46,6 +47,7 @@ spider_direct_insert_ignore	0
 spider_direct_limit_in_group	OFF
 spider_direct_limit_in_select	ON
 spider_direct_order_limit	10000
+spider_enable_active_conns_view	ON
 spider_error_when_flush_server	OFF
 spider_fetch_minimum_columns	ON
 spider_first_read	0

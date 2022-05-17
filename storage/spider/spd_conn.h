@@ -22,6 +22,24 @@
 #define SPIDER_BG_SIMPLE_DISCONNECT 2
 #define SPIDER_BG_SIMPLE_RECORDS 3
 
+#define SPIDER_CONN_STATE_COMMIT "Commit"
+#define SPIDER_CONN_STATE_CONNECT "Connecting"
+#define SPIDER_CONN_STATE_DISCONNECT "Disconnecting"
+#define SPIDER_CONN_STATE_EXEC_QUERY "Executing query"
+#define SPIDER_CONN_STATE_INIT "Init"
+#define SPIDER_CONN_STATE_IN_CONN_POOL "In connection pool"
+#define SPIDER_CONN_STATE_ROLLBACK "Rollback"
+#define SPIDER_CONN_STATE_STORE_RESULT "Storing result"
+#define SPIDER_CONN_STATE_STORE_RESULT_END "End store result"
+
+#define SPIDER_CONN_RESET_STATUS(conn)  \
+  do {                                  \
+    spider_conn_reset_command(conn);    \
+    spider_conn_reset_state(conn);      \
+    spider_conn_reset_last_query(conn); \
+    spider_conn_set_time(conn);         \
+  } while (0)
+
 class SPIDER_CONN_POOL {
 public:
   SPIDER_CONN_POOL(){}
@@ -241,3 +259,11 @@ void spider_free_for_sts_conn(void *info);
 ulong spider_get_conn_thread_id(SPIDER_CONN *conn);
 
 int spider_send_kill(SPIDER_CONN *, enum killed_state);
+
+void spider_conn_reset_command(SPIDER_CONN *conn);
+void spider_conn_set_command(SPIDER_CONN *conn, enum spider_conn_command cmd);
+void spider_conn_reset_state(SPIDER_CONN *conn);
+void spider_conn_set_state(SPIDER_CONN *conn, const char *state);
+void spider_conn_set_time(SPIDER_CONN *conn);
+void spider_conn_reset_last_query(SPIDER_CONN *conn);
+void spider_conn_set_last_query(SPIDER_CONN *conn, const char *query, uint length, CHARSET_INFO *cs);

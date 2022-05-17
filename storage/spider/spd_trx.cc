@@ -2821,6 +2821,17 @@ int spider_commit(handlerton *hton, THD *thd, bool all) {
     spider_reuse_trx_ha(trx);
     spider_free_trx_conn(trx, FALSE);
     trx->trx_consistent_snapshot = FALSE;
+  } else if (thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN) &&
+             spider_param_enable_active_conns_view()) {
+    /*
+      Statement is over but transaction is not, reset used conns to initial
+      status for next statement.
+    */
+    if ((conn = spider_tree_first(trx->join_trx_top))) {
+      do {
+        SPIDER_CONN_RESET_STATUS(conn);
+      } while ((conn = spider_tree_next(conn)));
+    }
   }
   spider_merge_mem_calc(trx, FALSE);
   DBUG_RETURN(error_num);
@@ -2895,6 +2906,17 @@ int spider_rollback(handlerton *hton, THD *thd, bool all) {
     spider_reuse_trx_ha(trx);
     spider_free_trx_conn(trx, FALSE);
     trx->trx_consistent_snapshot = FALSE;
+  } else if (thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN) &&
+             spider_param_enable_active_conns_view()) {
+    /*
+      Statement is over but transaction is not, reset used conns to initial
+      status for next statement.
+    */
+    if ((conn = spider_tree_first(trx->join_trx_top))) {
+      do {
+        SPIDER_CONN_RESET_STATUS(conn);
+      } while ((conn = spider_tree_next(conn)));
+    }
   }
 
   spider_merge_mem_calc(trx, FALSE);
