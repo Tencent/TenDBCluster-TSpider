@@ -2798,6 +2798,20 @@ uint spider_param_table_crd_thread_count() {
   DBUG_RETURN(spider_table_crd_thread_count);
 }
 
+static MYSQL_THDVAR_BOOL(
+        string_key_equal_to_like,
+        PLUGIN_VAR_RQCMDARG,
+        "Whether to to make string index equal conditions be replaced with LIKE conditions.",
+        NULL,
+        NULL,
+        TRUE
+        );
+
+bool spider_param_string_key_equal_to_like(THD *thd) {
+    DBUG_ENTER("spider_param_string_key_equal_to_like");
+    DBUG_RETURN(THDVAR(thd, string_key_equal_to_like));
+}
+
 static struct st_mysql_storage_engine spider_storage_engine = {
     MYSQL_HANDLERTON_INTERFACE_VERSION};
 
@@ -2940,6 +2954,7 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(enable_trx_ha),
     MYSQL_SYSVAR(idle_conn_recycle_interval),
     MYSQL_SYSVAR(conn_meta_max_invalid_duration),
+    MYSQL_SYSVAR(string_key_equal_to_like),
     NULL};
 
 mysql_declare_plugin(spider) {

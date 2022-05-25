@@ -94,9 +94,9 @@ select `a`,`c` from `auto_test_remote`.`ta_r_auto_inc` where `a` = 3
 select `a`,`c` from `auto_test_remote`.`ta_r_auto_inc` where `a` = 4
 select `a`,`c` from `auto_test_remote`.`ta_r_auto_inc` where `a` = 5
 select `b`,`c` from `auto_test_remote`.`ta_r_3`
-select `a`,`b` from `auto_test_remote`.`ta_r` where `b` like 'a%'
-select `a`,`b` from `auto_test_remote`.`ta_r` where `b` like 'b%'
-select `a`,`b` from `auto_test_remote`.`ta_r` where `b` like 'c%'
+select `a`,`b` from `auto_test_remote`.`ta_r` where `b` = 'a'
+select `a`,`b` from `auto_test_remote`.`ta_r` where `b` = 'b'
+select `a`,`b` from `auto_test_remote`.`ta_r` where `b` = 'c'
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %'
 SELECT a, b, date_format(c, '%Y-%m-%d %H:%i:%s') FROM ta_r ORDER BY a;
 a	b	date_format(c, '%Y-%m-%d %H:%i:%s')
