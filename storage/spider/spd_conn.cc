@@ -529,7 +529,8 @@ void spider_free_conn_from_trx(SPIDER_TRX *trx, SPIDER_CONN *conn, bool another,
       my_hash_delete(&trx->trx_conn_hash, (uchar *)conn);
     }
 
-    if (!trx_free && !conn->server_lost &&
+    if (!conn->dry_run /* force destroy for dry-run */
+        && !trx_free && !conn->server_lost &&
         /* !conn->queued_connect &&*/
         /*  failed to create conn, don't need to free */
         spider_param_conn_recycle_mode(trx->thd) == 1 &&
@@ -746,6 +747,12 @@ SPIDER_CONN *spider_create_conn(SPIDER_SHARE *share, ha_spider *spider,
     goto error_conn_status_mutex_init;
   }
 
+  if ((conn->dry_run = spider->dry_run)) {
+    /* We don't need the rest of the steps for dry-run. */
+    conn->ip_port_conn = NULL;
+    DBUG_RETURN(conn);
+  }
+
   mysql_rwlock_rdlock(&spider_ipport_conn_rwlock);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if ((ip_port_conn = (SPIDER_IP_PORT_CONN *)my_hash_search_using_hash_value(
@@ -858,8 +865,9 @@ SPIDER_CONN *spider_get_conn(SPIDER_SHARE *share, int link_idx, SPIDER_TRX *trx,
              share->conn_keys_lengths[link_idx]))))
 #endif
   {
-    if (!trx->thd || ((spider_param_conn_recycle_mode(trx->thd) & 1) ||
-                      spider_param_conn_recycle_strict(trx->thd))) {
+    if (!spider->dry_run /* force create for dry-run */
+        && (!trx->thd || ((spider_param_conn_recycle_mode(trx->thd) & 1) ||
+                          spider_param_conn_recycle_strict(trx->thd)))) {
       // pthread_mutex_lock(&spider_conn_mutex);
       if (!(conn = spd_connect_pools.get_conn(
                 share->conn_keys_hash_value[link_idx],
@@ -2321,14 +2329,12 @@ void *spider_bg_conn_action(void *arg) {
                 result_list->tmp_tables_created = TRUE;
                 spider_conn_set_timeout_from_share(conn, conn->link_idx,
                                                    spider->trx->thd, share);
-                if (dbton_handler->execute_sql(
-                        SPIDER_SQL_TYPE_TMP_SQL, conn, -1,
-                        &spider->need_mons[conn->link_idx])) {
+                if ((error_num = dbton_handler->execute_sql(
+                         SPIDER_SQL_TYPE_TMP_SQL, conn, -1,
+                         &spider->need_mons[conn->link_idx])) &&
+                    error_num != ER_SPIDER_DRY_NUM) {
                   result_list->bgs_error = spider_db_errorno(conn);
                   spider_set_bgs_errmsg(spider, result_list);
-                  //if ((result_list->bgs_error_with_message = thd->is_error()))
-                  //  strmov(result_list->bgs_error_msg,
-                  //         spider_stmt_da_message(thd));
                 } else
                   spider_db_discard_multiple_result(spider, conn->link_idx,
                                                     conn);
@@ -2336,14 +2342,12 @@ void *spider_bg_conn_action(void *arg) {
               if (!result_list->bgs_error) {
                 spider_conn_set_timeout_from_share(conn, conn->link_idx,
                                                    spider->trx->thd, share);
-                if (dbton_handler->execute_sql(
-                        sql_type, conn, result_list->quick_mode,
-                        &spider->need_mons[conn->link_idx])) {
+                if ((error_num = dbton_handler->execute_sql(
+                         sql_type, conn, result_list->quick_mode,
+                         &spider->need_mons[conn->link_idx])) &&
+                    error_num != ER_SPIDER_DRY_NUM) {
                   result_list->bgs_error = spider_db_errorno(conn);
                   spider_set_bgs_errmsg(spider, result_list);
-                  //if ((result_list->bgs_error_with_message = thd->is_error()))
-                  //  strmov(result_list->bgs_error_msg,
-                  //         spider_stmt_da_message(thd));
                 } else {
                   spider->connection_ids[conn->link_idx] = conn->connection_id;
                   if (!conn->bg_discard_result) {
@@ -4479,6 +4483,7 @@ ulong spider_get_conn_thread_id(SPIDER_CONN *conn) {
 int spider_send_kill(SPIDER_CONN *to_kill, enum killed_state kill_signal) {
   DBUG_ENTER("spider_send_kill");
   DBUG_PRINT("info", ("Spider received kill signal: %d", kill_signal));
+  if (unlikely(to_kill->dry_run)) DBUG_RETURN(0);
 
   int error;
   ulong thread_id;
@@ -4556,6 +4561,7 @@ failed:
 
 void spider_conn_reset_command(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_conn_reset_command");
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (!spider_param_enable_active_conns_view()) DBUG_VOID_RETURN;
   conn->m_command = SPD_COM_SLEEP;
   DBUG_VOID_RETURN;
@@ -4563,6 +4569,7 @@ void spider_conn_reset_command(SPIDER_CONN *conn) {
 
 void spider_conn_set_command(SPIDER_CONN *conn, enum spider_conn_command cmd) {
   DBUG_ENTER("spider_conn_set_command");
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (!spider_param_enable_active_conns_view()) DBUG_VOID_RETURN;
   conn->m_command = cmd;
   DBUG_VOID_RETURN;
@@ -4570,6 +4577,7 @@ void spider_conn_set_command(SPIDER_CONN *conn, enum spider_conn_command cmd) {
 
 void spider_conn_reset_state(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_conn_reset_state");
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (!spider_param_enable_active_conns_view()) DBUG_VOID_RETURN;
   mysql_mutex_lock(&conn->m_status_mutex);
   conn->m_state = NULL;
@@ -4579,6 +4587,7 @@ void spider_conn_reset_state(SPIDER_CONN *conn) {
 
 void spider_conn_set_state(SPIDER_CONN *conn, const char *state) {
   DBUG_ENTER("spider_conn_state_info");
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (!spider_param_enable_active_conns_view()) DBUG_VOID_RETURN;
   mysql_mutex_lock(&conn->m_status_mutex);
   conn->m_state = state;
@@ -4588,6 +4597,7 @@ void spider_conn_set_state(SPIDER_CONN *conn, const char *state) {
 
 void spider_conn_set_time(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_conn_set_time");
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (!spider_param_enable_active_conns_view()) DBUG_VOID_RETURN;
   conn->m_start_utime = microsecond_interval_timer();
   DBUG_VOID_RETURN;
@@ -4595,6 +4605,7 @@ void spider_conn_set_time(SPIDER_CONN *conn) {
 
 void spider_conn_reset_last_query(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_conn_reset_last_query");
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (!spider_param_enable_active_conns_view()) DBUG_VOID_RETURN;
   mysql_mutex_lock(&conn->m_status_mutex);
   conn->m_last_query.length(0);
@@ -4605,6 +4616,7 @@ void spider_conn_reset_last_query(SPIDER_CONN *conn) {
 void spider_conn_set_last_query(SPIDER_CONN *conn, const char *query,
                                 uint length, CHARSET_INFO *cs) {
   DBUG_ENTER("spider_conn_set_last_query");
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (!spider_param_enable_active_conns_view()) DBUG_VOID_RETURN;
 
   /* To avoid overhead, we have to set a max length for the copying */

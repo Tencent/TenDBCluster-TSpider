@@ -178,9 +178,19 @@
 #define ER_SPIDER_XA_FAILED_STR \
   "transaction execute failed, please retry transaction"
 #define ER_SPIDER_XA_FAILED_LEN (sizeof(ER_SPIDER_XA_FAILED_STR) - 1)
+
+/*
+  Normally this error does not get reported, instead should be handled by
+  Spider to make SELECTs return empty set.
+*/
 #define ER_SPIDER_DRY_NUM 12730
-#define ER_SPIDER_DRY_STR "spider dry access"
+#define ER_SPIDER_DRY_STR "Spider dry-run finished, see the error log for query info"
 #define ER_SPIDER_DRY_LEN (sizeof(ER_SPIDER_DRY_STR) - 1)
+
+#define ER_SPIDER_DRY_RUN_IN_TRANS 12731
+#define ER_SPIDER_DRY_RUN_IN_TRANS_STR "Spider dry-run cannot be done in a transaction, use autocommit mode instead"
+#define ER_SPIDER_DRY_RUN_IN_TRANS_LEN (sizeof(ER_SPIDER_DRY_RUN_IN_TRANS_STR) - 1)
+
 #define ER_SPIDER_COND_SKIP_NUM 12801
 
 #define ER_SPIDER_UNKNOWN_NUM 12500

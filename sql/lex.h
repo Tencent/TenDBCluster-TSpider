@@ -595,6 +595,7 @@ static SYMBOL symbols[] = {
   { "STORED",           SYM(STORED_SYM)},
   { "SPATIAL",		SYM(SPATIAL_SYM)},
   { "SPECIFIC",         SYM(SPECIFIC_SYM)},
+  { "SPIDER_DRY_RUN",   SYM(SPIDER_DRY_RUN_SYM) },
   { "SPIDER_RONE_SHARD",SYM(SPIDER_RONE_SHARD_SYM) },
   { "REF_SYSTEM_ID",    SYM(REF_SYSTEM_ID_SYM)},
   { "SQL",              SYM(SQL_SYM)},

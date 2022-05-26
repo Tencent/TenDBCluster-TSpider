@@ -159,6 +159,7 @@ ha_spider::ha_spider() : handler(spider_hton_ptr, NULL) {
   result_list.bgs_error = 0;
   result_list.bgs_error_with_message = FALSE;
   result_list.is_get_increment = FALSE;
+  dry_run = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -257,6 +258,7 @@ ha_spider::ha_spider(handlerton *hton, TABLE_SHARE *table_arg)
   result_list.bgs_error = 0;
   result_list.bgs_error_with_message = FALSE;
   result_list.is_get_increment = FALSE;
+  dry_run = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -1139,6 +1141,7 @@ int ha_spider::reset() {
   error_mode = 0;
   store_error_num = 0;
   total_inserted_rows = 0;
+  dry_run = FALSE;
 
   for (roop_count = 0; roop_count < (int)share->link_count; roop_count++) {
     conns[roop_count] = NULL;
@@ -1538,8 +1541,10 @@ int ha_spider::index_read_map_internal(uchar *buf, const uchar *key,
           DBUG_RETURN(check_error_mode_eof(error_num));
         }
         spider_conn_set_timeout_from_share(conn, roop_count, trx->thd, share);
-        if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                   &need_mons[roop_count])) {
+        if ((error_num =
+                 dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
+                                        &need_mons[roop_count])) &&
+            error_num != ER_SPIDER_DRY_NUM) {
           conn->mta_conn_mutex_lock_already = FALSE;
           conn->mta_conn_mutex_unlock_later = FALSE;
           error_num = spider_db_errorno(conn);
@@ -1870,8 +1875,10 @@ int ha_spider::index_read_last_map_internal(uchar *buf, const uchar *key,
           DBUG_RETURN(check_error_mode_eof(error_num));
         }
         spider_conn_set_timeout_from_share(conn, roop_count, trx->thd, share);
-        if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                   &need_mons[roop_count])) {
+        if ((error_num =
+                 dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
+                                        &need_mons[roop_count])) &&
+            error_num != ER_SPIDER_DRY_NUM) {
           conn->mta_conn_mutex_lock_already = FALSE;
           conn->mta_conn_mutex_unlock_later = FALSE;
           error_num = spider_db_errorno(conn);
@@ -2194,8 +2201,10 @@ int ha_spider::index_first_internal(uchar *buf) {
             DBUG_RETURN(check_error_mode_eof(error_num));
           }
           spider_conn_set_timeout_from_share(conn, roop_count, trx->thd, share);
-          if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                     &need_mons[roop_count])) {
+          if ((error_num = dbton_hdl->execute_sql(sql_type, conn,
+                                                  result_list.quick_mode,
+                                                  &need_mons[roop_count])) &&
+              error_num != ER_SPIDER_DRY_NUM) {
             conn->mta_conn_mutex_lock_already = FALSE;
             conn->mta_conn_mutex_unlock_later = FALSE;
             error_num = spider_db_errorno(conn);
@@ -2458,8 +2467,10 @@ int ha_spider::index_last_internal(uchar *buf) {
             DBUG_RETURN(check_error_mode_eof(error_num));
           }
           spider_conn_set_timeout_from_share(conn, roop_count, trx->thd, share);
-          if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                     &need_mons[roop_count])) {
+          if ((error_num = dbton_hdl->execute_sql(sql_type, conn,
+                                                  result_list.quick_mode,
+                                                  &need_mons[roop_count])) &&
+              error_num != ER_SPIDER_DRY_NUM) {
             conn->mta_conn_mutex_lock_already = FALSE;
             conn->mta_conn_mutex_unlock_later = FALSE;
             error_num = spider_db_errorno(conn);
@@ -2762,8 +2773,10 @@ int ha_spider::read_range_first_internal(uchar *buf, const key_range *start_key,
           DBUG_RETURN(check_error_mode_eof(error_num));
         }
         spider_conn_set_timeout_from_share(conn, roop_count, trx->thd, share);
-        if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                   &need_mons[roop_count])) {
+        if ((error_num =
+                 dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
+                                        &need_mons[roop_count])) &&
+            error_num != ER_SPIDER_DRY_NUM) {
           conn->mta_conn_mutex_lock_already = FALSE;
           conn->mta_conn_mutex_unlock_later = FALSE;
           error_num = spider_db_errorno(conn);
@@ -3206,8 +3219,10 @@ int ha_spider::read_multi_range_first_internal(uchar *buf,
             if (!error_num) {
               spider_conn_set_timeout_from_share(conn, roop_count, trx->thd,
                                                  share);
-              if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                         &need_mons[roop_count])) {
+              if ((error_num = dbton_hdl->execute_sql(
+                       sql_type, conn, result_list.quick_mode,
+                       &need_mons[roop_count])) &&
+                  error_num != ER_SPIDER_DRY_NUM) {
                 conn->mta_conn_mutex_lock_already = FALSE;
                 conn->mta_conn_mutex_unlock_later = FALSE;
                 error_num = spider_db_errorno(conn);
@@ -3864,8 +3879,10 @@ int ha_spider::read_multi_range_first_internal(uchar *buf,
               result_list.tmp_tables_created = TRUE;
               spider_conn_set_timeout_from_share(conn, roop_count, trx->thd,
                                                  share);
-              if (dbton_hdl->execute_sql(SPIDER_SQL_TYPE_TMP_SQL, conn, -1,
-                                         &need_mons[roop_count])) {
+              if ((error_num =
+                       dbton_hdl->execute_sql(SPIDER_SQL_TYPE_TMP_SQL, conn, -1,
+                                              &need_mons[roop_count])) &&
+                  error_num != ER_SPIDER_DRY_NUM) {
                 conn->mta_conn_mutex_lock_already = FALSE;
                 conn->mta_conn_mutex_unlock_later = FALSE;
                 error_num = spider_db_errorno(conn);
@@ -3886,8 +3903,10 @@ int ha_spider::read_multi_range_first_internal(uchar *buf,
             }
             spider_conn_set_timeout_from_share(conn, roop_count, trx->thd,
                                                share);
-            if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                       &need_mons[roop_count])) {
+            if ((error_num = dbton_hdl->execute_sql(sql_type, conn,
+                                                    result_list.quick_mode,
+                                                    &need_mons[roop_count])) &&
+                error_num != ER_SPIDER_DRY_NUM) {
               conn->mta_conn_mutex_lock_already = FALSE;
               conn->mta_conn_mutex_unlock_later = FALSE;
               error_num = spider_db_errorno(conn);
@@ -4351,8 +4370,10 @@ int ha_spider::read_multi_range_next(KEY_MULTI_RANGE **found_range_p)
             if (!error_num) {
               spider_conn_set_timeout_from_share(conn, roop_count, trx->thd,
                                                  share);
-              if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                         &need_mons[roop_count])) {
+              if ((error_num = dbton_hdl->execute_sql(
+                       sql_type, conn, result_list.quick_mode,
+                       &need_mons[roop_count])) &&
+                  error_num != ER_SPIDER_DRY_NUM) {
                 conn->mta_conn_mutex_lock_already = FALSE;
                 conn->mta_conn_mutex_unlock_later = FALSE;
                 error_num = spider_db_errorno(conn);
@@ -4996,8 +5017,10 @@ int ha_spider::read_multi_range_next(KEY_MULTI_RANGE **found_range_p)
               result_list.tmp_tables_created = TRUE;
               spider_conn_set_timeout_from_share(conn, roop_count, trx->thd,
                                                  share);
-              if (dbton_hdl->execute_sql(SPIDER_SQL_TYPE_TMP_SQL, conn, -1,
-                                         &need_mons[roop_count])) {
+              if ((error_num =
+                       dbton_hdl->execute_sql(SPIDER_SQL_TYPE_TMP_SQL, conn, -1,
+                                              &need_mons[roop_count])) &&
+                  error_num != ER_SPIDER_DRY_NUM) {
                 conn->mta_conn_mutex_lock_already = FALSE;
                 conn->mta_conn_mutex_unlock_later = FALSE;
                 error_num = spider_db_errorno(conn);
@@ -5018,8 +5041,10 @@ int ha_spider::read_multi_range_next(KEY_MULTI_RANGE **found_range_p)
             }
             spider_conn_set_timeout_from_share(conn, roop_count, trx->thd,
                                                share);
-            if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                       &need_mons[roop_count])) {
+            if ((error_num = dbton_hdl->execute_sql(sql_type, conn,
+                                                    result_list.quick_mode,
+                                                    &need_mons[roop_count])) &&
+                error_num != ER_SPIDER_DRY_NUM) {
               conn->mta_conn_mutex_lock_already = FALSE;
               conn->mta_conn_mutex_unlock_later = FALSE;
               error_num = spider_db_errorno(conn);
@@ -5306,6 +5331,8 @@ int ha_spider::rnd_next_internal(uchar *buf) {
   do_direct_update = FALSE;
 #endif
 
+  if ((error_num = check_dry_run())) DBUG_RETURN(error_num);
+
   if (rnd_scan_and_first) {
     if ((error_num = spider_set_conn_bg_param(this))) DBUG_RETURN(error_num);
     if ((error_num = rnd_handler_init()))
@@ -5480,8 +5507,10 @@ int ha_spider::rnd_next_internal(uchar *buf) {
           DBUG_RETURN(check_error_mode_eof(error_num));
         }
         spider_conn_set_timeout_from_share(conn, roop_count, trx->thd, share);
-        if (dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
-                                   &need_mons[roop_count])) {
+        if ((error_num =
+                 dbton_hdl->execute_sql(sql_type, conn, result_list.quick_mode,
+                                        &need_mons[roop_count])) &&
+            error_num != ER_SPIDER_DRY_NUM) {
           conn->mta_conn_mutex_lock_already = FALSE;
           conn->mta_conn_mutex_unlock_later = FALSE;
           error_num = spider_db_errorno(conn);
@@ -5946,9 +5975,10 @@ int ha_spider::ft_read_internal(uchar *buf) {
           DBUG_RETURN(check_error_mode_eof(error_num));
         }
         spider_conn_set_timeout_from_share(conn, roop_count, trx->thd, share);
-        if (dbton_hdl->execute_sql(SPIDER_SQL_TYPE_SELECT_SQL, conn,
-                                   result_list.quick_mode,
-                                   &need_mons[roop_count])) {
+        if ((error_num = dbton_hdl->execute_sql(SPIDER_SQL_TYPE_SELECT_SQL,
+                                                conn, result_list.quick_mode,
+                                                &need_mons[roop_count])) &&
+            error_num != ER_SPIDER_DRY_NUM) {
           conn->mta_conn_mutex_lock_already = FALSE;
           conn->mta_conn_mutex_unlock_later = FALSE;
           error_num = spider_db_errorno(conn);
@@ -7972,6 +8002,9 @@ void ha_spider::print_error(int error, myf errflag) {
       case ER_SPIDER_SHARE_INVALID_NUM:
         my_message(error, ER_SPIDER_SHARE_INVALID_STR, MYF(0));
         break;
+      case ER_SPIDER_DRY_NUM:
+        my_message(ER_SPIDER_DRY_NUM, ER_SPIDER_DRY_STR, MYF(0));
+        break;
       default:
         handler::print_error(error, errflag);
         break;
@@ -8010,6 +8043,10 @@ bool ha_spider::get_error_message(int error, String *buf) {
     case ER_SPIDER_DRY_NUM:
       if (buf->reserve(ER_SPIDER_DRY_LEN)) DBUG_RETURN(TRUE);
       buf->q_append(ER_SPIDER_DRY_STR, ER_SPIDER_DRY_LEN);
+      break;
+    case ER_SPIDER_DRY_RUN_IN_TRANS:
+      if (buf->reserve(ER_SPIDER_DRY_RUN_IN_TRANS_LEN)) DBUG_RETURN(TRUE);
+      buf->q_append(ER_SPIDER_DRY_RUN_IN_TRANS_STR, ER_SPIDER_DRY_RUN_IN_TRANS_LEN);
       break;
     default:
       if (buf->reserve(ER_SPIDER_UNKNOWN_LEN)) DBUG_RETURN(TRUE);
@@ -9471,6 +9508,9 @@ int ha_spider::index_handler_init() {
   DBUG_PRINT("info", ("spider this=%p", this));
   if (!init_index_handler) {
     init_index_handler = TRUE;
+
+    if ((error_num = check_dry_run())) DBUG_RETURN(error_num);
+
     lock_mode = spider_conn_lock_mode(this);
     if (lock_mode) {
       /* "for update" or "lock in share mode" */
@@ -11566,5 +11606,31 @@ int ha_spider::pre_sync_parallel() {
   }
   pthread_mutex_unlock(&conn->bg_conn_finish_exec_mutex);
 
+  DBUG_RETURN(0);
+}
+
+int ha_spider::check_dry_run() {
+  DBUG_ENTER("ha_spider::check_dry_run");
+
+  THD *thd = (trx ? trx->thd : NULL);
+  SELECT_LEX *root_select_lex =
+      ((thd && thd->lex) ? &thd->lex->select_lex : NULL);
+  if (root_select_lex &&
+      (dry_run = (root_select_lex->options & OPTION_SPIDER_DRY_RUN))) {
+    /*
+      Abort dry-run if in a transaction, because the conns should be destroyed
+      once the dry-run is finished.
+    */
+    if (thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
+      DBUG_RETURN(ER_SPIDER_DRY_RUN_IN_TRANS);
+
+    if (!trx->dry_run_src_logged) {
+      /* Source query only needs to be logged once */
+      trx->dry_run_src_logged = TRUE;
+      log_spider_resultf(SPIDER_LOG_DRY_RUN_SOURCE, "THD: %llu, Query: %.*s",
+                         thd->thread_id, (int)thd->query_length(),
+                         thd->query());
+    }
+  }
   DBUG_RETURN(0);
 }

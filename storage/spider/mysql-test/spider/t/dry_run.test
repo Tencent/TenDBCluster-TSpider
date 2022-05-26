@@ -1,0 +1,88 @@
+--echo #
+--echo # Test for SPIDER DRY RUN
+--echo #
+
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT PRIMARY KEY, c1 int, c2 int, KEY (c1)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+SET @spider_bgs_mode_backup = @@spider_bgs_mode;
+SET @spider_quick_mode_backup = @@spider_quick_mode;
+
+INSERT INTO t1 VALUES
+(1,1,1), (3,3,3);
+
+SELECT * FROM t1;
+SELECT SPIDER_DRY_RUN * FROM t1;
+
+SELECT id, c1, c2 FROM t1;
+SELECT SPIDER_DRY_RUN id, c1, c2 FROM t1;
+
+# NULL results
+SELECT MAX(c1), MAX(c2) FROM t1 WHERE id > 10;
+SELECT SPIDER_DRY_RUN MAX(c1), MAX(c2) FROM t1 WHERE id > 10;
+
+SELECT id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+--echo
+--echo # Try different combinations of <spider_bgs_mode> and <spider_quick_mode> to make sure dry-run does not cause strange crashes
+--echo
+SET spider_bgs_mode = 1;
+
+SET spider_quick_mode = 0;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+SET spider_quick_mode = 1;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+SET spider_quick_mode = 2;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+SET spider_quick_mode = 3;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+SET spider_bgs_mode = 0;
+
+SET spider_quick_mode = 0;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+SET spider_quick_mode = 1;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+SET spider_quick_mode = 2;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+SET spider_quick_mode = 3;
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+
+--echo
+--echo # Using dry-run in a transaction should cause Error
+--echo
+
+BEGIN;
+--error ER_GET_ERRMSG
+SELECT SPIDER_DRY_RUN id, max(c2) FROM t1 WHERE c1 < 2 GROUP BY id LIMIT 10;
+ROLLBACK;
+
+# cleanup
+SET spider_bgs_mode = @spider_bgs_mode_backup;
+SET spider_quick_mode = @spider_quick_mode_backup;
+
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--let @USE_GENERAL_LOG= $USE_GENERAL_LOG_BACKUP
+
+--source ../include/spider_drop_database.inc
+
+

@@ -308,6 +308,9 @@
 #define SPIDER_LOG_RES_ERR_MSG_BUF_SIZE 1024
 #define SPIDER_LOG_RES_ERR_TIME_STR_SIZE 32
 
+#define SPIDER_LOG_DRY_RUN_SOURCE 10
+#define SPIDER_LOG_DRY_RUN_REMOTE 11
+
 /* defined in sys_vars.cc
 static const char *spider_ignore_error_number_names[]=
 {
