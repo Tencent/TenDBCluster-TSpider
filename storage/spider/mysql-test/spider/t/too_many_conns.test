@@ -1,0 +1,50 @@
+--echo #
+--echo # Test for false "Too many connections between spider and remote" error caused by mishandling of lock state.
+--echo #
+
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id int PRIMARY KEY, c1 int, c2 int
+--echo $TABLE_BODY
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+USE auto_test_local;
+INSERT INTO t1 VALUES(1,1,1),(2,2,2),(3,2,3),(4,3,3);
+FLUSH TABLES;
+
+# Open table
+SELECT * FROM t1;
+
+--disable_query_log
+--disable_result_log
+SELECT SLEEP(1);
+--enable_query_log
+--enable_result_log
+
+# Expect no error
+SELECT a.c1, a.c2
+FROM t1 AS a INNER JOIN (
+  SELECT b.c1, MAX(b.c2) as max_c2
+  FROM t1 AS b
+  WHERE b.c2 > 1
+  GROUP BY b.c1
+) AS c
+ON a.c1 = c.c1 AND a.c2 = c.max_c2;
+
+# cleanup
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--let @USE_GENERAL_LOG= $USE_GENERAL_LOG_BACKUP
+
+--source ../include/spider_drop_database.inc

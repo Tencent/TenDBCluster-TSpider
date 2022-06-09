@@ -3891,6 +3891,7 @@ SPIDER_SHARE *spider_get_share(const char *table_name, TABLE *table, THD *thd,
       }
     }
 
+    share->sts_reading = FALSE;
     share->sts_get_time = 0;
     share->sts_read_time = 0;
     share->crd_get_time = 0;

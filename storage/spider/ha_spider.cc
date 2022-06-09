@@ -7972,6 +7972,9 @@ void ha_spider::print_error(int error, myf errflag) {
       case ER_SPIDER_SHARE_INVALID_NUM:
         my_message(error, ER_SPIDER_SHARE_INVALID_STR, MYF(0));
         break;
+      case ER_SPIDER_CONN_BE_FREE_NUM:
+        my_message(error, ER_SPIDER_CONN_BE_FREE_STR, MYF(0));
+        break;
       default:
         handler::print_error(error, errflag);
         break;
@@ -8011,6 +8014,9 @@ bool ha_spider::get_error_message(int error, String *buf) {
       if (buf->reserve(ER_SPIDER_DRY_LEN)) DBUG_RETURN(TRUE);
       buf->q_append(ER_SPIDER_DRY_STR, ER_SPIDER_DRY_LEN);
       break;
+    case ER_SPIDER_CONN_BE_FREE_NUM:
+      if (buf->reserve(ER_SPIDER_CONN_BE_FREE_LEN)) DBUG_RETURN(TRUE);
+      buf->q_append(ER_SPIDER_CONN_BE_FREE_STR, ER_SPIDER_CONN_BE_FREE_LEN);
     default:
       if (buf->reserve(ER_SPIDER_UNKNOWN_LEN)) DBUG_RETURN(TRUE);
       buf->q_append(ER_SPIDER_UNKNOWN_STR, ER_SPIDER_UNKNOWN_LEN);

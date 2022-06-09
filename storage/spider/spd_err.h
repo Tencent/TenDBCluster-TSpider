@@ -161,7 +161,8 @@
 #define ER_SPIDER_GET_SHARE_ERROR_LEN \
   (sizeof(ER_SPIDER_GET_SHARE_ERROR_STR) - 1)
 #define ER_SPIDER_CONN_BE_FREE_NUM 12725
-#define ER_SPIDER_CONN_BE_FREE_STR "conn may be free"
+#define ER_SPIDER_CONN_BE_FREE_STR \
+  "Remote connection is invalid due to unexpected errors. Please try again"
 #define ER_SPIDER_CONN_BE_FREE_LEN (sizeof(ER_SPIDER_CONN_BE_FREE_STR) - 1)
 #define ER_SPIDER_COND_INVALID_NUM 12726
 #define ER_SPIDER_COND_INVALID_STR "where condition may be invalid"
