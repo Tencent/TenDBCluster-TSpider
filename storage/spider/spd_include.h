@@ -758,6 +758,7 @@ typedef struct st_spider_share {
   volatile bool link_status_init;
   uchar *table_mon_mutex_bitmap;
   volatile bool sts_init;
+  volatile bool sts_reading; /* Reading table status to share */
   volatile time_t sts_get_time;
   volatile time_t sts_read_time;
   volatile time_t bg_sts_try_time;
