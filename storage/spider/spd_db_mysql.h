@@ -195,7 +195,7 @@ class spider_db_mysql : public spider_db_conn {
   spider_db_result *use_result(st_spider_db_request_key *request_key,
                                int *error_num);
   int next_result();
-  uint affected_rows();
+  ulonglong affected_rows();
   uint matched_rows();
   ulonglong last_insert_id();
   int set_character_set(const char *csname);
@@ -247,6 +247,9 @@ class spider_db_mysql : public spider_db_conn {
   void set_dup_key_idx(ha_spider *spider, int link_idx);
   bool cmp_request_key_to_snd(st_spider_db_request_key *request_key);
   ulong thread_id() const;
+  SPIDER_CONN *get_conn() const { return conn; }
+  uint server_status() const { return (db_conn ? db_conn->server_status : 0); }
+  uint warning_count() const { return (db_conn ? db_conn->warning_count : 0); }
 };
 
 class spider_mysql_share : public spider_db_share {

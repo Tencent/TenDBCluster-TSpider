@@ -296,6 +296,18 @@
 #define SPIDER_UDF_PING_TABLE_USE_WHERE (1 << 1)
 #define SPIDER_UDF_PING_TABLE_USE_ALL_MONITORING_NODES (1 << 2)
 
+#define SPIDER_LOG_RES_ERR_LVL_NONE 0
+#define SPIDER_LOG_RES_ERR_LVL_ERROR 1
+#define SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY 2
+#define SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL 3
+#define SPIDER_LOG_RES_ERR_LVL_INFO 4
+
+#define SPIDER_LOG_RES_ERR_SQL_SPIDER (1 << 0)
+#define SPIDER_LOG_RES_ERR_SQL_USER (1 << 1)
+
+#define SPIDER_LOG_RES_ERR_MSG_BUF_SIZE 1024
+#define SPIDER_LOG_RES_ERR_TIME_STR_SIZE 32
+
 /* defined in sys_vars.cc
 static const char *spider_ignore_error_number_names[]=
 {
@@ -759,217 +771,11 @@ bool spider_db_conn_is_network_error(int error_num);
 CHARSET_INFO *spider_get_item_field_charset(Item *item, ha_spider *spider);
 // tm *spider_get_time(ulong &u_sec); // deprecated
 
-static bool is_error_ignored_by_spider_log(int err_number) {
-  switch (err_number) {
-    case 1062:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_DUPLICATE) return true;
-      break;
-    case 12701:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_GONE_AWAWY) return true;
-      break;
-    case 12723:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_TOO_MANY_CONN) return true;
-      break;
-    case 1477:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_NO_REMOTE_EXIST) return true;
-      break;
-    case 1429:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_CONN_REMOTE) return true;
-      break;
-    case 1067:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_INVALID_DEFAULT) return true;
-      break;
-    case 1292:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_INVALID_DATE) return true;
-      break;
-    case 1366:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_TRUNCATE_VALUE) return true;
-      break;
-    case 1411:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_BAD_TYPE_VALUE) return true;
-      break;
-    case 1159:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_NET_TIMEOUT) return true;
-      break;
-    case 2014:
-      if (opt_spider_log_ignore_err_nums & SPD_ERR_COM_OUT_OF_SYNC) return true;
-      break;
-    default:
-      /* empty */
-      break;
-  }
-  return false;
-}
-
-/**
-  log spider result to stderr with current time and function name
-  @param  info               information about the log, e.g. "[WARN SPIDER RESULT]"
-  @param  func_name          name of the caller
-*/ 
-inline void log_spider_result_with_time(const char *info, const char *func_name) {
-  ulong usec = 0;
-  time_t cur_time;
-  struct tm l_time;
-  cur_time = (time_t)time((time_t *)0);
-  localtime_r(&cur_time, &l_time);
-  usec = hrtime_sec_part(my_hrtime());
-  fprintf(stderr,
-          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
-          " from  %s\n",
-          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
-          info, func_name);
-}
-
-
-/**
-  log spider receive result to stderr with current time and function name
-  @param  sc                 security_context, get <user, host_or_ip> here
-  @param  dst_id             destination ID
-  @param  tmp_query          the query content
-  @param  error_num          the query error number
-*/ 
-inline void log_spider_receive_result_with_time(
-  Security_context* sc,
-  ulong dst_id,
-  spider_string *tmp_query,
-  int error_num)
-{
-  ulong usec = 0;
-  time_t cur_time;
-  struct tm l_time;
-  cur_time = (time_t)time((time_t *)0);
-  localtime_r(&cur_time, &l_time);
-  usec = hrtime_sec_part(my_hrtime());
-
-  if (is_error_ignored_by_spider_log(error_num))
-    return;
-
-  fprintf(stderr,
-          "%04d%02d%02d %02d:%02d:%02d.%ld [RECV SPIDER SQL] "
-          "from [%s][%s] to %ld: "
-          "sql: %s\n",
-          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
-          sc->user ? sc->user : "system user",
-          sc->host_or_ip, dst_id,
-          tmp_query->c_ptr_safe());
-}
-
-/**
-  log spider send result to stderr with current time and function name
-  @param  src_id             source ID
-  @param  src_host           source host
-  @param  dst_id             destination ID
-  @param  tmp_query          the query content
-  @param  error_num          the query error number
-*/ 
-inline void log_spider_send_result_with_time(
-  ulong src_id,
-  const char* src_host,
-  ulong dst_id,
-  spider_string *tmp_query,
-  int error_num)
-{
-  ulong usec = 0;
-  time_t cur_time;
-  struct tm l_time;
-  cur_time = (time_t)time((time_t *)0);
-  localtime_r(&cur_time, &l_time);
-  usec = hrtime_sec_part(my_hrtime());
-
-  if (is_error_ignored_by_spider_log(error_num))
-    return;
-
-  fprintf(stderr,
-        "%04d%02d%02d %02d:%02d:%02d.%ld [SEND SPIDER SQL] "
-        "from %ld to [%s] %ld: "
-        "sql: %s\n",
-        l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-        l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
-        src_id, src_host,
-        dst_id, tmp_query->c_ptr_safe());
-}
-
-/**
-  warning with detailed information
-*/ 
-inline void log_spider_warn_result_detailed(const char *info,
-                                            const char *src_host,
-                                            ulong src_id,
-                                            ulong dst_id,
-                                            my_ulonglong affected_rows,
-                                            my_ulonglong insert_id,
-                                            unsigned int server_status,
-                                            unsigned int warning_count) {
-  ulong usec = 0;
-  time_t cur_time;
-  struct tm l_time;
-  cur_time = (time_t)time((time_t *)0);
-  localtime_r(&cur_time, &l_time);
-  usec = hrtime_sec_part(my_hrtime());
-  fprintf(stderr,
-          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
-          "from [%s] %ld to %ld:  "
-          "affected_rows: %llu  id: %llu  status: %u  warning_count: %u\n",
-          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
-          info, src_host, src_id, dst_id,
-          affected_rows, insert_id,
-          server_status, warning_count);
-}
-
-
-/**
-  log spider result to stderr with current time and function name
-  @param  info               information about the log, e.g. "[WARN SPIDER RESULT]"
-  @param  func_name          name of the caller
-*/ 
-inline void log_spider_result_with_row_info(const char *info, const char *func_name) {
-  ulong usec = 0;
-  time_t cur_time;
-  struct tm l_time;
-  cur_time = (time_t)time((time_t *)0);
-  localtime_r(&cur_time, &l_time);
-  usec = hrtime_sec_part(my_hrtime());
-  fprintf(stderr,
-          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
-          " from  %s\n",
-          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
-          info, func_name);
-}
-
-inline void log_spider_connect_host_failed(const char *host_name, long port_num, int error_num) {
-  if (is_error_ignored_by_spider_log(error_num)) return;
-  ulong usec = 0;
-  time_t cur_time;
-  struct tm l_time;
-  cur_time = (time_t)time((time_t *)0);
-  localtime_r(&cur_time, &l_time);
-  usec = hrtime_sec_part(my_hrtime());
-  fprintf(stderr,
-          "%04d%02d%02d %02d:%02d:%02d.%ld  [ERROR SPIDER RESULT] "
-          "failed to connect the hosts: %s, port: %ld, error_num:%d\n",
-          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
-          host_name, port_num, error_num);
-}
-
-inline void log_spider_error_with_info(const char *info, /* error or warn */
-                                       long long int src_id, int error_num, 
-                                       const char *error_info) {
-  if (is_error_ignored_by_spider_log(error_num)) return;
-  ulong usec = 0;
-  time_t cur_time;
-  struct tm l_time;
-  cur_time = (time_t)time((time_t *)0);
-  localtime_r(&cur_time, &l_time);
-  usec = hrtime_sec_part(my_hrtime());
-  fprintf(stderr,
-          "%04d%02d%02d %02d:%02d:%02d.%ld %s "
-          "to %lld: %d %s\n",
-          l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-          l_time.tm_hour, l_time.tm_min, l_time.tm_sec, usec,
-          info, src_id, error_num, error_info);
-}
+void log_spider_resultf(int level, const char *format, ...);
+void log_spider_receive_result(THD *thd, spider_db_conn *db_conn,
+                                         String *query_string);
+void log_spider_send_result(THD *thd, spider_db_conn *db_conn,
+                                      String *query_string);
+void log_spider_result_error_func(int level, const char *func_name);
+void log_spider_result_error(int level, THD *thd, spider_db_conn *db_conn);
+void log_spider_result_summary(int level, THD *thd, spider_db_conn *db_conn);

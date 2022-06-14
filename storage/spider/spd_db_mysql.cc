@@ -1003,9 +1003,8 @@ int spider_db_mysql_result::fetch_table_mon_status(int &status) {
   if (num_fields() != 1) {
     DBUG_PRINT("info", ("spider num_fields != 1"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
-    const char* info = "[WARN SPIDER RESULT]";
-    const char* func_name = "spider_db_mysql_result::fetch_table_mon_status";
-    log_spider_result_with_time(info, func_name);
+    log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                 __FUNCTION__);
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   if (mysql_row[0])
@@ -1117,9 +1116,8 @@ int spider_db_mysql_result::fetch_columns_for_discover_table_structure(
   if (num_fields() != 7) {
     DBUG_PRINT("info", ("spider num_fields != 7"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
-    const char* info = "[WARN SPIDER RESULT]";
-    const char* func_name = "spider_db_mysql_result::fetch_columns_for_discover_table_structure";
-    log_spider_result_with_time(info, func_name);
+    log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                 __FUNCTION__);
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   do {
@@ -1222,9 +1220,8 @@ int spider_db_mysql_result::fetch_index_for_discover_table_structure(
   if (num_fields() != 13) {
     DBUG_PRINT("info", ("spider num_fields != 13"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
-    const char* info = "[WARN SPIDER RESULT]";
-    const char* func_name = "spider_db_mysql_result::fetch_index_for_discover_table_structure";
-    log_spider_result_with_time(info, func_name);
+    log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                 __FUNCTION__);
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   bool first = TRUE;
@@ -1392,17 +1389,15 @@ int spider_db_mysql_result::fetch_table_for_discover_table_structure(
   if (num_fields() != 18) {
     DBUG_PRINT("info", ("spider num_fields != 18"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
-    const char* info = "[WARN SPIDER RESULT]";
-    const char* func_name = "spider_db_mysql_result::fetch_table_for_discover_table_structure";
-    log_spider_result_with_time(info, func_name);
+    log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                 __FUNCTION__);
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   if (!mysql_row[14]) {
     DBUG_PRINT("info", ("spider mysql_row[14] is null"));
     my_printf_error(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
-    const char* info = "[WARN SPIDER RESULT]";
-    const char* func_name = "spider_db_mysql_result::fetch_table_for_discover_table_structure";
-    log_spider_result_with_time(info, func_name);
+    log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                 __FUNCTION__);
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
   DBUG_PRINT("info", ("spider mysql_row[14]=%s", mysql_row[14]));
@@ -1621,7 +1616,11 @@ int spider_db_mysql::set_net_timeout() {
 int spider_db_mysql::exec_query(const char *query, uint length,
                                 int quick_mode) {
   int error_num = 0;
-  uint log_result_errors = spider_param_log_result_errors();
+  THD *thd = conn->thd;
+  DBUG_ASSERT(thd);
+  if (unlikely(!thd)) thd = current_thd;
+  uint log_result_errors = spider_param_log_result_errors(thd);
+
   DBUG_ENTER("spider_db_mysql::exec_query");
   DBUG_PRINT("info", ("spider this=%p", this));
   if (spider_param_general_log()) {
@@ -1681,45 +1680,33 @@ int spider_db_mysql::exec_query(const char *query, uint length,
     has_error = FALSE;
   }
 
-  if ((has_error && log_result_errors >= 1) ||
-      (log_result_errors >= 2 && db_conn->warning_count > 0) ||
-      (log_result_errors >= 4)) {
-    THD *thd = current_thd;
-    uint log_result_error_with_sql = spider_param_log_result_error_with_sql();
+  if ((has_error && log_result_errors >= SPIDER_LOG_RES_ERR_LVL_ERROR) ||
+      (log_result_errors >= SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY &&
+       db_conn->warning_count > 0) ||
+      (log_result_errors >= SPIDER_LOG_RES_ERR_LVL_INFO)) {
+    uint log_result_error_with_sql =
+        spider_param_log_result_error_with_sql(thd);
     if (log_result_error_with_sql) {
-      spider_string tmp_query_str;
-      tmp_query_str.init_calc_mem(243);
-      uint query_length = thd->query_length();
-      if ((log_result_error_with_sql & 2) && query_length) {
-        Security_context *security_ctx = thd->security_ctx;
-        tmp_query_str.length(0);
-        if (tmp_query_str.reserve(query_length + 1))
+      String query_string;
+      if (log_result_error_with_sql & SPIDER_LOG_RES_ERR_SQL_USER) {
+        if (query_string.copy(thd->query(), thd->query_length(),
+                              &my_charset_bin))
           DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-        tmp_query_str.q_append(thd->query(), query_length);
-        log_spider_receive_result_with_time(security_ctx, (ulong)thd->thread_id,
-                                            &tmp_query_str, mysql_errno(db_conn));
+        log_spider_receive_result(thd, this, &query_string);
       }
-      if (log_result_error_with_sql & 1) {
-        tmp_query_str.length(0);
-        if (tmp_query_str.reserve(length + 1)) DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-        tmp_query_str.q_append(query, length);
-        log_spider_send_result_with_time((ulong)thd->thread_id, conn->tgt_host,
-                                         (ulong)db_conn->thread_id, &tmp_query_str, mysql_errno(db_conn));
+      if (log_result_error_with_sql & SPIDER_LOG_RES_ERR_SQL_SPIDER) {
+        if (query_string.copy(query, length, &my_charset_bin))
+          DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+        log_spider_send_result(thd, this, &query_string);
       }
     }
-    if (log_result_errors >= 2 && db_conn->warning_count > 0) {
-      const char *info = "[WARN SPIDER RESULT]";
-      log_spider_warn_result_detailed(info, conn->tgt_host, (ulong)db_conn->thread_id,
-                                      (ulong)thd->thread_id, db_conn->affected_rows, 
-                                      db_conn->insert_id, db_conn->server_status, 
-                                      db_conn->warning_count);
-      if (spider_param_log_result_errors() >= 3) print_warnings();
-    } else if (log_result_errors >= 4) {
-      const char *info = "[INFO SPIDER RESULT]";
-      log_spider_warn_result_detailed(info, conn->tgt_host, (ulong)db_conn->thread_id,
-                                      (ulong)thd->thread_id, db_conn->affected_rows, 
-                                      db_conn->insert_id, db_conn->server_status, 
-                                      db_conn->warning_count);
+    if (log_result_errors >= SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY &&
+        db_conn->warning_count > 0) {
+      log_spider_result_summary(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY, thd, this);
+      if (log_result_errors >= SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL)
+        print_warnings();
+    } else if (log_result_errors >= SPIDER_LOG_RES_ERR_LVL_INFO) {
+      log_spider_result_summary(SPIDER_LOG_RES_ERR_LVL_INFO, thd, this);
     }
   }
   DBUG_RETURN(error_num);
@@ -1812,21 +1799,12 @@ void spider_db_mysql::print_warnings() {
           mysql_free_result(res);
           DBUG_VOID_RETURN;
         }
-        ulong usec = 0;
-        time_t cur_time;
-        struct tm l_time;
-        cur_time = (time_t)time((time_t *)0);
-        localtime_r(&cur_time, &l_time);
-        usec = hrtime_sec_part(my_hrtime());
         while (row) {
-          fprintf(stderr,
-                  "%04d%02d%02d %02d:%02d:%02d.%ld  [WARN SPIDER RESULT] "
-                  "from [%s] %ld to %ld: %s %s %s\n",
-                  l_time.tm_year + 1900, l_time.tm_mon + 1, l_time.tm_mday,
-                  l_time.tm_hour, l_time.tm_min, l_time.tm_sec,
-                  usec, conn->tgt_host,
-                  (ulong)db_conn->thread_id, (ulong)current_thd->thread_id,
-                  row[0], row[1], row[2]);
+          log_spider_resultf(SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL,
+                             "From [%s] %lu to %llu: %s (Code %s): %s",
+                             conn->tgt_host, (ulong)db_conn->thread_id,
+                             (ulonglong)conn->thd->thread_id, row[0], row[1],
+                             row[2]);
           row = mysql_fetch_row(res);
         }
         if (res) mysql_free_result(res);
@@ -1889,9 +1867,8 @@ int spider_db_mysql::next_result() {
   DBUG_PRINT("info", ("spider this=%p", this));
   if (!db_conn || db_conn->status != MYSQL_STATUS_READY) {
     my_message(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
-    const char* info = "[WARN SPIDER RESULT]";
-    const char* func_name = "spider_db_mysql::next_result";
-    log_spider_result_with_time(info, func_name);
+    log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                 __FUNCTION__);
     DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
   }
 
@@ -1913,7 +1890,7 @@ int spider_db_mysql::next_result() {
   DBUG_RETURN(-1);
 }
 
-uint spider_db_mysql::affected_rows() {
+ulonglong spider_db_mysql::affected_rows() {
   MYSQL *last_used_con;
   DBUG_ENTER("spider_db_mysql::affected_rows");
   DBUG_PRINT("info", ("spider this=%p", this));
@@ -1922,7 +1899,7 @@ uint spider_db_mysql::affected_rows() {
 #else
   last_used_con = db_conn;
 #endif
-  DBUG_RETURN((uint)last_used_con->affected_rows);
+  DBUG_RETURN(last_used_con->affected_rows);
 }
 
 uint spider_db_mysql::matched_rows() {

@@ -2558,39 +2558,38 @@ my_bool spider_param_ignore_autocommit() {
   DBUG_RETURN(spider_ignore_autocommit);
 }
 
-static uint spider_log_result_errors;
 /*
-  0: no log
-  1: log error
-  2: log warning summary
-  3: log warning
-  4: log info
+  0: no log               => SPIDER_LOG_RES_ERR_LVL_NONE
+  1: log error            => SPIDER_LOG_RES_ERR_LVL_ERROR
+  2: log warning summary  => SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY
+  3: log warning          => SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL
+  4: log info             => SPIDER_LOG_RES_ERR_LVL_INFO
  */
-static MYSQL_SYSVAR_UINT(log_result_errors, spider_log_result_errors,
+static MYSQL_THDVAR_UINT(log_result_errors,
                          PLUGIN_VAR_RQCMDARG,
                          "Log error from remote server in error log", NULL,
                          NULL, 1, 0, 4, 0);
 
-uint spider_param_log_result_errors() {
+uint spider_param_log_result_errors(THD *thd) {
   DBUG_ENTER("spider_param_log_result_errors");
-  DBUG_RETURN(spider_log_result_errors);
+  DBUG_RETURN(THDVAR(thd, log_result_errors));
 }
 
-static uint spider_log_result_error_with_sql;
 /*
   0: no log
-  1: log spider sql at logging result errors
-  2: log user sql at logging result errors
+  1: log spider sql at logging result errors  => SPIDER_LOG_RES_ERR_SQL_SPIDER
+  2: log user sql at logging result errors    => SPIDER_LOG_RES_ERR_SQL_USER
   3: log both sql at logging result errors
+              => (SPIDER_LOG_RES_ERR_SQL_SPIDER | SPIDER_LOG_RES_ERR_SQL_USER)
  */
-static MYSQL_SYSVAR_UINT(log_result_error_with_sql,
-                         spider_log_result_error_with_sql, PLUGIN_VAR_RQCMDARG,
+static MYSQL_THDVAR_UINT(log_result_error_with_sql,
+                         PLUGIN_VAR_RQCMDARG,
                          "Log sql at logging result errors", NULL, NULL, 3, 0,
                          3, 0);
 
-uint spider_param_log_result_error_with_sql() {
+uint spider_param_log_result_error_with_sql(THD *thd) {
   DBUG_ENTER("spider_param_log_result_error_with_sql");
-  DBUG_RETURN(spider_log_result_error_with_sql);
+  DBUG_RETURN(THDVAR(thd, log_result_error_with_sql));
 }
 
 static char *spider_version = (char *)SPIDER_DETAIL_VERSION;
