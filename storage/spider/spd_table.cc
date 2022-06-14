@@ -7266,9 +7266,8 @@ int spider_discover_table_structure(handlerton *hton, THD *thd,
       }
     }
     if (part_info->fix_parser_data(thd)) {
-      const char* info = "[WARN SPIDER RESULT]";
-      const char* log_func_name = "spider_discover_table_structure";
-      log_spider_result_with_time(info, log_func_name);
+      log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                   __FUNCTION__);
       DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
     }
     if (!(part_syntax = SPIDER_generate_partition_syntax(

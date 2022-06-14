@@ -636,7 +636,7 @@ class spider_db_conn {
   virtual spider_db_result *use_result(st_spider_db_request_key *request_key,
                                        int *error_num) = 0;
   virtual int next_result() = 0;
-  virtual uint affected_rows() = 0;
+  virtual ulonglong affected_rows() = 0;
   virtual uint matched_rows() = 0;
   virtual ulonglong last_insert_id() = 0;
   virtual int set_character_set(const char *csname) = 0;
@@ -681,6 +681,9 @@ class spider_db_conn {
   virtual bool cmp_request_key_to_snd(
       st_spider_db_request_key *request_key) = 0;
   virtual ulong thread_id() const = 0;
+  virtual SPIDER_CONN *get_conn() const = 0;
+  virtual uint server_status() const = 0;
+  virtual uint warning_count() const = 0;
 };
 
 class spider_db_share {

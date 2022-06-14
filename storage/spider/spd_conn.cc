@@ -4243,33 +4243,26 @@ static void *spider_get_status_action(void *arg) {
                     mean_rec_length, check_time, create_time, update_time);
 
               } else {
-                fprintf(stderr,
-                        "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-                        "record = %lu, i = %lu, tb_name = %s,  failed to fetch "
-                        "row\n",
-                        l_time->tm_year + 1900, l_time->tm_mon + 1,
-                        l_time->tm_mday, l_time->tm_hour, l_time->tm_min,
-                        l_time->tm_sec, usec, share_records, i, db_tb);
+                /* TODO: remove these debug logs if sure they are useless */
+                log_spider_resultf(
+                    SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                    "record = %lu, i = %lu, tb_name = %s, failed to fetch row",
+                    share_records, i, db_tb);
               }
               mysql_free_result(res);
             }
           } else {
-            fprintf(stderr,
-                    "%04d%02d%02d %02d:%02d:%02d.%ld  [WARN SPIDER RESULT] "
-                    "record = %lu, i = %lu, tb_name = %s,  failed to do real "
-                    "query\n",
-                    l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-                    l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-                    share_records, i, db_tb);
+            log_spider_resultf(
+                SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                "record = %lu, i = %lu, tb_name = %s, failed to do real query",
+                share_records, i, db_tb);
             my_hash_delete(&spider_for_sts_conns, (uchar *)sts_conn);
           }
         } else {
-          fprintf(stderr,
-                  "%04d%02d%02d %02d:%02d:%02d.%ld [WARN SPIDER RESULT] "
-                  "record = %lu, i = %lu,  tb_name = %s, failed to get conn\n",
-                  l_time->tm_year + 1900, l_time->tm_mon + 1, l_time->tm_mday,
-                  l_time->tm_hour, l_time->tm_min, l_time->tm_sec, usec,
-                  share_records, i, db_tb);
+          log_spider_resultf(
+              SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+              "record = %lu, i = %lu, tb_name = %s, failed to get conn",
+              share_records, i, db_tb);
           if (sts_conn)
             my_hash_delete(&spider_for_sts_conns, (uchar *)sts_conn);
         }

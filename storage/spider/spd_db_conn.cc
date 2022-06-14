@@ -77,6 +77,9 @@ extern SPIDER_DBTON spider_dbton[SPIDER_DBTON_SIZE];
 pthread_mutex_t spider_open_conn_mutex;
 const char spider_dig_upper[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+static void spider_log_get_time_to_str(char *buff, size_t size);
+static const char *spider_log_get_header_by_level(int level);
+
 int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
                       int link_idx) {
   int error_num, connect_retry_count;
@@ -164,8 +167,10 @@ int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
       if ((conn->connect_error_with_message = thd->is_error()))
         strmov(conn->connect_error_msg, spider_stmt_da_message(thd));
     }
-    log_spider_connect_host_failed(share->tgt_hosts[link_idx], 
-                                   share->tgt_ports[link_idx], error_num);
+    log_spider_resultf(
+        SPIDER_LOG_RES_ERR_LVL_ERROR,
+        "Failed to connect to host: %s, port: %ld, error_num: %d",
+        share->tgt_hosts[link_idx], share->tgt_ports[link_idx], error_num);
     DBUG_RETURN(error_num);
   }
   conn->connect_error = 0;
@@ -589,10 +594,10 @@ int spider_db_errorno(SPIDER_CONN *conn) {
                spider_param_force_commit(current_thd) == 1) {
       push_warning(current_thd, SPIDER_WARN_LEVEL_WARN, error_num,
                    conn->db_conn->get_error());
-      if (spider_param_log_result_errors() >= 3) {
-        const char *info = "[WARN SPIDER RESULT]";
-        log_spider_error_with_info(info, (long long int)current_thd->thread_id, 
-                                   error_num, conn->db_conn->get_error());
+      if (spider_param_log_result_errors(conn->thd) >=
+          SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL) {
+        log_spider_result_error(SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL, conn->thd,
+                                conn->db_conn);
       }
       if (!conn->mta_conn_mutex_unlock_later) {
         spider_mta_conn_mutex_unlock(conn);
@@ -608,10 +613,10 @@ int spider_db_errorno(SPIDER_CONN *conn) {
     }
     *conn->need_mon = error_num;
     my_message(error_num, conn->db_conn->get_error(), MYF(0));
-    if (spider_param_log_result_errors() >= 1) {
-      const char *info = "[ERROR SPIDER RESULT]";
-      log_spider_error_with_info(info, (long long int)current_thd->thread_id, 
-                                 error_num, conn->db_conn->get_error());
+    if (spider_param_log_result_errors(conn->thd) >=
+        SPIDER_LOG_RES_ERR_LVL_ERROR) {
+      log_spider_result_error(SPIDER_LOG_RES_ERR_LVL_ERROR, conn->thd,
+                              conn->db_conn);
     }
     if (!conn->mta_conn_mutex_unlock_later) {
       spider_mta_conn_mutex_unlock(conn);
@@ -1948,9 +1953,8 @@ int spider_db_fetch_for_item_sum_func(SPIDER_DB_ROW *row, Item_sum *item_sum,
       if (!row->is_null())
         item_sum_count->direct_add(row->val_int());
       else {
-        const char* info = "[WARN SPIDER RESULT]";
-        const char* func_name = "spider_db_fetch_for_item_sum_func";
-        log_spider_result_with_time(info, func_name);
+        log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                     __FUNCTION__);
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       row->next();
@@ -2082,9 +2086,8 @@ int spider_db_append_match_fetch(ha_spider *spider, st_spider_ft_info *ft_first,
       if (!row->is_null())
         ft_info->score = (float)row->val_real();
       else {
-        const char* info = "[WARN SPIDER RESULT]";
-        const char* func_name = "spider_db_append_match_fetch";
-        log_spider_result_with_time(info, func_name);
+        log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                     __FUNCTION__);
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       row->next();
@@ -2253,9 +2256,8 @@ int spider_db_fetch_table(ha_spider *spider, uchar *buf, TABLE *table,
       }
 #endif
       else {
-        const char* info = "[WARN SPIDER RESULT]";
-        const char* func_name = "spider_db_fetch_table";
-        log_spider_result_with_time(info, func_name);
+        log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                     __FUNCTION__);
         DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
       }
       row->next();
@@ -2353,9 +2355,8 @@ int spider_db_fetch_key(ha_spider *spider, uchar *buf, TABLE *table,
     }
 #endif
     else {
-      const char* info = "[WARN SPIDER RESULT]";
-      const char* func_name = "spider_db_fetch_key";
-      log_spider_result_with_time(info, func_name);
+      log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                   __FUNCTION__);
       DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
     }
     row->next();
@@ -2450,9 +2451,8 @@ int spider_db_fetch_minimum_columns(ha_spider *spider, uchar *buf, TABLE *table,
     }
 #endif
     else {
-      const char* info = "[WARN SPIDER RESULT]";
-      const char* func_name = "spider_db_fetch_minimum_columns";
-      log_spider_result_with_time(info, func_name);
+      log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
+                                   __FUNCTION__);
       DBUG_RETURN(ER_SPIDER_UNKNOWN_NUM);
     }
     row->next();
@@ -8285,4 +8285,170 @@ uint spider_db_check_invalid_charset(Item *item, ha_spider *spider) {
       !my_charset_same(ics, &my_charset_bin))
     return ER_SPIDER_COND_SKIP_NUM;
   return 0;
+}
+
+static bool is_error_ignored_by_spider_log(int err_number) {
+  switch (err_number) {
+    case 1062:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_DUPLICATE) return true;
+    case 12701:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_GONE_AWAWY) return true;
+    case 12723:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_TOO_MANY_CONN) return true;
+    case 1477:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_NO_REMOTE_EXIST) return true;
+    case 1429:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_CONN_REMOTE) return true;
+    case 1067:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_INVALID_DEFAULT) return true;
+    case 1292:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_INVALID_DATE) return true;
+    case 1366:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_TRUNCATE_VALUE) return true;
+    case 1411:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_BAD_TYPE_VALUE) return true;
+    case 1159:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_NET_TIMEOUT) return true;
+    case 2014:
+      if (opt_spider_log_ignore_err_nums & SPD_ERR_COM_OUT_OF_SYNC) return true;
+    default:
+      /* empty */
+      break;
+  }
+  return false;
+}
+
+static void spider_log_get_time_to_str(char *buff, size_t size) {
+  struct tm tmp_time;
+  my_hrtime_t now = my_hrtime();
+  time_t now_t = hrtime_to_time(now);
+  localtime_r(&now_t, &tmp_time);
+
+  my_snprintf(buff, size, "%04d-%02d-%02d %02d:%02d:%02d.%06ld",
+              tmp_time.tm_year + 1900, tmp_time.tm_mon + 1, tmp_time.tm_mday,
+              tmp_time.tm_hour, tmp_time.tm_min, tmp_time.tm_sec,
+              hrtime_sec_part(now));
+}
+
+static const char *spider_log_get_header_by_level(int level) {
+  switch (level) {
+    case SPIDER_LOG_RES_ERR_LVL_ERROR:          return "[ERROR SPIDER RESULT]";
+    case SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY:
+    case SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL:    return "[WARN SPIDER RESULT]";
+    case SPIDER_LOG_RES_ERR_LVL_INFO:           return "[INFO SPIDER RESULT]";
+    default:                                    return "[SPIDER RESULT]";
+  }
+}
+
+/**
+  Log custom message result to stderr with current time.
+  @param level              log result level
+  @param format             format string
+  @param ...                variable list matching the format string
+ */
+void log_spider_resultf(int level, const char *format, ...) {
+  va_list args;
+  size_t length;
+  const char *header; /* log header indicating log level */
+  char buff[SPIDER_LOG_RES_ERR_MSG_BUF_SIZE];      /* buff for message */
+  char time_str[SPIDER_LOG_RES_ERR_TIME_STR_SIZE]; /* buff for log time */
+
+  va_start(args, format);
+  header = spider_log_get_header_by_level(level);
+  spider_log_get_time_to_str(time_str, sizeof(time_str));
+  length = my_vsnprintf(buff, sizeof(buff), format, args);
+
+  fprintf(stderr, "%s %s %.*s\n", time_str, header, (int)length, buff);
+  va_end(args);
+}
+
+/**
+  Log spider receive result, including query from user.
+  @param  thd                thread handle of current session
+  @param  db_conn            remote connection handle
+  @param  query_string       query received from user in current session
+*/
+void log_spider_receive_result(THD *thd, spider_db_conn *db_conn,
+                                         String *query_string) {
+  if (is_error_ignored_by_spider_log(db_conn->get_errno())) return;
+
+  const char *header = "[RECV SPIDER SQL]";
+  char time_str[SPIDER_LOG_RES_ERR_TIME_STR_SIZE];
+  spider_log_get_time_to_str(time_str, sizeof(time_str));
+  Security_context *sc = thd->security_ctx;
+
+  /*
+    We want the full query_string to be printed, so we call fprintf() directly
+    instead of calling log_spider_resultf().
+  */
+  fprintf(stderr, "%s %s From [%s][%s] to %llu: sql: %s\n", time_str, header,
+          (sc->user ? sc->user : "system user"), sc->host_or_ip, thd->thread_id,
+          query_string->ptr());
+}
+
+/**
+  Log spider send result, including query sent to remote.
+  @param  thd                thread handle of current session
+  @param  db_conn            remote connection handle
+  @param  query_string       query sent to current remote connection
+*/
+void log_spider_send_result(THD *thd, spider_db_conn *db_conn,
+                                      String *query_string) {
+  if (is_error_ignored_by_spider_log(db_conn->get_errno())) return;
+
+  const char *header = "[SEND SPIDER SQL]";
+  char time_str[SPIDER_LOG_RES_ERR_TIME_STR_SIZE];
+  spider_log_get_time_to_str(time_str, sizeof(time_str));
+
+  /*
+    We want the full query_string to be printed, so we call fprintf() directly
+    instead of calling log_spider_resultf().
+  */
+  fprintf(stderr, "%s %s From %llu to [%s] %ld: sql: %s\n", time_str, header,
+          (ulonglong)thd->thread_id, db_conn->get_conn()->tgt_host,
+          (ulong)db_conn->thread_id(), query_string->ptr());
+}
+
+/**
+  Log unknown error with name of caller function.
+  @param  level              log result level
+  @param  func_name          name of the caller
+*/
+void log_spider_result_error_func(int level, const char *func_name) {
+  log_spider_resultf(level, "An unexpected error occurred in %s", func_name);
+}
+
+/**
+  Log spider error result.
+  @param  level              log result level (sometimes we regard certain
+                             errors as warnings)
+  @param  thd                thread handle of current session
+  @param  db_conn            remote connection handle
+*/
+void log_spider_result_error(int level, THD *thd, spider_db_conn *db_conn) {
+  if (is_error_ignored_by_spider_log(db_conn->get_errno())) return;
+
+  log_spider_resultf(level, "From [%s] %lu to %llu: Error (Code %d): %s",
+                     db_conn->get_conn()->tgt_host, (ulong)db_conn->thread_id(),
+                     (ulonglong)thd->thread_id, db_conn->get_errno(),
+                     db_conn->get_error());
+}
+
+/**
+  Log spider result summary.
+  @param  level              log result level
+  @param  thd                thread handle of current session
+  @param  db_conn            remote connection handle
+*/
+void log_spider_result_summary(int level, THD *thd, spider_db_conn *db_conn) {
+  ulonglong affected_rows = db_conn->affected_rows();
+  if (affected_rows == (ulonglong)-1) affected_rows = 0;
+
+  log_spider_resultf(level,
+                     "From [%s] %lu to %llu: affected_rows: %llu, "
+                     "insert_id: %llu, status: %u, warning_count: %u",
+                     db_conn->get_conn()->tgt_host, db_conn->thread_id(),
+                     (ulonglong)thd->thread_id, affected_rows,
+                     db_conn->last_insert_id(), db_conn->server_status(),
+                     db_conn->warning_count());
 }
