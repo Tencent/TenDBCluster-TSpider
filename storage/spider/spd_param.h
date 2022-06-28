@@ -155,3 +155,5 @@ uint spider_param_table_sts_thread_count();
 uint spider_param_table_crd_thread_count();
 bool spider_param_trans_rollback(THD *thd);
 bool spider_param_string_key_equal_to_like(THD *thd);
+uint spider_param_active_conns_view_info_length();
+my_bool spider_param_enable_active_conns_view();

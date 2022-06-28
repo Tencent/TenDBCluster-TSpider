@@ -250,6 +250,7 @@ class spider_db_mysql : public spider_db_conn {
   SPIDER_CONN *get_conn() const { return conn; }
   uint server_status() const { return (db_conn ? db_conn->server_status : 0); }
   uint warning_count() const { return (db_conn ? db_conn->warning_count : 0); }
+  const char *get_db() const;
 };
 
 class spider_mysql_share : public spider_db_share {

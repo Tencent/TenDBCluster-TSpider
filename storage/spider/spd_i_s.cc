@@ -30,6 +30,7 @@
 #include "spd_db_include.h"
 #include "spd_include.h"
 #include "spd_table.h"
+#include "spd_param.h"
 
 extern pthread_mutex_t spider_mem_calc_mutex;
 
@@ -48,6 +49,9 @@ extern void spider_free_conn_meta(void *);
 extern int spider_param_conn_meta_max_invalid_duration();
 
 extern Time_zone *spd_tz_system;
+
+extern mysql_mutex_t spider_active_conns_mutex;
+extern HASH spider_active_conns;
 
 static struct st_mysql_storage_engine spider_i_s_info = {
     MYSQL_INFORMATION_SCHEMA_INTERFACE_VERSION};
@@ -89,6 +93,24 @@ static ST_FIELD_INFO spider_i_s_conn_pool_info[] = {
     {"STATUS", 16, MYSQL_TYPE_STRING, 0, MY_I_S_MAYBE_NULL, "status",
      SKIP_OPEN_TABLE},
     {NULL, 0, MYSQL_TYPE_STRING, 0, 0, NULL, 0}};
+
+static ST_FIELD_INFO spider_i_s_active_conns_fields_info[] = {
+    {"CONN_ID", 4, MYSQL_TYPE_LONGLONG, 0, 0, "Conn_id", SKIP_OPEN_TABLE},
+    {"THD_ID", 4, MYSQL_TYPE_LONGLONG, 0, MY_I_S_MAYBE_NULL, "Thd_id",
+     SKIP_OPEN_TABLE},
+    {"REMOTE_THD_ID", 4, MYSQL_TYPE_LONGLONG, 0, MY_I_S_MAYBE_NULL, "Remote_thd_id",
+     SKIP_OPEN_TABLE},
+    {"HOST", HOSTNAME_LENGTH, MYSQL_TYPE_STRING, 0, 0, "Host", SKIP_OPEN_TABLE},
+    {"PORT", 4, MYSQL_TYPE_LONG, 0, 0, "Port", SKIP_OPEN_TABLE},
+    {"DB", NAME_CHAR_LEN, MYSQL_TYPE_STRING, 0, MY_I_S_MAYBE_NULL, "Db",
+     SKIP_OPEN_TABLE},
+    {"COMMAND", 16, MYSQL_TYPE_STRING, 0, 0, "Command", SKIP_OPEN_TABLE},
+    {"TIME", 7, MYSQL_TYPE_LONG, 0, 0, "Time", SKIP_OPEN_TABLE},
+    {"STATE", 64, MYSQL_TYPE_STRING, 0, MY_I_S_MAYBE_NULL, "State",
+     SKIP_OPEN_TABLE},
+    {"INFO", PROCESS_LIST_INFO_WIDTH, MYSQL_TYPE_STRING, 0, MY_I_S_MAYBE_NULL,
+     "Info", SKIP_OPEN_TABLE},
+};
 
 static int spider_i_s_alloc_mem_fill_table(THD *thd, TABLE_LIST *tables,
                                            COND *cond) {
@@ -269,6 +291,105 @@ static int spider_i_s_conn_pool_fill_table(THD *thd, TABLE_LIST *tables,
   DBUG_RETURN(0);
 }
 
+static const char *spider_conn_get_command_name(SPIDER_CONN *conn) {
+  switch (conn->m_command) {
+    case SPD_COM_SLEEP:       return "Sleep";
+    case SPD_COM_FREE:        return "Free";
+    case SPD_COM_DISCONNECT:  return "Disconnect";
+    case SPD_COM_KILLED:      return "Killed";
+    case SPD_COM_CONNECT:     return "Connect";
+    case SPD_COM_QUERY:       return "Query";
+    case SPD_COM_END:
+    default:                  return "Unknown";
+  }
+}
+
+static int spider_i_s_active_conns_fill_table(THD *thd, TABLE_LIST *tables,
+                                              COND *cond) {
+  DBUG_ENTER("spider_i_s_active_conns_fill_table");
+  if (!spider_param_enable_active_conns_view()) DBUG_RETURN(0);
+
+  bool got_status_lock;
+  SPIDER_CONN *conn;
+  const char *db, *command_name;
+  bool enable_info = spider_param_active_conns_view_info_length();
+  TABLE *table = tables->table;
+  CHARSET_INFO *cs = system_charset_info;
+  ulonglong utime, unow = microsecond_interval_timer();
+
+  if (!thd->killed) {
+    mysql_mutex_lock(&spider_active_conns_mutex);
+    for (uint i = 0; i < spider_active_conns.records; i++) {
+      conn = (SPIDER_CONN *)my_hash_element(&spider_active_conns, i);
+
+      /* restore_record */
+      memcpy(table->record[0], table->s->default_values,
+             (size_t)table->s->reclength);
+      /* Conn ID */
+      table->field[0]->store((longlong)conn->conn_id, TRUE);
+
+      for (int j = 0; j < 100; j++) {
+        /*
+          Use try-lock here to avoid hanging. The loop is short because status
+          mutex should never be locked for a long time.
+        */
+        if ((got_status_lock = !mysql_mutex_trylock(&conn->m_status_mutex)))
+          break;
+        LF_BACKOFF();
+      }
+      if (got_status_lock) {
+        /* Conn owner thread ID */
+        if (conn->thd) {
+          table->field[1]->store((longlong)conn->thd->thread_id, TRUE);
+          table->field[1]->set_notnull();
+        }
+        if (conn->db_conn) {
+          /* Thread ID of remote connection */
+          table->field[2]->store((longlong)conn->db_conn->thread_id(), TRUE);
+          table->field[2]->set_notnull();
+          /* DB */
+          if ((db = conn->db_conn->get_db())) {
+            table->field[5]->store(db, strlen(db), cs);
+            table->field[5]->set_notnull();
+          }
+        }
+        /* State */
+        if (conn->m_state) {
+          table->field[8]->store(conn->m_state, strlen(conn->m_state), cs);
+          table->field[8]->set_notnull();
+        }
+        /* Info */
+        if (enable_info && conn->m_command == SPD_COM_QUERY &&
+            conn->m_last_query.length()) {
+          table->field[9]->store(conn->m_last_query.ptr(),
+                                 conn->m_last_query.length(), &my_charset_bin);
+          table->field[9]->set_notnull();
+        }
+        mysql_mutex_unlock(&conn->m_status_mutex);
+      }
+
+      /* Host */
+      table->field[3]->store(conn->tgt_host, conn->tgt_host_length, cs);
+      /* Port */
+      table->field[4]->store((longlong)conn->tgt_port, TRUE);
+      /* Command */
+      command_name = spider_conn_get_command_name(conn);
+      table->field[6]->store(command_name, strlen(command_name), cs);
+      /* Time */
+      utime = conn->m_start_utime;
+      utime = (utime && utime < unow) ? (unow - utime) : 0;
+      table->field[7]->store(utime / HRTIME_RESOLUTION, TRUE);
+
+      if (schema_table_store_record(thd, table)) {
+        mysql_mutex_unlock(&spider_active_conns_mutex);
+        DBUG_RETURN(1);
+      }
+    }
+    mysql_mutex_unlock(&spider_active_conns_mutex);
+  }
+  DBUG_RETURN(0);
+}
+
 static int spider_i_s_alloc_mem_init(void *p) {
   ST_SCHEMA_TABLE *schema = (ST_SCHEMA_TABLE *)p;
   DBUG_ENTER("spider_i_s_alloc_mem_init");
@@ -287,6 +408,15 @@ static int spider_i_s_conn_pool_init(void *p) {
   DBUG_RETURN(0);
 }
 
+static int spider_i_s_active_conns_init(void *p) {
+  ST_SCHEMA_TABLE *schema = (ST_SCHEMA_TABLE *)p;
+  DBUG_ENTER("spider_i_s_conn_pool_init");
+  schema->fields_info = spider_i_s_active_conns_fields_info;
+  schema->fill_table = spider_i_s_active_conns_fill_table;
+  schema->idx_field1 = 0;
+  DBUG_RETURN(0);
+}
+
 static int spider_i_s_alloc_mem_deinit(void *p) {
   DBUG_ENTER("spider_i_s_alloc_mem_deinit");
   DBUG_RETURN(0);
@@ -294,6 +424,11 @@ static int spider_i_s_alloc_mem_deinit(void *p) {
 
 static int spider_i_s_conn_pool_deinit(void *p) {
   DBUG_ENTER("spider_i_s_conn_pool_deinit");
+  DBUG_RETURN(0);
+}
+
+static int spider_i_s_active_conns_deinit(void *p) {
+  DBUG_ENTER("spider_i_s_active_conns_deinit");
   DBUG_RETURN(0);
 }
 
@@ -333,6 +468,24 @@ struct st_mysql_plugin spider_i_s_conns = {
 #endif
 };
 
+struct st_mysql_plugin spider_i_s_active_conns = {
+    MYSQL_INFORMATION_SCHEMA_PLUGIN,
+    &spider_i_s_info,
+    "SPIDER_ACTIVE_CONNS",
+    "Daniel Ye",
+    "Display for active backend connections' status",
+    PLUGIN_LICENSE_GPL,
+    spider_i_s_active_conns_init,
+    spider_i_s_active_conns_deinit,
+    0x0001,
+    NULL,
+    NULL,
+    NULL,
+#if MYSQL_VERSION_ID >= 50600
+    0,
+#endif
+};
+
 #ifdef MARIADB_BASE_VERSION
 struct st_maria_plugin spider_i_s_alloc_mem_maria = {
     MYSQL_INFORMATION_SCHEMA_PLUGIN,
@@ -363,5 +516,21 @@ struct st_maria_plugin spider_i_s_conns_maria = {
     NULL,
     "1.0",
     MariaDB_PLUGIN_MATURITY_GAMMA,
+};
+
+struct st_maria_plugin spider_i_s_active_conns_maria = {
+    MYSQL_INFORMATION_SCHEMA_PLUGIN,
+    &spider_i_s_info,
+    "SPIDER_ACTIVE_CONNS",
+    "Daniel Ye",
+    "Display for active backend connections' status",
+    PLUGIN_LICENSE_GPL,
+    spider_i_s_active_conns_init,
+    spider_i_s_active_conns_deinit,
+    0x0001,
+    NULL,
+    NULL,
+    "1.0",
+    MariaDB_PLUGIN_MATURITY_EXPERIMENTAL,
 };
 #endif

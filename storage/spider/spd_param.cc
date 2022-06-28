@@ -36,9 +36,11 @@
 
 extern struct st_mysql_plugin spider_i_s_alloc_mem;
 extern struct st_mysql_plugin spider_i_s_conns;
+extern struct st_mysql_plugin spider_i_s_active_conns;
 #ifdef MARIADB_BASE_VERSION
 extern struct st_maria_plugin spider_i_s_alloc_mem_maria;
 extern struct st_maria_plugin spider_i_s_conns_maria;
+extern struct st_maria_plugin spider_i_s_active_conns_maria;
 #endif
 
 extern volatile ulonglong spider_mon_table_cache_version;
@@ -2811,6 +2813,32 @@ bool spider_param_string_key_equal_to_like(THD *thd) {
     DBUG_RETURN(THDVAR(thd, string_key_equal_to_like));
 }
 
+static uint spider_active_conns_view_info_length = 128;
+/*
+  0: Don't fill INFO field
+  1-: Max length of INFO field
+*/
+static MYSQL_SYSVAR_UINT(
+    active_conns_view_info_length, spider_active_conns_view_info_length,
+    PLUGIN_VAR_RQCMDARG,
+    "Max length of INFO field in SPIDER_ACTIVE_CONNS table.", NULL, NULL, 128,
+    0, UINT_MAX32, 0);
+uint spider_param_active_conns_view_info_length() {
+  DBUG_ENTER("spider_param_active_conns_view_info_length");
+  DBUG_RETURN(spider_active_conns_view_info_length);
+}
+
+static my_bool spider_enable_active_conns_view = TRUE;
+static MYSQL_SYSVAR_BOOL(enable_active_conns_view,
+                         spider_enable_active_conns_view,
+                         PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_READONLY,
+                         "Enable INFORMATION_SCHEMA.SPIDER_ACTIVE_CONNS table.",
+                         NULL, NULL, TRUE);
+my_bool spider_param_enable_active_conns_view() {
+  DBUG_ENTER("spider_param_enable_active_conns_view");
+  DBUG_RETURN(spider_enable_active_conns_view);
+}
+
 static struct st_mysql_storage_engine spider_storage_engine = {
     MYSQL_HANDLERTON_INTERFACE_VERSION};
 
@@ -2954,6 +2982,8 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(idle_conn_recycle_interval),
     MYSQL_SYSVAR(conn_meta_max_invalid_duration),
     MYSQL_SYSVAR(string_key_equal_to_like),
+    MYSQL_SYSVAR(active_conns_view_info_length),
+    MYSQL_SYSVAR(enable_active_conns_view),
     NULL};
 
 mysql_declare_plugin(spider) {
@@ -2965,7 +2995,7 @@ mysql_declare_plugin(spider) {
       0,
 #endif
 }
-, spider_i_s_alloc_mem, spider_i_s_conns mysql_declare_plugin_end;
+, spider_i_s_alloc_mem, spider_i_s_conns, spider_i_s_active_conns mysql_declare_plugin_end;
 
 #ifdef MARIADB_BASE_VERSION
 maria_declare_plugin(spider){MYSQL_STORAGE_ENGINE_PLUGIN,
@@ -2981,5 +3011,5 @@ maria_declare_plugin(spider){MYSQL_STORAGE_ENGINE_PLUGIN,
                              spider_system_variables,
                              SPIDER_DETAIL_VERSION,
                              MariaDB_PLUGIN_MATURITY_STABLE},
-    spider_i_s_alloc_mem_maria, spider_i_s_conns_maria maria_declare_plugin_end;
+    spider_i_s_alloc_mem_maria, spider_i_s_conns_maria, spider_i_s_active_conns_maria maria_declare_plugin_end;
 #endif
