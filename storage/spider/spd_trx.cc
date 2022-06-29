@@ -1064,6 +1064,9 @@ SPIDER_TRX *spider_get_trx(THD *thd, bool regist_allocated_thds,
         pthread_mutex_unlock(&spider_allocated_thds_mutex);
         trx->registed_allocated_thds = TRUE;
       }
+
+      trx->dry_run_src_logged = FALSE;
+
       thd_set_ha_data(thd, spider_hton_ptr, trx);
     }
   }
@@ -3048,6 +3051,7 @@ int spider_end_trx(SPIDER_TRX *trx, SPIDER_CONN *conn) {
   }
   conn->semi_trx_isolation = -2;
   conn->semi_trx_isolation_chk = FALSE;
+  trx->dry_run_src_logged = FALSE;
   DBUG_RETURN(error_num);
 }
 

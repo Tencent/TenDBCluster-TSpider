@@ -1572,6 +1572,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  SONAME_SYM
 %token  <kwd>  SOUNDS_SYM
 %token  <kwd>  SOURCE_SYM
+%token  <kwd>  SPIDER_DRY_RUN_SYM
 %token  <kwd>  SQL_BUFFER_RESULT
 %token  <kwd>  SQL_CACHE_SYM
 %token  <kwd>  SQL_CALC_FOUND_ROWS
@@ -9352,6 +9353,13 @@ select_option:
              Lex->spider_rone_shard_flag = TRUE;
           }
          }
+        | SPIDER_DRY_RUN_SYM
+          {
+            if (unlikely(Lex->current_select != &Lex->select_lex))
+              my_yyabort_error((ER_CANT_USE_OPTION_HERE, MYF(0), "SPIDER_DRY_RUN"));
+
+            Lex->select_lex.options|= OPTION_SPIDER_DRY_RUN;
+          }
         ;
 
 opt_select_lock_type:

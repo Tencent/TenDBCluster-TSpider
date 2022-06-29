@@ -592,6 +592,9 @@ typedef struct st_spider_conn {
   /* Protect status-related members */
   mysql_mutex_t m_status_mutex;
   ulonglong m_start_utime; /* status timer */
+
+  /* Conn is created/used for dry-run */
+  bool dry_run;
 } SPIDER_CONN;
 
 typedef struct st_spider_lgtm_tblhnd_share {
@@ -751,6 +754,9 @@ typedef struct st_spider_transaction {
   ha_spider *tmp_spider;
   int tmp_need_mon;
   spider_db_handler *tmp_dbton_handler[SPIDER_DBTON_SIZE];
+
+  /* Indicates if source query of current dry-run is logged */
+  bool dry_run_src_logged;
 } SPIDER_TRX;
 
 typedef struct st_spider_share {

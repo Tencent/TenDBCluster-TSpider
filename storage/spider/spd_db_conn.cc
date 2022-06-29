@@ -158,8 +158,8 @@ int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
            (char *)server->host, (char *)server->username,
            (char *)server->password, server->port, (char *)server->socket,
            (char *)share->server_names[link_idx], connect_retry_count,
-           connect_retry_interval))) {
-
+           connect_retry_interval)) &&
+      error_num != ER_SPIDER_DRY_NUM) {
     if (conn->thd) {
       conn->connect_error_thd = conn->thd;
       conn->connect_error_query_id = conn->thd->query_id;
@@ -179,7 +179,7 @@ int spider_db_connect(const SPIDER_SHARE *share, SPIDER_CONN *conn,
   conn->db_conn->reset_opened_handler();
   ++conn->connection_id;
   free_root(&mem_root, MYF(0));
-  DBUG_RETURN(0);
+  DBUG_RETURN(error_num); /* Either 0 or ER_SPIDER_DRY_NUM */
 }
 
 int spider_db_ping_internal(SPIDER_SHARE *share, SPIDER_CONN *conn,
@@ -201,7 +201,7 @@ int spider_db_ping_internal(SPIDER_SHARE *share, SPIDER_CONN *conn,
     conn->server_lost = FALSE;
     conn->queued_connect = FALSE;
   }
-  if ((error_num = conn->db_conn->ping())) {
+  if ((error_num = conn->db_conn->ping()) && error_num != ER_SPIDER_DRY_NUM) {
     spider_db_disconnect(conn);
     if ((error_num = spider_db_connect(share, conn, all_link_idx))) {
       DBUG_PRINT("info", ("spider conn=%p SERVER_LOST", conn));
@@ -247,10 +247,12 @@ void spider_db_disconnect(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_db_disconnect");
   DBUG_PRINT("info", ("spider conn=%p", conn));
   DBUG_PRINT("info", ("spider conn->conn_kind=%u", conn->conn_kind));
-  bool need_status_lock = spider_param_enable_active_conns_view();
+  bool need_status_lock =
+      (!conn->dry_run && spider_param_enable_active_conns_view());
   spider_conn_set_state(conn, SPIDER_CONN_STATE_DISCONNECT);
   if (need_status_lock) mysql_mutex_lock(&conn->m_status_mutex);
-  if (conn->db_conn->is_connected()) {
+  if (conn->db_conn->is_connected() ||
+      conn->dry_run /* mysql_close() is needed for dry-run to free mem */) {
     conn->db_conn->disconnect();
   }
   if (need_status_lock) mysql_mutex_unlock(&conn->m_status_mutex);
@@ -260,7 +262,8 @@ void spider_db_disconnect(SPIDER_CONN *conn) {
 void spider_db_reset_thd(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_db_reset_thd");
   DBUG_PRINT("info", ("spider conn=%p", conn));
-  bool need_status_lock = spider_param_enable_active_conns_view();
+  bool need_status_lock =
+      (!conn->dry_run && spider_param_enable_active_conns_view());
   if (need_status_lock) mysql_mutex_lock(&conn->m_status_mutex);
   conn->thd = NULL;
   if (need_status_lock) mysql_mutex_unlock(&conn->m_status_mutex);
@@ -278,7 +281,8 @@ int spider_db_conn_queue_action(SPIDER_CONN *conn) {
   sql_str.length(0);
   if (conn->queued_connect) {
     if ((error_num = spider_db_connect(conn->queued_connect_share, conn,
-                                       conn->queued_connect_link_idx))) {
+                                       conn->queued_connect_link_idx)) &&
+        error_num != ER_SPIDER_DRY_NUM) {
       DBUG_PRINT("info", ("spider conn=%p SERVER_LOST", conn));
       conn->server_lost = TRUE;
       DBUG_RETURN(error_num);
@@ -289,7 +293,8 @@ int spider_db_conn_queue_action(SPIDER_CONN *conn) {
 
   if (conn->queued_ping) {
     if ((error_num = spider_db_ping(conn->queued_ping_spider, conn,
-                                    conn->queued_ping_link_idx)))
+                                    conn->queued_ping_link_idx)) &&
+        error_num != ER_SPIDER_DRY_NUM)
       DBUG_RETURN(error_num);
     conn->queued_ping = FALSE;
   }
@@ -303,6 +308,15 @@ int spider_db_conn_queue_action(SPIDER_CONN *conn) {
     conn->db_conn->set_net_timeout();
     conn->queued_net_timeout = FALSE;
   }
+
+  if (conn->dry_run) {
+    /*
+      Skip the execution of setup queries, but do the after-works and pretend
+      the connection is set successfully.
+    */
+    goto after_exec;
+  }
+
   if ((conn->queued_trx_isolation && !conn->queued_semi_trx_isolation &&
        conn->queued_trx_isolation_val != conn->trx_isolation &&
        conn->db_conn->set_trx_isolation_in_bulk_sql() &&
@@ -436,6 +450,7 @@ int spider_db_conn_queue_action(SPIDER_CONN *conn) {
   }
 *****************************************************************/
 
+after_exec:
   if (conn->queued_trx_isolation && !conn->queued_semi_trx_isolation &&
       conn->queued_trx_isolation_val != conn->trx_isolation) {
     conn->trx_isolation = conn->queued_trx_isolation_val;
@@ -671,6 +686,7 @@ int spider_db_set_trx_isolation(SPIDER_CONN *conn, int trx_isolation,
 int spider_db_set_names_internal(SPIDER_TRX *trx, SPIDER_SHARE *share,
                                  SPIDER_CONN *conn, int all_link_idx,
                                  int *need_mon) {
+  int error_num;
   bool tmp_mta_conn_mutex_lock_already;
   DBUG_ENTER("spider_db_set_names_internal");
   if (!conn->mta_conn_mutex_lock_already) {
@@ -683,7 +699,9 @@ int spider_db_set_names_internal(SPIDER_TRX *trx, SPIDER_SHARE *share,
     tmp_mta_conn_mutex_lock_already = conn->mta_conn_mutex_lock_already;
     conn->mta_conn_mutex_lock_already = TRUE;
     if (spider_db_before_query(conn, need_mon) ||
-        conn->db_conn->set_character_set(share->access_charset->csname)) {
+        ((error_num = conn->db_conn->set_character_set(
+              share->access_charset->csname)) &&
+         error_num != ER_SPIDER_DRY_NUM)) {
       conn->mta_conn_mutex_lock_already = tmp_mta_conn_mutex_lock_already;
       DBUG_RETURN(spider_db_errorno(conn));
     }
@@ -701,7 +719,8 @@ int spider_db_set_names_internal(SPIDER_TRX *trx, SPIDER_SHARE *share,
     tmp_mta_conn_mutex_lock_already = conn->mta_conn_mutex_lock_already;
     conn->mta_conn_mutex_lock_already = TRUE;
     if (spider_db_before_query(conn, need_mon) ||
-        conn->db_conn->select_db(share->tgt_dbs[all_link_idx])) {
+        ((error_num = conn->db_conn->select_db(share->tgt_dbs[all_link_idx])) &&
+         error_num != ER_SPIDER_DRY_NUM)) {
       conn->mta_conn_mutex_lock_already = tmp_mta_conn_mutex_lock_already;
       DBUG_RETURN(spider_db_errorno(conn));
     }
@@ -887,7 +906,8 @@ int spider_db_commit(SPIDER_CONN *conn) {
                  MYF(0));
       DBUG_RETURN(ER_SPIDER_LINK_IS_FAILOVER_NUM);
     }
-    if ((error_num = conn->db_conn->commit(&need_mon))) {
+    if ((error_num = conn->db_conn->commit(&need_mon)) &&
+        error_num != ER_SPIDER_DRY_NUM) {
       DBUG_RETURN(error_num);
     }
     conn->trx_start = FALSE;
@@ -901,7 +921,8 @@ int spider_db_rollback(SPIDER_CONN *conn) {
   DBUG_ENTER("spider_db_rollback");
   spider_conn_set_state(conn, SPIDER_CONN_STATE_ROLLBACK);
   if (!conn->queued_connect && !conn->queued_trx_start) {
-    if ((error_num = conn->db_conn->rollback(&need_mon))) {
+    if ((error_num = conn->db_conn->rollback(&need_mon)) &&
+        error_num != ER_SPIDER_DRY_NUM) {
       DBUG_RETURN(error_num);
     }
     conn->trx_start = FALSE;
@@ -2914,6 +2935,10 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
     request_key.next = NULL;
     if (!(current->result =
               db_conn->store_result(NULL, &request_key, &error_num))) {
+      if (error_num == ER_SPIDER_DRY_NUM) {
+        /* Avoid error handling by faking empty set */
+        error_num = HA_ERR_END_OF_FILE;
+      }
       if (error_num && error_num != HA_ERR_END_OF_FILE) {
         if (!conn->mta_conn_mutex_unlock_later) {
           spider_mta_conn_mutex_unlock(conn);
@@ -2989,6 +3014,10 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
       request_key.next = NULL;
       if (!(current->result =
                 conn->db_conn->use_result(&request_key, &error_num))) {
+        if (error_num == ER_SPIDER_DRY_NUM) {
+          /* Avoid error handling by faking empty set */
+          error_num = HA_ERR_END_OF_FILE;
+        }
         if (!error_num) {
           error_num = spider_db_errorno(conn);
         } else {
@@ -3229,7 +3258,10 @@ int spider_db_fetch(uchar *buf, ha_spider *spider, TABLE *table) {
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   DBUG_ENTER("spider_db_fetch");
 
-  if (spider_param_dry_access()) DBUG_RETURN(ER_SPIDER_DRY_NUM);
+  if (spider->dry_run) {
+    /* Avoid error handling by faking empty set */
+    DBUG_RETURN(HA_ERR_END_OF_FILE);
+  }
 
   if (spider->sql_kind[spider->result_link_idx] == SPIDER_SQL_KIND_SQL) {
     if (!spider->select_column_mode) {
@@ -3425,9 +3457,10 @@ int spider_db_seek_next(uchar *buf, ha_spider *spider, int link_idx,
               }
               spider_conn_set_timeout_from_share(conn, link_idx,
                                                  spider->trx->thd, share);
-              if (dbton_handler->execute_sql(sql_type, conn,
-                                             result_list->quick_mode,
-                                             &spider->need_mons[link_idx])) {
+              if ((error_num = dbton_handler->execute_sql(
+                       sql_type, conn, result_list->quick_mode,
+                       &spider->need_mons[link_idx])) &&
+                  error_num != ER_SPIDER_DRY_NUM) {
                 conn->mta_conn_mutex_lock_already = FALSE;
                 conn->mta_conn_mutex_unlock_later = FALSE;
                 error_num = spider_db_errorno(conn);
@@ -3510,9 +3543,10 @@ int spider_db_seek_next(uchar *buf, ha_spider *spider, int link_idx,
               }
               spider_conn_set_timeout_from_share(conn, roop_count,
                                                  spider->trx->thd, share);
-              if (dbton_handler->execute_sql(sql_type, conn,
-                                             result_list->quick_mode,
-                                             &spider->need_mons[roop_count])) {
+              if ((error_num = dbton_handler->execute_sql(
+                       sql_type, conn, result_list->quick_mode,
+                       &spider->need_mons[roop_count])) &&
+                  error_num != ER_SPIDER_DRY_NUM) {
                 conn->mta_conn_mutex_lock_already = FALSE;
                 conn->mta_conn_mutex_unlock_later = FALSE;
                 error_num = spider_db_errorno(conn);
@@ -3699,8 +3733,10 @@ int spider_db_seek_last(uchar *buf, ha_spider *spider, int link_idx,
       }
       spider_conn_set_timeout_from_share(conn, roop_count, spider->trx->thd,
                                          share);
-      if (dbton_handler->execute_sql(sql_type, conn, result_list->quick_mode,
-                                     &spider->need_mons[roop_count])) {
+      if ((error_num = dbton_handler->execute_sql(
+               sql_type, conn, result_list->quick_mode,
+               &spider->need_mons[roop_count])) &&
+          error_num != ER_SPIDER_DRY_NUM) {
         conn->mta_conn_mutex_lock_already = FALSE;
         conn->mta_conn_mutex_unlock_later = FALSE;
         error_num = spider_db_errorno(conn);
@@ -3846,8 +3882,10 @@ int spider_db_seek_last(uchar *buf, ha_spider *spider, int link_idx,
     }
     spider_conn_set_timeout_from_share(conn, roop_count, spider->trx->thd,
                                        share);
-    if (dbton_handler->execute_sql(sql_type, conn, result_list->quick_mode,
-                                   &spider->need_mons[roop_count])) {
+    if ((error_num =
+             dbton_handler->execute_sql(sql_type, conn, result_list->quick_mode,
+                                        &spider->need_mons[roop_count])) &&
+        error_num != ER_SPIDER_DRY_NUM) {
       conn->mta_conn_mutex_lock_already = FALSE;
       conn->mta_conn_mutex_unlock_later = FALSE;
       error_num = spider_db_errorno(conn);
@@ -8358,6 +8396,11 @@ static const char *spider_log_get_header_by_level(int level) {
     case SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY:
     case SPIDER_LOG_RES_ERR_LVL_WARN_DETAIL:    return "[WARN SPIDER RESULT]";
     case SPIDER_LOG_RES_ERR_LVL_INFO:           return "[INFO SPIDER RESULT]";
+
+    /* Not related to log_result_errors, but we handle it the same way */
+    case SPIDER_LOG_DRY_RUN_SOURCE:         return "[SPIDER_DRY_RUN SOURCE]";
+    case SPIDER_LOG_DRY_RUN_REMOTE:         return "[SPIDER_DRY_RUN REMOTE]";
+
     default:                                    return "[SPIDER RESULT]";
   }
 }

@@ -1467,6 +1467,13 @@ int spider_db_mysql::init() {
 bool spider_db_mysql::is_connected() {
   DBUG_ENTER("spider_db_mysql::is_connected");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) {
+    /*
+      Only mysql_init() is called on db_conn for dry-run, but without
+      mysql_real_connect(), so technically it is not "connected".
+    */
+    DBUG_RETURN(FALSE);
+  }
   DBUG_RETURN(db_conn);
 }
 
@@ -1499,6 +1506,10 @@ int spider_db_mysql::connect(char *tgt_host, char *tgt_username,
     if (!db_conn) {
       if (!(db_conn = mysql_init(NULL))) DBUG_RETURN(HA_ERR_OUT_OF_MEM);
     }
+    if (conn->dry_run) {
+      /* For dry run, calling mysql_init is enough, no need for real connect */
+      DBUG_RETURN(ER_SPIDER_DRY_NUM);
+    }
 
     mysql_options(db_conn, MYSQL_OPT_READ_TIMEOUT, &conn->net_read_timeout);
     mysql_options(db_conn, MYSQL_OPT_WRITE_TIMEOUT, &conn->net_write_timeout);
@@ -1530,8 +1541,7 @@ int spider_db_mysql::connect(char *tgt_host, char *tgt_username,
     real_connect_option = CLIENT_INTERACTIVE | CLIENT_MULTI_STATEMENTS;
     if (connect_mutex) pthread_mutex_lock(&spider_open_conn_mutex);
     /* tgt_db not use */
-    if (!spider_param_dry_access() &&
-        !mysql_real_connect(db_conn, tgt_host, tgt_username, tgt_password, NULL,
+    if (!mysql_real_connect(db_conn, tgt_host, tgt_username, tgt_password, NULL,
                             tgt_port, tgt_socket, real_connect_option)) {
       if (connect_mutex) pthread_mutex_unlock(&spider_open_conn_mutex);
       error_num = mysql_errno(db_conn);
@@ -1579,7 +1589,7 @@ const char *spider_db_mysql::get_db() const {
 int spider_db_mysql::ping() {
   DBUG_ENTER("spider_db_mysql::ping");
   DBUG_PRINT("info", ("spider this=%p", this));
-  if (spider_param_dry_access()) DBUG_RETURN(0);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   DBUG_RETURN(simple_command(db_conn, COM_PING, 0, 0, 0));
 }
 
@@ -1604,6 +1614,7 @@ int spider_db_mysql::set_net_timeout() {
   DBUG_ENTER("spider_db_mysql::set_net_timeout");
   DBUG_PRINT("info", ("spider this=%p", this));
   DBUG_PRINT("info", ("spider conn=%p", conn));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   my_net_set_read_timeout(&db_conn->net, conn->net_read_timeout);
   my_net_set_write_timeout(&db_conn->net, conn->net_write_timeout);
   DBUG_RETURN(0);
@@ -1671,8 +1682,15 @@ int spider_db_mysql::exec_query(const char *query, uint length,
   }
   *******************************/
 
-  if (!spider_param_dry_access()) {  // TODO.  if the conn if changed, do dry
-                                     // access
+  if (conn->dry_run) {
+    /* No execution, log query only */
+    log_spider_resultf(SPIDER_LOG_DRY_RUN_REMOTE,
+                       "THD: %llu, Remote: %s#%d, Parallel: %s, Query: %.*s",
+                       conn->thd->thread_id, conn->tgt_host,
+                       (int)conn->tgt_port, (conn->bg_search ? "Yes" : "No"),
+                       (int)length, query);
+    DBUG_RETURN(ER_SPIDER_DRY_NUM);
+  } else {
     /*
       This is done before mysql_real_query(), so that if the call blocks, we
       still can see the query info from SPIDER_ACTIVE_CONNS.
@@ -1727,6 +1745,7 @@ int spider_db_mysql::exec_query(const char *query, uint length,
 int spider_db_mysql::get_errno() {
   DBUG_ENTER("spider_db_mysql::get_errno");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   stored_error = mysql_errno(db_conn);
   DBUG_PRINT("info", ("spider stored_error=%d", stored_error));
   DBUG_RETURN(stored_error);
@@ -1737,6 +1756,7 @@ const char *spider_db_mysql::get_error() {
   const char *error_ptr;
   DBUG_ENTER("spider_db_mysql::get_error");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_STR);
   error_ptr = mysql_error(db_conn);
   DBUG_PRINT("info", ("spider error=%s", error_ptr));
   DBUG_RETURN(error_ptr);
@@ -1775,6 +1795,7 @@ bool spider_db_mysql::is_xa_nota_error(int error_num) {
 void spider_db_mysql::print_warnings() {
   DBUG_ENTER("spider_db_mysql::print_warnings");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_VOID_RETURN;
   if (db_conn->status == MYSQL_STATUS_READY) {
 #if MYSQL_VERSION_ID < 50500
     if (!(db_conn->last_used_con->server_status & SERVER_MORE_RESULTS_EXISTS))
@@ -1785,13 +1806,12 @@ void spider_db_mysql::print_warnings() {
       /*
             spider_mta_conn_mutex_lock(conn);
       */
-      if (spider_param_dry_access() ||
-          !mysql_real_query(db_conn, SPIDER_SQL_SHOW_WARNINGS_STR,
+      if (!mysql_real_query(db_conn, SPIDER_SQL_SHOW_WARNINGS_STR,
                             SPIDER_SQL_SHOW_WARNINGS_LEN)) {
         MYSQL_RES *res = NULL;
         MYSQL_ROW row = NULL;
         uint num_fields;
-        if (spider_param_dry_access() || !(res = mysql_store_result(db_conn)) ||
+        if (!(res = mysql_store_result(db_conn)) ||
             !(row = mysql_fetch_row(res))) {
           if (mysql_errno(db_conn)) {
             if (res) mysql_free_result(res);
@@ -1835,11 +1855,14 @@ spider_db_result *spider_db_mysql::store_result(
   spider_db_mysql_result *result;
   DBUG_ENTER("spider_db_mysql::store_result");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) {
+    *error_num = ER_SPIDER_DRY_NUM;
+    DBUG_RETURN(NULL);
+  }
   DBUG_ASSERT(!spider_res_buf);
   if ((result = new spider_db_mysql_result(this))) {
     *error_num = 0;
-    if (spider_param_dry_access() ||
-        !(result->db_result = mysql_store_result(db_conn))) {
+    if (!(result->db_result = mysql_store_result(db_conn))) {
       delete result;
       result = NULL;
     } else {
@@ -1857,10 +1880,13 @@ spider_db_result *spider_db_mysql::use_result(
   spider_db_mysql_result *result;
   DBUG_ENTER("spider_db_mysql::use_result");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) {
+    *error_num = ER_SPIDER_DRY_NUM;
+    DBUG_RETURN(NULL);
+  }
   if ((result = new spider_db_mysql_result(this))) {
     *error_num = 0;
-    if (spider_param_dry_access() ||
-        !(result->db_result = db_conn->methods->use_result(db_conn))) {
+    if (!(result->db_result = db_conn->methods->use_result(db_conn))) {
       delete result;
       result = NULL;
     } else {
@@ -1876,6 +1902,7 @@ int spider_db_mysql::next_result() {
   int status;
   DBUG_ENTER("spider_db_mysql::next_result");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   if (!db_conn || db_conn->status != MYSQL_STATUS_READY) {
     my_message(ER_SPIDER_UNKNOWN_NUM, ER_SPIDER_UNKNOWN_STR, MYF(0));
     log_spider_result_error_func(SPIDER_LOG_RES_ERR_LVL_WARN_SUMMARY,
@@ -1952,20 +1979,22 @@ ulonglong spider_db_mysql::last_insert_id() {
 int spider_db_mysql::set_character_set(const char *csname) {
   DBUG_ENTER("spider_db_mysql::set_character_set");
   DBUG_PRINT("info", ("spider this=%p", this));
-  if (spider_param_dry_access()) DBUG_RETURN(0);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   DBUG_RETURN(mysql_set_character_set(db_conn, csname));
 }
 
 int spider_db_mysql::select_db(const char *dbname) {
   DBUG_ENTER("spider_db_mysql::select_db");
   DBUG_PRINT("info", ("spider this=%p", this));
-  if (spider_param_dry_access()) DBUG_RETURN(0);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   DBUG_RETURN(mysql_select_db(db_conn, dbname));
 }
 
 int spider_db_mysql::consistent_snapshot(int *need_mon) {
   DBUG_ENTER("spider_db_mysql::consistent_snapshot");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   if (spider_db_query(conn, SPIDER_SQL_START_CONSISTENT_SNAPSHOT_STR,
                       SPIDER_SQL_START_CONSISTENT_SNAPSHOT_LEN, -1, need_mon))
     DBUG_RETURN(spider_db_errorno(conn));
@@ -1997,6 +2026,8 @@ bool spider_db_mysql::trx_transmit_begin_commit() {
 int spider_db_mysql::start_transaction(int *need_mon) {
   DBUG_ENTER("spider_db_mysql::start_transaction");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   if (spider_db_query(conn, SPIDER_SQL_START_TRANSACTION_STR,
                       SPIDER_SQL_START_TRANSACTION_LEN, -1, need_mon))
     DBUG_RETURN(spider_db_errorno(conn));
@@ -2007,6 +2038,7 @@ int spider_db_mysql::start_transaction(int *need_mon) {
 int spider_db_mysql::commit(int *need_mon) {
   DBUG_ENTER("spider_db_mysql::commit");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   if (trx_transmit_begin_commit()) {
     if (spider_db_query(conn, SPIDER_SQL_COMMIT_STR, SPIDER_SQL_COMMIT_LEN, -1,
                         need_mon))
@@ -2021,6 +2053,7 @@ int spider_db_mysql::rollback(int *need_mon) {
   int error_num;
   DBUG_ENTER("spider_db_mysql::rollback");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   conn->mta_conn_mutex_unlock_later = TRUE;
   if (spider_db_query(conn, SPIDER_SQL_ROLLBACK_STR, SPIDER_SQL_ROLLBACK_LEN,
                       -1, need_mon)) {
@@ -2057,6 +2090,8 @@ int spider_db_mysql::xa_end(XID *xid, int *need_mon) {
   spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
   DBUG_ENTER("spider_db_mysql::xa_end");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   sql_str.init_calc_mem(108);
 
   sql_str.length(0);
@@ -2073,6 +2108,8 @@ int spider_db_mysql::xa_prepare(XID *xid, int *need_mon) {
   spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
   DBUG_ENTER("spider_db_mysql::xa_prepare");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   sql_str.init_calc_mem(109);
 
   sql_str.length(0);
@@ -2093,6 +2130,8 @@ int spider_db_mysql::xa_end_and_prepare(XID *xid, int *need_mon) {
   spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
   DBUG_ENTER("spider_db_mysql::xa_end_and_prepare");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   sql_str.init_calc_mem(315);
 
   sql_str.length(0);
@@ -2116,6 +2155,8 @@ int spider_db_mysql::xa_commit(XID *xid, int *need_mon) {
   spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
   DBUG_ENTER("spider_db_mysql::xa_commit");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   sql_str.init_calc_mem(110);
 
   sql_str.length(0);
@@ -2137,6 +2178,8 @@ int spider_db_mysql::xa_commit_one_phase(XID *xid, int *need_mon) {
   spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
   DBUG_ENTER("spider_db_mysql::xa_commit_one_phase");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   sql_str.init_calc_mem(110);
 
   sql_str.length(0);
@@ -2164,6 +2207,8 @@ int spider_db_mysql::xa_rollback(XID *xid, int *need_mon) {
   spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
   DBUG_ENTER("spider_db_mysql::xa_rollback");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_ASSERT(!conn->dry_run);
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   sql_str.init_calc_mem(111);
 
   sql_str.length(0);
@@ -2184,6 +2229,7 @@ bool spider_db_mysql::set_trx_isolation_in_bulk_sql() {
 int spider_db_mysql::set_trx_isolation(int trx_isolation, int *need_mon) {
   DBUG_ENTER("spider_db_mysql::set_trx_isolation");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   switch (trx_isolation) {
     case ISO_READ_UNCOMMITTED:
       if (spider_db_query(conn, SPIDER_SQL_ISO_READ_UNCOMMITTED_STR,
@@ -2224,6 +2270,7 @@ bool spider_db_mysql::set_autocommit_in_bulk_sql() {
 int spider_db_mysql::set_autocommit(bool autocommit, int *need_mon) {
   DBUG_ENTER("spider_db_mysql::set_autocommit");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   if (autocommit) {
     if (spider_db_query(conn, SPIDER_SQL_AUTOCOMMIT_ON_STR,
                         SPIDER_SQL_AUTOCOMMIT_ON_LEN, -1, need_mon))
@@ -2247,6 +2294,7 @@ bool spider_db_mysql::set_sql_log_off_in_bulk_sql() {
 int spider_db_mysql::set_sql_log_off(bool sql_log_off, int *need_mon) {
   DBUG_ENTER("spider_db_mysql::set_sql_log_off");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   if (sql_log_off) {
     if (spider_db_query(conn, SPIDER_SQL_SQL_LOG_ON_STR,
                         SPIDER_SQL_SQL_LOG_ON_LEN, -1, need_mon))
@@ -2273,6 +2321,7 @@ int spider_db_mysql::set_time_zone(Time_zone *time_zone, int *need_mon) {
   spider_string sql_str(sql_buf, sizeof(sql_buf), &my_charset_bin);
   DBUG_ENTER("spider_db_mysql::set_time_zone");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   sql_str.init_calc_mem(214);
   sql_str.length(0);
   if (sql_str.reserve(SPIDER_SQL_TIME_ZONE_LEN + tz_str->length() +
@@ -2292,6 +2341,7 @@ int spider_db_mysql::exec_simple_sql_with_result(
     int all_link_idx, int *need_mon, SPIDER_DB_RESULT **res) {
   int error_num;
   DBUG_ENTER("spider_db_mysql::exec_simple_sql_with_result");
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   spider_mta_conn_mutex_lock(conn);
   conn->need_mon = need_mon;
   conn->mta_conn_mutex_lock_already = TRUE;
@@ -2362,6 +2412,7 @@ int spider_db_mysql::show_master_status(SPIDER_TRX *trx, SPIDER_SHARE *share,
   const char *binlog_file_name, *binlog_pos;
   uint binlog_file_name_length, binlog_pos_length;
   DBUG_ENTER("spider_db_mysql::show_master_status");
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   if ((error_num = exec_simple_sql_with_result(
            trx, share, SPIDER_SQL_SHOW_MASTER_STATUS_STR,
            SPIDER_SQL_SHOW_MASTER_STATUS_LEN, all_link_idx, need_mon, res1))) {
@@ -2405,6 +2456,7 @@ int spider_db_mysql::select_binlog_gtid_pos(
   size_t length;
   const char *gtid_pos;
   DBUG_ENTER("spider_db_mysql::select_binlog_gtid_pos");
+  if (conn->dry_run) DBUG_RETURN(ER_SPIDER_DRY_NUM);
   str->length(0);
   if (str->reserve(SPIDER_SQL_BINLOG_GTID_POS_LEN + SPIDER_SQL_OPEN_PAREN_LEN +
                    SPIDER_SQL_VALUE_QUOTE_LEN + binlog_file_name_length * 2 +
@@ -9850,13 +9902,6 @@ int spider_mysql_handler::show_table_status(int link_idx, int sts_mode,
     request_key.handler = spider;
     request_key.request_id = 1;
     request_key.next = NULL;
-    if (spider_param_dry_access()) {
-      conn->disable_connect_retry = FALSE;
-      conn->mta_conn_mutex_lock_already = FALSE;
-      conn->mta_conn_mutex_unlock_later = FALSE;
-      spider_mta_conn_mutex_unlock(conn);
-      DBUG_RETURN(0);
-    }
     if (!(res = conn->db_conn->store_result(NULL, &request_key, &error_num))) {
       conn->disable_connect_retry = FALSE;
       conn->mta_conn_mutex_lock_already = FALSE;
@@ -9960,13 +10005,6 @@ int spider_mysql_handler::show_table_status(int link_idx, int sts_mode,
     request_key.handler = spider;
     request_key.request_id = 1;
     request_key.next = NULL;
-    if (spider_param_dry_access()) {
-      conn->disable_connect_retry = FALSE;
-      conn->mta_conn_mutex_lock_already = FALSE;
-      conn->mta_conn_mutex_unlock_later = FALSE;
-      spider_mta_conn_mutex_unlock(conn);
-      DBUG_RETURN(0);
-    }
     if (!(res = conn->db_conn->store_result(NULL, &request_key, &error_num))) {
       conn->disable_connect_retry = FALSE;
       conn->mta_conn_mutex_lock_already = FALSE;

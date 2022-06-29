@@ -224,6 +224,8 @@ class ha_spider : public handler {
   longlong direct_current_offset;
   longlong direct_select_limit;
 
+  bool dry_run;
+
   ha_spider();
   ha_spider(handlerton *hton, TABLE_SHARE *table_arg);
   virtual ~ha_spider();
@@ -532,6 +534,7 @@ class ha_spider : public handler {
   void check_distinct_key_query();
   bool is_sole_projection_field(uint16 field_index);
   int check_ha_range_eof();
+  int check_dry_run();
   int drop_tmp_tables();
   bool handler_opened(int link_idx, uint tgt_conn_kind);
   void set_handler_opened(int link_idx);
