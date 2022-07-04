@@ -54,7 +54,6 @@ t1	CREATE TABLE `t1` (
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 INSERT INTO t1 VALUES(61,76,'b','c',4.86947,'v'), (60,33,'b','c',0,'v'), (24,75,'b','c',4.61755,'v');
 INSERT INTO t2 VALUES(61,75,'b','c',4.86947,'v'), (60,32,'b','c',0,'v'), (24,33,'b','c',4.61755,'v');
-SET GLOBAL spider_update_with_primary_key_first = OFF;
 SELECT id, a, f FROM t1;
 id	a	f
 60	33	0
@@ -84,7 +83,6 @@ id	a	b	c	f	v
 24	75	b	c	4.61755	v
 TRUNCATE TABLE t1;
 INSERT INTO t1 VALUES(61,76,'b','c',4.86947,'v'), (60,33,'b','c',0,'v'), (24,75,'b','c',4.61755,'v');
-SET GLOBAL spider_update_with_primary_key_first = OFF;
 SELECT id, a, f FROM t1;
 id	a	f
 60	33	0

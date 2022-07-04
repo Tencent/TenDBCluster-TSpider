@@ -115,7 +115,7 @@ ha_spider::ha_spider() : handler(spider_hton_ptr, NULL) {
   direct_update_fields = NULL;
 #endif
 #ifdef INFO_KIND_FORCE_LIMIT_BEGIN
-  info_limit = 9223372036854775807LL;
+  info_limit = INT_MAX64;
 #endif
 #ifdef HA_CAN_BULK_ACCESS
   is_bulk_access_clone = FALSE;
@@ -213,7 +213,7 @@ ha_spider::ha_spider(handlerton *hton, TABLE_SHARE *table_arg)
   direct_update_fields = NULL;
 #endif
 #ifdef INFO_KIND_FORCE_LIMIT_BEGIN
-  info_limit = 9223372036854775807LL;
+  info_limit = INT_MAX64;
 #endif
 #ifdef HA_CAN_BULK_ACCESS
   is_bulk_access_clone = FALSE;
@@ -1126,7 +1126,7 @@ int ha_spider::reset() {
   direct_update_fields = NULL;
 #endif
 #ifdef INFO_KIND_FORCE_LIMIT_BEGIN
-  info_limit = 9223372036854775807LL;
+  info_limit = INT_MAX64;
 #endif
   prev_index_rnd_init = SPD_NONE;
   result_list.have_sql_kind_backup = FALSE;
@@ -1319,7 +1319,7 @@ int ha_spider::index_end() {
   active_index = MAX_KEY;
   /*
   #ifdef INFO_KIND_FORCE_LIMIT_BEGIN
-    info_limit = 9223372036854775807LL;
+    info_limit = INT_MAX64;
   #endif
     if (
       (error_num = drop_tmp_tables()) ||
@@ -5294,7 +5294,7 @@ int ha_spider::rnd_end() {
   DBUG_PRINT("info", ("spider this=%p", this));
   /*
   #ifdef INFO_KIND_FORCE_LIMIT_BEGIN
-    info_limit = 9223372036854775807LL;
+    info_limit = INT_MAX64;
   #endif
     if (
       (error_num = check_and_end_bulk_update(
@@ -8778,7 +8778,7 @@ int ha_spider::info_push(uint info_type, void *info) {
       break;
     case INFO_KIND_FORCE_LIMIT_END:
       DBUG_PRINT("info", ("spider INFO_KIND_FORCE_LIMIT_END"));
-      info_limit = 9223372036854775807LL;
+      info_limit = INT_MAX64;
       break;
 #endif
 #endif
@@ -9558,8 +9558,8 @@ int ha_spider::index_handler_init() {
       spider_get_select_limit(this, &select_lex, &select_limit, &offset_limit);
       DBUG_PRINT("info", ("spider SPIDER_SQL_KIND_HANDLER"));
       result_list.semi_split_read = 1;
-      result_list.semi_split_read_limit = 9223372036854775807LL;
-      if (select_limit == 9223372036854775807LL) {
+      result_list.semi_split_read_limit = INT_MAX64;
+      if (select_limit == INT_MAX64) {
         DBUG_PRINT("info", ("spider set limit to 1"));
         result_list.semi_split_read_base = 1;
         result_list.split_read = 1;
@@ -9627,8 +9627,8 @@ int ha_spider::rnd_handler_init() {
       spider_get_select_limit(this, &select_lex, &select_limit, &offset_limit);
       DBUG_PRINT("info", ("spider SPIDER_SQL_KIND_HANDLER"));
       result_list.semi_split_read = 1;
-      result_list.semi_split_read_limit = 9223372036854775807LL;
-      if (select_limit == 9223372036854775807LL) {
+      result_list.semi_split_read_limit = INT_MAX64;
+      if (select_limit == INT_MAX64) {
         DBUG_PRINT("info", ("spider set limit to 1"));
         result_list.semi_split_read_base = 1;
         result_list.split_read = 1;
@@ -9769,18 +9769,16 @@ void ha_spider::check_pre_call(bool use_parallel) {
     ++trx->parallel_search_count;
   }
   use_pre_call = use_parallel;
-  if (!use_pre_call) {
+  if (!use_pre_call && select_lex) {
     longlong select_limit;
     longlong offset_limit;
     spider_get_select_limit_from_select_lex(select_lex, &select_limit,
                                             &offset_limit);
-    if (select_lex && !offset_limit &&
-      (!select_lex->explicit_limit || !select_limit || (select_limit && opt_spider_parallel_limit))) {
+    if (!select_lex->explicit_limit || !select_limit) {
       use_pre_call = TRUE;
-      if (select_limit && opt_spider_direct_limit_in_select && opt_spider_parallel_limit) {
-        result_list.internal_limit = select_limit + offset_limit;
-        result_list.split_read = select_limit + offset_limit;
-      }
+    } else if (!offset_limit && select_limit && spider_param_parallel_limit(thd)) {
+      use_pre_call = TRUE;
+      result_list.split_read = result_list.internal_limit = select_limit;
     }
   }
 

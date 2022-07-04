@@ -6692,7 +6692,7 @@ int spider_db_open_item_string(Item *item, ha_spider *spider,
             item->print(
                 str->get_str(),
                 (enum_query_type)(QT_ORDINARY | QT_SPD_PRINT_USER_VAR_VALUE));
-          } else if (!field_charset && opt_spider_not_convert_binary &&
+          } else if (!field_charset &&
                      item->type() == Item::STRING_ITEM &&
                      item->val_str()->ptr() && item->val_str()->charset() &&
                      my_charset_same(

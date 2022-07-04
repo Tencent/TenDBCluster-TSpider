@@ -7483,8 +7483,8 @@ bool TABLE_LIST::process_index_hints(TABLE *tbl)
 
   // Since tspider-3.6.2, clear all keys if `spider_ignore_single_select_index = ON` and
   // NOT SELECT and is_spider_storage_engine()
-  if (opt_spider_ignore_single_select_index && /* this option is on */
-      thd && thd->lex && thd->lex->sql_command != SQLCOM_SELECT && /* ALL SQL type except SELECT */
+  if (thd && thd->variables.opt_spider_ignore_single_select_index &&
+      thd->lex && thd->lex->sql_command != SQLCOM_SELECT && /* ALL SQL type except SELECT */
       !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) && /* NOT describe */
       tbl->file && tbl->file->is_spider_storage_engine() /* only clear keys for spider engine*/)
   {

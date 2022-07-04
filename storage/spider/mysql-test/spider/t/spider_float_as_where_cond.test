@@ -20,8 +20,6 @@ SHOW CREATE TABLE t1;
 INSERT INTO t1 VALUES(61,76,'b','c',4.86947,'v'), (60,33,'b','c',0,'v'), (24,75,'b','c',4.61755,'v');
 INSERT INTO t2 VALUES(61,75,'b','c',4.86947,'v'), (60,32,'b','c',0,'v'), (24,33,'b','c',4.61755,'v');
 
-SET GLOBAL spider_update_with_primary_key_first = OFF; # BUG
-
 SELECT id, a, f FROM t1;
 --enable_info
 update t1
@@ -44,8 +42,6 @@ SELECT * FROM t1;
 TRUNCATE TABLE t1;
 
 INSERT INTO t1 VALUES(61,76,'b','c',4.86947,'v'), (60,33,'b','c',0,'v'), (24,75,'b','c',4.61755,'v');
-
-SET GLOBAL spider_update_with_primary_key_first = OFF; # OK
 
 SELECT id, a, f FROM t1;
 --enable_info

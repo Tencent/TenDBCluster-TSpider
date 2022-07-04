@@ -357,7 +357,7 @@ static MYSQL_THDVAR_LONGLONG(internal_offset,       /* name */
                              NULL,                  /* update */
                              0,                     /* def */
                              -1,                    /* min */
-                             9223372036854775807LL, /* max */
+                             INT_MAX64, /* max */
                              0                      /* blk */
 );
 
@@ -376,9 +376,9 @@ static MYSQL_THDVAR_LONGLONG(internal_limit,        /* name */
                              "Internal limit",      /* comment */
                              NULL,                  /* check */
                              NULL,                  /* update */
-                             9223372036854775807LL, /* def */
+                             INT_MAX64, /* def */
                              -1,                    /* min */
-                             9223372036854775807LL, /* max */
+                             INT_MAX64, /* max */
                              0                      /* blk */
 );
 
@@ -397,9 +397,9 @@ static MYSQL_THDVAR_LONGLONG(split_read,                   /* name */
                              "Number of rows at a select", /* comment */
                              NULL,                         /* check */
                              NULL,                         /* update */
-                             9223372036854775807LL,        /* def */
+                             INT_MAX64,        /* def */
                              -1,                           /* min */
-                             9223372036854775807LL,        /* max */
+                             INT_MAX64,        /* max */
                              0                             /* blk */
 );
 
@@ -443,9 +443,9 @@ static MYSQL_THDVAR_LONGLONG(
     "The limit value for semi_split_read", /* comment */
     NULL,                                  /* check */
     NULL,                                  /* update */
-    9223372036854775807LL,                 /* def */
+    INT_MAX64,                 /* def */
     -1,                                    /* min */
-    9223372036854775807LL,                 /* max */
+    INT_MAX64,                 /* max */
     0                                      /* blk */
 );
 
@@ -1144,7 +1144,7 @@ static MYSQL_THDVAR_LONGLONG(
     NULL,                                                      /* update */
     1000,                                                      /* def */
     -1,                                                        /* min */
-    9223372036854775807LL,                                     /* max */
+    INT_MAX64,                                     /* max */
     0                                                          /* blk */
 );
 
@@ -1275,7 +1275,7 @@ static MYSQL_THDVAR_LONGLONG(
     NULL,                                                          /* update */
     2,                                                             /* def */
     -1,                                                            /* min */
-    9223372036854775807LL,                                         /* max */
+    INT_MAX64,                                         /* max */
     0                                                              /* blk */
 );
 
@@ -1299,7 +1299,7 @@ static MYSQL_THDVAR_LONGLONG(
     NULL,                                                           /* update */
     100,                                                            /* def */
     -1,                                                             /* min */
-    9223372036854775807LL,                                          /* max */
+    INT_MAX64,                                          /* max */
     0                                                               /* blk */
 );
 
@@ -1321,7 +1321,7 @@ static MYSQL_THDVAR_LONGLONG(first_read,                     /* name */
                              NULL,                           /* update */
                              0,                              /* def */
                              -1,                             /* min */
-                             9223372036854775807LL,          /* max */
+                             INT_MAX64,          /* max */
                              0                               /* blk */
 );
 
@@ -1343,7 +1343,7 @@ static MYSQL_THDVAR_LONGLONG(second_read,                     /* name */
                              NULL,                            /* update */
                              -1,                              /* def */
                              -1,                              /* min */
-                             9223372036854775807LL,           /* max */
+                             INT_MAX64,           /* max */
                              0                                /* blk */
 );
 
@@ -1849,7 +1849,7 @@ static MYSQL_THDVAR_LONGLONG(udf_ds_bulk_insert_rows, /* name */
                              NULL,                                /* update */
                              3000,                                /* def */
                              -1,                                  /* min */
-                             9223372036854775807LL,               /* max */
+                             INT_MAX64,               /* max */
                              0                                    /* blk */
 );
 
@@ -2042,7 +2042,7 @@ static MYSQL_THDVAR_LONGLONG(connect_retry_interval,   /* name */
                              NULL,                     /* update */
                              1000,                     /* def */
                              0,                        /* min */
-                             9223372036854775807LL,    /* max */
+                             INT_MAX64,    /* max */
                              0                         /* blk */
 );
 
@@ -2157,7 +2157,7 @@ static MYSQL_SYSVAR_LONGLONG(
     udf_ct_bulk_insert_rows, spider_udf_ct_bulk_insert_rows,
     PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
     "The number of rows inserted with bulk insert of one time at coping", NULL,
-    NULL, 0, -1, 9223372036854775807LL, 0);
+    NULL, 0, -1, INT_MAX64, 0);
 
 longlong spider_param_udf_ct_bulk_insert_rows(
     longlong udf_ct_bulk_insert_rows) {
@@ -2296,9 +2296,9 @@ static MYSQL_THDVAR_LONGLONG(
     "Send 'ORDER BY' and 'LIMIT' to remote server directly", /* comment */
     NULL,                                                    /* check */
     NULL,                                                    /* update */
-    9223372036854775807LL,                                   /* def */
+    INT_MAX64,                                   /* def */
     -1,                                                      /* min */
-    9223372036854775807LL,                                   /* max */
+    INT_MAX64,                                   /* max */
     0                                                        /* blk */
 );
 
@@ -2385,17 +2385,6 @@ static MYSQL_SYSVAR_BOOL(general_log, spider_general_log, PLUGIN_VAR_OPCMDARG,
 my_bool spider_param_general_log() {
   DBUG_ENTER("spider_param_general_log");
   DBUG_RETURN(spider_general_log);
-}
-
-static my_bool spider_error_when_flush_server;
-static MYSQL_SYSVAR_BOOL(
-    error_when_flush_server, spider_error_when_flush_server,
-    PLUGIN_VAR_OPCMDARG,
-    "error 12701 when server changed force (without FLWR) ", NULL, NULL, FALSE);
-
-my_bool spider_param_error_when_flush_server() {
-  DBUG_ENTER("spider_param_error_when_flush_server");
-  DBUG_RETURN(spider_error_when_flush_server);
 }
 
 static my_bool spider_quick_mode_only_select;
@@ -2529,21 +2518,10 @@ uint spider_param_conn_wait_timeout() {
   DBUG_RETURN(spider_conn_wait_timeout);
 }
 
-/* append primary key first as where condition when not direct update*/
-static my_bool spider_update_with_primary_key_first;
-static MYSQL_SYSVAR_BOOL(update_with_primary_key_first,
-                         spider_update_with_primary_key_first,
-                         PLUGIN_VAR_OPCMDARG, "", NULL, NULL, TRUE);
-
-my_bool spider_param_update_with_primary_key_first() {
-  DBUG_ENTER("spider_param_update_with_primary_key_first");
-  DBUG_RETURN(spider_update_with_primary_key_first);
-}
-
 static my_bool spider_fetch_minimum_columns;
 static MYSQL_SYSVAR_BOOL(fetch_minimum_columns, spider_fetch_minimum_columns,
-                         PLUGIN_VAR_OPCMDARG, "spider_fetch_minimum_columns",
-                         NULL, NULL, TRUE);
+                         PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR,
+                         "spider_fetch_minimum_columns", NULL, NULL, TRUE);
 
 my_bool spider_param_fetch_minimum_columns() {
   DBUG_ENTER("spider_param_general_log");
@@ -2839,6 +2817,20 @@ my_bool spider_param_enable_active_conns_view() {
   DBUG_RETURN(spider_enable_active_conns_view);
 }
 
+static MYSQL_THDVAR_BOOL(
+    parallel_limit,
+    PLUGIN_VAR_RQCMDARG,
+    "Enable parallel execution of SELECT ... LIMIT queries",
+    NULL,
+    NULL,
+    FALSE
+    );
+
+bool spider_param_parallel_limit(THD *thd) {
+  DBUG_ENTER("spider_param_parallel_limit");
+  DBUG_RETURN(THDVAR(thd, parallel_limit));
+}
+
 static struct st_mysql_storage_engine spider_storage_engine = {
     MYSQL_HANDLERTON_INTERFACE_VERSION};
 
@@ -2921,7 +2913,6 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(with_begin_commit),
     MYSQL_SYSVAR(get_conn_from_idx),
     MYSQL_SYSVAR(get_sts_or_crd),
-    MYSQL_SYSVAR(update_with_primary_key_first),
     MYSQL_SYSVAR(client_found_rows),
     MYSQL_SYSVAR(local_lock_table),
     MYSQL_SYSVAR(use_pushdown_udf),
@@ -2959,7 +2950,6 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(udf_ds_use_real_table),
 #endif
     MYSQL_SYSVAR(general_log),
-    MYSQL_SYSVAR(error_when_flush_server),
     MYSQL_SYSVAR(index_hint_pushdown),
     MYSQL_SYSVAR(max_connections),
     MYSQL_SYSVAR(conn_wait_timeout),
@@ -2984,6 +2974,7 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(string_key_equal_to_like),
     MYSQL_SYSVAR(active_conns_view_info_length),
     MYSQL_SYSVAR(enable_active_conns_view),
+    MYSQL_SYSVAR(parallel_limit),
     NULL};
 
 mysql_declare_plugin(spider) {

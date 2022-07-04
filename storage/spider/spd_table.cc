@@ -1817,7 +1817,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           SPIDER_PARAM_LONG_LIST_WITH_MAX("mfg", monitoring_flag, 0, 1);
           SPIDER_PARAM_LONG_LIST_WITH_MAX("mkd", monitoring_kind, 0, 3);
           SPIDER_PARAM_LONGLONG_LIST_WITH_MAX("mlt", monitoring_limit, 0,
-                                              9223372036854775807LL);
+                                              INT_MAX64);
           SPIDER_PARAM_INT("mod", max_order, 0);
           SPIDER_PARAM_LONGLONG_LIST_WITH_MAX("msi", monitoring_sid, 0,
                                               4294967295LL);
@@ -1993,7 +1993,7 @@ int spider_parse_connect_info(SPIDER_SHARE *share, TABLE_SHARE *table_share,
           SPIDER_PARAM_INT_WITH_MAX("table_count_mode", table_count_mode, 0, 3);
           SPIDER_PARAM_INT_WITH_MAX("use_pushdown_udf", use_pushdown_udf, 0, 1);
           SPIDER_PARAM_LONGLONG_LIST_WITH_MAX(
-              "monitoring_limit", monitoring_limit, 0, 9223372036854775807LL);
+              "monitoring_limit", monitoring_limit, 0, INT_MAX64);
           SPIDER_PARAM_INT_WITH_MAX("bulk_update_mode", bulk_update_mode, 0, 2);
           SPIDER_PARAM_INT("bulk_update_size", bulk_update_size, 0);
           SPIDER_PARAM_LONG_LIST_WITH_MAX("net_read_timeout", net_read_timeouts,
@@ -3108,11 +3108,11 @@ int spider_set_connect_info_default(SPIDER_SHARE *share,
   if (share->crd_weight == -1) share->crd_weight = 2;
   if (share->internal_offset == -1) share->internal_offset = 0;
   if (share->internal_limit == -1)
-    share->internal_limit = 9223372036854775807LL;
-  if (share->split_read == -1) share->split_read = 9223372036854775807LL;
+    share->internal_limit = INT_MAX64;
+  if (share->split_read == -1) share->split_read = INT_MAX64;
   if (share->semi_split_read == -1) share->semi_split_read = 1;
   if (share->semi_split_read_limit == -1)
-    share->semi_split_read_limit = 9223372036854775807LL;
+    share->semi_split_read_limit = INT_MAX64;
   if (share->init_sql_alloc_size == -1) share->init_sql_alloc_size = 1024;
   if (share->reset_sql_alloc == -1) share->reset_sql_alloc = 1;
   if (share->multi_split_read == -1) share->multi_split_read = 100;
@@ -3148,7 +3148,7 @@ int spider_set_connect_info_default(SPIDER_SHARE *share,
   if (share->skip_parallel_search == -1) share->skip_parallel_search = 0;
   if (share->direct_dup_insert == -1) share->direct_dup_insert = 0;
   if (share->direct_order_limit == -1)
-    share->direct_order_limit = 9223372036854775807LL;
+    share->direct_order_limit = INT_MAX64;
   if (share->read_only_mode == -1) share->read_only_mode = 0;
   if (share->error_read_mode == -1) share->error_read_mode = 0;
   if (share->error_write_mode == -1) share->error_write_mode = 0;
@@ -6051,7 +6051,7 @@ void spider_set_result_list_param(ha_spider *spider) {
       spider_param_internal_offset(thd, share->internal_offset);
   result_list->internal_limit =
 #ifdef INFO_KIND_FORCE_LIMIT_BEGIN
-      spider->info_limit < 9223372036854775807LL
+      spider->info_limit < INT_MAX64
           ? spider->info_limit
           :
 #endif
@@ -6382,7 +6382,7 @@ void spider_get_select_limit_from_select_lex(st_select_lex *select_lex,
                                              longlong *select_limit,
                                              longlong *offset_limit) {
   DBUG_ENTER("spider_get_select_limit_from_select_lex");
-  *select_limit = 9223372036854775807LL;
+  *select_limit = INT_MAX64;
   *offset_limit = 0;
   if (select_lex && select_lex->explicit_limit) {
     *select_limit =
@@ -6438,7 +6438,7 @@ longlong spider_split_read_param(ha_spider *spider) {
   DBUG_ENTER("spider_split_read_param");
   result_list->set_split_read_count = 1;
 #ifdef INFO_KIND_FORCE_LIMIT_BEGIN
-  if (spider->info_limit < 9223372036854775807LL) {
+  if (spider->info_limit < INT_MAX64) {
     DBUG_PRINT("info", ("spider info_limit=%lld", spider->info_limit));
     longlong info_limit = spider->info_limit;
     result_list->split_read_base = info_limit;
@@ -6497,14 +6497,14 @@ longlong spider_split_read_param(ha_spider *spider) {
                                          TRG_ACTION_AFTER))))) {
       /* This case must select by one shot */
       DBUG_PRINT("info", ("spider cancel split read"));
-      result_list->split_read_base = 9223372036854775807LL;
+      result_list->split_read_base = INT_MAX64;
       result_list->semi_split_read = 0;
-      result_list->semi_split_read_limit = 9223372036854775807LL;
-      result_list->first_read = 9223372036854775807LL;
-      result_list->second_read = 9223372036854775807LL;
+      result_list->semi_split_read_limit = INT_MAX64;
+      result_list->first_read = INT_MAX64;
+      result_list->second_read = INT_MAX64;
       result_list->semi_split_read_base = 0;
       result_list->set_split_read = TRUE;
-      DBUG_RETURN(9223372036854775807LL);
+      DBUG_RETURN(INT_MAX64);
     }
 #ifdef SPIDER_HAS_EXPLAIN_QUERY
     Explain_query *explain = thd->lex->explain;
@@ -6532,7 +6532,7 @@ longlong spider_split_read_param(ha_spider *spider) {
 #ifdef SPIDER_HAS_EXPLAIN_QUERY
     if (filesort) {
       result_list->semi_split_read = 0;
-      result_list->semi_split_read_limit = 9223372036854775807LL;
+      result_list->semi_split_read_limit = INT_MAX64;
     } else {
 #endif
       result_list->semi_split_read =
@@ -6708,13 +6708,13 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
 #endif
     }
 
-    if (opt_spider_parallel_limit &&
+    if (spider_param_parallel_limit(thd) &&
         (
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
             !spider->result_list.direct_aggregate &&
 #endif
             (select_lex->group_list.elements || select_lex->with_sum_func))) {
-      spider->result_list.internal_limit = 9223372036854775807LL;
+      spider->result_list.internal_limit = INT_MAX64;
       spider->result_list.split_read = spider->result_list.internal_limit;
       DBUG_RETURN(FALSE);
     }

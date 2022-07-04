@@ -402,9 +402,8 @@ int opt_sum_query(THD *thd,
             Spider with 'spider_ignore_single_select_index = ON' should
             not use any keys
           */
-          if (opt_spider_ignore_single_select_index &&
-              thd && thd->lex &&
-              thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
+          if (thd && thd->variables.opt_spider_ignore_single_select_index &&
+              thd->lex && thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
                /* !thd->lex->describe &&  // not describe/explain types */
               !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
               thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */

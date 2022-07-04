@@ -183,6 +183,7 @@ insert into tbl_a2(account,zone) values("o110W5yqygj8LeFHXT2FEr-Ft_Zc",1);
 insert into tbl_a2(account,zone) values("xxxo110W5yqygj8LeFHXT2FEr-Ft_Zc",2);
 insert into tbl_a2(account,zone) values("yyyo110W5yqygj8LeFHXT2FEr-Ft_Zc",3);
 
+# Should return nothing since TSpider 3.8.1
 show variables like 'spider_group_by_handler';
 if ($USE_GENERAL_LOG)
 {

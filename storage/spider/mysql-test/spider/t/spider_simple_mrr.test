@@ -163,20 +163,20 @@ INSERT INTO tbl VALUES (34044708, 0);
 
 SELECT COUNT(*) FROM tbl;
 SELECT * FROM tbl ORDER BY `id`;
-SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+SET @single_select_index_bk = @@spider_ignore_single_select_index;
 SET @optimzer_switch_bk = @@session.optimizer_switch;
 
 -- echo mrr = on
 SET SESSION optimizer_switch = "mrr=on";
 -- echo spider_ignore_single_select_index enable
-SET GLOBAL spider_ignore_single_select_index = ON;
+set spider_ignore_single_select_index = ON;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 SELECT * FROM m;
 TRUNCATE TABLE m;
 
 -- echo spider_ignore_single_select_index disable
-SET GLOBAL spider_ignore_single_select_index = OFF;
+set spider_ignore_single_select_index = OFF;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 SELECT * FROM m;
@@ -185,14 +185,14 @@ TRUNCATE TABLE m;
 -- echo mrr = off
 SET SESSION optimizer_switch = "mrr=off";
 -- echo spider_ignore_single_select_index enable
-SET GLOBAL spider_ignore_single_select_index = ON;
+set spider_ignore_single_select_index = ON;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 SELECT * FROM m;
 TRUNCATE TABLE m;
 
 -- echo spider_ignore_single_select_index disable
-SET GLOBAL spider_ignore_single_select_index = OFF;
+set spider_ignore_single_select_index = OFF;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 INSERT INTO m(id) SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 SELECT * FROM m;
@@ -200,7 +200,7 @@ TRUNCATE TABLE m;
 
 
 -- echo spider_ignore_single_select_index restore
-SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+set spider_ignore_single_select_index = @single_select_index_bk;
 -- echo optimizer_switch restore
 SET SESSION optimizer_switch = @optimzer_switch_bk;
 
