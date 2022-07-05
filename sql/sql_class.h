@@ -705,6 +705,9 @@ typedef struct system_variables
 
   vers_asof_timestamp_t vers_asof_timestamp;
   ulong vers_alter_history;
+
+  my_bool opt_spider_ignore_single_select_index;
+  my_bool opt_spider_ignore_single_update_index;
 } SV;
 
 /**

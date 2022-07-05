@@ -82,12 +82,12 @@ id	flag
 98646655	1
 101624109	1
 571307512	1
-SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+SET @single_select_index_bk = @@spider_ignore_single_select_index;
 SET @optimzer_switch_bk = @@session.optimizer_switch;
 mrr = on
 SET SESSION optimizer_switch = "mrr=on";
 spider_ignore_single_select_index enable
-SET GLOBAL spider_ignore_single_select_index = ON;
+set spider_ignore_single_select_index = ON;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 id
 30864034
@@ -111,7 +111,7 @@ id
 571307512
 TRUNCATE TABLE m;
 spider_ignore_single_select_index disable
-SET GLOBAL spider_ignore_single_select_index = OFF;
+set spider_ignore_single_select_index = OFF;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 id
 30864034
@@ -137,7 +137,7 @@ TRUNCATE TABLE m;
 mrr = off
 SET SESSION optimizer_switch = "mrr=off";
 spider_ignore_single_select_index enable
-SET GLOBAL spider_ignore_single_select_index = ON;
+set spider_ignore_single_select_index = ON;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 id
 30864034
@@ -161,7 +161,7 @@ id
 571307512
 TRUNCATE TABLE m;
 spider_ignore_single_select_index disable
-SET GLOBAL spider_ignore_single_select_index = OFF;
+set spider_ignore_single_select_index = OFF;
 SELECT id FROM tbl WHERE id NOT IN (94933594) AND flag = 1;
 id
 30864034
@@ -185,7 +185,7 @@ id
 571307512
 TRUNCATE TABLE m;
 spider_ignore_single_select_index restore
-SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+set spider_ignore_single_select_index = @single_select_index_bk;
 optimizer_switch restore
 SET SESSION optimizer_switch = @optimzer_switch_bk;
 

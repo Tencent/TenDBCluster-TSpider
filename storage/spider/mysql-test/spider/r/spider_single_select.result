@@ -60,9 +60,9 @@ INSERT INTO tbl VALUES
 (9,  "30508501104-50823269125-88107014550-70202920684-95842308929", "26482547570-00155460224-12388481921-23289186371-78242522654-77998886134-73270876420-50821093220-31442690639-11588920653", 0, 2),
 (10, "62779785163-72948938250-41369758259-80996497836-62655463951", "80707408529-50567701755-94710751896-99750913740-12893433455-71449705205-06190682370-44407762850-72484044178-50518730145", 1, 1),
 (11, "48573666000-08738799548-77636362790-42210907101-93959032950", "36136545002-86991679216-03626334357-76004089615-79374967509-18534984815-05132458464-89989437682-83510632788-12432287646", 0, null);
-SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+SET @single_select_index_bk = @@spider_ignore_single_select_index;
 spider_ignore_single_select_index enable
-SET GLOBAL spider_ignore_single_select_index = ON;
+set spider_ignore_single_select_index = ON;
 JOIN TYPE 'const' TEST
 SELECT pad FROM tbl WHERE id = 5;
 pad
@@ -155,7 +155,7 @@ id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
 JOIN TYPE 'range'
 Currently, RANGE JOIN TYPE is not tested, since it needs spider_ignore_single_select_index = OFF
 spider_ignore_single_select_index restore
-SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+set spider_ignore_single_select_index = @single_select_index_bk;
 
 deinit
 connection master_1;

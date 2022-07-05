@@ -34,10 +34,10 @@
 --let $USE_GENERAL_LOG= 1
 
 --connection master_1
-SET @ignore_single_select_index_backup = @@global.spider_ignore_single_select_index;
+SET @ignore_single_select_index_backup = @@spider_ignore_single_select_index;
 SET @join_cache_level_backup = @@join_cache_level;
 SET @spider_string_key_equal_to_like_backup = @@spider_string_key_equal_to_like;
-SET GLOBAL spider_ignore_single_select_index=OFF;
+SET spider_ignore_single_select_index=OFF;
 SET join_cache_level=0; # force execution plan
 SET spider_string_key_equal_to_like=ON;
 if ($USE_GENERAL_LOG)
@@ -182,7 +182,7 @@ if ($USE_GENERAL_LOG)
 }
 
 # cleanup
-SET GLOBAL spider_ignore_single_select_index = @ignore_single_select_index_backup;
+SET spider_ignore_single_select_index = @ignore_single_select_index_backup;
 SET spider_string_key_equal_to_like = @spider_string_key_equal_to_like_backup;
 SET join_cache_level = @join_cache_level_backup;
 if ($USE_GENERAL_LOG)

@@ -159,10 +159,10 @@ INSERT INTO tbl VALUES
 (10, "62779785163-72948938250-41369758259-80996497836-62655463951", "80707408529-50567701755-94710751896-99750913740-12893433455-71449705205-06190682370-44407762850-72484044178-50518730145", 1, 1),
 (11, "48573666000-08738799548-77636362790-42210907101-93959032950", "36136545002-86991679216-03626334357-76004089615-79374967509-18534984815-05132458464-89989437682-83510632788-12432287646", 0, null);
 
-SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+SET @single_select_index_bk = @@spider_ignore_single_select_index;
 
 -- echo spider_ignore_single_select_index enable
-SET GLOBAL spider_ignore_single_select_index = ON;
+set spider_ignore_single_select_index = ON;
 
 -- echo JOIN TYPE 'const' TEST
 SELECT pad FROM tbl WHERE id = 5;
@@ -200,7 +200,7 @@ EXPLAIN SELECT ckey FROM tbl WHERE ckey not in (5);
 -- echo Currently, RANGE JOIN TYPE is not tested, since it needs spider_ignore_single_select_index = OFF
 
 -- echo spider_ignore_single_select_index restore
-SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+set spider_ignore_single_select_index = @single_select_index_bk;
 
 
 --echo

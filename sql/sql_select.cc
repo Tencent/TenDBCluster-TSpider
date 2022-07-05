@@ -4250,9 +4250,8 @@ static bool make_join_statistics(JOIN *join, List<TABLE_LIST> &tables_list,
                 break;
               } else
                 found_ref |= refs;  // Table is const if all refs are const
-            } else if (opt_spider_ignore_single_select_index &&
-                join->thd && join->thd->lex &&
-                join->thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
+            } else if (join->thd && join->thd->variables.opt_spider_ignore_single_select_index &&
+                join->thd->lex && join->thd->lex->sql_command == SQLCOM_SELECT &&  /* simple select */
                 /* !thd->lex->describe &&  // not describe/explain types */
                 !(join->thd->lex->describe && (join->thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
                 join->thd->lex->query_tables && (join->thd->lex->query_tables->next_global == NULL) && /* single table */
@@ -8712,9 +8711,8 @@ static bool create_ref_for_key(JOIN *join, JOIN_TAB *j, KEYUSE *org_keyuse,
     keyparts = length = 0;
     uint found_part_ref_or_null = 0;
     if ((j->type != JT_CONST && j->type != JT_SYSTEM) &&
-        opt_spider_ignore_single_select_index &&
-        thd && thd->lex &&
-        thd->lex->sql_command == SQLCOM_SELECT &&
+        thd && thd->variables.opt_spider_ignore_single_select_index &&
+        thd->lex && thd->lex->sql_command == SQLCOM_SELECT &&
         !(thd->lex->describe && (thd->lex->select_lex.options & SELECT_DESCRIBE)) &&
         thd->lex->query_tables && (thd->lex->query_tables->next_global == NULL) && /* single table */
         table->file && table->file->is_spider_storage_engine()) {

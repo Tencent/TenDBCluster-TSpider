@@ -66,10 +66,10 @@ connection master_1;
 DROP TABLE IF EXISTS t3;;
 CREATE TABLE t3 (id1 varchar(32), id2 varchar(32), flag int, primary key(id1, id2(4)))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t3", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t3", srv "s_2_2",aim "1"');;
 connection master_1;
-SET @ignore_single_select_index_backup = @@global.spider_ignore_single_select_index;
+SET @ignore_single_select_index_backup = @@spider_ignore_single_select_index;
 SET @join_cache_level_backup = @@join_cache_level;
 SET @spider_string_key_equal_to_like_backup = @@spider_string_key_equal_to_like;
-SET GLOBAL spider_ignore_single_select_index=OFF;
+SET spider_ignore_single_select_index=OFF;
 SET join_cache_level=0;
 SET spider_string_key_equal_to_like=ON;
 SET @old_log_output = @@global.log_output;
@@ -229,7 +229,7 @@ argument
 SELECT id1, id2, flag FROM t3 WHERE id1 = "abcdefghijklmnopqrstuvwxyz_3" AND id2 = "abcdefghijklmnopqrstuvwxyz"
 mysql localhost 3306 select `id1`,`id2`,`flag` from `auto_test_remote`.`t3` where `id1` = 'abcdefghijklmnopqrstuvwxyz_3' and `id2` like 'abcd%'
 TRUNCATE TABLE mysql.general_log;
-SET GLOBAL spider_ignore_single_select_index = @ignore_single_select_index_backup;
+SET spider_ignore_single_select_index = @ignore_single_select_index_backup;
 SET spider_string_key_equal_to_like = @spider_string_key_equal_to_like_backup;
 SET join_cache_level = @join_cache_level_backup;
 connection master_1;

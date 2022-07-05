@@ -7430,15 +7430,14 @@ int spider_mysql_handler::append_update_where(spider_string *str,
                         bitmap_is_set(table->read_set, (*field)->field_index)
                             ? "TRUE"
                             : "FALSE"));
-    /* if spider_update_with_primary_key_first = ON
+    /*
         we only append the column when 
         1. table has no unique keys nor primary keys, or
         2. table has unique key(s) and the field is one of them, or
         3. table has primary key(s) and the field is one of them.
     */
     if (/* table->s->primary_key == MAX_KEY */ !table_has_unique_key ||
-        (spider_param_update_with_primary_key_first() && field_is_primary_or_unique_key(table, *field)) ||
-        (!spider_param_update_with_primary_key_first() && bitmap_is_set(table->read_set, (*field)->field_index))) {
+        field_is_primary_or_unique_key(table, *field)) {
       field_name_length =
           mysql_share->column_name_str[(*field)->field_index].length();
       if ((*field)->is_null(ptr_diff)) {
@@ -8297,7 +8296,7 @@ int spider_mysql_handler::append_limit(spider_string *str, longlong offset,
   uint32 length;
   DBUG_ENTER("spider_mysql_handler::append_limit");
 
-  if ((offset || limit < 9223372036854775807LL)) {
+  if ((offset || limit < INT_MAX64)) {
     if (str->reserve(SPIDER_SQL_LIMIT_LEN + SPIDER_SQL_COMMA_LEN +
                      ((SPIDER_LONGLONG_LEN)*2)))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
@@ -11491,7 +11490,7 @@ int spider_mysql_copy_table::append_limit(longlong offset, longlong limit) {
   uint32 length;
   DBUG_ENTER("spider_mysql_copy_table::append_limit");
   DBUG_PRINT("info", ("spider this=%p", this));
-  if (offset || limit < 9223372036854775807LL) {
+  if (offset || limit < INT_MAX64) {
     if (sql.reserve(SPIDER_SQL_LIMIT_LEN + SPIDER_SQL_COMMA_LEN +
                     ((SPIDER_LONGLONG_LEN)*2)))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);

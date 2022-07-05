@@ -1091,11 +1091,11 @@ int spider_group_by_handler::init_scan() {
     result_list->split_read = select_limit /* + offset_limit */;
     result_list->bgs_split_read = select_limit /* + offset_limit */;
 
-    result_list->split_read_base = 9223372036854775807LL;
+    result_list->split_read_base = INT_MAX64;
     result_list->semi_split_read = 0;
-    result_list->semi_split_read_limit = 9223372036854775807LL;
-    result_list->first_read = 9223372036854775807LL;
-    result_list->second_read = 9223372036854775807LL;
+    result_list->semi_split_read_limit = INT_MAX64;
+    result_list->first_read = INT_MAX64;
+    result_list->second_read = INT_MAX64;
     trx->direct_order_limit_count++;
   }
   result_list->semi_split_read_base = 0;

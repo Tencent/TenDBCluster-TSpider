@@ -317,21 +317,13 @@ extern my_bool opt_log_sql_use_mutil_partition;
 extern my_bool opt_spider_auto_increment_mode_switch;
 extern uint opt_spider_auto_increment_mode_value;
 extern uint opt_spider_auto_increment_step;
-extern my_bool opt_spider_ignore_single_select_index;
-extern my_bool opt_spider_ignore_single_update_index;
 extern my_bool opt_spider_group_by_handler;
 extern my_bool opt_spider_rone_shard_switch;
-extern my_bool opt_spider_slow_log;
 extern my_bool opt_spider_query_one_shard;
 extern my_bool opt_spider_transaction_one_shard;
 extern my_bool opt_spider_ignore_create_like;
 extern my_bool opt_spider_direct_limit_in_group;
-extern my_bool opt_spider_direct_limit_in_select;
 extern uint opt_spider_modify_status_interval;
-extern uint opt_spider_status_least;
-extern my_bool opt_spider_not_convert_binary;
-extern my_bool opt_spider_parallel_group_order;
-extern my_bool opt_spider_parallel_limit;
 extern my_bool opt_spider_internal_xa;
 
 #ifdef HAVE_PSI_INTERFACE

@@ -15,7 +15,6 @@
 
 my_bool spider_param_support_xa();
 my_bool spider_param_connect_mutex();
-my_bool spider_param_update_with_primary_key_first();
 uint spider_param_connect_error_interval();
 uint spider_param_table_init_error_interval();
 int spider_param_use_table_charset(int use_table_charset);
@@ -128,7 +127,6 @@ int spider_param_bulk_access_free(int bulk_access_free);
 #else
 int spider_param_udf_ds_use_real_table(THD *thd, int udf_ds_use_real_table);
 #endif
-my_bool spider_param_error_when_flush_server();
 my_bool spider_param_general_log();
 int spider_param_idle_conn_recycle_interval();
 int spider_param_conn_meta_invalid_max_count();
@@ -157,3 +155,4 @@ bool spider_param_trans_rollback(THD *thd);
 bool spider_param_string_key_equal_to_like(THD *thd);
 uint spider_param_active_conns_view_info_length();
 my_bool spider_param_enable_active_conns_view();
+bool spider_param_parallel_limit(THD *thd);

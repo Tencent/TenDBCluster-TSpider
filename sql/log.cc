@@ -984,19 +984,8 @@ bool Log_to_csv_event_handler::
     A positive return value in store() means truncation.
     Still logging a message in the log in this case.
   */
-  if (opt_spider_slow_log && thd->is_spider_query)
-  {
-      spider_slow_query.append(sql_text, sql_text_len);
-      spider_slow_query.append(";\n", 2);
-      spider_slow_query.append(thd->spider_remote_query.ptr(), thd->spider_remote_query.length());
-      if (table->field[10]->store(spider_slow_query.ptr(), spider_slow_query.length(), client_cs) < 0)
-          goto err;
-  }
-  else
-  {
-      if (table->field[10]->store(sql_text, sql_text_len, client_cs) < 0)
-          goto err;
-  }
+  if (table->field[10]->store(sql_text, sql_text_len, client_cs) < 0)
+    goto err;
 
   if (table->field[11]->store((longlong) thd->thread_id, TRUE))
     goto err;
@@ -3421,7 +3410,6 @@ bool MYSQL_QUERY_LOG::write(THD *thd, time_t current_time,
     }
     if (my_b_write(&log_file, (uchar*) sql_text, sql_text_len) ||
         my_b_write(&log_file, (uchar*) ";\n",2) ||
-        (opt_spider_slow_log && thd->is_spider_query && my_b_write(&log_file, (uchar*)thd->spider_remote_query.ptr(), thd->spider_remote_query.length())) ||
         flush_io_cache(&log_file))
       goto err;
 

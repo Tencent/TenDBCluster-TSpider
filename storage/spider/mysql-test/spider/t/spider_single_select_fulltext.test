@@ -125,10 +125,10 @@ eval $MASTER_CREATE_TABLES1;
 
 --echo
 --echo insert data and test
-SET @single_select_index_bk = @@global.spider_ignore_single_select_index;
+SET @single_select_index_bk = @@spider_ignore_single_select_index;
 
 -- echo spider_ignore_single_select_index enable
-SET GLOBAL spider_ignore_single_select_index = ON;
+set spider_ignore_single_select_index = ON;
 INSERT INTO t1 VALUES
 (1, 'MySQL has now support', 'for full-text search'),
 (2, 'Full-text indexes', 'are called collections'),
@@ -200,7 +200,7 @@ select * from t1 where MATCH a,b AGAINST ('+(+(support collections)) +foobar*' I
 select * from t1 where MATCH a,b AGAINST ('+collections -supp* -foobar*' IN BOOLEAN MODE);
 
 -- echo spider_ignore_single_select_index restore
-SET GLOBAL spider_ignore_single_select_index = @single_select_index_bk;
+set spider_ignore_single_select_index = @single_select_index_bk;
 
 
 --echo

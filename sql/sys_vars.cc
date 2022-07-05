@@ -6127,27 +6127,17 @@ static Sys_var_uint Sys_spider_auto_increment_mode_value(
 static Sys_var_mybool Sys_spider_ignore_single_select_index(
     "spider_ignore_single_select_index",
     "spider_ignore_single_select_index defaults is TRUE, let single select in spider ignore all index",
-    GLOBAL_VAR(opt_spider_ignore_single_select_index), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
+    SESSION_VAR(opt_spider_ignore_single_select_index), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
 
 static Sys_var_mybool Sys_spider_ignore_single_update_index(
     "spider_ignore_single_update_index",
     "spider_ignore_single_update_index defaults is TRUE, let single update in spider ignore all index",
-    GLOBAL_VAR(opt_spider_ignore_single_update_index), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
-
-static Sys_var_mybool Sys_spider_group_by_handler(
-	"spider_group_by_handler",
-	"spider_group_by_handler defaults is FALSE, disable this function",
-	READ_ONLY GLOBAL_VAR(opt_spider_group_by_handler), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
+    SESSION_VAR(opt_spider_ignore_single_update_index), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
 
 static Sys_var_mybool Sys_spider_rone_shard_switch(
     "spider_rone_shard_switch",
     "enable the SPIDER_RONE_SHARD option effective",
     GLOBAL_VAR(opt_spider_rone_shard_switch), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
-
-static Sys_var_mybool Sys_spider_slow_log(
-    "spider_slow_log",
-    "enable spider_slow_log, print each remote execute sql when print slow log",
-    GLOBAL_VAR(opt_spider_slow_log), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
 
 static Sys_var_mybool Sys_spider_query_one_shard(
     "spider_query_one_shard",
@@ -6169,39 +6159,11 @@ static Sys_var_mybool Sys_spider_direct_limit_in_group(
     "limit with group would not direct send limit to remote when FALSE",
     GLOBAL_VAR(opt_spider_direct_limit_in_group), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
 
-static Sys_var_mybool Sys_spider_direct_limit_in_select(
-    "spider_direct_limit_in_select",
-    "select with limit would send limit to remote directly when TRUE and spider_parallel_limit is TURE",
-    GLOBAL_VAR(opt_spider_direct_limit_in_select), CMD_LINE(OPT_ARG),
-    DEFAULT(TRUE));
-
 static Sys_var_uint Sys_spider_modify_status_interval(
     "spider_modify_status_interval",
     "the values means the interval update spider_table_status",
     GLOBAL_VAR(opt_spider_modify_status_interval), CMD_LINE(REQUIRED_ARG),
     VALID_RANGE(3600, 86400), DEFAULT(28800), BLOCK_SIZE(1));
-
-static Sys_var_uint Sys_spider_status_least(
-    "spider_status_least",
-    "the values means the least interval to update spider_table_status(pre_modify_time interval)",
-    GLOBAL_VAR(opt_spider_status_least), CMD_LINE(REQUIRED_ARG),
-    VALID_RANGE(60, 86400), DEFAULT(3600), BLOCK_SIZE(1));
-
-static Sys_var_mybool Sys_spider_not_convert_binary(
-    "spider_not_convert_binary",
-    "spider_not_convert_binary defaults is true, set spider to use binary to express binary",
-    GLOBAL_VAR(opt_spider_not_convert_binary), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
-
-static Sys_var_mybool Sys_spider_parallel_group_order(
-    "spider_parallel_group_order",
-    "spider_parallel_group_order defaults is TRUE, set spider parallel process without supporting group by, order by",
-    GLOBAL_VAR(opt_spider_parallel_group_order), CMD_LINE(OPT_ARG), DEFAULT(TRUE));
-
-
-static Sys_var_mybool Sys_spider_parallel_limit(
-    "spider_parallel_limit",
-    "spider_parallel_limit defaults is false, set spider parallel process without supporting  limit",
-    GLOBAL_VAR(opt_spider_parallel_limit), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
 
 static Sys_var_mybool Sys_ddl_execute_by_ctl(
     "ddl_execute_by_ctl",

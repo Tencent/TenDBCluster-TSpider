@@ -418,21 +418,13 @@ my_bool opt_log_sql_use_mutil_partition;
 my_bool opt_spider_auto_increment_mode_switch;
 uint opt_spider_auto_increment_step;
 uint opt_spider_auto_increment_mode_value;
-my_bool opt_spider_ignore_single_select_index;
-my_bool opt_spider_ignore_single_update_index;
 my_bool opt_spider_group_by_handler;
 my_bool opt_spider_rone_shard_switch;
-my_bool opt_spider_slow_log;
 my_bool opt_spider_query_one_shard;
 my_bool opt_spider_transaction_one_shard;
 my_bool opt_spider_ignore_create_like;
 my_bool opt_spider_direct_limit_in_group;
-my_bool opt_spider_direct_limit_in_select;
 uint opt_spider_modify_status_interval;
-uint opt_spider_status_least;
-my_bool opt_spider_not_convert_binary;
-my_bool opt_spider_parallel_group_order;
-my_bool opt_spider_parallel_limit;
 my_bool opt_spider_internal_xa;
 ulonglong opt_spider_log_ignore_err_nums;
 /*
@@ -7838,7 +7830,13 @@ struct my_option my_long_options[]=
 
   /* The following options were added after 5.6.10 */
   MYSQL_TO_BE_IMPLEMENTED_OPTION("rpl-stop-slave-timeout"),
-  MYSQL_TO_BE_IMPLEMENTED_OPTION("validate-user-plugins") // NO_EMBEDDED_ACCESS_CHECKS
+  MYSQL_TO_BE_IMPLEMENTED_OPTION("validate-user-plugins"), // NO_EMBEDDED_ACCESS_CHECKS
+
+  /* The following options are used by Spider SE */
+  {"spider_group_by_handler", 0,
+   "Enable spider group by handler (default: OFF).",
+   &opt_spider_group_by_handler, &opt_spider_group_by_handler, 0, GET_BOOL,
+   OPT_ARG, 0, 0, 0, 0, 0, 0}
 };
 
 static int show_queries(THD *thd, SHOW_VAR *var, char *buff,

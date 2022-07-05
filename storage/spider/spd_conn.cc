@@ -497,11 +497,6 @@ void spider_free_conn_from_trx(SPIDER_TRX *trx, SPIDER_CONN *conn, bool another,
                            // share->server_version (old conn)
       conn->server_lost =
           TRUE;  // server version changed, free old version conn
-      if (spider_param_error_when_flush_server()) {  // flush server force,
-                                                     // report error 12701
-        my_message(ER_SPIDER_REMOTE_SERVER_GONE_AWAY_NUM,
-                   ER_SPIDER_REMOTE_SERVER_GONE_AWAY_STR, MYF(0));
-      }
     }
   }
 
@@ -4154,7 +4149,7 @@ static void *spider_get_status_action(void *arg) {
 
   while (get_status_init) {
     double modify_interval = opt_spider_modify_status_interval;
-    double interval_least = opt_spider_status_least;
+    double interval_least = 60; /* hardcode minimum interval to 60 seconds */
     time_t pre_modify_time;
     time_t cur_time;
     ulong share_records;
