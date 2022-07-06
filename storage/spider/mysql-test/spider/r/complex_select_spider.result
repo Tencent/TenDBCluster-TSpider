@@ -37,7 +37,6 @@ CREATE TABLE t1 (c1 INT PRIMARY KEY, c2 INT, c3 INT, KEY kc2(c2))ENGINE=Spider D
 
 test
 SET @save_spider_quick_mode=@@spider_quick_mode;
-SET @save_spider_semi_split_read=@@spider_semi_split_read;
 SET @save_spider_direct_order_limit=@@spider_direct_order_limit;
 connection master_1;
 SHOW CREATE TABLE t1;
@@ -53,7 +52,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -972,7 +970,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -1891,7 +1888,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -2810,7 +2806,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -3729,7 +3724,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 2;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -4648,7 +4642,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 3;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -5567,7 +5560,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 2;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -6486,7 +6478,6 @@ t1	CREATE TABLE `t1` (
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
 SET spider_quick_mode = 3;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
 INSERT INTO t1 VALUES(8,4,4),(12,4,4),(10,9,6),(4,11,18),(2,17,5),(6,9,6),(18,7,4),(20,7,4),(14,4,4),(22,9,5),(0,5,5),(16,15,12);
@@ -7392,7 +7383,6 @@ c1	c3
 22	5
 TRUNCATE TABLE t1;
 SET spider_quick_mode=@save_spider_quick_mode;
-SET spider_semi_split_read=@save_spider_semi_split_read;
 SET spider_direct_order_limit=@save_spider_direct_order_limit;
 
 deinit

@@ -2,7 +2,6 @@
 SHOW CREATE TABLE t1;
 
 --eval SET spider_quick_mode = $quick_mode
---eval SET spider_semi_split_read = $semi_split_read
 --eval SET spider_direct_order_limit = $direct_order_limit
 
 INSERT INTO t1 VALUES(1,5,5),(3,5,4),(5,7,3),(7,3,2),(9,5,6),(11,0,8),(13,7,4),(15,3,2),(21,5,6),(17,7,6),(19,1,5);
