@@ -109,10 +109,8 @@ insert into t1 values (20201218,1608298440000,0,289),
 (20201218,1608264780000,0,292),
 (20201218,1608299100000,0,293);
 SET @save_spider_quick_mode=@@spider_quick_mode;
-SET @save_spider_semi_split_read=@@spider_semi_split_read;
 SET @save_spider_direct_order_limit=@@spider_direct_order_limit;
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -149,7 +147,6 @@ d
 298
 294
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -186,7 +183,6 @@ d
 298
 294
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -223,7 +219,6 @@ d
 298
 294
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -260,7 +255,6 @@ d
 298
 294
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -297,7 +291,6 @@ d
 298
 294
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -334,7 +327,6 @@ d
 298
 294
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -371,7 +363,6 @@ d
 298
 294
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -408,7 +399,6 @@ d
 298
 294
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -445,7 +435,6 @@ d
 298
 294
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -482,7 +471,6 @@ d
 298
 294
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d
@@ -519,7 +507,6 @@ d
 298
 294
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 d

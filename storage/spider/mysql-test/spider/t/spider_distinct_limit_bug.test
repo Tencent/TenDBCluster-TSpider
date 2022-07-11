@@ -77,12 +77,11 @@ insert into t1 values (20201218,1608298440000,0,289),
 (20201218,1608299100000,0,293);
 
 SET @save_spider_quick_mode=@@spider_quick_mode;
-SET @save_spider_semi_split_read=@@spider_semi_split_read;
 SET @save_spider_direct_order_limit=@@spider_direct_order_limit;
 
 # 1
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
+#SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -91,7 +90,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 2.
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
+#SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -100,7 +99,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 3.
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 0;
+#SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -109,7 +108,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 4.
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 0;
+#SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 9223372036854775807;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -118,7 +117,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 5.
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
+#SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -127,7 +126,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 6.
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 0;
+#SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -136,7 +135,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 7.
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
+#SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -145,7 +144,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 8.
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 0;
+#SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = 0;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -154,7 +153,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 9.
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 1;
+#SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -163,7 +162,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 10.
 SET spider_quick_mode = 1;
-SET spider_semi_split_read = 0;
+#SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -172,7 +171,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 11.
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 1;
+#SET spider_semi_split_read = 1;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;
@@ -181,7 +180,7 @@ select distinct d from t1 order by b desc limit 8;
 
 # 12.
 SET spider_quick_mode = 0;
-SET spider_semi_split_read = 0;
+#SET spider_semi_split_read = 0;
 SET spider_direct_order_limit = -1;
 select distinct d from t1 where c=0 order by b desc limit 5;
 select distinct d from t1 order by b desc limit 5;

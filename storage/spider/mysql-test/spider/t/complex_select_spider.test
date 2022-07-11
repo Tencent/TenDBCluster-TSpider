@@ -25,54 +25,44 @@
 --echo test
 
 SET @save_spider_quick_mode=@@spider_quick_mode;
-SET @save_spider_semi_split_read=@@spider_semi_split_read;
 SET @save_spider_direct_order_limit=@@spider_direct_order_limit;
 --let $quick_mode = 1
---let $semi_split_read = 1
 --let $direct_order_limit = 9223372036854775807
 --source ../t/complex_select_spider.inc
 
 --let $quick_mode = 0
---let $semi_split_read = 1
 --let $direct_order_limit = 9223372036854775807
 --source ../t/complex_select_spider.inc
 
 --let $quick_mode = 1
---let $semi_split_read = 1
 --let $direct_order_limit = -1
 --source ../t/complex_select_spider.inc
 
 --let $quick_mode = 0
---let $semi_split_read = 1
 --let $direct_order_limit = -1
 --source ../t/complex_select_spider.inc
 
 
 
 --let $quick_mode = 2
---let $semi_split_read = 1
 --let $direct_order_limit = 9223372036854775807
 --source ../t/complex_select_spider.inc
 
 --let $quick_mode = 3
---let $semi_split_read = 1
 --let $direct_order_limit = 9223372036854775807
 --source ../t/complex_select_spider.inc
 
 --let $quick_mode = 2
---let $semi_split_read = 1
 --let $direct_order_limit = -1
 --source ../t/complex_select_spider.inc
 
 --let $quick_mode = 3
---let $semi_split_read = 1
 --let $direct_order_limit = -1
 --source ../t/complex_select_spider.inc
 
 
 # reset parameters
 SET spider_quick_mode=@save_spider_quick_mode;
-SET spider_semi_split_read=@save_spider_semi_split_read;
 SET spider_direct_order_limit=@save_spider_direct_order_limit;
 
 --source ../include/spider_drop_database.inc

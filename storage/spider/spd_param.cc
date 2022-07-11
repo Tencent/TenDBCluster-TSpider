@@ -331,7 +331,7 @@ uint spider_param_force_commit(THD *thd) {
  */
 static MYSQL_THDVAR_UINT(
     xa_register_mode,                                    /* name */
-    PLUGIN_VAR_RQCMDARG,                                 /* opt */
+    PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,           /* opt */
     "Mode of XA transaction register into system table", /* comment */
     NULL,                                                /* check */
     NULL,                                                /* update */
@@ -415,7 +415,7 @@ longlong spider_param_split_read(THD *thd, longlong split_read) {
    1-:magnification
  */
 static MYSQL_THDVAR_INT(semi_split_read,     /* name */
-                        PLUGIN_VAR_RQCMDARG, /* opt */
+                        PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
                         "Use offset and limit parameter in SQL for split_read "
                         "parameter.", /* comment
                                        */
@@ -439,7 +439,7 @@ double spider_param_semi_split_read(THD *thd, double semi_split_read) {
  */
 static MYSQL_THDVAR_LONGLONG(
     semi_split_read_limit,                 /* name */
-    PLUGIN_VAR_RQCMDARG,                   /* opt */
+    PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,                   /* opt */
     "The limit value for semi_split_read", /* comment */
     NULL,                                  /* check */
     NULL,                                  /* update */
@@ -530,7 +530,7 @@ int spider_param_multi_split_read(THD *thd, int multi_split_read) {
   0-:max order columns
  */
 static MYSQL_THDVAR_INT(max_order,                  /* name */
-                        PLUGIN_VAR_RQCMDARG,        /* opt */
+                        PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,        /* opt */
                         "Max columns for order by", /* comment */
                         NULL,                       /* check */
                         NULL,                       /* update */
@@ -554,7 +554,7 @@ int spider_param_max_order(THD *thd, int max_order) {
  */
 static MYSQL_THDVAR_INT(
     semi_trx_isolation,                                 /* name */
-    PLUGIN_VAR_RQCMDARG,                                /* opt */
+    PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,          /* opt */
     "Transaction isolation level during execute a sql", /* comment */
     NULL,                                               /* check */
     NULL,                                               /* update */
@@ -833,7 +833,7 @@ int spider_param_bulk_size(THD *thd, int bulk_size) {
       (Collected statements are sent together)
  */
 static MYSQL_THDVAR_INT(bulk_update_mode,                         /* name */
-                        PLUGIN_VAR_RQCMDARG,                      /* opt */
+                        PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
                         "The mode of bulk updating and deleting", /* comment */
                         NULL,                                     /* check */
                         NULL,                                     /* update */
@@ -965,7 +965,7 @@ int spider_param_use_snapshot_with_flush_tables(THD *thd) {
  */
 static MYSQL_THDVAR_BOOL(
     use_all_conns_snapshot,                                     /* name */
-    PLUGIN_VAR_OPCMDARG,                                        /* opt */
+    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR,                  /* opt */
     "When start trx with snapshot, it send to all connections", /* comment */
     NULL,                                                       /* check */
     NULL,                                                       /* update */
@@ -1018,7 +1018,7 @@ bool spider_param_internal_unlock(THD *thd) {
  */
 static MYSQL_THDVAR_BOOL(
     semi_trx,                                  /* name */
-    PLUGIN_VAR_OPCMDARG,                       /* opt */
+    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_NOSYSVAR,                       /* opt */
     "Take a transaction during execute a sql", /* comment */
     NULL,                                      /* check */
     NULL,                                      /* update */
@@ -1161,7 +1161,7 @@ longlong spider_param_quick_page_size(THD *thd, longlong quick_page_size) {
  */
 static MYSQL_THDVAR_INT(
     low_mem_read,        /* name */
-    PLUGIN_VAR_RQCMDARG, /* opt */
+    PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR, /* opt */
     "Use low memory mode when SQL(SELECT) internally issued to a remote server "
     "is executed and get a result list", /* comment */
     NULL,                                /* check */
@@ -1269,7 +1269,7 @@ bool spider_param_ignore_xa_log(THD *thd) {
  */
 static MYSQL_THDVAR_LONGLONG(
     bgs_first_read,                                                /* name */
-    PLUGIN_VAR_RQCMDARG,                                           /* opt */
+    PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,                     /* opt */
     "Number of first read records when background search is used", /* comment */
     NULL,                                                          /* check */
     NULL,                                                          /* update */
@@ -1292,7 +1292,7 @@ longlong spider_param_bgs_first_read(THD *thd, longlong bgs_first_read) {
  */
 static MYSQL_THDVAR_LONGLONG(
     bgs_second_read,                                                /* name */
-    PLUGIN_VAR_RQCMDARG,                                            /* opt */
+    PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,                      /* opt */
     "Number of second read records when background search is used", /* comment
                                                                      */
     NULL,                                                           /* check */
@@ -1315,7 +1315,8 @@ longlong spider_param_bgs_second_read(THD *thd, longlong bgs_second_read) {
   1-:number of records
  */
 static MYSQL_THDVAR_LONGLONG(first_read,                     /* name */
-                             PLUGIN_VAR_RQCMDARG,            /* opt */
+                             PLUGIN_VAR_RQCMDARG |
+                                 PLUGIN_VAR_NOSYSVAR,           /* opt */
                              "Number of first read records", /* comment */
                              NULL,                           /* check */
                              NULL,                           /* update */
@@ -1337,7 +1338,8 @@ longlong spider_param_first_read(THD *thd, longlong first_read) {
   1-:number of records
  */
 static MYSQL_THDVAR_LONGLONG(second_read,                     /* name */
-                             PLUGIN_VAR_RQCMDARG,             /* opt */
+                             PLUGIN_VAR_RQCMDARG |
+                                 PLUGIN_VAR_NOSYSVAR,             /* opt */
                              "Number of second read records", /* comment */
                              NULL,                            /* check */
                              NULL,                            /* update */
@@ -1973,7 +1975,7 @@ static int spider_remote_sql_log_off;
   1 :sql_log_off = 1 on all data nodes
  */
 static MYSQL_SYSVAR_INT(remote_sql_log_off, spider_remote_sql_log_off,
-                        PLUGIN_VAR_RQCMDARG,
+                        PLUGIN_VAR_RQCMDARG | PLUGIN_VAR_NOSYSVAR,
                         "Set SQL_LOG_OFF mode on connecting for improved "
                         "performance of connection, if you know",
                         NULL, NULL, 0, -1, 1, 0);
@@ -2574,7 +2576,8 @@ uint spider_param_log_result_error_with_sql(THD *thd) {
 
 static char *spider_version = (char *)SPIDER_DETAIL_VERSION;
 static MYSQL_SYSVAR_STR(version, spider_version,
-                        PLUGIN_VAR_NOCMDOPT | PLUGIN_VAR_READONLY,
+                        PLUGIN_VAR_NOCMDOPT | PLUGIN_VAR_READONLY |
+                            PLUGIN_VAR_NOSYSVAR,
                         "The version of Spider", NULL, NULL,
                         SPIDER_DETAIL_VERSION);
 

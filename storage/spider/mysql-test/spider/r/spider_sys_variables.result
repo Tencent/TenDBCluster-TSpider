@@ -31,11 +31,8 @@ spider_auto_increment_mode_switch	ON
 spider_auto_increment_mode_value	12
 spider_auto_increment_step	17
 spider_bgs_dml	0
-spider_bgs_first_read	2
 spider_bgs_mode	0
-spider_bgs_second_read	100
 spider_bulk_size	16000
-spider_bulk_update_mode	2
 spider_bulk_update_size	16000
 spider_conn_recycle_mode	1
 spider_conn_wait_timeout	20
@@ -47,7 +44,6 @@ spider_direct_insert_ignore	0
 spider_direct_limit_in_group	OFF
 spider_direct_order_limit	10000
 spider_enable_active_conns_view	ON
-spider_first_read	0
 spider_force_commit	2
 spider_general_log	OFF
 spider_get_sts_or_crd	OFF
@@ -66,9 +62,7 @@ spider_internal_xa_snapshot	0
 spider_log_ignore_err_numbers	
 spider_log_result_error_with_sql	3
 spider_log_result_errors	1
-spider_low_mem_read	1
 spider_max_connections	500
-spider_max_order	32767
 spider_modify_status_interval	28800
 spider_net_read_timeout	3600
 spider_net_write_timeout	3600
@@ -81,14 +75,8 @@ spider_quick_page_size	1000
 spider_read_only_mode	0
 spider_remote_autocommit	-1
 spider_remote_default_database	
-spider_remote_sql_log_off	0
 spider_remote_trx_isolation	-1
 spider_rone_shard_switch	ON
-spider_second_read	-1
-spider_semi_split_read	1
-spider_semi_split_read_limit	9223372036854775807
-spider_semi_trx	ON
-spider_semi_trx_isolation	-1
 spider_split_read	9223372036854775807
 spider_string_key_equal_to_like	ON
 spider_sync_autocommit	ON
@@ -96,11 +84,8 @@ spider_sync_time_zone	ON
 spider_sync_trx_isolation	ON
 spider_trans_rollback	OFF
 spider_transaction_one_shard	OFF
-spider_use_all_conns_snapshot	OFF
 spider_use_consistent_snapshot	OFF
-spider_version	3.7.5
 spider_with_begin_commit	OFF
-spider_xa_register_mode	1
 
 deinit
 connection master_1;
