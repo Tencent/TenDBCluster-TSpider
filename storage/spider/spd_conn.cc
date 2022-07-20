@@ -473,6 +473,7 @@ int spider_free_conn_alloc(SPIDER_CONN *conn) {
   }
   DBUG_ASSERT(!conn->mta_conn_mutex_file_pos.file_name);
   pthread_mutex_destroy(&conn->mta_conn_mutex);
+  mysql_mutex_destroy(&conn->m_status_mutex);
   conn->default_database.free();
   conn->m_last_query.free();
   DBUG_RETURN(0);
