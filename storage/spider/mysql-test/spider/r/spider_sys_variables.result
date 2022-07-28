@@ -72,6 +72,7 @@ spider_query_one_shard	OFF
 spider_quick_mode	1
 spider_quick_mode_only_select	ON
 spider_quick_page_size	1000
+spider_read_autoinc_from_share	ON
 spider_read_only_mode	0
 spider_remote_autocommit	-1
 spider_remote_default_database	

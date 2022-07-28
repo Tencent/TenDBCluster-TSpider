@@ -46,6 +46,11 @@ extern struct st_maria_plugin spider_i_s_active_conns_maria;
 extern volatile ulonglong spider_mon_table_cache_version;
 extern volatile ulonglong spider_mon_table_cache_version_req;
 
+extern pthread_mutex_t spider_lgtm_tblhnd_share_mutex;
+extern HASH spider_lgtm_tblhnd_share_hash;
+static void spider_flush_autoinc_share(THD *, struct st_mysql_sys_var *,
+                                       void *var_ptr, const void *save);
+
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
 static int spider_direct_update(THD *thd, SHOW_VAR *var, char *buff) {
   int error_num = 0;
@@ -1635,6 +1640,43 @@ int spider_param_auto_increment_mode(THD *thd, int auto_increment_mode) {
                   : THDVAR(thd, auto_increment_mode));
 }
 
+static void spider_flush_autoinc_share(THD *, struct st_mysql_sys_var *,
+                                       void *var_ptr, const void *save) {
+  SPIDER_LGTM_TBLHND_SHARE *lgtm_tblhnd_share;
+  bool old_val = *(bool *)var_ptr;
+  bool new_val = *(bool *)(save);
+
+  if (!old_val && new_val) {
+    /*
+      If value is updated from OFF to ON, we need to reinitialize autoinc
+      values for all shares since they are likely outdated.
+    */
+    pthread_mutex_lock(&spider_lgtm_tblhnd_share_mutex);
+    for (uint i = 0; i < spider_lgtm_tblhnd_share_hash.records; i++) {
+      lgtm_tblhnd_share = (SPIDER_LGTM_TBLHND_SHARE *)my_hash_element(
+          &spider_lgtm_tblhnd_share_hash, i);
+      pthread_mutex_lock(&lgtm_tblhnd_share->auto_increment_mutex);
+      lgtm_tblhnd_share->auto_increment_value = 0;
+      lgtm_tblhnd_share->auto_increment_lclval = 0;
+      lgtm_tblhnd_share->auto_increment_init = FALSE;
+      pthread_mutex_unlock(&lgtm_tblhnd_share->auto_increment_mutex);
+    }
+    pthread_mutex_unlock(&spider_lgtm_tblhnd_share_mutex);
+  }
+  *(bool *)var_ptr = *(bool *)save;
+}
+
+my_bool opt_read_autoinc_from_share = TRUE;
+static MYSQL_SYSVAR_BOOL(read_autoinc_from_share, opt_read_autoinc_from_share,
+                         PLUGIN_VAR_OPCMDARG,
+                         "Whether auto_increment values maintained in Spider's "
+                         "share object take effect.",
+                         NULL, spider_flush_autoinc_share, TRUE);
+bool spider_param_read_autoinc_from_share() {
+  DBUG_ENTER("spider_param_read_autoinc_from_share");
+  DBUG_RETURN(opt_read_autoinc_from_share);
+}
+
 /*
   FALSE: off
   TRUE:  on
@@ -2911,6 +2953,7 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(sts_bg_mode),
     MYSQL_SYSVAR(ping_interval_at_trx_start),
     MYSQL_SYSVAR(auto_increment_mode),
+    MYSQL_SYSVAR(read_autoinc_from_share),
     MYSQL_SYSVAR(same_server_link),
     MYSQL_SYSVAR(trans_rollback),
     MYSQL_SYSVAR(with_begin_commit),

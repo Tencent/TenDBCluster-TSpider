@@ -198,7 +198,7 @@ t1	CREATE TABLE `t1` (
   KEY `idx_t1_0` (`a1`),
   KEY `idx_t1_1` (`a1`,`a2`,`b`,`c`),
   KEY `idx_t1_2` (`a1`,`a2`,`b`)
-) ENGINE=SPIDER DEFAULT CHARSET=utf8
+) ENGINE=SPIDER AUTO_INCREMENT=2188 DEFAULT CHARSET=utf8
  PARTITION BY LIST (crc32(`i`) MOD 2)
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
@@ -216,7 +216,7 @@ t2	CREATE TABLE `t2` (
   KEY `idx_t2_0` (`a1`),
   KEY `idx_t2_1` (`a1`,`a2`,`b`,`c`),
   KEY `idx_t2_2` (`a1`,`a2`,`b`)
-) ENGINE=SPIDER DEFAULT CHARSET=utf8
+) ENGINE=SPIDER AUTO_INCREMENT=2800 DEFAULT CHARSET=utf8
  PARTITION BY LIST (crc32(`i`) MOD 2)
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"' ENGINE = SPIDER)
@@ -234,7 +234,7 @@ t3	CREATE TABLE `t3` (
   KEY `idx_t3_0` (`a1`),
   KEY `idx_t3_1` (`a1`,`a2`,`b`,`c`),
   KEY `idx_t3_2` (`a1`,`a2`,`b`)
-) ENGINE=SPIDER DEFAULT CHARSET=utf8
+) ENGINE=SPIDER AUTO_INCREMENT=3276 DEFAULT CHARSET=utf8
  PARTITION BY LIST (crc32(`i`) MOD 2)
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t3", srv "s_2_1",aim "0"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t3", srv "s_2_2",aim "1"' ENGINE = SPIDER)

@@ -61,7 +61,7 @@ tbl_a	CREATE TABLE `tbl_a` (
   `age` int(11) DEFAULT NULL,
   KEY `idx_id` (`id`),
   KEY `idx_name` (`name`)
-) ENGINE=SPIDER DEFAULT CHARSET=latin1
+) ENGINE=SPIDER AUTO_INCREMENT=12 DEFAULT CHARSET=latin1
  PARTITION BY LIST (crc32(`id`) MOD 2)
 (PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0",shard_key "name"' ENGINE = SPIDER,
  PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1",shard_key "name"' ENGINE = SPIDER)

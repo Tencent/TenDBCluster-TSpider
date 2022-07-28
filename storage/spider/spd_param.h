@@ -87,6 +87,7 @@ int spider_param_sts_sync(THD *thd, int sts_sync);
 int spider_param_sts_bg_mode(THD *thd, int sts_bg_mode);
 double spider_param_ping_interval_at_trx_start(THD *thd);
 int spider_param_auto_increment_mode(THD *thd, int auto_increment_mode);
+bool spider_param_read_autoinc_from_share();
 bool spider_param_same_server_link(THD *thd);
 bool spider_param_with_begin_commit(THD *thd);
 bool spider_param_get_conn_from_idx(THD *thd);

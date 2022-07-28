@@ -1,0 +1,88 @@
+--echo #
+--echo # Test for ALTER TABLE statements to change AUTO_INCREMENT value
+--echo #
+
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+
+--echo
+--echo # AUTO_INCREMENT on PRIMARY KEY
+--echo
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT AUTO_INCREMENT, c1 INT, PRIMARY KEY(id)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+SHOW CREATE TABLE t1;
+
+INSERT INTO t1() VALUES(),(),();
+SELECT id, c1 FROM t1 ORDER BY id;
+SHOW CREATE TABLE t1;
+FLUSH TABLES;
+# Autoinc value should be persistent even after FLUSH TABLES
+SHOW CREATE TABLE t1;
+
+--echo
+--echo # ALTER AUTO_INCREMENT to a invalid value
+--echo
+ALTER TABLE t1 AUTO_INCREMENT= 12;
+SHOW CREATE TABLE t1;
+INSERT INTO t1() VALUES();
+SELECT MAX(id) as max_id FROM t1;
+
+--echo
+--echo # ALTER AUTO_INCREMENT to a valid value
+--echo
+ALTER TABLE t1 AUTO_INCREMENT= 182;
+SHOW CREATE TABLE t1;
+INSERT INTO t1() VALUES();
+SELECT MAX(id) as max_id FROM t1;
+
+--echo
+--echo # ALTER AUTO_INCREMENT to a valid value that needs adjustment
+--echo
+ALTER TABLE t1 AUTO_INCREMENT= 351;
+SHOW CREATE TABLE t1;
+INSERT INTO t1() VALUES();
+SELECT MAX(id) as max_id FROM t1;
+
+--echo
+--echo # Test AUTO_INCREMENT on SECONDARY KEY
+--echo
+--let $TABLE_NAME = t2
+--let $TABLE_BODY = id INT, c1 INT AUTO_INCREMENT, PRIMARY KEY(id), KEY(c1)
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+SHOW CREATE TABLE t2;
+
+INSERT INTO t2(id) VALUES(1),(2),(3);
+
+--echo
+--echo # ALTER AUTO_INCREMENT to a invalid value
+--echo
+ALTER TABLE t2 AUTO_INCREMENT=12;
+SHOW CREATE TABLE t2;
+
+--echo
+--echo # ALTER AUTO_INCREMENT to a valid value
+--echo
+ALTER TABLE t2 AUTO_INCREMENT=182;
+SHOW CREATE TABLE t2;
+INSERT INTO t2(id) VALUES(4);
+SELECT MAX(c1) as max_c1 FROM t2;
+
+# cleanup
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--source ../include/spider_drop_database.inc
