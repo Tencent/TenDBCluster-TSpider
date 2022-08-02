@@ -743,7 +743,7 @@ SPIDER_CONN *spider_create_conn(SPIDER_SHARE *share, ha_spider *spider,
     goto error_conn_status_mutex_init;
   }
 
-  if ((conn->dry_run = spider->dry_run)) {
+  if ((conn->dry_run = (spider && spider->dry_run))) {
     /* We don't need the rest of the steps for dry-run. */
     conn->ip_port_conn = NULL;
     DBUG_RETURN(conn);
