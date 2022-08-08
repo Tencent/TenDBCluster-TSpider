@@ -3417,8 +3417,19 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
   is_support_column_charset = file->is_support_column_charset();
   LEX_CSTRING* connect_string = &create_info->connect_string;
 
+  if (file->is_spider_storage_engine() &&
+      thd->lex->sql_command == SQLCOM_ALTER_TABLE &&
+      (alter_info->flags & ALTER_OPTIONS) &&
+      (create_info->used_fields &
+       (HA_CREATE_USED_CHARSET | HA_CREATE_USED_DEFAULT_CHARSET)))
+    /*
+       For Spider tables, in the case of ALTER TABLE CONVERT CHARACTER SET,
+       column charsets are the same as the original table charset, hence the
+       check is unnecessary and always fails.
+     */
+    ;
   /* check if support column charset */
-  if (!is_support_column_charset)
+  else if (!is_support_column_charset)
   {
       List_iterator<Create_field> it_field(alter_info->create_list);
       Create_field *cur_field = NULL;

@@ -1,0 +1,57 @@
+#
+# TenDBCluster3 Issue #64: [bug] ALTER TABLE CONVERT CHARACTER SET always fails for Spide tables.
+#
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+DROP TABLE IF EXISTS tbl_a;
+
+# Creating a Spider table having a column charset different with the table charset is not allowed
+CREATE TABLE tbl_a (
+col_a INT NOT NULL AUTO_INCREMENT,
+col_b VARCHAR(20) CHARACTER SET latin1 DEFAULT 'defg',
+col_c INT NOT NULL DEFAULT 100,
+PRIMARY KEY(col_a)
+) DEFAULT CHARACTER SET=utf8 MASTER_1_ENGINE MASTER_1_COMMENT_2_1
+ERROR HY000: Field 'col_b' can not charset for column in this storage
+DROP TABLE IF EXISTS tbl_a;
+
+# Convert a Spider table's charset by ALTER TABLE
+CREATE TABLE tbl_a (
+col_a INT NOT NULL AUTO_INCREMENT,
+col_b VARCHAR(20) DEFAULT 'defg',
+col_c INT NOT NULL DEFAULT 100,
+PRIMARY KEY(col_a)
+) DEFAULT CHARACTER SET=utf8 MASTER_1_ENGINE MASTER_1_COMMENT_2_1
+
+# Should return no errors
+ALTER TABLE tbl_a CONVERT TO CHARACTER SET utf8mb4;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
