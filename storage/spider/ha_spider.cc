@@ -6065,6 +6065,7 @@ int ha_spider::info(uint flag) {
   double sts_interval = spider_param_sts_interval(thd, share->sts_interval);
   SPIDER_INIT_ERROR_TABLE *spider_init_error_table = NULL;
   int error_num = 0;
+  bool spider_read_autoinc_from_share = spider_param_read_autoinc_from_share();
   set_error_mode();
   backup_error_status();
   DBUG_ENTER("ha_spider::info");
@@ -6086,7 +6087,7 @@ int ha_spider::info(uint flag) {
 #endif
   }
   if (sql_command == SQLCOM_DROP_TABLE || sql_command == SQLCOM_ALTER_TABLE ||
-      sql_command == SQLCOM_SHOW_CREATE)
+      (sql_command == SQLCOM_SHOW_CREATE && !spider_read_autoinc_from_share))
     DBUG_RETURN(error_num);
 
   if (flag & (HA_STATUS_TIME | HA_STATUS_CONST | HA_STATUS_VARIABLE |
@@ -6127,7 +6128,8 @@ int ha_spider::info(uint flag) {
       if (stats.records <= 1 /* && (flag & HA_STATUS_NO_LOCK) */)
         stats.records = 2;
     }
-    if (sql_command == SQLCOM_SHOW_TABLE_STATUS) {
+    if (sql_command == SQLCOM_SHOW_TABLE_STATUS &&
+        !spider_read_autoinc_from_share) {
       /* stats.auto_increment_value will not be updated */
       DBUG_RETURN(error_num);
     }
@@ -6136,6 +6138,7 @@ int ha_spider::info(uint flag) {
 #ifdef HANDLER_HAS_CAN_USE_FOR_AUTO_INC_INIT
       auto_inc_temporary = FALSE;
 #endif
+      pthread_mutex_lock(&share->lgtm_tblhnd_share->auto_increment_mutex);
 #ifdef WITH_PARTITION_STORAGE_ENGINE
       if (share->partition_share && table->next_number_field) {
         ulonglong first_value, nb_reserved_values;
@@ -6144,25 +6147,82 @@ int ha_spider::info(uint flag) {
               (table->auto_increment_field_not_null &&
                thd->variables.sql_mode & MODE_NO_AUTO_VALUE_ON_ZERO))) {
           get_auto_increment(0, 0, 0, &first_value, &nb_reserved_values);
-          share->lgtm_tblhnd_share->auto_increment_value = first_value;
-          share->lgtm_tblhnd_share->auto_increment_lclval = first_value;
-          share->lgtm_tblhnd_share->auto_increment_init = TRUE;
-          DBUG_PRINT("info", ("spider init auto_increment_lclval=%llu",
-                              share->lgtm_tblhnd_share->auto_increment_lclval));
-          DBUG_PRINT("info", ("spider auto_increment_value=%llu",
-                              share->lgtm_tblhnd_share->auto_increment_value));
-          stats.auto_increment_value = first_value;
+          if (spider_read_autoinc_from_share && first_value != ULONGLONG_MAX) {
+            if (first_value > share->lgtm_tblhnd_share->auto_increment_value) {
+              share->lgtm_tblhnd_share->auto_increment_value = first_value;
+              share->lgtm_tblhnd_share->auto_increment_lclval = first_value;
+              if (opt_spider_auto_increment_mode_switch) {
+                spider_round_autoinc_to_next_val(
+                    &share->lgtm_tblhnd_share->auto_increment_value);
+                share->lgtm_tblhnd_share->auto_increment_lclval =
+                    share->lgtm_tblhnd_share->auto_increment_value;
+              }
+            }
+            share->lgtm_tblhnd_share->auto_increment_init = TRUE;
+            DBUG_PRINT("info",
+                       ("spider auto_increment_lclval=%llu",
+                        share->lgtm_tblhnd_share->auto_increment_lclval));
+            DBUG_PRINT("info",
+                       ("spider auto_increment_value=%llu",
+                        share->lgtm_tblhnd_share->auto_increment_value));
+            stats.auto_increment_value =
+                share->lgtm_tblhnd_share->auto_increment_value;
+          } else {
+            stats.auto_increment_value = first_value;
+          }
         } else {
+          /*
+            An INSERT with a specified value for the auto_increment field gets
+            to this branch.
+          */
           DBUG_PRINT("info", ("spider auto_increment_value=%llu",
                               share->lgtm_tblhnd_share->auto_increment_value));
-          stats.auto_increment_value = 0;
+          if (spider_read_autoinc_from_share)
+            stats.auto_increment_value =
+                share->lgtm_tblhnd_share->auto_increment_value;
+          else
+            stats.auto_increment_value = 0;
         }
       } else {
 #endif
-        stats.auto_increment_value = 0;
+        if (spider_read_autoinc_from_share && check_partitioned_quick()) {
+          if (!share->lgtm_tblhnd_share->auto_increment_init &&
+              (sql_command == SQLCOM_SHOW_CREATE ||
+               sql_command == SQLCOM_SHOW_TABLE_STATUS)) {
+            /* read autoinc value from remote */
+            ulonglong first_value;
+            fetch_auto_increment_value(&first_value);
+            if (first_value != ULONGLONG_MAX) {
+              if (opt_spider_auto_increment_mode_switch)
+                spider_round_autoinc_to_next_val(&first_value);
+              if (first_value >
+                  share->lgtm_tblhnd_share->auto_increment_value) {
+                /*
+                  Do not set value if the autoinc value specified by ALTER
+                  TABLE is bigger.
+                */
+                share->lgtm_tblhnd_share->auto_increment_value = first_value;
+                share->lgtm_tblhnd_share->auto_increment_lclval = first_value;
+              }
+              share->lgtm_tblhnd_share->auto_increment_init = TRUE;
+            }
+          }
+          stats.auto_increment_value =
+              (share->lgtm_tblhnd_share->auto_increment_init
+                   ? share->lgtm_tblhnd_share->auto_increment_value
+                   : 0);
+        } else {
+          /*
+            For non-partitioned Spider tables, self-maintained autoinc values
+            are not used. Do not show it in SHOW CREATE/SHOW TABLE STATUS to
+            avoid confusion.
+          */
+          stats.auto_increment_value = 0;
+        }
 #ifdef WITH_PARTITION_STORAGE_ENGINE
       }
 #endif
+      pthread_mutex_unlock(&share->lgtm_tblhnd_share->auto_increment_mutex);
     }
   }
   if (flag & HA_STATUS_ERRKEY) errkey = dup_key_idx;
@@ -6749,7 +6809,11 @@ int ha_spider::reset_auto_increment(ulonglong value) {
   DBUG_ENTER("ha_spider::reset_auto_increment");
   DBUG_PRINT("info", ("spider this=%p", this));
   if (table->next_number_field) {
+    if (opt_spider_auto_increment_mode_switch && check_partitioned_quick()) {
+      spider_round_autoinc_to_next_val(&value);
+    }
     pthread_mutex_lock(&share->lgtm_tblhnd_share->auto_increment_mutex);
+    share->lgtm_tblhnd_share->auto_increment_value = value;
     share->lgtm_tblhnd_share->auto_increment_lclval = value;
     share->lgtm_tblhnd_share->auto_increment_init = TRUE;
     DBUG_PRINT("info", ("spider init auto_increment_lclval=%llu",
@@ -6762,6 +6826,63 @@ int ha_spider::reset_auto_increment(ulonglong value) {
 void ha_spider::release_auto_increment() {
   DBUG_ENTER("ha_spider::release_auto_increment");
   DBUG_PRINT("info", ("spider this=%p", this));
+  DBUG_VOID_RETURN;
+}
+
+/**
+  Simplified version of ha_spider::get_auto_increment, could be used for SHOW
+  CREATE/SHOW TABLE STATUS statements, where table->next_number_field is not
+  activated.
+
+  @param[out] first_value: max(autoinc field value in existing records) + 1;
+                           1 if no records present; ULONGLONG_MAX on error.
+*/
+void ha_spider::fetch_auto_increment_value(ulonglong *first_value) {
+  DBUG_ENTER("ha_spider::get_auto_increment");
+  DBUG_PRINT("info", ("spider this=%p", this));
+
+  int error_num;
+  bool field_in_read_set;
+  Field *next_number_field;
+  *first_value = ULONGLONG_MAX;
+
+  next_number_field = table->found_next_number_field;
+  DBUG_ASSERT(next_number_field);
+  if (unlikely(!next_number_field)) DBUG_VOID_RETURN;
+  field_in_read_set =
+      bitmap_is_set(table->read_set, next_number_field->field_index);
+
+  if (!field_in_read_set)
+    bitmap_set_bit(table->read_set, next_number_field->field_index);
+  extra(HA_EXTRA_KEYREAD);
+  if (index_init(table_share->next_number_index, TRUE)) goto exit;
+  result_list.internal_limit = 1;
+  result_list.is_get_increment = TRUE;
+  if (table_share->next_number_keypart) {
+    uchar key[MAX_KEY_LENGTH];
+    key_copy(key, table->record[0],
+             &table->key_info[table_share->next_number_index],
+             table_share->next_number_key_offset);
+    error_num = index_read_last_map(
+        table->record[1], key,
+        make_prev_keypart_map(table_share->next_number_keypart));
+  } else
+    error_num = index_last(table->record[1]);
+  result_list.is_get_increment = FALSE;
+
+  if (error_num && error_num == HA_ERR_END_OF_FILE)
+    *first_value = 1;
+  else if (!error_num)
+    *first_value = ((ulonglong)next_number_field->val_int_offset(
+                        table_share->rec_buff_length) +
+                    1);
+  index_end();
+
+exit:
+  if (!field_in_read_set)
+    /* Restore read_set */
+    bitmap_clear_bit(table->read_set, next_number_field->field_index);
+  extra(HA_EXTRA_NO_KEYREAD);
   DBUG_VOID_RETURN;
 }
 
@@ -6979,15 +7100,37 @@ int ha_spider::write_row(uchar *buf) {
       force_auto_increment = FALSE;
       table->file->insert_id_for_cur_row = 0;
     } else {
-      if (!share->lgtm_tblhnd_share->auto_increment_init) {
-        pthread_mutex_lock(&share->lgtm_tblhnd_share->auto_increment_mutex);
+      if (spider_param_read_autoinc_from_share()) {
         if (!share->lgtm_tblhnd_share->auto_increment_init) {
+          /* auto_increment_init should be set TRUE if there's no error */
           info(HA_STATUS_AUTO);
-          share->lgtm_tblhnd_share->auto_increment_lclval =
-              stats.auto_increment_value;
-          share->lgtm_tblhnd_share->auto_increment_init = TRUE;
-          DBUG_PRINT("info", ("spider init auto_increment_lclval=%llu",
-                              share->lgtm_tblhnd_share->auto_increment_lclval));
+        }
+        /* real auto_increment value update */
+        pthread_mutex_lock(&share->lgtm_tblhnd_share->auto_increment_mutex);
+        if (share->lgtm_tblhnd_share->auto_increment_init) {
+          ulonglong tmp_auto_increment;
+          if (((Field_num *)table->found_next_number_field)->unsigned_flag) {
+            tmp_auto_increment =
+                (ulonglong)table->found_next_number_field->val_int();
+          } else {
+            tmp_auto_increment = (ulonglong)MY_MAX(
+                table->found_next_number_field->val_int(), 0LL);
+          }
+          tmp_auto_increment += 1;
+          if (tmp_auto_increment >
+              share->lgtm_tblhnd_share->auto_increment_value) {
+            if (opt_spider_auto_increment_mode_switch)
+              spider_round_autoinc_to_next_val(&tmp_auto_increment);
+            share->lgtm_tblhnd_share->auto_increment_value = tmp_auto_increment;
+            share->lgtm_tblhnd_share->auto_increment_lclval =
+                tmp_auto_increment;
+            DBUG_PRINT("info",
+                       ("spider auto_increment_lclval=%llu",
+                        share->lgtm_tblhnd_share->auto_increment_lclval));
+            DBUG_PRINT("info",
+                       ("spider auto_increment_value=%llu",
+                        share->lgtm_tblhnd_share->auto_increment_value));
+          }
         }
         pthread_mutex_unlock(&share->lgtm_tblhnd_share->auto_increment_mutex);
       }
@@ -7142,32 +7285,31 @@ int ha_spider::update_row(const uchar *old_data, const uchar *new_data) {
     DBUG_RETURN(check_error_mode(error_num));
   if (table->found_next_number_field && new_data == table->record[0] &&
       !table->s->next_number_keypart) {
-    pthread_mutex_lock(&share->lgtm_tblhnd_share->auto_increment_mutex);
     if (!share->lgtm_tblhnd_share->auto_increment_init) {
+      /* auto_increment_init should be set TRUE if there's no error */
       info(HA_STATUS_AUTO);
-      share->lgtm_tblhnd_share->auto_increment_lclval =
-          stats.auto_increment_value;
-      share->lgtm_tblhnd_share->auto_increment_init = TRUE;
-      DBUG_PRINT("info", ("spider init auto_increment_lclval=%llu",
-                          share->lgtm_tblhnd_share->auto_increment_lclval));
     }
-    ulonglong tmp_auto_increment;
-    if (((Field_num *)table->found_next_number_field)->unsigned_flag) {
-      tmp_auto_increment = (ulonglong)table->found_next_number_field->val_int();
-    } else {
-      longlong tmp_auto_increment2 = table->found_next_number_field->val_int();
-      if (tmp_auto_increment2 > 0)
-        tmp_auto_increment = tmp_auto_increment2;
-      else
-        tmp_auto_increment = 0;
-    }
-    if (tmp_auto_increment >= share->lgtm_tblhnd_share->auto_increment_lclval) {
-      share->lgtm_tblhnd_share->auto_increment_lclval = tmp_auto_increment + 1;
-      share->lgtm_tblhnd_share->auto_increment_value = tmp_auto_increment + 1;
-      DBUG_PRINT("info", ("spider after auto_increment_lclval=%llu",
-                          share->lgtm_tblhnd_share->auto_increment_lclval));
-      DBUG_PRINT("info", ("spider auto_increment_value=%llu",
-                          share->lgtm_tblhnd_share->auto_increment_value));
+    pthread_mutex_lock(&share->lgtm_tblhnd_share->auto_increment_mutex);
+    if (share->lgtm_tblhnd_share->auto_increment_init) {
+      ulonglong tmp_auto_increment;
+      if (((Field_num *)table->found_next_number_field)->unsigned_flag) {
+        tmp_auto_increment =
+            (ulonglong)table->found_next_number_field->val_int();
+      } else {
+        tmp_auto_increment =
+            (ulonglong)MY_MAX(table->found_next_number_field->val_int(), 0LL);
+      }
+      tmp_auto_increment += 1;
+      if (tmp_auto_increment > share->lgtm_tblhnd_share->auto_increment_value) {
+        if (opt_spider_auto_increment_mode_switch)
+          spider_round_autoinc_to_next_val(&tmp_auto_increment);
+        share->lgtm_tblhnd_share->auto_increment_value = tmp_auto_increment;
+        share->lgtm_tblhnd_share->auto_increment_lclval = tmp_auto_increment;
+        DBUG_PRINT("info", ("spider auto_increment_lclval=%llu",
+                            share->lgtm_tblhnd_share->auto_increment_lclval));
+        DBUG_PRINT("info", ("spider auto_increment_value=%llu",
+                            share->lgtm_tblhnd_share->auto_increment_value));
+      }
     }
     pthread_mutex_unlock(&share->lgtm_tblhnd_share->auto_increment_mutex);
   }
@@ -8211,6 +8353,29 @@ int ha_spider::create(const char *name, TABLE *form, HA_CREATE_INFO *info) {
     pthread_mutex_lock(&tmp_share.lgtm_tblhnd_share->auto_increment_mutex);
     tmp_share.lgtm_tblhnd_share->auto_increment_value =
         info->auto_increment_value;
+    tmp_share.lgtm_tblhnd_share->auto_increment_lclval =
+        info->auto_increment_value;
+    if (opt_spider_auto_increment_mode_switch &&
+        form->part_info /* only for partitioned table */ &&
+        (tmp_share.lgtm_tblhnd_share->auto_increment_value %
+             opt_spider_auto_increment_step !=
+         opt_spider_auto_increment_mode_value)) {
+      spider_round_autoinc_to_next_val(
+          &tmp_share.lgtm_tblhnd_share->auto_increment_value);
+      tmp_share.lgtm_tblhnd_share->auto_increment_lclval =
+          tmp_share.lgtm_tblhnd_share->auto_increment_value;
+      push_warning_printf(trx->thd, Sql_condition::WARN_LEVEL_NOTE,
+                          ER_WARN_SPIDER_AUTOINC_VAL_ADJUSTED_NUM,
+                          ER_WARN_SPIDER_AUTOINC_VAL_ADJUSTED_STR,
+                          info->auto_increment_value,
+                          tmp_share.lgtm_tblhnd_share->auto_increment_value);
+    }
+    /*
+      Whether the specified value is valid (bigger than max(current autoinc
+      field values)) is not sure at this point, so we set auto_increment_init
+      FALSE for Spider to check on remotes.
+    */
+    tmp_share.lgtm_tblhnd_share->auto_increment_init = FALSE;
     DBUG_PRINT("info", ("spider auto_increment_value=%llu",
                         tmp_share.lgtm_tblhnd_share->auto_increment_value));
     pthread_mutex_unlock(&tmp_share.lgtm_tblhnd_share->auto_increment_mutex);
@@ -11388,6 +11553,14 @@ SPIDER_CONN *ha_spider::spider_get_conn_by_idx(int link_idx) {
   int error_num = 0;
   assert(this->conns);
   if (this && this->conns && this->conns[link_idx]) {
+    if (sql_command == SQLCOM_SHOW_CREATE && result_list.is_get_increment)
+      /*
+        When fetching autoinc value for SHOW CREATE TABLE statements,
+        registering handler could cause
+        DBUG_ASSERT(thd->transaction.stmt.is_empty()) to fail in
+        close_thread_tables().
+      */
+      goto exit;
     trans_register_ha(trx->thd, FALSE, spider_hton_ptr);
     if (thd_test_options(trx->thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN))
       trans_register_ha(trx->thd, TRUE, spider_hton_ptr);
@@ -11411,9 +11584,12 @@ SPIDER_CONN *ha_spider::spider_get_conn_by_idx(int link_idx) {
     }
 
     this->conns[link_idx]->error_mode &= this->error_mode;
+    if (sql_command == SQLCOM_SHOW_CREATE && result_list.is_get_increment)
+      goto exit;
     /* after get conn, process the conn status */
     spider_set_trx_status_info();
   }
+exit:
   return this->conns[link_idx];
 }
 

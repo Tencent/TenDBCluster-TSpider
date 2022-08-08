@@ -326,6 +326,19 @@ extern my_bool opt_spider_direct_limit_in_group;
 extern uint opt_spider_modify_status_interval;
 extern my_bool opt_spider_internal_xa;
 
+inline void spider_round_autoinc_to_next_val(ulonglong *val) {
+  set_if_bigger(*val, opt_spider_auto_increment_mode_value);
+  if (*val > opt_spider_auto_increment_mode_value)
+    /*
+      Only add step value when the given val is greater than the minimum autoinc
+      value (opt_spider_auto_increment_mode_value).
+    */
+    *val += opt_spider_auto_increment_step;
+  *val = ((*val - opt_spider_auto_increment_mode_value) /
+              opt_spider_auto_increment_step * opt_spider_auto_increment_step +
+          opt_spider_auto_increment_mode_value);
+}
+
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP
 extern PSI_mutex_key key_PAGE_lock, key_LOCK_sync, key_LOCK_active,

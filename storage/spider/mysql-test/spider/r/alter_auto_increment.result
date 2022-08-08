@@ -1,0 +1,219 @@
+#
+# Test for ALTER TABLE statements to change AUTO_INCREMENT value
+#
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+# AUTO_INCREMENT on PRIMARY KEY
+
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT AUTO_INCREMENT, c1 INT, PRIMARY KEY(id))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `c1` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER AUTO_INCREMENT=12 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1() VALUES(),(),();
+SELECT id, c1 FROM t1 ORDER BY id;
+id	c1
+12	NULL
+29	NULL
+46	NULL
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `c1` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER AUTO_INCREMENT=63 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+FLUSH TABLES;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `c1` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER AUTO_INCREMENT=63 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+
+# ALTER AUTO_INCREMENT to a invalid value
+
+ALTER TABLE t1 AUTO_INCREMENT= 12;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `c1` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER AUTO_INCREMENT=63 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1() VALUES();
+SELECT MAX(id) as max_id FROM t1;
+max_id
+63
+
+# ALTER AUTO_INCREMENT to a valid value
+
+ALTER TABLE t1 AUTO_INCREMENT= 182;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `c1` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER AUTO_INCREMENT=182 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1() VALUES();
+SELECT MAX(id) as max_id FROM t1;
+max_id
+182
+
+# ALTER AUTO_INCREMENT to a valid value that needs adjustment
+
+ALTER TABLE t1 AUTO_INCREMENT= 351;
+Warnings:
+Note	12732	SPIDER_AUTO_INCREMENT_MODE_SWITCH is ON, the specified autoinc value 351 is adjusted to 352
+Note	12732	SPIDER_AUTO_INCREMENT_MODE_SWITCH is ON, the specified autoinc value 351 is adjusted to 352
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `c1` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SPIDER AUTO_INCREMENT=352 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t1() VALUES();
+SELECT MAX(id) as max_id FROM t1;
+max_id
+352
+
+# Test AUTO_INCREMENT on SECONDARY KEY
+
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (id INT, c1 INT AUTO_INCREMENT, PRIMARY KEY(id), KEY(c1))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
+connection master_1;
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `c1` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`),
+  KEY `c1` (`c1`)
+) ENGINE=SPIDER AUTO_INCREMENT=12 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t2(id) VALUES(1),(2),(3);
+
+# ALTER AUTO_INCREMENT to a invalid value
+
+ALTER TABLE t2 AUTO_INCREMENT=12;
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `c1` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`),
+  KEY `c1` (`c1`)
+) ENGINE=SPIDER AUTO_INCREMENT=63 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+
+# ALTER AUTO_INCREMENT to a valid value
+
+ALTER TABLE t2 AUTO_INCREMENT=182;
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `c1` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`),
+  KEY `c1` (`c1`)
+) ENGINE=SPIDER AUTO_INCREMENT=182 DEFAULT CHARSET=utf8
+ PARTITION BY LIST (crc32(`id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+INSERT INTO t2(id) VALUES(4);
+SELECT MAX(c1) as max_c1 FROM t2;
+max_c1
+182
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

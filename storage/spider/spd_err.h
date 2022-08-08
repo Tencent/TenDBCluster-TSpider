@@ -196,3 +196,8 @@
 #define ER_SPIDER_UNKNOWN_NUM 12500
 #define ER_SPIDER_UNKNOWN_STR "unknown"
 #define ER_SPIDER_UNKNOWN_LEN (sizeof(ER_SPIDER_UNKNOWN_STR) - 1)
+
+#define ER_WARN_SPIDER_AUTOINC_VAL_ADJUSTED_NUM 12732
+#define ER_WARN_SPIDER_AUTOINC_VAL_ADJUSTED_STR                                \
+  "SPIDER_AUTO_INCREMENT_MODE_SWITCH is ON, the specified autoinc value %llu " \
+  "is adjusted to %llu"

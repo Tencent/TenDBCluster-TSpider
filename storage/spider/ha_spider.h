@@ -360,6 +360,11 @@ class ha_spider : public handler {
                           ulonglong *nb_reserved_values);
   int reset_auto_increment(ulonglong value);
   void release_auto_increment();
+  void fetch_auto_increment_value(ulonglong *first_value);
+  /* Fast version of check_partitioned() */
+  inline bool check_partitioned_quick() const {
+    return (table && table->part_info);
+  }
 #ifdef SPIDER_HANDLER_START_BULK_INSERT_HAS_FLAGS
   void start_bulk_insert(ha_rows rows, uint flags);
 #else
