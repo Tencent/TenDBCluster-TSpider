@@ -384,8 +384,8 @@ SELECT 5 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t="\xC4\xE3\xBA\xC3"
 mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '你好')
 mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '你好')
 SELECT 6 as seq, id, HEX(t), HEX(b) FROM t2 WHERE b="\xC4\xE3\xBA\xC3"
-mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '你好')
-mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '你好')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
+mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
 SELECT 7 as seq, id, HEX(t), HEX(b) FROM t2 WHERE t=@gbk_hello
 mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = /* <cache> */ ('你好'))
 mysql localhost 3306 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = /* <cache> */ ('你好'))
@@ -397,7 +397,7 @@ connection child2_1;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
 argument
 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = '??')
-select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '??')
+select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`t` = /* <cache> */ ('??'))
 select `id`,`t`,`b` from `auto_test_remote`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
 TRUNCATE TABLE mysql.general_log;
@@ -405,7 +405,7 @@ connection child2_2;
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
 argument
 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = '??')
-select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '??')
+select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`t` = /* <cache> */ ('??'))
 select `id`,`t`,`b` from `auto_test_remote_2`.`t2` where (`b` = '\xC4\xE3\xBA\xC3')
 TRUNCATE TABLE mysql.general_log;

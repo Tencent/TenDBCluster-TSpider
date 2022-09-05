@@ -1,0 +1,129 @@
+#
+# Test SELECT with string conditions that contain introducers.
+#
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+id int, b binary(16), vc varchar(32), primary key(id)
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id int, b binary(16), vc varchar(32), primary key(id))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+SET @old_cs_client = @@character_set_client;
+SET @old_cs_conn = @@character_set_connection;
+SET character_set_client = utf8;
+SET character_set_connection = utf8;
+INSERT INTO t1 VALUES (1,'±½èzˆY#‡L·´l^áÛ',NULL);
+INSERT INTO t1 VALUES (2,NULL,"ä½ å¥½");
+SELECT id, HEX(b), HEX(vc) FROM t1;
+id	HEX(b)	HEX(vc)
+1	B11DBDE87A885923874CB7B46C5EE1DB	NULL
+2	NULL	E4BDA0E5A5BD
+SET @old_log_output = @@global.log_output;
+SET @old_general_log = @@global.general_log;
+SET @old_spider_general_log = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL general_log = 1;
+SET GLOBAL spider_general_log = 1;
+TRUNCATE TABLE mysql.general_log;
+SELECT id, HEX(b) FROM t1 WHERE b = '±½èzˆY#‡L·´l^áÛ';
+id	HEX(b)
+1	B11DBDE87A885923874CB7B46C5EE1DB
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, HEX(b) FROM t1 WHERE b = '\xB1\xBD\xE8z\x88Y#\x87L\xB7\xB4l^\xE1\xDB'
+mysql localhost 3306 select `id`,`b` from `auto_test_remote`.`t1` where (`b` = '\xB1\xBD\xE8z\x88Y#\x87L\xB7\xB4l^\xE1\xDB')
+mysql localhost 3306 select `id`,`b` from `auto_test_remote_2`.`t1` where (`b` = '\xB1\xBD\xE8z\x88Y#\x87L\xB7\xB4l^\xE1\xDB')
+TRUNCATE TABLE mysql.general_log;
+SELECT id, HEX(b) FROM t1 WHERE b = _binary'±½èzˆY#‡L·´l^áÛ';
+id	HEX(b)
+1	B11DBDE87A885923874CB7B46C5EE1DB
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, HEX(b) FROM t1 WHERE b = _binary'\xB1\xBD\xE8z\x88Y#\x87L\xB7\xB4l^\xE1\xDB'
+mysql localhost 3306 select `id`,`b` from `auto_test_remote`.`t1` where (`b` = _binary'\xB1\xBD\xE8z\x88Y#\x87L\xB7\xB4l^\xE1\xDB')
+mysql localhost 3306 select `id`,`b` from `auto_test_remote_2`.`t1` where (`b` = _binary'\xB1\xBD\xE8z\x88Y#\x87L\xB7\xB4l^\xE1\xDB')
+TRUNCATE TABLE mysql.general_log;
+SELECT id, HEX(vc) FROM t1 WHERE vc = "ä½ å¥½";
+id	HEX(vc)
+2	E4BDA0E5A5BD
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, HEX(vc) FROM t1 WHERE vc = "??"
+mysql localhost 3306 select `id`,`vc` from `auto_test_remote`.`t1` where (`vc` = '??')
+mysql localhost 3306 select `id`,`vc` from `auto_test_remote_2`.`t1` where (`vc` = '??')
+TRUNCATE TABLE mysql.general_log;
+SELECT id, HEX(vc) FROM t1 WHERE vc = _utf8"ä½ å¥½";
+id	HEX(vc)
+2	E4BDA0E5A5BD
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, HEX(vc) FROM t1 WHERE vc = _utf8"??"
+mysql localhost 3306 select `id`,`vc` from `auto_test_remote`.`t1` where (`vc` = '??')
+mysql localhost 3306 select `id`,`vc` from `auto_test_remote_2`.`t1` where (`vc` = '??')
+TRUNCATE TABLE mysql.general_log;
+SELECT id, HEX(vc) FROM t1 WHERE vc = _binary"ä½ å¥½";
+id	HEX(vc)
+2	E4BDA0E5A5BD
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id, HEX(vc) FROM t1 WHERE vc = _binary"??"
+mysql localhost 3306 select `id`,`vc` from `auto_test_remote`.`t1` where (`vc` = '??')
+mysql localhost 3306 select `id`,`vc` from `auto_test_remote_2`.`t1` where (`vc` = '??')
+TRUNCATE TABLE mysql.general_log;
+SET character_set_client = @old_cs_client;
+SET character_set_connection = @old_cs_conn;
+connection master_1;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL general_log = @old_general_log;
+SET GLOBAL spider_general_log = @old_spider_general_log;
+TRUNCATE TABLE mysql.general_log;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
