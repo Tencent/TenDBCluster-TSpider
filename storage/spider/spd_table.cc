@@ -6688,16 +6688,22 @@ bool spider_check_direct_order_limit(ha_spider *spider) {
 #endif
     }
 
-    if (opt_spider_parallel_limit &&
-        (
+    if (opt_spider_parallel_limit && select_lex) {
+      if ((
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
-            !spider->result_list.direct_aggregate &&
+              !spider->result_list.direct_aggregate &&
 #endif
-            select_lex &&
-            (select_lex->group_list.elements || select_lex->with_sum_func))) {
-      spider->result_list.internal_limit = 9223372036854775807LL;
-      spider->result_list.split_read = spider->result_list.internal_limit;
-      DBUG_RETURN(FALSE);
+              (select_lex->group_list.elements || select_lex->with_sum_func)) ||
+          (select_lex->options & SELECT_DISTINCT)) {
+        /*
+          Under parallel_limit mode, do not send LIMIT when:
+          1. Query has non-direct-aggregate function or GROUP BY usage.
+          2. SELECT DISTINCT.
+        */
+        spider->result_list.internal_limit = 9223372036854775807LL;
+        spider->result_list.split_read = spider->result_list.internal_limit;
+        DBUG_RETURN(FALSE);
+      }
     }
 
     longlong direct_order_limit =
