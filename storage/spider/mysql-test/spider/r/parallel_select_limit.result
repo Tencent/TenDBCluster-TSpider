@@ -115,6 +115,122 @@ argument
 select `a` from `auto_test_remote_2`.`t1`
 select `v` from `auto_test_remote_2`.`t1`
 TRUNCATE TABLE mysql.general_log;
+#
+# Issue #73: SELECT DISTINCT LIMIT gets wrong results
+#
+connection master_1;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT PRIMARY KEY, c1 INT, status INT)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+INSERT INTO `t1` VALUES
+(75, 2, 401),
+(149, 3, 401),
+(334, 4, 401),
+(445, 5, 402),
+(556, 6, 402),
+(630, 7, 402),
+(667, 8, 402),
+(741, 9, 403),
+(852, 10, 403),
+(963, 11, 403),
+(1148, 12, 403),
+(1259, 13, 403),
+(1407, 14, 403),
+(1444, 15, 404),
+(1, 16, 401),
+(38, 17, 401),
+(112, 18, 401),
+(186, 19, 401),
+(223, 20, 401),
+(260, 21, 401),
+(297, 22, 401),
+(371, 23, 401),
+(408, 24, 401),
+(482, 25, 402),
+(519, 26, 402),
+(593, 27, 402),
+(704, 28, 403),
+(778, 29, 403),
+(815, 30, 403),
+(889, 31, 403),
+(926, 32, 403),
+(1000, 33, 403),
+(1037, 34, 403),
+(1074, 35, 403),
+(1111, 36, 403),
+(1185, 37, 403),
+(1222, 38, 403),
+(1296, 39, 403),
+(1333, 40, 403),
+(1370, 41, 403),
+(1481, 42, 404),
+(1518, 43, 404);
+SET @@global.spider_parallel_limit = OFF;
+SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10;
+status
+401
+402
+403
+404
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10
+mysql localhost 3306 select distinct `c1`,`status` from `auto_test_remote`.`t1` where (`c1` <> 0) limit 10
+mysql localhost 3306 select distinct `c1`,`status` from `auto_test_remote`.`t1` where (`c1` <> 0) limit 10,10
+mysql localhost 3306 select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) limit 10
+mysql localhost 3306 select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) limit 10,10
+mysql localhost 3306 select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) limit 20,10
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select distinct `c1`,`status` from `auto_test_remote`.`t1` where (`c1` <> 0) limit 10
+select distinct `c1`,`status` from `auto_test_remote`.`t1` where (`c1` <> 0) limit 10,10
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) limit 10
+select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) limit 10,10
+select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) limit 20,10
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET @@global.spider_parallel_limit = ON;
+SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10;
+status
+401
+402
+403
+404
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10
+mysql localhost 3306 select distinct `c1`,`status` from `auto_test_remote`.`t1` where (`c1` <> 0)
+mysql localhost 3306 select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0)
+TRUNCATE TABLE mysql.general_log;
+connection child2_1;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select distinct `c1`,`status` from `auto_test_remote`.`t1` where (`c1` <> 0)
+TRUNCATE TABLE mysql.general_log;
+connection child2_2;
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select %' AND argument NOT LIKE '%argument%';
+argument
+select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0)
+TRUNCATE TABLE mysql.general_log;
+connection master_1;
+SET @@global.spider_parallel_limit = @old_spider_parallel_limit;
 connection master_1;
 SET GLOBAL log_output = @old_log_output;
 SET GLOBAL spider_general_log = @old_spider_general_log;
