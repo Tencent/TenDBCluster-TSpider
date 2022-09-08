@@ -2640,7 +2640,7 @@ TABLE *spider_mk_sys_tmp_table(THD *thd, TABLE *table,
 
 #ifdef SPIDER_FIELD_FIELDPTR_REQUIRES_THDPTR
   if (!(field = new (thd->mem_root)
-            Field_blob((uint32)4294967295U, FALSE, &name, cs, TRUE)))
+            Field_blob((uint32)4294967295U, FALSE, &name, &my_charset_bin, TRUE)))
     goto error_alloc_field;
 #else
   if (!(field = new Field_blob(4294967295U, FALSE, &name, cs, TRUE)))
