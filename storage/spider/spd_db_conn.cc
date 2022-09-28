@@ -2827,7 +2827,7 @@ int spider_db_store_result(ha_spider *spider, int link_idx, TABLE *table) {
   thd_proc_info(thd, "spider_store_result");
   conn = spider->conns[link_idx];
   if (!conn) {
-    error_num = ER_SPIDER_CON_COUNT_ERROR;
+    error_num = ER_SPIDER_CONN_BE_FREE_NUM;
     DBUG_RETURN(error_num);
   }
   DBUG_PRINT("info", ("spider conn->connection_id=%llu", conn->connection_id));
@@ -3313,7 +3313,7 @@ int spider_db_seek_next(uchar *buf, ha_spider *spider, int link_idx,
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   DBUG_ENTER("spider_db_seek_next");
   if (!conn) {
-    error_num = ER_SPIDER_CON_COUNT_ERROR;
+    error_num = ER_SPIDER_CONN_BE_FREE_NUM;
     DBUG_RETURN(error_num);
   }
   if (result_list->current_row_num >= result_list->current->record_num) {
@@ -3499,7 +3499,7 @@ int spider_db_seek_next(uchar *buf, ha_spider *spider, int link_idx,
               ulong sql_type;
               conn = spider->conns[roop_count];
               if (!conn) {
-                error_num = ER_SPIDER_CON_COUNT_ERROR;
+                error_num = ER_SPIDER_CONN_BE_FREE_NUM;
                 DBUG_RETURN(error_num);
               }
               if (spider->sql_kind[roop_count] == SPIDER_SQL_KIND_SQL) {
@@ -3698,7 +3698,7 @@ int spider_db_seek_last(uchar *buf, ha_spider *spider, int link_idx,
       }
       conn = spider->conns[roop_count];
       if (!conn) {
-        error_num = ER_SPIDER_CON_COUNT_ERROR;
+        error_num = ER_SPIDER_CONN_BE_FREE_NUM;
         DBUG_RETURN(error_num);
       }
       spider_db_handler *dbton_handler = spider->dbton_handler[conn->dbton_id];
@@ -3848,7 +3848,7 @@ int spider_db_seek_last(uchar *buf, ha_spider *spider, int link_idx,
     }
     conn = spider->conns[roop_count];
     if (!conn) {
-      error_num = ER_SPIDER_CON_COUNT_ERROR;
+      error_num = ER_SPIDER_CONN_BE_FREE_NUM;
       DBUG_RETURN(error_num);
     }
     spider_db_handler *dbton_handler = spider->dbton_handler[conn->dbton_id];

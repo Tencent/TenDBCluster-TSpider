@@ -793,7 +793,7 @@ enum enum_query_type
   // when Spider propagate queries to remotes. Note that in some cases,
   // some conversion should be performed on the value. So the value cannot be
   // printed directly as it is.
-  QT_SPD_PRINT_USER_VAR_VALUE = ((1 << 11) | QT_WITHOUT_INTRODUCERS),
+  QT_SPD_PRINT_USER_VAR_VALUE = (1 << 11),
 };
 
 
