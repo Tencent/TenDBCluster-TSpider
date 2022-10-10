@@ -46,8 +46,7 @@ INSERT INTO t1 VALUES
 (5, 3, 'Beijing'),
 (6, 4, 'Shanghai');
 
-SET @old_spider_parallel_limit = @@global.spider_parallel_limit;
-SET @@global.spider_parallel_limit = OFF;
+SET @@spider_parallel_limit = OFF;
 
 SELECT COUNT(DISTINCT a) FROM t1 LIMIT 1;
 SELECT COUNT(DISTINCT v) FROM t1 LIMIT 1;
@@ -68,7 +67,7 @@ if ($USE_GENERAL_LOG)
 }
 
 --connection master_1
-SET @@global.spider_parallel_limit = ON;
+SET @@spider_parallel_limit = ON;
 
 SELECT COUNT(DISTINCT a) FROM t1 LIMIT 1;
 SELECT COUNT(DISTINCT v) FROM t1 LIMIT 1;
@@ -143,7 +142,7 @@ INSERT INTO `t1` VALUES
 (1481, 42, 404),
 (1518, 43, 404);
 
-SET @@global.spider_parallel_limit = OFF;
+SET @@spider_parallel_limit = OFF;
 
 SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10;
 if ($USE_GENERAL_LOG)
@@ -162,7 +161,7 @@ if ($USE_GENERAL_LOG)
 }
 
 --connection master_1
-SET @@global.spider_parallel_limit = ON;
+SET @@spider_parallel_limit = ON;
 
 SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10;
 if ($USE_GENERAL_LOG)
@@ -182,7 +181,6 @@ if ($USE_GENERAL_LOG)
 
 # cleanup
 --connection master_1
-SET @@global.spider_parallel_limit = @old_spider_parallel_limit;
 if ($USE_GENERAL_LOG)
 {
     --connection master_1

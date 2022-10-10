@@ -35,9 +35,6 @@ if ($USE_GENERAL_LOG)
     TRUNCATE TABLE mysql.general_log;
 }
 
-SET spider_bulk_update_mode = 2;
-SET spider_bulk_update_size = 10;
-
 UPDATE t1 SET b = '±½èzˆY#‡L·´l^áÛ±½èzˆY#‡L·´l^áÛ±½èzˆY#‡L·´l^áÛ±½èzˆY#‡L·´l^áÛ', a = (case WHEN 0 THEN NULL ELSE a END) WHERE id = 1;
 
 

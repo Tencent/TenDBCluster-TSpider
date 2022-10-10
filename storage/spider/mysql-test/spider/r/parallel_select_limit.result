@@ -57,8 +57,7 @@ INSERT INTO t1 VALUES
 (4, 2, 'Suzhou'),
 (5, 3, 'Beijing'),
 (6, 4, 'Shanghai');
-SET @old_spider_parallel_limit = @@global.spider_parallel_limit;
-SET @@global.spider_parallel_limit = OFF;
+SET @@spider_parallel_limit = OFF;
 SELECT COUNT(DISTINCT a) FROM t1 LIMIT 1;
 COUNT(DISTINCT a)
 4
@@ -87,7 +86,7 @@ select `a` from `auto_test_remote_2`.`t1`
 select `v` from `auto_test_remote_2`.`t1`
 TRUNCATE TABLE mysql.general_log;
 connection master_1;
-SET @@global.spider_parallel_limit = ON;
+SET @@spider_parallel_limit = ON;
 SELECT COUNT(DISTINCT a) FROM t1 LIMIT 1;
 COUNT(DISTINCT a)
 4
@@ -176,7 +175,7 @@ INSERT INTO `t1` VALUES
 (1370, 41, 403),
 (1481, 42, 404),
 (1518, 43, 404);
-SET @@global.spider_parallel_limit = OFF;
+SET @@spider_parallel_limit = OFF;
 SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10;
 status
 401
@@ -206,7 +205,7 @@ select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) l
 select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0) limit 20,10
 TRUNCATE TABLE mysql.general_log;
 connection master_1;
-SET @@global.spider_parallel_limit = ON;
+SET @@spider_parallel_limit = ON;
 SELECT DISTINCT status FROM t1 WHERE c1 != 0 LIMIT 10;
 status
 401
@@ -230,7 +229,6 @@ argument
 select distinct `c1`,`status` from `auto_test_remote_2`.`t1` where (`c1` <> 0)
 TRUNCATE TABLE mysql.general_log;
 connection master_1;
-SET @@global.spider_parallel_limit = @old_spider_parallel_limit;
 connection master_1;
 SET GLOBAL log_output = @old_log_output;
 SET GLOBAL spider_general_log = @old_spider_general_log;
