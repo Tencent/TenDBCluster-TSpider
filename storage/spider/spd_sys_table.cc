@@ -378,8 +378,15 @@ TABLE *spider_sys_open_table(THD *thd, TABLE_LIST *tables,
 */
 void spider_sys_close_table(THD *thd, Open_tables_backup *open_tables_backup) {
   DBUG_ENTER("spider_sys_close_table");
+  /*
+    Explicitly back up lock_tables_state here, because it gets lost in
+    close_thread_tables().
+  */
+  Query_tables_list::enum_lock_tables_state lts_backup =
+      thd->lex->lock_tables_state;
   close_thread_tables(thd);
   thd->restore_backup_open_tables_state(open_tables_backup);
+  thd->lex->lock_tables_state = lts_backup;
   DBUG_VOID_RETURN;
 }
 #endif
@@ -2633,7 +2640,7 @@ TABLE *spider_mk_sys_tmp_table(THD *thd, TABLE *table,
 
 #ifdef SPIDER_FIELD_FIELDPTR_REQUIRES_THDPTR
   if (!(field = new (thd->mem_root)
-            Field_blob((uint32)4294967295U, FALSE, &name, cs, TRUE)))
+            Field_blob((uint32)4294967295U, FALSE, &name, &my_charset_bin, TRUE)))
     goto error_alloc_field;
 #else
   if (!(field = new Field_blob(4294967295U, FALSE, &name, cs, TRUE)))
@@ -2902,14 +2909,20 @@ int spider_get_table_status_for_share(SPIDER_SHARE *share) {
                                      every sts_interval (86400s) */
     DBUG_RETURN(error_num);
   }
-  srand((unsigned)time(NULL));
-  share->sts_read_time =
-      tmp_time + rand() % 600; /* avoid reading tables at the same time
-                                  tb_spider_table_status  */
+
+  /*
+    Try to avoid race reading without a lock. We can tolerate, in extreme
+    cases, more than one thread reading table status to spider_share.
+  */
+  if (share->sts_reading) DBUG_RETURN(error_num);
+  share->sts_reading = TRUE;
+  share->sts_read_time = tmp_time;
+
   if (!(table =
             spider_open_sys_table(thd, SPIDER_SYS_TABLE_STATUS_NAME_STR,
                                   SPIDER_SYS_TABLE_STATUS_NAME_LEN, TRUE,
                                   &open_tables_backup, FALSE, &error_num))) {
+    share->sts_reading = FALSE;
     DBUG_RETURN(error_num);
   }
   if (error_num = spider_get_table_status_record(
@@ -2919,6 +2932,7 @@ int spider_get_table_status_for_share(SPIDER_SHARE *share) {
     table = NULL;
     share->sts_read_time = 0;
     share->modify_time = 0;
+    share->sts_reading = FALSE;
     DBUG_RETURN(error_num);
   }
 
@@ -2978,6 +2992,7 @@ int spider_get_table_status_for_share(SPIDER_SHARE *share) {
   table = NULL;
   share->sts_get_time = tmp_time;
   free_root(&mem_root, MYF(0));
+  share->sts_reading = FALSE;
   DBUG_RETURN(error_num);
 };
 

@@ -1500,7 +1500,7 @@ int spider_create_conn_thread(SPIDER_CONN *conn) {
   int error_num;
   DBUG_ENTER("spider_create_conn_thread");
   if (!conn) {
-    DBUG_RETURN(ER_SPIDER_CON_COUNT_ERROR);
+    DBUG_RETURN(ER_SPIDER_CONN_BE_FREE_NUM);
   }
   if (conn && !conn->bg_init) {
 #if MYSQL_VERSION_ID < 50500

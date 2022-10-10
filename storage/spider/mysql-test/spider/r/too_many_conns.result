@@ -1,0 +1,80 @@
+#
+# Test for false "Too many connections between spider and remote" error caused by mishandling of lock state.
+#
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+id int PRIMARY KEY, c1 int, c2 int
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id int PRIMARY KEY, c1 int, c2 int)ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+USE auto_test_local;
+INSERT INTO t1 VALUES(1,1,1),(2,2,2),(3,2,3),(4,3,3);
+FLUSH TABLES;
+SELECT * FROM t1;
+id	c1	c2
+4	3	3
+1	1	1
+2	2	2
+3	2	3
+SELECT a.c1, a.c2
+FROM t1 AS a INNER JOIN (
+SELECT b.c1, MAX(b.c2) as max_c2
+FROM t1 AS b
+WHERE b.c2 > 1
+GROUP BY b.c1
+) AS c
+ON a.c1 = c.c1 AND a.c2 = c.max_c2;
+c1	c2
+3	3
+2	3
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
