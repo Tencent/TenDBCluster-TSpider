@@ -1146,6 +1146,8 @@ public:
   table_value_constr *tvc;
   bool in_tvc;
 
+  bool setting_up_where_clause;
+
   /** System Versioning */
 public:
   uint versioned_tables;

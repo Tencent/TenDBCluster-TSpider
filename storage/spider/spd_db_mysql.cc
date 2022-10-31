@@ -6591,6 +6591,9 @@ int spider_mysql_handler::append_minimum_select(spider_string *str,
   Field **field;
   int field_length;
   bool appended = FALSE;
+  bool append_min_for_trivial_fields =
+      (spider->trx && spider->trx->thd &&
+       spider_param_select_min_for_trivial_fields(spider->trx->thd));
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
   st_select_lex *select_lex = NULL;
   if (spider->result_list.direct_aggregate) {
@@ -6609,12 +6612,17 @@ int spider_mysql_handler::append_minimum_select(spider_string *str,
       field_length =
           mysql_share->column_name_str[(*field)->field_index].length();
 #ifdef HANDLER_HAS_DIRECT_AGGREGATE
-      if (select_lex &&
-          !spider_db_check_select_colum_in_group(select_lex, *field)) {
+      if (append_min_for_trivial_fields && select_lex &&
+          !spider_db_check_select_colum_in_group(select_lex, *field) &&
+          !bitmap_is_set(&table->where_set, (*field)->field_index)) {
         /*
           We get to this branch only when:
           1. there is one or more aggr functions in select list;
           2. current field is not in the GROUP BY clause.
+          3*. current field is not in the WHERE clause. (This is because when a
+          field is referenced in where conditions, the field value could be used
+          for row evaluation. In this case, getting MIN val all the time could
+          cause the records to be filtered unexpectedly.)
           In this case, the retrieved value for this field does not matter.
 
           Simply getting the minimum should be fine, and has two benefits:

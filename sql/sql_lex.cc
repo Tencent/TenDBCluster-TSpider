@@ -2299,6 +2299,7 @@ void st_select_lex::init_query()
   window_funcs.empty();
   tvc= 0;
   in_tvc= false;
+  setting_up_where_clause = false;
   versioned_tables= 0;
 }
 
@@ -2344,6 +2345,7 @@ void st_select_lex::init_select()
   in_funcs.empty();
   curr_tvc_name= 0;
   in_tvc= false;
+  setting_up_where_clause = false;
   versioned_tables= 0;
 }
 
