@@ -2812,6 +2812,18 @@ bool spider_param_string_key_equal_to_like(THD *thd) {
     DBUG_RETURN(THDVAR(thd, string_key_equal_to_like));
 }
 
+static MYSQL_THDVAR_BOOL(
+    select_min_for_trivial_fields, PLUGIN_VAR_RQCMDARG,
+    "Whether to append MIN() calls to trivial select fields when dealing a "
+    "SELECT query that contains aggregate functions, as to improve query "
+    "performance in certain cases.",
+    NULL, NULL, TRUE);
+
+bool spider_param_select_min_for_trivial_fields(THD *thd) {
+  DBUG_ENTER("spider_param_select_min_for_trivial_fields");
+  DBUG_RETURN(THDVAR(thd, select_min_for_trivial_fields));
+}
+
 static struct st_mysql_storage_engine spider_storage_engine = {
     MYSQL_HANDLERTON_INTERFACE_VERSION};
 
@@ -2955,6 +2967,7 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(idle_conn_recycle_interval),
     MYSQL_SYSVAR(conn_meta_max_invalid_duration),
     MYSQL_SYSVAR(string_key_equal_to_like),
+    MYSQL_SYSVAR(select_min_for_trivial_fields),
     NULL};
 
 mysql_declare_plugin(spider) {

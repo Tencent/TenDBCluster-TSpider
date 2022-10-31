@@ -34,6 +34,19 @@ create table for master
 connection master_1;
 DROP TABLE IF EXISTS t1;;
 CREATE TABLE t1 (id INT PRIMARY KEY, vc VARCHAR(120))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t2;;
+CREATE TABLE t2 (id1 int(11) NOT NULL, id2 int(11) NOT NULL, id3 int(11) NOT NULL, a int(11) DEFAULT NULL, b int(11) DEFAULT NULL, PRIMARY KEY (id1,id2,id3))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t2", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t2", srv "s_2_2",aim "1"');;
 connection master_1;
 SET @old_log_output = @@global.log_output;
 SET @old_spider_general_log = @@global.spider_general_log;
@@ -52,6 +65,12 @@ INSERT INTO t1 VALUES
 (7, "hey"),
 (8, "hi"),
 (9, "hi");
+INSERT INTO t2 VALUES
+(1,1,1,1,1),
+(1,1,2,0,1),
+(1,1,3,1,0),
+(1,1,4,0,0),
+(1,2,1,1,1);
 SELECT MAX(id) FROM t1;
 MAX(id)
 9
@@ -86,6 +105,33 @@ mysql localhost 3306 select max(`id`),min(`id`),min(`vc`) from `auto_test_remote
 SELECT MAX(id), vc FROM t1 GROUP BY vc
 mysql localhost 3306 select max(`id`),min(`id`),`vc` from `auto_test_remote`.`t1` group by `vc`
 mysql localhost 3306 select max(`id`),min(`id`),`vc` from `auto_test_remote_2`.`t1` group by `vc`
+TRUNCATE TABLE mysql.general_log;
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 GROUP BY id2;
+id2	sa	sb
+1	2	2
+2	1	1
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 AND a > 0 GROUP BY id2;
+id2	sa	sb
+1	2	1
+2	1	1
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 AND b > 0 GROUP BY id2;
+id2	sa	sb
+1	1	2
+2	1	1
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 AND (a + b) > 0 GROUP BY id2;
+id2	sa	sb
+1	2	2
+2	1	1
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 GROUP BY id2
+mysql localhost 3306 select sum(`a`),sum(`b`),`id1`,`id2`,min(`id3`),min(`a`),min(`b`) from `auto_test_remote_2`.`t2` where (`id1` = 1) group by `id2` order by `id1`,`id2`,`id3`
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 AND a > 0 GROUP BY id2
+mysql localhost 3306 select sum(`a`),sum(`b`),`id1`,`id2`,min(`id3`),`a`,min(`b`) from `auto_test_remote_2`.`t2` where ((`id1` = 1) and (`a` > 0)) group by `id2` order by `id1`,`id2`,`id3`
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 AND b > 0 GROUP BY id2
+mysql localhost 3306 select sum(`a`),sum(`b`),`id1`,`id2`,min(`id3`),min(`a`),`b` from `auto_test_remote_2`.`t2` where ((`id1` = 1) and (`b` > 0)) group by `id2` order by `id1`,`id2`,`id3`
+SELECT id2, SUM(a) sa, SUM(b) sb FROM t2 WHERE id1 = 1 AND (a + b) > 0 GROUP BY id2
+mysql localhost 3306 select sum(`a`),sum(`b`),`id1`,`id2`,min(`id3`),`a`,`b` from `auto_test_remote_2`.`t2` where ((`id1` = 1) and ((`a` + `b`) > 0)) group by `id2` order by `id1`,`id2`,`id3`
 TRUNCATE TABLE mysql.general_log;
 connection master_1;
 SET GLOBAL log_output = @old_log_output;

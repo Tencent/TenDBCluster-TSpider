@@ -3413,7 +3413,7 @@ partititon_err:
   /* Allocate bitmaps */
 
   bitmap_size= share->column_bitmap_size;
-  bitmap_count= 7;
+  bitmap_count= 8;
   if (share->virtual_fields)
     bitmap_count++;
 
@@ -3453,6 +3453,9 @@ partititon_err:
   bitmaps+= bitmap_size;
   my_bitmap_init(&outparam->def_rpl_write_set,
                  (my_bitmap_map*) bitmaps, share->fields, FALSE);
+  bitmaps += bitmap_size;
+  my_bitmap_init(&outparam->where_set, (my_bitmap_map *)bitmaps, share->fields,
+                 FALSE);
   outparam->default_column_bitmaps();
 
   outparam->cond_selectivity= 1.0;

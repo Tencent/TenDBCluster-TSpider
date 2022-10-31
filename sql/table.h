@@ -1154,6 +1154,7 @@ public:
   MY_BITMAP     *vcol_set, *def_vcol_set;
   /* On INSERT: fields that the user specified a value for */
   MY_BITMAP	has_value_set;
+  MY_BITMAP     where_set; /* mark all fields referenced in WHERE clause */
 
   /*
    The ID of the query that opened and is using this table. Has different

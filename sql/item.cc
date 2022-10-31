@@ -6338,6 +6338,10 @@ bool Item_field::fix_fields(THD *thd, Item **reference)
       }
     }
   }
+
+  if (select->setting_up_where_clause)
+    bitmap_set_bit(&field->table->where_set, field->field_index);
+
 #ifndef NO_EMBEDDED_ACCESS_CHECKS
   if (any_privileges)
   {

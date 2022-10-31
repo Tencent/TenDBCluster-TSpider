@@ -8120,6 +8120,7 @@ int setup_conds(THD *thd, TABLE_LIST *tables, List<TABLE_LIST> &leaves,
 
   for (table= tables; table; table= table->next_local)
   {
+    bitmap_clear_all(&table->table->where_set);
     if (select_lex == &thd->lex->select_lex &&
         select_lex->first_cond_optimization &&
         table->merged_for_insert &&
@@ -8134,6 +8135,7 @@ int setup_conds(THD *thd, TABLE_LIST *tables, List<TABLE_LIST> &leaves,
                  print_where(*conds,
                              "WHERE in setup_conds",
                              QT_ORDINARY););
+    select_lex->setting_up_where_clause = true;
     /*
       Wrap alone field in WHERE clause in case it will be outer field of subquery
       which need persistent pointer on it, but conds could be changed by optimizer
@@ -8144,6 +8146,7 @@ int setup_conds(THD *thd, TABLE_LIST *tables, List<TABLE_LIST> &leaves,
     if ((!(*conds)->fixed && (*conds)->fix_fields(thd, conds)) ||
 	(*conds)->check_cols(1))
       goto err_no_arena;
+    select_lex->setting_up_where_clause = false;
   }
 
   /*
@@ -8167,6 +8170,7 @@ int setup_conds(THD *thd, TABLE_LIST *tables, List<TABLE_LIST> &leaves,
   DBUG_RETURN(MY_TEST(thd->is_error()));
 
 err_no_arena:
+  select_lex->setting_up_where_clause = false;
   select_lex->is_item_list_lookup= save_is_item_list_lookup;
   DBUG_RETURN(1);
 }

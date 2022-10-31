@@ -89,6 +89,7 @@ spider_remote_sql_log_off	0
 spider_remote_trx_isolation	-1
 spider_rone_shard_switch	ON
 spider_second_read	-1
+spider_select_min_for_trivial_fields	ON
 spider_semi_split_read	1
 spider_semi_split_read_limit	9223372036854775807
 spider_semi_trx	ON

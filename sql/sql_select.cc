@@ -15005,6 +15005,9 @@ void setup_tmp_table_column_bitmaps(TABLE *table, uchar *bitmaps,
   bitmaps += bitmap_size;
   my_bitmap_init(&table->has_value_set, (my_bitmap_map *)bitmaps, field_count,
                  FALSE);
+  bitmaps += bitmap_size;
+  my_bitmap_init(&table->where_set, (my_bitmap_map *)bitmaps, field_count,
+                 FALSE);
   /* write_set and all_set are copies of read_set */
   table->def_write_set = table->def_read_set;
   table->s->all_set = table->def_read_set;
@@ -15163,7 +15166,7 @@ TABLE *create_tmp_table(THD *thd, TMP_TABLE_PARAM *param, List<Item> &fields,
           sizeof(*param->recinfo) * (field_count * 2 + 4), &tmpname,
           (uint)strlen(path) + 1, &group_buff,
           (group && !using_unique_constraint ? param->group_length : 0),
-          &bitmaps, bitmap_buffer_size(field_count) * 6, NullS)) {
+          &bitmaps, bitmap_buffer_size(field_count) * 7, NullS)) {
     if (temp_pool_slot != MY_BIT_NONE)
       bitmap_lock_clear_bit(&temp_pool, temp_pool_slot);
     DBUG_RETURN(NULL); /* purecov: inspected */
@@ -15845,7 +15848,7 @@ bool Virtual_tmp_table::init(uint field_count) {
   if (!multi_alloc_root(in_use->mem_root, &s, sizeof(*s), &field,
                         (field_count + 1) * sizeof(Field *), &blob_field,
                         (field_count + 1) * sizeof(uint), &bitmaps,
-                        bitmap_buffer_size(field_count) * 6, NullS))
+                        bitmap_buffer_size(field_count) * 7, NullS))
     DBUG_RETURN(true);
   bzero(s, sizeof(*s));
   s->blob_field = blob_field;
