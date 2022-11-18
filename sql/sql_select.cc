@@ -15421,11 +15421,10 @@ TABLE *create_tmp_table(THD *thd, TMP_TABLE_PARAM *param, List<Item> &fields,
 
   /* If result table is small; use a heap */
   /* future: storage engine selection can be made dynamic? */
-  if (!(opt_force_memory_for_schema_tables && param->schema_table) &&
-      (blob_count || using_unique_constraint ||
-       (thd->variables.big_tables && !(select_options & SELECT_SMALL_RESULT)) ||
-       (select_options & TMP_TABLE_FORCE_MYISAM) ||
-       thd->variables.tmp_memory_table_size == 0)) {
+  if (blob_count || using_unique_constraint ||
+      (thd->variables.big_tables && !(select_options & SELECT_SMALL_RESULT)) ||
+      (select_options & TMP_TABLE_FORCE_MYISAM) ||
+      thd->variables.tmp_memory_table_size == 0) {
     share->db_plugin = ha_lock_engine(0, TMP_ENGINE_HTON);
     table->file = get_new_handler(share, &table->mem_root, share->db_type());
     if (group && (param->group_parts > table->file->max_key_parts() ||

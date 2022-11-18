@@ -825,8 +825,6 @@ char *relay_log_info_file, *report_user, *report_password, *report_host;
 char *opt_relay_logname = 0, *opt_relaylog_index_name=0;
 char *opt_logname, *opt_slow_logname, *opt_bin_logname;
 
-my_bool opt_force_memory_for_schema_tables;
-
 /* Static variables */
 
 static volatile sig_atomic_t kill_in_progress;

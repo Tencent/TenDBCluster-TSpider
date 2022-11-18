@@ -6224,12 +6224,6 @@ static Sys_var_mybool Sys_spider_not_show_partition(
   "show create table for spider without partition information",
   SESSION_VAR(spider_not_show_partition), CMD_LINE(OPT_ARG), DEFAULT(FALSE));
 
-static Sys_var_mybool Sys_force_memory_engine_for_schema_tables(
-    "force_memory_engine_for_schema_tables",
-    "Use MEMORY as storage engine instead of default (Aria) for schema tables.",
-    READ_ONLY GLOBAL_VAR(opt_force_memory_for_schema_tables), CMD_LINE(OPT_ARG),
-    DEFAULT(TRUE));
-
 static const char *spider_ignore_error_number_names[]= 
 {
   "1062", "12701", "12723", "1477",
