@@ -101,6 +101,20 @@
 #define SPIDER_SQL_FOR_UPDATE_STR " for update"
 #define SPIDER_SQL_FOR_UPDATE_LEN (sizeof(SPIDER_SQL_FOR_UPDATE_STR) - 1)
 
+/*
+  New syntax in MySQL 8.0, serves the same function as LOCK IN SHARE MODE. But
+  only FOR SHARE supports SKIP LOCKED.
+*/
+#define SPIDER_SQL_SHARED_LOCK_NEW_STR " for share"
+#define SPIDER_SQL_SHARED_LOCK_NEW_LEN (sizeof(SPIDER_SQL_SHARED_LOCK_NEW_STR) - 1)
+
+/*
+  MySQL versions older than 8.0.1 have no support for SKIP LOCKED, in that case
+  SKIP LOCKED is ignored and the query still waits for potential locks.
+*/
+#define SPIDER_SQL_SKIP_LOCKED_STR " /*!80001 skip locked*/"
+#define SPIDER_SQL_SKIP_LOCKED_LEN (sizeof(SPIDER_SQL_SKIP_LOCKED_STR) - 1)
+
 #define SPIDER_SQL_SQL_ALTER_TABLE_STR "alter table "
 #define SPIDER_SQL_SQL_ALTER_TABLE_LEN \
   (sizeof(SPIDER_SQL_SQL_ALTER_TABLE_STR) - 1)

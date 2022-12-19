@@ -1111,6 +1111,9 @@ public:
   /* index in the select list of the expression currently being fixed */
   int cur_pos_in_select_list;
 
+  /* SELECT [FOR UPDATE/LOCK IN SHARE MODE] [SKIP LOCKED] */
+  bool skip_locked;
+
   List<udf_func>     udf_list;                  /* udf function calls stack */
 
   /* 
@@ -1209,6 +1212,7 @@ public:
   List<Item>* get_item_list();
   ulong get_table_join_options();
   void set_lock_for_tables(thr_lock_type lock_type);
+  void set_select_lock_type_for_tables(bool for_share, bool skip_locked);
   inline void init_order()
   {
     order_list.elements= 0;

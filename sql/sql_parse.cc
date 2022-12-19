@@ -7930,6 +7930,27 @@ void st_select_lex::set_lock_for_tables(thr_lock_type lock_type) {
 }
 
 /**
+  Set select lock related info for all tables in current select level.
+
+  @param for_share_arg Whether current select is using FOR SHARE syntax to get a
+  shared read lock
+  @param skip_locked_arg Whether SKIP LOCKED is used
+*/
+void st_select_lex::set_select_lock_type_for_tables(bool for_share_arg,
+                                                    bool skip_locked_arg) {
+  DBUG_ENTER("set_select_lock_type_for_tables");
+  DBUG_PRINT("enter", ("for_share: %d, skip_locked: %d", (int)for_share_arg,
+                       (int)skip_locked_arg));
+  skip_locked = skip_locked_arg;
+  for (TABLE_LIST *tables = table_list.first; tables;
+       tables = tables->next_local) {
+    tables->using_for_share = for_share_arg;
+    tables->skip_locked = skip_locked_arg;
+  }
+  DBUG_VOID_RETURN;
+}
+
+/**
   Create a fake SELECT_LEX for a unit.
 
     The method create a fake SELECT_LEX object for a unit.

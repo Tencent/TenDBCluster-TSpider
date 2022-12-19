@@ -4242,6 +4242,8 @@ restart:
                                      some_routine_modifies_data);
       else
         tbl->reginfo.lock_type= tables->lock_type;
+      tbl->reginfo.using_for_share = tables->using_for_share;
+      tbl->reginfo.skip_locked = tables->skip_locked;
     }
   }
 

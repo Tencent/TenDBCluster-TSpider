@@ -167,6 +167,8 @@ struct st_join_table;
 typedef struct st_reginfo {		/* Extra info about reg */
   struct st_join_table *join_tab;	/* Used by SELECT() */
   enum thr_lock_type lock_type;		/* How database is used */
+  bool using_for_share;
+  bool skip_locked;
   bool not_exists_optimize;
   /*
     TRUE <=> range optimizer found that there is no rows satisfying
