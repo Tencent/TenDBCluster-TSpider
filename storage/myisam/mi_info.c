@@ -131,3 +131,6 @@ void mi_report_error(int errcode, const char *file_name)
   DBUG_VOID_RETURN;
 }
 
+uint myisam_max_key_length() { return HA_MAX_KEY_LENGTH; }
+uint myisam_max_key_segments() { return HA_MAX_KEY_SEG; }
+

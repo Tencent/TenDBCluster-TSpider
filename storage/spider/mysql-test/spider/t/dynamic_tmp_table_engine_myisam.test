@@ -1,0 +1,38 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT, c1 INT, PRIMARY KEY(id)
+--echo $TABLE_BODY
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+INSERT INTO t1 VALUES(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10);
+
+--echo
+--echo # Checking schema tables
+--connection master_1
+USE information_schema;
+SELECT DISTINCT ENGINE FROM TABLES WHERE TABLE_SCHEMA='information_schema';
+SHOW CREATE TABLE COLUMNS;
+SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM COLUMNS WHERE TABLE_SCHEMA='auto_test_local' AND TABLE_NAME='t1';
+
+--echo
+--echo # Testing functionality of tmp tables
+--echo # This query will create an internal tmp table during processing
+USE auto_test_local;
+--disable_result_log
+SELECT * FROM t1 ORDER BY RAND() LIMIT 5;
+--enable_query_log
+
+# cleanup
+--source ../include/spider_drop_database.inc
