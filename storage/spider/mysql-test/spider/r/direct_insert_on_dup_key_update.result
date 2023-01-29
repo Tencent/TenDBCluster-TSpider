@@ -1,0 +1,120 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+id INT, c1 INT, PRIMARY KEY (id)
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t1;;
+CREATE TABLE t1 (id INT, c1 INT, PRIMARY KEY (id))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t1", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t1", srv "s_2_2",aim "1"');;
+connection master_1;
+INSERT INTO t1 VALUES(1,1),(2,2),(3,3),(4,4),(5,5);
+SET spider_direct_dup_insert=1;
+SET @old_log_output = @@global.log_output;
+SET @old_general_log = @@global.general_log;
+SET @old_spider_general_log = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL general_log = 1;
+SET GLOBAL spider_general_log = 1;
+TRUNCATE TABLE mysql.general_log;
+INSERT INTO t1 VALUES(1,10) ON DUPLICATE KEY UPDATE c1=10;
+SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+argument
+INSERT INTO t1 VALUES(1,10) ON DUPLICATE KEY UPDATE c1=10
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`t1`(`id`,`c1`)values(1,10) on duplicate key update `c1` = 10
+TRUNCATE TABLE mysql.general_log;
+INSERT INTO t1 VALUES(2,20) ON DUPLICATE KEY UPDATE c1=VALUES(c1);
+SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+argument
+INSERT INTO t1 VALUES(2,20) ON DUPLICATE KEY UPDATE c1=VALUES(c1)
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`t1`(`id`,`c1`)values(2,20) on duplicate key update `c1` = values(`c1`)
+TRUNCATE TABLE mysql.general_log;
+INSERT INTO t1 VALUES(3,30) ON DUPLICATE KEY UPDATE id=VALUES(id), c1=VALUES(c1);
+SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+argument
+INSERT INTO t1 VALUES(3,30) ON DUPLICATE KEY UPDATE id=VALUES(id), c1=VALUES(c1)
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`t1`(`id`,`c1`)values(3,30)
+mysql localhost 3306 select `id`,`c1` from `auto_test_remote_2`.`t1` where `id` = 3 for update
+mysql localhost 3306 update `auto_test_remote_2`.`t1` set `id` = 3,`c1` = 30 where `id` = 3 limit 1
+TRUNCATE TABLE mysql.general_log;
+INSERT INTO t1 VALUES(4,40) ON DUPLICATE KEY UPDATE id=40, c1=40;
+SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+argument
+INSERT INTO t1 VALUES(4,40) ON DUPLICATE KEY UPDATE id=40, c1=40
+mysql localhost 3306 insert high_priority into `auto_test_remote`.`t1`(`id`,`c1`)values(4,40)
+mysql localhost 3306 select `id`,`c1` from `auto_test_remote`.`t1` where `id` = 4 for update
+mysql localhost 3306 update `auto_test_remote`.`t1` set `id` = 40,`c1` = 40 where `id` = 4 limit 1
+TRUNCATE TABLE mysql.general_log;
+SELECT * FROM t1;
+id	c1
+5	5
+40	40
+1	10
+2	20
+3	30
+SELECT * FROM t1 WHERE id=1;
+id	c1
+1	10
+SELECT * FROM t1 WHERE id=2;
+id	c1
+2	20
+SELECT * FROM t1 WHERE id=3;
+id	c1
+3	30
+SELECT * FROM t1 WHERE id=4;
+id	c1
+SELECT * FROM t1 WHERE id=40;
+id	c1
+40	40
+connection master_1;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL general_log = @old_general_log;
+SET GLOBAL spider_general_log = @old_spider_general_log;
+TRUNCATE TABLE mysql.general_log;
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test
