@@ -2019,6 +2019,18 @@ protected:
   virtual ~Create_func_json_unquote() {}
 };
 
+class Create_func_murmur_jump_hash : public Create_func_arg2
+{
+ public:
+  virtual Item *create_2_arg(THD *thd, Item *arg1, Item *arg2);
+
+  static Create_func_murmur_jump_hash s_singleton;
+
+ protected:
+  Create_func_murmur_jump_hash() {}
+  virtual ~Create_func_murmur_jump_hash() {}
+};
+
 
 class Create_func_last_day : public Create_func_arg1
 {
@@ -5260,6 +5272,12 @@ Create_func_json_unquote::create_1_arg(THD *thd, Item *arg1)
   return new (thd->mem_root) Item_func_json_unquote(thd, arg1);
 }
 
+Create_func_murmur_jump_hash Create_func_murmur_jump_hash::s_singleton;
+
+Item *Create_func_murmur_jump_hash::create_2_arg(THD *thd, Item *arg1,
+                                                 Item *arg2) {
+  return new (thd->mem_root) Item_func_murmur_jump_hash(thd, arg1, arg2);
+}
 
 Create_func_last_day Create_func_last_day::s_singleton;
 
@@ -7192,6 +7210,7 @@ static Native_func_registry func_array[] =
   { { STRING_WITH_LEN("MULTIPOINTFROMWKB") }, GEOM_BUILDER(Create_func_geometry_from_wkb)},
   { { STRING_WITH_LEN("MULTIPOLYGONFROMTEXT") }, GEOM_BUILDER(Create_func_geometry_from_text)},
   { { STRING_WITH_LEN("MULTIPOLYGONFROMWKB") }, GEOM_BUILDER(Create_func_geometry_from_wkb)},
+  { { STRING_WITH_LEN("MURMUR_JUMP_HASH") }, BUILDER(Create_func_murmur_jump_hash)},
   { { STRING_WITH_LEN("NAME_CONST") }, BUILDER(Create_func_name_const)},
   { { STRING_WITH_LEN("NVL") }, BUILDER(Create_func_ifnull)},
   { { STRING_WITH_LEN("NVL2") }, BUILDER(Create_func_nvl2)},

@@ -1,0 +1,126 @@
+--echo #
+--echo # Test partitioning using JUMP HASH
+--echo #
+
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+##################### PREP #####################
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id varchar(32)
+--echo $TABLE_BODY
+--let $TABLE_SHARD_KEY = id
+
+--let $CHILD2_1_DROP_TABLES = DROP TABLE IF EXISTS $TABLE_NAME;
+--let $CHILD2_2_DROP_TABLES = $CHILD2_1_DROP_TABLES
+--let $MASTER_DROP_TABLES1 = $CHILD2_1_DROP_TABLES
+--let $CHILD2_1_CREATE_TABLES = CREATE TABLE $TABLE_NAME ($TABLE_BODY)$CHILD2_1_ENGINE  $CHILD2_1_CHARSET;
+--let $CHILD2_2_CREATE_TABLES = CREATE TABLE $TABLE_NAME ($TABLE_BODY)$CHILD2_2_ENGINE  $CHILD2_2_CHARSET;
+
+# Use MURMUR_JUMP_HASH() as the partitioning function
+--let $MASTER_CREATE_TABLES1 = CREATE TABLE $TABLE_NAME ($TABLE_BODY)$MASTER_1_ENGINE $MASTER_1_CHARSET PARTITION BY LIST (MURMUR_JUMP_HASH($TABLE_SHARD_KEY, 2))( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "$TABLE_NAME", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "$TABLE_NAME", srv "s_2_2",aim "1"');
+
+
+--source ../include/spider_create_database.inc
+--echo
+--echo create table for child
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_1
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_1_DROP_TABLES;
+    echo CHILD2_1_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_1_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_1_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+if ($USE_CHILD_GROUP2)
+{
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    --disable_result_log
+  }
+  --connection child2_2
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --disable_query_log
+    echo CHILD2_2_DROP_TABLES;
+    echo CHILD2_2_CREATE_TABLES;
+  }
+  --disable_warnings
+  eval $CHILD2_2_DROP_TABLES;
+  --enable_warnings
+  eval $CHILD2_2_CREATE_TABLES;
+  if ($OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+  }
+  if (!$OUTPUT_CHILD_GROUP2)
+  {
+    --enable_query_log
+    --enable_result_log
+  }
+}
+
+--echo
+--echo create table for master
+--connection master_1
+--disable_warnings
+
+eval $MASTER_DROP_TABLES1;
+
+--enable_warnings
+--disable_query_log
+--enable_query_log
+
+eval $MASTER_CREATE_TABLES1;
+##################### PREP #####################
+
+SELECT MURMUR_JUMP_HASH("b",1) AS val;
+SELECT MURMUR_JUMP_HASH("b",2) AS val;
+SELECT MURMUR_JUMP_HASH("b",10) AS val;
+SELECT MURMUR_JUMP_HASH("b",100) AS val;
+
+INSERT INTO t1 VALUES
+("a"),("b"),("c"),("d");
+
+SELECT id FROM t1 WHERE id="b";
+
+--echo
+--echo # The record should be in the second partition
+--connection child2_1
+SELECT id FROM auto_test_remote.t1 WHERE id="b";
+--connection child2_2
+SELECT id FROM auto_test_remote_2.t1 WHERE id="b";
+--connection master_1
+
+# Clean up
+--let $USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--source ../include/spider_drop_database.inc
