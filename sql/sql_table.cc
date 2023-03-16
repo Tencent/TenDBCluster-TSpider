@@ -3395,6 +3395,11 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
   int select_field_count= C_CREATE_SELECT(create_table_mode);
   bool tmp_table= create_table_mode == C_ALTER_TABLE;
   my_bool is_support_column_charset = TRUE;
+  /*
+    May be ALTER TABLE CONVERT TO CHARACTER SET command.
+  */
+  bool maybe_convert_tbl_cs = (create_table_mode == C_ALTER_TABLE_FRM_ONLY &&
+                               alter_info->flags & ALTER_OPTIONS);
   DBUG_ENTER("mysql_prepare_create_table");
 
   DBUG_EXECUTE_IF("test_pseudo_invisible",{
@@ -3437,9 +3442,12 @@ mysql_prepare_create_table(THD *thd, HA_CREATE_INFO *create_info,
           case MYSQL_TYPE_SET:
               if (cur_field->charset && cur_field->charset->csname)
               {/* have charset */
-                  if (strcmp(cur_field->charset->csname, "binary") && strcmp(cur_field->charset->csname, create_info->default_table_charset->csname))
+                if (!maybe_convert_tbl_cs &&
+                    strcmp(cur_field->charset->csname, "binary") &&
+                    strcmp(cur_field->charset->csname,
+                           create_info->default_table_charset->csname))
                   { /* ignore binary */
-                      my_error(ER_COLUMN_CAN_NOT_CHARSET_IN_CURRENT_STORAGE, MYF(0), cur_field->field_name);
+                      my_error(ER_COLUMN_CHARSET_DIFFERENT_FROM_TABLE, MYF(0), cur_field->field_name);
                       DBUG_RETURN(1);
                   }
               }
