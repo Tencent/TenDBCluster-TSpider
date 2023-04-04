@@ -159,6 +159,8 @@ class ha_spider : public handler {
   bool use_pre_call;
   bool use_pre_records;
   bool pre_bitmap_checked;
+  bool using_for_share;
+  bool skip_locked;
   enum thr_lock_type lock_type;
   int lock_mode;
   uint sql_command;

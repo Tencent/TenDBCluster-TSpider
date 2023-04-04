@@ -159,6 +159,8 @@ ha_spider::ha_spider() : handler(spider_hton_ptr, NULL) {
   result_list.bgs_error = 0;
   result_list.bgs_error_with_message = FALSE;
   result_list.is_get_increment = FALSE;
+  using_for_share = FALSE;
+  skip_locked = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -257,6 +259,8 @@ ha_spider::ha_spider(handlerton *hton, TABLE_SHARE *table_arg)
   result_list.bgs_error = 0;
   result_list.bgs_error_with_message = FALSE;
   result_list.is_get_increment = FALSE;
+  using_for_share = FALSE;
+  skip_locked = FALSE;
   DBUG_VOID_RETURN;
 }
 
@@ -835,6 +839,9 @@ THR_LOCK_DATA **ha_spider::store_lock(THD *thd, THR_LOCK_DATA **to,
       break;
   }
 
+  using_for_share = table->reginfo.using_for_share;
+  skip_locked = table->reginfo.skip_locked;
+
   if (lock_type != TL_IGNORE && lock.type == TL_UNLOCK) {
     if (sql_command == SQLCOM_DROP_TABLE || sql_command == SQLCOM_ALTER_TABLE ||
         sql_command == SQLCOM_SHOW_CREATE) {
@@ -1139,6 +1146,8 @@ int ha_spider::reset() {
   error_mode = 0;
   store_error_num = 0;
   total_inserted_rows = 0;
+  using_for_share = FALSE;
+  skip_locked = FALSE;
 
   for (roop_count = 0; roop_count < (int)share->link_count; roop_count++) {
     conns[roop_count] = NULL;

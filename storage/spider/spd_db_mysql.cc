@@ -8303,13 +8303,26 @@ int spider_mysql_handler::append_select_lock(spider_string *str) {
   int lock_mode = spider_conn_lock_mode(spider);
   DBUG_ENTER("spider_mysql_handler::append_select_lock");
   DBUG_PRINT("info", ("spider this=%p", this));
+  if (lock_mode == SPIDER_LOCK_MODE_NO_LOCK) DBUG_RETURN(0);
   if (lock_mode == SPIDER_LOCK_MODE_EXCLUSIVE) {
     if (str->reserve(SPIDER_SQL_FOR_UPDATE_LEN)) DBUG_RETURN(HA_ERR_OUT_OF_MEM);
     str->q_append(SPIDER_SQL_FOR_UPDATE_STR, SPIDER_SQL_FOR_UPDATE_LEN);
   } else if (lock_mode == SPIDER_LOCK_MODE_SHARED) {
-    if (str->reserve(SPIDER_SQL_SHARED_LOCK_LEN))
+    if (spider->using_for_share) {
+      if (str->reserve(SPIDER_SQL_SHARED_LOCK_NEW_LEN))
+        DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+      str->q_append(SPIDER_SQL_SHARED_LOCK_NEW_STR,
+                    SPIDER_SQL_SHARED_LOCK_NEW_LEN);
+    } else {
+      if (str->reserve(SPIDER_SQL_SHARED_LOCK_LEN))
+        DBUG_RETURN(HA_ERR_OUT_OF_MEM);
+      str->q_append(SPIDER_SQL_SHARED_LOCK_STR, SPIDER_SQL_SHARED_LOCK_LEN);
+    }
+  }
+  if (spider->skip_locked) {
+    if (str->reserve(SPIDER_SQL_SKIP_LOCKED_LEN))
       DBUG_RETURN(HA_ERR_OUT_OF_MEM);
-    str->q_append(SPIDER_SQL_SHARED_LOCK_STR, SPIDER_SQL_SHARED_LOCK_LEN);
+    str->q_append(SPIDER_SQL_SKIP_LOCKED_STR, SPIDER_SQL_SKIP_LOCKED_LEN);
   }
   DBUG_RETURN(0);
 }

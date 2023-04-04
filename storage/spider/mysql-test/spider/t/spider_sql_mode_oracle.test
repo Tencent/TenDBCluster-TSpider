@@ -92,7 +92,7 @@ if ($USE_CHILD_GROUP2)
 --connection master_1
 --disable_warnings
 show variables like "sql_mode";
-set sql_mode='oracle';
+#set sql_mode='oracle';
 
 --echo
 --echo select for master

@@ -1403,6 +1403,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  LINESTRING
 %token  <kwd>  LIST_SYM
 %token  <kwd>  LOCAL_SYM                     /* SQL-2003-R */
+%token  <kwd>  LOCKED_SYM
 %token  <kwd>  LOCKS_SYM
 %token  <kwd>  LOGFILE_SYM
 %token  <kwd>  LOGS_SYM
@@ -1562,6 +1563,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
 %token  <kwd>  SHUTDOWN
 %token  <kwd>  SIGNED_SYM
 %token  <kwd>  SIMPLE_SYM                    /* SQL-2003-N */
+%token  <kwd>  SKIP_SYM
 %token  <kwd>  SLAVE
 %token  <kwd>  SLAVES
 %token  <kwd>  SLAVE_POS_SYM
@@ -1842,7 +1844,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         udf_type opt_local opt_no_write_to_binlog
         opt_temporary all_or_any opt_distinct opt_glimit_clause
         opt_ignore_leaves fulltext_options union_option
-        opt_not
+        opt_not opt_skip_locked
         select_derived_init transaction_access_mode_types
         opt_natural_language_mode opt_query_expansion
         opt_ev_status opt_ev_on_completion ev_on_completion opt_ev_comment
@@ -9356,22 +9358,43 @@ select_option:
 
 opt_select_lock_type:
           /* empty */
-        | FOR_SYM UPDATE_SYM opt_lock_wait_timeout
+        | FOR_SYM UPDATE_SYM opt_lock_wait_timeout opt_skip_locked
           {
             LEX *lex=Lex;
             lex->current_select->lock_type= TL_WRITE;
             lex->current_select->set_lock_for_tables(TL_WRITE);
+            lex->current_select->set_select_lock_type_for_tables(0, $4);
             lex->safe_to_cache_query=0;
           }
-        | LOCK_SYM IN_SYM SHARE_SYM MODE_SYM opt_lock_wait_timeout
+        | LOCK_SYM IN_SYM SHARE_SYM MODE_SYM opt_lock_wait_timeout opt_skip_locked
           {
             LEX *lex=Lex;
             lex->current_select->lock_type= TL_READ_WITH_SHARED_LOCKS;
             lex->current_select->
               set_lock_for_tables(TL_READ_WITH_SHARED_LOCKS);
+            lex->current_select->set_select_lock_type_for_tables(0, $6);
+            lex->safe_to_cache_query=0;
+          }
+        | FOR_SYM SHARE_SYM opt_lock_wait_timeout opt_skip_locked
+          {
+            LEX *lex=Lex;
+            lex->current_select->lock_type= TL_READ_WITH_SHARED_LOCKS;
+            lex->current_select->
+              set_lock_for_tables(TL_READ_WITH_SHARED_LOCKS);
+            lex->current_select->set_select_lock_type_for_tables(1, $4);
             lex->safe_to_cache_query=0;
           }
         ;
+
+opt_skip_locked:
+        /* empty */
+        {
+          $$= 0;
+        }
+        | SKIP_SYM LOCKED_SYM
+        {
+          $$= 1;
+        }
 
 select_item_list:
           select_item_list ',' select_item

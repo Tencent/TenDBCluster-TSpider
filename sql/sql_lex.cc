@@ -2326,6 +2326,7 @@ void st_select_lex::init_select()
   /* Set limit and offset to default values */
   select_limit= 0;      /* denotes the default limit = HA_POS_ERROR */
   offset_limit= 0;      /* denotes the default offset = 0 */
+  skip_locked= false;
   with_sum_func= 0;
   with_all_modifier= 0;
   is_correlated= 0;
