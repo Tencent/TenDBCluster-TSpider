@@ -334,6 +334,19 @@ extern my_bool opt_spider_parallel_group_order;
 extern my_bool opt_spider_parallel_limit;
 extern my_bool opt_spider_internal_xa;
 
+enum enum_tmp_table_engine {
+  USE_MYISAM_AS_TMP_TBL_ENGINE,
+  USE_ARIA_AS_TMP_TBL_ENGINE
+};
+extern ulong tmp_table_engine;
+
+inline bool is_tmp_table_engine_myisam() {
+  return tmp_table_engine == USE_MYISAM_AS_TMP_TBL_ENGINE;
+}
+inline bool is_tmp_table_engine_aria() {
+  return tmp_table_engine == USE_ARIA_AS_TMP_TBL_ENGINE;
+}
+
 #ifdef HAVE_PSI_INTERFACE
 #ifdef HAVE_MMAP
 extern PSI_mutex_key key_PAGE_lock, key_LOCK_sync, key_LOCK_active,

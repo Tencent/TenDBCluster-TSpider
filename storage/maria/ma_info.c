@@ -34,6 +34,8 @@ uint maria_max_key_length()
   return MY_MIN(HA_MAX_KEY_LENGTH, tmp);
 }
 
+uint maria_max_key_segments() { return HA_MAX_KEY_SEG; }
+
 /* Get information about the table */
 /* if flag == 2 one get current info (no sync from database */
 

@@ -5329,19 +5329,37 @@ private:
 #undef USE_ARIA_FOR_TMP_TABLES
 #endif
 
-#ifdef USE_ARIA_FOR_TMP_TABLES
-#define TMP_ENGINE_COLUMNDEF MARIA_COLUMNDEF
-#define TMP_ENGINE_HTON maria_hton
-#define TMP_ENGINE_NAME "Aria"
-inline uint tmp_table_max_key_length() { return maria_max_key_length(); }
-inline uint tmp_table_max_key_parts() { return maria_max_key_segments(); }
-#else
-#define TMP_ENGINE_COLUMNDEF MI_COLUMNDEF
-#define TMP_ENGINE_HTON myisam_hton
-#define TMP_ENGINE_NAME "MyISAM"
-inline uint tmp_table_max_key_length() { return MI_MAX_KEY_LENGTH; }
-inline uint tmp_table_max_key_parts() { return MI_MAX_KEY_SEG; }
+typedef union u_tmp_engine_columndef {
+  MI_COLUMNDEF mi_def;
+#ifdef WITH_ARIA_STORAGE_ENGINE
+  MARIA_COLUMNDEF ma_def;
 #endif
+} TMP_ENGINE_COLUMNDEF;
+
+#ifdef WITH_ARIA_STORAGE_ENGINE
+#define set_columndef(col, member, val)      \
+  do {                                       \
+    if (is_tmp_table_engine_myisam()) {      \
+      (col)->mi_def.member = (val);          \
+    } else if (is_tmp_table_engine_aria()) { \
+      (col)->ma_def.member = (val);          \
+    }                                        \
+  } while (0)
+#else
+/* Only MyISAM is possible */
+#define set_columndef(col, member, val) \
+  do {                                  \
+    (col)->mi_def.member = (val);       \
+  } while (0)
+#endif
+
+extern handlerton *tmp_engine_hton;
+extern const char *tmp_engine_name;
+
+extern uint (*tmp_table_max_key_length)();
+extern uint (*tmp_table_max_key_parts)();
+
+#define TMP_ENGINE_HTON tmp_engine_hton
 
 /*
   Param to create temporary tables when doing SELECT:s

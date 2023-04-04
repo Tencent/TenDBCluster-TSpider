@@ -82,6 +82,12 @@ char empty_c_string[1] = {0}; /* used for not defined db */
 
 const char *const THD::DEFAULT_WHERE = "field list";
 
+handlerton *tmp_engine_hton;
+const char *tmp_engine_name;
+
+uint (*tmp_table_max_key_length)();
+uint (*tmp_table_max_key_parts)();
+
 /****************************************************************************
 ** User variables
 ****************************************************************************/

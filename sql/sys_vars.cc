@@ -6240,3 +6240,10 @@ static Sys_var_set Sys_spider_log_ignore_err_numbers(
        /* by default we log all queries except 'not_using_index' */
        DEFAULT(0));
 
+const char *tmp_table_engine_names[] = {"myisam", "aria", NullS};
+static Sys_var_enum Sys_tmp_table_engine(
+    "internal_tmp_table_engine",
+    "The default engine used for internal temporary tables.",
+    PARSED_EARLY READ_ONLY GLOBAL_VAR(tmp_table_engine), CMD_LINE(REQUIRED_ARG),
+    tmp_table_engine_names, DEFAULT(USE_MYISAM_AS_TMP_TBL_ENGINE),
+    NO_MUTEX_GUARD, NOT_IN_BINLOG, NULL, NULL);

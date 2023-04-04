@@ -4274,8 +4274,8 @@ SJ_TMP_TABLE::create_sj_weedout_tmp_table(THD *thd)
   if (null_pack_length)
   {
     bzero((uchar*) recinfo,sizeof(*recinfo));
-    recinfo->type=FIELD_NORMAL;
-    recinfo->length=null_pack_length;
+    set_columndef(recinfo, type, FIELD_NORMAL);
+    set_columndef(recinfo, length, null_pack_length);
     recinfo++;
     bfill(null_flags,null_pack_length,255);	// Set null fields
 
@@ -4303,15 +4303,15 @@ SJ_TMP_TABLE::create_sj_weedout_tmp_table(THD *thd)
     pos+= length;
 
     /* Make entry for create table */
-    recinfo->length=length;
+    set_columndef(recinfo, length, length);
     if (field->flags & BLOB_FLAG)
-      recinfo->type= FIELD_BLOB;
+      set_columndef(recinfo, type, FIELD_BLOB);
     else if (use_packed_rows &&
              field->real_type() == MYSQL_TYPE_STRING &&
 	     length >= MIN_STRING_LENGTH_TO_PACK_ROWS)
-      recinfo->type=FIELD_SKIP_ENDSPACE;
+      set_columndef(recinfo, type, FIELD_SKIP_ENDSPACE);
     else
-      recinfo->type=FIELD_NORMAL;
+      set_columndef(recinfo, type, FIELD_NORMAL);
 
     field->set_table_name(&table->alias);
   }

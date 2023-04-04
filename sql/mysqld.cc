@@ -413,6 +413,8 @@ uint volatile global_disable_checkpoint;
 ulong slow_start_timeout;
 #endif
 
+ulong tmp_table_engine;
+
 /* for spider */
 my_bool opt_log_sql_use_mutil_partition;
 my_bool opt_spider_auto_increment_mode_switch;
@@ -5536,13 +5538,31 @@ static int init_server_components()
   if (init_gtid_pos_auto_engines())
     unireg_abort(1);
 
-#ifdef USE_ARIA_FOR_TMP_TABLES
-  if (!ha_storage_engine_is_enabled(maria_hton) && !opt_bootstrap)
-  {
-    sql_print_error("Aria engine is not enabled or did not start. The Aria engine must be enabled to continue as mysqld was configured with --with-aria-tmp-tables");
-    unireg_abort(1);
+  if (is_tmp_table_engine_myisam()) {
+    tmp_engine_hton = myisam_hton;
+    tmp_engine_name = "MyISAM";
+    tmp_table_max_key_length = myisam_max_key_length;
+    tmp_table_max_key_parts = myisam_max_key_segments;
   }
-#endif
+#ifdef WITH_ARIA_STORAGE_ENGINE
+  else if (is_tmp_table_engine_aria()) {
+    if (!ha_storage_engine_is_enabled(maria_hton) && !opt_bootstrap) {
+      sql_print_error(
+          "Aria engine is not enabled or did not start. The Aria engine must "
+          "be enabled to continue as mysqld was configured with "
+          "--with-aria-tmp-tables");
+      unireg_abort(1);
+    }
+    tmp_engine_hton = maria_hton;
+    tmp_engine_name = "Aria";
+    tmp_table_max_key_length = maria_max_key_length;
+    tmp_table_max_key_parts = maria_max_key_segments;
+  }
+#endif /* WITH_ARIA_STORAGE_ENGINE */
+  else {
+    sql_print_error("Can't start server: unknown temporary table engine.");
+    return 1;
+  }
 
 #ifdef WITH_WSREP
   /*
@@ -10307,7 +10327,7 @@ PSI_stage_info stage_checking_query_cache_for_query= { 0, "Checking query cache 
 PSI_stage_info stage_cleaning_up= { 0, "Reset for next command", 0};
 PSI_stage_info stage_closing_tables= { 0, "Closing tables", 0};
 PSI_stage_info stage_connecting_to_master= { 0, "Connecting to master", 0};
-PSI_stage_info stage_converting_heap_to_myisam= { 0, "Converting HEAP to " TMP_ENGINE_NAME, 0};
+PSI_stage_info stage_converting_heap_to_myisam= { 0, "Converting HEAP to Aria/MyISAM", 0};
 PSI_stage_info stage_copying_to_group_table= { 0, "Copying to group table", 0};
 PSI_stage_info stage_copying_to_tmp_table= { 0, "Copying to tmp table", 0};
 PSI_stage_info stage_copy_to_tmp_table= { 0, "Copy to tmp table", 0};

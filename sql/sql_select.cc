@@ -293,6 +293,31 @@ static bool find_order_in_list(THD *, Ref_ptr_array, TABLE_LIST *, ORDER *,
 
 static double table_cond_selectivity(JOIN *join, uint idx, JOIN_TAB *s,
                                      table_map rem_tables);
+
+#define COLUMNDEF_ALLOC_COUNT(n) ((n)*2 + 4)
+
+#ifdef WITH_ARIA_STORAGE_ENGINE
+#define MA_COPY_COLUMNDEF(to, from, member) \
+  ((to)->member = (from)->ma_def.member)
+static MARIA_COLUMNDEF *ma_copy_columndefs(TMP_ENGINE_COLUMNDEF *start_recinfo,
+                                           MARIA_COLUMNDEF *copy_start_recinfo,
+                                           uint count);
+static bool ma_create_internal_tmp_table(TABLE *table, KEY *keyinfo,
+                                         MARIA_COLUMNDEF *start_recinfo,
+                                         MARIA_COLUMNDEF **recinfo,
+                                         ulonglong options);
+#endif /* WITH_ARIA_STORAGE_ENGINE */
+
+#define MI_COPY_COLUMNDEF(to, from, member) \
+  ((to)->member = (from)->mi_def.member)
+static MI_COLUMNDEF *mi_copy_columndefs(TMP_ENGINE_COLUMNDEF *start_recinfo,
+                                        MI_COLUMNDEF *copy_start_recinfo,
+                                        uint count);
+static bool mi_create_internal_tmp_table(TABLE *table, KEY *keyinfo,
+                                         MI_COLUMNDEF *start_recinfo,
+                                         MI_COLUMNDEF **recinfo,
+                                         ulonglong options);
+
 void set_postjoin_aggr_write_func(JOIN_TAB *tab);
 #ifndef DBUG_OFF
 
@@ -15485,8 +15510,8 @@ TABLE *create_tmp_table(THD *thd, TMP_TABLE_PARAM *param, List<Item> &fields,
   pos = table->record[0] + null_pack_length;
   if (null_pack_length) {
     bzero((uchar *)recinfo, sizeof(*recinfo));
-    recinfo->type = FIELD_NORMAL;
-    recinfo->length = null_pack_length;
+    set_columndef(recinfo, type, FIELD_NORMAL);
+    set_columndef(recinfo, length, null_pack_length);
     recinfo++;
     bfill(null_flags, null_pack_length, 255);  // Set null fields
 
@@ -15503,8 +15528,8 @@ TABLE *create_tmp_table(THD *thd, TMP_TABLE_PARAM *param, List<Item> &fields,
     bzero((uchar *)recinfo, sizeof(*recinfo));
 
     if (!(field->flags & NOT_NULL_FLAG)) {
-      recinfo->null_bit = (uint8)1 << (null_count & 7);
-      recinfo->null_pos = null_count / 8;
+      set_columndef(recinfo, null_bit, (uint8)1 << (null_count & 7));
+      set_columndef(recinfo, null_pos, null_count / 8);
       field->move_field(pos, null_flags + null_count / 8,
                         (uint8)1 << (null_count & 7));
       null_count++;
@@ -15548,16 +15573,16 @@ TABLE *create_tmp_table(THD *thd, TMP_TABLE_PARAM *param, List<Item> &fields,
     pos += length;
 
     /* Make entry for create table */
-    recinfo->length = length;
+    set_columndef(recinfo, length, length);
     if (field->flags & BLOB_FLAG)
-      recinfo->type = FIELD_BLOB;
+      set_columndef(recinfo, type, FIELD_BLOB);
     else if (use_packed_rows && field->real_type() == MYSQL_TYPE_STRING &&
              length >= MIN_STRING_LENGTH_TO_PACK_ROWS)
-      recinfo->type = FIELD_SKIP_ENDSPACE;
+      set_columndef(recinfo, type, FIELD_SKIP_ENDSPACE);
     else if (field->real_type() == MYSQL_TYPE_VARCHAR)
-      recinfo->type = FIELD_VARCHAR;
+      set_columndef(recinfo, type, FIELD_VARCHAR);
     else
-      recinfo->type = FIELD_NORMAL;
+      set_columndef(recinfo, type, FIELD_NORMAL);
 
     if (!--hidden_field_count)
       null_count = (null_count + 7) & ~7;  // move to next byte
@@ -15989,7 +16014,6 @@ bool open_tmp_table(TABLE *table) {
   return 0;
 }
 
-#ifdef USE_ARIA_FOR_TMP_TABLES
 /*
   Create internal (MyISAM or Maria) temporary table
 
@@ -16020,16 +16044,134 @@ bool open_tmp_table(TABLE *table) {
      TRUE  - Error
 */
 
+/**
+ * @brief Choose between Aria and MyISAM to create an internal temporary table.
+ *
+ * @desc TMP_ENGINE_COLUMNDEF is a union of MARIA_COLUMNDEF & MI_COLUMNDEF.
+ * After the engine is decided, an array of the actual COLUMNDEFs will be
+ * allocated and get a deep copy from the original, then passed to the
+ * engine-specific create_internal_tmp_table().
+ *
+ * The engine is decided from the @@internal_tmp_table_engine system variable.
+ *
+ * @retval
+ *  FALSE - OK
+ *  TRUE  - Error
+ * */
+
 bool create_internal_tmp_table(TABLE *table, KEY *keyinfo,
                                TMP_ENGINE_COLUMNDEF *start_recinfo,
                                TMP_ENGINE_COLUMNDEF **recinfo,
                                ulonglong options) {
+  bool ret = TRUE;
+  uint count = *recinfo - start_recinfo;
+  MEM_ROOT *mem_root = &table->mem_root;
+  DBUG_ENTER("create_internal_tmp_table");
+  DBUG_PRINT("enter", ("engine: %s", tmp_engine_name));
+
+  if (is_tmp_table_engine_myisam()) {
+    MI_COLUMNDEF *copy_start_recinfo, *copy_rec;
+    if (!(copy_start_recinfo = (MI_COLUMNDEF *)alloc_root(
+              mem_root, sizeof(MI_COLUMNDEF) * COLUMNDEF_ALLOC_COUNT(count))))
+      DBUG_RETURN(TRUE);
+    copy_rec = mi_copy_columndefs(start_recinfo, copy_start_recinfo, count);
+    ret = mi_create_internal_tmp_table(table, keyinfo, copy_start_recinfo,
+                                       &copy_rec, options);
+  }
+#ifdef WITH_ARIA_STORAGE_ENGINE
+  else if (is_tmp_table_engine_aria()) {
+    MARIA_COLUMNDEF *copy_start_recinfo, *copy_rec;
+    if (!(copy_start_recinfo = (MARIA_COLUMNDEF *)alloc_root(
+              mem_root,
+              sizeof(MARIA_COLUMNDEF) * COLUMNDEF_ALLOC_COUNT(count))))
+      DBUG_RETURN(TRUE);
+    copy_rec = ma_copy_columndefs(start_recinfo, copy_start_recinfo, count);
+    ret = ma_create_internal_tmp_table(table, keyinfo, copy_start_recinfo,
+                                       &copy_rec, options);
+  }
+#endif   /* WITH_ARIA_STORAGE_ENGINE */
+  else { /* unreachable */
+    DBUG_ASSERT(0);
+  }
+
+  DBUG_RETURN(ret);
+}
+
+#ifdef WITH_ARIA_STORAGE_ENGINE
+
+static MARIA_COLUMNDEF *ma_copy_columndefs(TMP_ENGINE_COLUMNDEF *start_recinfo,
+                                           MARIA_COLUMNDEF *copy_start_recinfo,
+                                           uint count) {
+  uint i;
+  TMP_ENGINE_COLUMNDEF *rec;
+  MARIA_COLUMNDEF *copy_rec;
+  DBUG_ENTER("mi_copy_column_defs");
+  DBUG_PRINT("enter", ("column_def count: %u", count));
+
+  for (i = 0, rec = start_recinfo, copy_rec = copy_start_recinfo; i < count;
+       i++, rec++, copy_rec++) {
+    bzero((uchar *)copy_rec, sizeof(*copy_rec));
+    MA_COPY_COLUMNDEF(copy_rec, rec, type);
+    MA_COPY_COLUMNDEF(copy_rec, rec, offset);
+    MA_COPY_COLUMNDEF(copy_rec, rec, length);
+    MA_COPY_COLUMNDEF(copy_rec, rec, column_nr);
+    MA_COPY_COLUMNDEF(copy_rec, rec, fill_length);
+    MA_COPY_COLUMNDEF(copy_rec, rec, null_pos);
+    MA_COPY_COLUMNDEF(copy_rec, rec, empty_pos);
+    MA_COPY_COLUMNDEF(copy_rec, rec, null_bit);
+    MA_COPY_COLUMNDEF(copy_rec, rec, empty_bit);
+#ifndef NOT_PACKED_DATABASES
+    MA_COPY_COLUMNDEF(copy_rec, rec, unpack);
+    MA_COPY_COLUMNDEF(copy_rec, rec, base_type);
+    MA_COPY_COLUMNDEF(copy_rec, rec, space_length_bits);
+    MA_COPY_COLUMNDEF(copy_rec, rec, pack_type);
+    MA_COPY_COLUMNDEF(copy_rec, rec, huff_tree);
+#endif
+  }
+
+  DBUG_RETURN(copy_rec);
+}
+
+/*
+  Create internal (MyISAM or Maria) temporary table
+
+  SYNOPSIS
+    create_internal_tmp_table()
+      table           Table object that descrimes the table to be created
+      keyinfo         Description of the index (there is always one index)
+      start_recinfo   engine's column descriptions
+      recinfo INOUT   End of engine's column descriptions
+      options         Option bits
+
+  DESCRIPTION
+    Create an internal emporary table according to passed description. The is
+    assumed to have one unique index or constraint.
+
+    The passed array or TMP_ENGINE_COLUMNDEF structures must have this form:
+
+      1. 1-byte column (afaiu for 'deleted' flag) (note maybe not 1-byte
+         when there are many nullable columns)
+      2. Table columns
+      3. One free TMP_ENGINE_COLUMNDEF element (*recinfo points here)
+
+    This function may use the free element to create hash column for unique
+    constraint.
+
+   RETURN
+     FALSE - OK
+     TRUE  - Error
+*/
+
+static bool ma_create_internal_tmp_table(TABLE *table, KEY *keyinfo,
+                                         MARIA_COLUMNDEF *start_recinfo,
+                                         MARIA_COLUMNDEF **recinfo,
+                                         ulonglong options) {
   int error;
   MARIA_KEYDEF keydef;
   MARIA_UNIQUEDEF uniquedef;
   TABLE_SHARE *share = table->s;
   MARIA_CREATE_INFO create_info;
-  DBUG_ENTER("create_internal_tmp_table");
+  DBUG_ENTER("ma_create_internal_tmp_table");
 
   if (share->keys) {  // Get keys for ni_create
     bool using_unique_constraint = 0;
@@ -16173,7 +16315,36 @@ err:
   DBUG_RETURN(1);
 }
 
-#else
+#endif /* WITH_ARIA_STORAGE_ENGINE */
+
+static MI_COLUMNDEF *mi_copy_columndefs(TMP_ENGINE_COLUMNDEF *start_recinfo,
+                                        MI_COLUMNDEF *copy_start_recinfo,
+                                        uint count) {
+  uint i;
+  TMP_ENGINE_COLUMNDEF *rec;
+  MI_COLUMNDEF *copy_rec;
+  DBUG_ENTER("mi_copy_column_defs");
+  DBUG_PRINT("enter", ("column_def count: %u", count));
+
+  for (i = 0, rec = start_recinfo, copy_rec = copy_start_recinfo; i < count;
+       i++, rec++, copy_rec++) {
+    bzero((uchar *)copy_rec, sizeof(*copy_rec));
+    MI_COPY_COLUMNDEF(copy_rec, rec, type);
+    MI_COPY_COLUMNDEF(copy_rec, rec, length);
+    MI_COPY_COLUMNDEF(copy_rec, rec, offset);
+    MI_COPY_COLUMNDEF(copy_rec, rec, null_bit);
+    MI_COPY_COLUMNDEF(copy_rec, rec, null_pos);
+#ifndef NOT_PACKED_DATABASES
+    MI_COPY_COLUMNDEF(copy_rec, rec, unpack);
+    MI_COPY_COLUMNDEF(copy_rec, rec, base_type);
+    MI_COPY_COLUMNDEF(copy_rec, rec, space_length_bits);
+    MI_COPY_COLUMNDEF(copy_rec, rec, pack_type);
+    MI_COPY_COLUMNDEF(copy_rec, rec, huff_tree);
+#endif
+  }
+
+  DBUG_RETURN(copy_rec);
+}
 
 /*
   Create internal (MyISAM or Maria) temporary table
@@ -16207,15 +16378,15 @@ err:
 
 /* Create internal MyISAM temporary table */
 
-bool create_internal_tmp_table(TABLE *table, KEY *keyinfo,
-                               TMP_ENGINE_COLUMNDEF *start_recinfo,
-                               TMP_ENGINE_COLUMNDEF **recinfo,
-                               ulonglong options) {
+static bool mi_create_internal_tmp_table(TABLE *table, KEY *keyinfo,
+                                         MI_COLUMNDEF *start_recinfo,
+                                         MI_COLUMNDEF **recinfo,
+                                         ulonglong options) {
   int error;
   MI_KEYDEF keydef;
   MI_UNIQUEDEF uniquedef;
   TABLE_SHARE *share = table->s;
-  DBUG_ENTER("create_internal_tmp_table");
+  DBUG_ENTER("mi_create_internal_tmp_table");
 
   if (share->keys) {  // Get keys for ni_create
     bool using_unique_constraint = 0;
@@ -16313,8 +16484,6 @@ bool create_internal_tmp_table(TABLE *table, KEY *keyinfo,
 err:
   DBUG_RETURN(1);
 }
-
-#endif /* USE_ARIA_FOR_TMP_TABLES */
 
 /*
   If a HEAP table gets full, create a internal table in MyISAM or Maria
