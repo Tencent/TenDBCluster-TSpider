@@ -2406,6 +2406,8 @@ int spider_db_fetch_minimum_columns(ha_spider *spider, uchar *buf, TABLE *table,
   Field **field;
   spider_db_handler *dbton_hdl;
   DBUG_ENTER("spider_db_fetch_minimum_columns");
+  DBUG_PRINT("INFO", ("spider: %p", spider));
+  DBUG_PRINT("INFO", ("result_list: %p", result_list));
   if (result_list->quick_mode == 0) {
     SPIDER_DB_RESULT *result = current->result;
     if (!(row = result->fetch_row())) {
@@ -2413,7 +2415,20 @@ int spider_db_fetch_minimum_columns(ha_spider *spider, uchar *buf, TABLE *table,
       DBUG_RETURN(spider_convert_errno(result->get_errno()));
     }
   } else {
+    if (result_list->bgs_phase > 0 && result_list->bgs_error) {
+      /*
+        Bugfix for Issue #76:
+        Under spider_quick_mode=3 & spider_bgs_mode=1, when a data node responds
+        EOF, for some reason the main thread neglects this "error", causing
+        SIGSEGV when accessing result->first_position,probably because something
+        does not coordinate well in spider_bg_conn_search() and
+        spider_db_seek_next(). We check the background error here and return it
+        if present, as a temporary fix.
+      */
+      DBUG_RETURN(result_list->bgs_error);
+    }
     if (result_list->current_row_num < result_list->quick_page_size) {
+      DBUG_ASSERT(current->first_position);
       DBUG_PRINT("info", ("spider current=%p", current));
       DBUG_PRINT("info", ("spider first_position=%p", current->first_position));
       DBUG_PRINT("info",
@@ -2537,6 +2552,10 @@ void spider_db_free_one_result_for_start_next(ha_spider *spider) {
 void spider_db_free_one_result(SPIDER_RESULT_LIST *result_list,
                                SPIDER_RESULT *result) {
   DBUG_ENTER("spider_db_free_one_result");
+  DBUG_PRINT("INFO", ("result_list: %p", result_list));
+  DBUG_PRINT("INFO", ("result: %p", result));
+  DBUG_PRINT("INFO", ("current thread: %p", current_thd));
+  DBUG_PRINT("INFO", ("spider_quick_mode: %d", result_list->quick_mode));
   if (result_list->quick_mode == 0) {
     if (!result->use_position && result->result) {
       result->result->free_result();
