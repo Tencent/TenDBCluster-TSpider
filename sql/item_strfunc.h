@@ -1608,6 +1608,26 @@ public:
     }
 };
 
+class Item_func_murmur_jump_hash : public Item_long_func {
+ private:
+  bool check_arguments() const {
+    return args[0]->check_type_can_return_str(func_name()) &&
+           args[1]->check_type_can_return_int(func_name());
+  }
+  String key_str;
+
+ public:
+  Item_func_murmur_jump_hash(THD *thd, Item *a, Item *b)
+      : Item_long_func(thd, a, b) {
+    unsigned_flag = 0;
+  }
+  const char *func_name() const { return "murmur_jump_hash"; }
+  longlong val_int();
+  Item *get_copy(THD *thd) {
+    return get_item_copy<Item_func_murmur_jump_hash>(thd, this);
+  }
+};
+
 class Item_func_uncompressed_length : public Item_long_func_length
 {
   String value;

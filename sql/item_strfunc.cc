@@ -56,6 +56,8 @@ C_MODE_END
 #include <sql_repl.h>
 #include "sql_statistics.h"
 
+#include "MurmurHash3.h"
+
 size_t username_char_length= 32;
 
 /*
@@ -4144,6 +4146,27 @@ longlong Item_func_crc32_ci::val_int()
 
     cht->cset->casedn(cht, (char*)src.ptr(), src.length(), dst, len);
     return (longlong)crc32(0L, (const uchar*)dst, len);
+}
+
+longlong Item_func_murmur_jump_hash::val_int() {
+  DBUG_ASSERT(fixed == 1);
+  longlong ret = -1, n;
+  uint32 hashed_key;
+  String *key;
+
+  key = args[0]->val_str(&key_str);
+  n = args[1]->val_int();
+  if ((null_value = args[0]->null_value || args[1]->null_value)) return 0;
+
+  /* Hash the string key to an integer first */
+  MurmurHash3_x86_32(key->ptr(), key->length(), 0, &hashed_key);
+
+  srand(hashed_key); /* always the same seed for the same key */
+  for (longlong i = 0; i < n;) {
+    ret = i;
+    i = floor((ret + 1.0) / ((double)rand() / RAND_MAX));
+  }
+  return ret;
 }
 
 #ifdef HAVE_COMPRESS
