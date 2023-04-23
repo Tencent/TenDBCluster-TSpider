@@ -25,7 +25,7 @@ CREATE TABLE tbl_a (
 PRIMARY KEY  (`id`),
 col1 CHAR(10) CHARACTER SET utf8 ) 
 MASTER_1_ENGINE  CHARACTER SET latin1 COLLATE latin1_bin  MASTER_1_COMMENT_2_1
-ERROR HY000: Field 'id' can not charset for column in this storage
+ERROR HY000: Field 'id' is defined with a charset different from the table charset, not allowed by the table's current storage engine
 
 select for master
 SELECT argument FROM mysql.general_log WHERE argument LIKE '%create %';
