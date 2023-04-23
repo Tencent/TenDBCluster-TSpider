@@ -9798,6 +9798,9 @@ void ha_spider::check_pre_call(bool use_parallel) {
 
 #ifdef HANDLER_HAS_DIRECT_UPDATE_ROWS
 void ha_spider::check_insert_dup_update_pushdown() {
+  List_iterator_fast<Item> it;
+  Item *item;
+  Field *field;
   THD *thd = trx->thd;
   DBUG_ENTER("ha_spider::check_insert_dup_update_pushdown");
   DBUG_PRINT("info", ("spider this=%p", this));
@@ -9807,6 +9810,24 @@ void ha_spider::check_insert_dup_update_pushdown() {
   }
   direct_update_fields = &thd->lex->update_list;
   direct_update_values = &thd->lex->value_list;
+
+  if (table->part_info) {
+    it.init(*direct_update_fields);
+    while ((item = it++)) {
+      if (item->type() != Item::FIELD_ITEM) continue;
+      field = ((Item_field *)item)->field;
+      if (bitmap_is_set(&table->part_info->full_part_field_set,
+                        field->field_index)) {
+        /*
+          When the update field is part of the partitioning key, we cannot do
+          direct dup insert because record relocation might be needed.
+        */
+        result_list.insert_dup_update_pushdown = FALSE;
+        DBUG_VOID_RETURN;
+      }
+    }
+  }
+
   if (!append_dup_update_pushdown_sql_part(NULL, 0)) {
     result_list.insert_dup_update_pushdown = TRUE;
   }

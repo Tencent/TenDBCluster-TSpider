@@ -1,0 +1,75 @@
+--disable_warnings
+--disable_query_log
+--source ../t/test_init.inc
+--disable_result_log
+--enable_result_log
+--enable_query_log
+
+--let $USE_CHILD_GROUP2_BACKUP= $USE_CHILD_GROUP2
+--let $USE_CHILD_GROUP2= 1
+
+--source ../include/spider_create_database.inc
+--let $TABLE_NAME = t1
+--let $TABLE_BODY = id INT, c1 INT, PRIMARY KEY (id)
+--echo $TABLE_BODY
+--let $TABLE_SHARD_KEY = id
+--source ../include/spider_create_table_helper.inc
+
+--connection master_1
+INSERT INTO t1 VALUES(1,1),(2,2),(3,3),(4,4),(5,5);
+SET spider_direct_dup_insert=1;
+if ($USE_GENERAL_LOG)
+{
+    SET @old_log_output = @@global.log_output;
+    SET @old_general_log = @@global.general_log;
+    SET @old_spider_general_log = @@global.spider_general_log;
+    SET GLOBAL log_output = 'TABLE';
+    SET GLOBAL general_log = 1;
+    SET GLOBAL spider_general_log = 1;
+    TRUNCATE TABLE mysql.general_log;
+}
+
+INSERT INTO t1 VALUES(1,10) ON DUPLICATE KEY UPDATE c1=10;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+}
+INSERT INTO t1 VALUES(2,20) ON DUPLICATE KEY UPDATE c1=VALUES(c1);
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+}
+INSERT INTO t1 VALUES(3,30) ON DUPLICATE KEY UPDATE id=VALUES(id), c1=VALUES(c1);
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+}
+INSERT INTO t1 VALUES(4,40) ON DUPLICATE KEY UPDATE id=40, c1=40;
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+}
+SELECT * FROM t1;
+SELECT * FROM t1 WHERE id=1;
+SELECT * FROM t1 WHERE id=2;
+SELECT * FROM t1 WHERE id=3;
+SELECT * FROM t1 WHERE id=4;
+SELECT * FROM t1 WHERE id=40;
+
+if ($USE_GENERAL_LOG)
+{
+    --connection master_1
+    SET GLOBAL log_output = @old_log_output;
+    SET GLOBAL general_log = @old_general_log;
+    SET GLOBAL spider_general_log = @old_spider_general_log;
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--let @USE_CHILD_GROUP2= $USE_CHILD_GROUP2_BACKUP
+--let @USE_GENERAL_LOG= $USE_GENERAL_LOG_BACKUP
+
+--source ../include/spider_drop_database.inc
