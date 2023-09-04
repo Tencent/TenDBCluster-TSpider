@@ -2711,10 +2711,10 @@ int spider_db_mysql_util::append_key_equal_or_like(ha_spider *spider,
   table_share = table->s;
   orig_field = table_share->field[field->field_index];
 
-  if (key_part->length < orig_field->field_length) {
+  if (MY_TEST(key_part->key_part_flag & HA_PART_KEY_SEG)) {
     /*
-      We replace EQUAL with LIKE to prevent from truncated values, only when the key length is smaller than
-      field length, since only this way the value is possible to be truncated.
+      We replace EQUAL with LIKE to prevent from truncated values, only when the
+      key cannot cover the entire field.
     */
     str_eq_to_like = TRUE;
   }
