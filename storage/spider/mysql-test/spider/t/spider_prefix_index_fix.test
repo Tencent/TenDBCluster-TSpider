@@ -30,6 +30,11 @@
 --let $TABLE_SHARD_KEY = id1
 --source ../include/spider_create_table_helper.inc
 
+--let $TABLE_NAME = t4
+--let $TABLE_BODY = c1 date, c2 int, c3 int, primary key(c1, c2)
+--let $TABLE_SHARD_KEY = c2
+--source ../include/spider_create_table_helper.inc
+
 --let $USE_GENERAL_LOG_BACKUP= $USE_GENERAL_LOG
 --let $USE_GENERAL_LOG= 1
 
@@ -81,6 +86,11 @@ INSERT INTO t3(id1, id2, flag) VALUES
     "abcdefghijklmnopqrstuvwxyz",
     3
 );
+
+INSERT INTO t4(c1, c2, c3) VALUES
+("2023-08-25", 1, 1),
+("2023-09-01", 2, 2)
+;
 
 --echo
 --echo # Using primary key, operator should be EQUAL
@@ -175,6 +185,16 @@ if ($USE_GENERAL_LOG)
 --echo
 --echo # First part of primary key is still EQUAL; second part is prefix, should be LIKE.
 SELECT id1, id2, flag FROM t3 WHERE id1 = "abcdefghijklmnopqrstuvwxyz_3" AND id2 = "abcdefghijklmnopqrstuvwxyz";
+if ($USE_GENERAL_LOG)
+{
+    SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+    TRUNCATE TABLE mysql.general_log;
+}
+
+--echo
+--echo # Fix-case for mistaking non-prefix keys
+SELECT c2, c3 FROM t4 WHERE c1 = DATE(FROM_UNIXTIME(1692892800)) AND c2 = 1;
+SELECT c2, c3 FROM t4 WHERE c1 = '2023-09-01' AND c2 = 2;
 if ($USE_GENERAL_LOG)
 {
     SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';

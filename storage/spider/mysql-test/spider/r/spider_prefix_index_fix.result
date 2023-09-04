@@ -65,6 +65,19 @@ create table for master
 connection master_1;
 DROP TABLE IF EXISTS t3;;
 CREATE TABLE t3 (id1 varchar(32), id2 varchar(32), flag int, primary key(id1, id2(4)))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(id1) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t3", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t3", srv "s_2_2",aim "1"');;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS t4;;
+CREATE TABLE t4 (c1 date, c2 int, c3 int, primary key(c1, c2))ENGINE=Spider DEFAULT CHARSET=utf8 PARTITION BY LIST (CRC32(c2) % 2)( PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "t4", srv "s_2_1",aim "0"', PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "t4", srv "s_2_2",aim "1"');;
 connection master_1;
 SET @ignore_single_select_index_backup = @@global.spider_ignore_single_select_index;
 SET @join_cache_level_backup = @@join_cache_level;
@@ -107,6 +120,10 @@ INSERT INTO t3(id1, id2, flag) VALUES
 "abcdefghijklmnopqrstuvwxyz",
 3
 );
+INSERT INTO t4(c1, c2, c3) VALUES
+("2023-08-25", 1, 1),
+("2023-09-01", 2, 2)
+;
 
 # Using primary key, operator should be EQUAL
 SELECT id, flag FROM t1 WHERE id = "abcdefghijklmnopqrstuvwxyz_1";
@@ -228,6 +245,21 @@ SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argume
 argument
 SELECT id1, id2, flag FROM t3 WHERE id1 = "abcdefghijklmnopqrstuvwxyz_3" AND id2 = "abcdefghijklmnopqrstuvwxyz"
 mysql localhost 3306 select `id1`,`id2`,`flag` from `auto_test_remote`.`t3` where `id1` = 'abcdefghijklmnopqrstuvwxyz_3' and `id2` like 'abcd%'
+TRUNCATE TABLE mysql.general_log;
+
+# Fix-case for mistaking non-prefix keys
+SELECT c2, c3 FROM t4 WHERE c1 = DATE(FROM_UNIXTIME(1692892800)) AND c2 = 1;
+c2	c3
+1	1
+SELECT c2, c3 FROM t4 WHERE c1 = '2023-09-01' AND c2 = 2;
+c2	c3
+2	2
+SELECT argument FROM mysql.general_log WHERE argument LIKE '%select%' AND argument NOT LIKE '%argument%';
+argument
+SELECT c2, c3 FROM t4 WHERE c1 = DATE(FROM_UNIXTIME(1692892800)) AND c2 = 1
+mysql localhost 3306 select `c1`,`c2`,`c3` from `auto_test_remote_2`.`t4` where `c1` = '2023-08-25' and `c2` = 1
+SELECT c2, c3 FROM t4 WHERE c1 = '2023-09-01' AND c2 = 2
+mysql localhost 3306 select `c1`,`c2`,`c3` from `auto_test_remote_2`.`t4` where `c1` = '2023-09-01' and `c2` = 2
 TRUNCATE TABLE mysql.general_log;
 SET GLOBAL spider_ignore_single_select_index = @ignore_single_select_index_backup;
 SET spider_string_key_equal_to_like = @spider_string_key_equal_to_like_backup;
