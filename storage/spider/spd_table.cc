@@ -6026,6 +6026,7 @@ void spider_set_result_list_param(ha_spider *spider) {
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   SPIDER_SHARE *share = spider->share;
   THD *thd = spider->trx->thd;
+  SELECT_LEX *select_lex = spider_get_select_lex(spider);
   DBUG_ENTER("spider_set_result_list_param");
   result_list->internal_offset =
       spider_param_internal_offset(thd, share->internal_offset);
@@ -6053,7 +6054,19 @@ void spider_set_result_list_param(ha_spider *spider) {
                            */
     result_list->quick_mode = 0;
   } else {
-    result_list->quick_mode = spider_param_quick_mode(thd, share->quick_mode);
+    if (spider_param_adaptive_quick_mode(thd) && select_lex &&
+        select_lex->join && select_lex->join->join_tab &&
+        select_lex->join->join_tab->filesort) {
+      /*
+        Some filesorts require calls to position() and rnd_pos(), making the
+        Spider positions (the data buffer) cannot be freed. Since there could be
+        huge amount of data rows when filesort is present, we need temporary
+        tables to buffer the data, otherwise memory usage could easily
+        skyrocket.
+      */
+      result_list->quick_mode = 3;
+    } else
+      result_list->quick_mode = spider_param_quick_mode(thd, share->quick_mode);
   }
   result_list->quick_page_size =
       spider_param_quick_page_size(thd, share->quick_page_size);
