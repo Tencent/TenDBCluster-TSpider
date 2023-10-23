@@ -1129,6 +1129,20 @@ int spider_param_quick_mode(THD *thd, int quick_mode) {
                                           : THDVAR(thd, quick_mode));
 }
 
+static MYSQL_THDVAR_BOOL(
+    adaptive_quick_mode,                                        /* name */
+    PLUGIN_VAR_OPCMDARG,                                        /* opt */
+    "Allow Spider to adjust quick_mode for queries adaptively", /* comment */
+    NULL,                                                       /* check */
+    NULL,                                                       /* update */
+    TRUE                                                        /* def */
+);
+
+bool spider_param_adaptive_quick_mode(THD *thd) {
+  DBUG_ENTER("spider_param_adaptive_quick_mode");
+  DBUG_RETURN(THDVAR(thd, adaptive_quick_mode));
+}
+
 /*
  -1 :use table parameter
   0-:number of records
@@ -2968,6 +2982,7 @@ static struct st_mysql_sys_var *spider_system_variables[] = {
     MYSQL_SYSVAR(conn_meta_max_invalid_duration),
     MYSQL_SYSVAR(string_key_equal_to_like),
     MYSQL_SYSVAR(select_min_for_trivial_fields),
+    MYSQL_SYSVAR(adaptive_quick_mode),
     NULL};
 
 mysql_declare_plugin(spider) {

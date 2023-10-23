@@ -2572,11 +2572,11 @@ void spider_db_free_one_result(SPIDER_RESULT_LIST *result_list,
           position[roop_count].row = NULL;
         }
       }
+      if (!result->first_pos_use_position) {
+        spider_free(spider_current_trx, position, MYF(0));
+        result->first_position = NULL;
+      }
       if (result_list->quick_mode == 3) {
-        if (!result->first_pos_use_position) {
-          spider_free(spider_current_trx, position, MYF(0));
-          result->first_position = NULL;
-        }
         if (result->result) {
           result->result->free_result();
           if (!result->tmp_tbl_use_position) {
@@ -3255,7 +3255,7 @@ int spider_db_seek_prev(uchar *buf, ha_spider *spider, TABLE *table) {
       table->status = STATUS_NOT_FOUND;
       DBUG_RETURN(HA_ERR_END_OF_FILE);
     }
-    if (result_list->low_mem_read == 1) {
+    if (result_list->low_mem_read) {
       my_message(ER_SPIDER_LOW_MEM_READ_PREV_NUM,
                  ER_SPIDER_LOW_MEM_READ_PREV_STR, MYF(0));
       DBUG_RETURN(ER_SPIDER_LOW_MEM_READ_PREV_NUM);
@@ -3591,7 +3591,7 @@ int spider_db_seek_last(uchar *buf, ha_spider *spider, int link_idx,
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   DBUG_ENTER("spider_db_seek_last");
   if (result_list->finish_flg) {
-    if (result_list->low_mem_read == 1) {
+    if (result_list->low_mem_read) {
       my_message(ER_SPIDER_LOW_MEM_READ_PREV_NUM,
                  ER_SPIDER_LOW_MEM_READ_PREV_STR, MYF(0));
       DBUG_RETURN(ER_SPIDER_LOW_MEM_READ_PREV_NUM);
@@ -3603,7 +3603,7 @@ int spider_db_seek_last(uchar *buf, ha_spider *spider, int link_idx,
     DBUG_RETURN(spider_db_fetch(buf, spider, table));
   } else if (!result_list->sorted ||
              result_list->internal_limit <= result_list->record_num * 2) {
-    if (result_list->low_mem_read == 1) {
+    if (result_list->low_mem_read) {
       my_message(ER_SPIDER_LOW_MEM_READ_PREV_NUM,
                  ER_SPIDER_LOW_MEM_READ_PREV_STR, MYF(0));
       DBUG_RETURN(ER_SPIDER_LOW_MEM_READ_PREV_NUM);
@@ -3889,8 +3889,7 @@ int spider_db_seek_last(uchar *buf, ha_spider *spider, int link_idx,
 int spider_db_seek_first(uchar *buf, ha_spider *spider, TABLE *table) {
   SPIDER_RESULT_LIST *result_list = &spider->result_list;
   DBUG_ENTER("spider_db_seek_first");
-  if (result_list->current != result_list->first &&
-      result_list->low_mem_read == 1) {
+  if (result_list->current != result_list->first && result_list->low_mem_read) {
     my_message(ER_SPIDER_LOW_MEM_READ_PREV_NUM, ER_SPIDER_LOW_MEM_READ_PREV_STR,
                MYF(0));
     DBUG_RETURN(ER_SPIDER_LOW_MEM_READ_PREV_NUM);
