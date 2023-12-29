@@ -10273,6 +10273,8 @@ int ha_partition::direct_delete_rows(ha_rows *delete_rows_result) {
     }
   }
   if (finish_flag == false) {
+    //should reset, otherwise would repeat count
+    *delete_rows_result = 0;
     for (i = bitmap_get_first_set(&m_part_info->read_partitions);
          i < m_tot_parts;
          i = bitmap_get_next_set(&m_part_info->read_partitions, i)) {
