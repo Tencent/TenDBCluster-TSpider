@@ -6,6 +6,7 @@ usage(){
     echo -e ""
     echo -e " -H --help        display help info ."
     echo -e " -t --tar         make package to tar.gz file"
+    echo -e " -d --directory   directory to install mysql"
     echo -e " -v --version     mysql server version"
     echo -e " -i --install     do   install"
     echo -e " --test           do mysql-test-run"
@@ -13,6 +14,7 @@ usage(){
     echo -e "--------------------------------------------------------"
     echo -e "  version         default 3.5"
     echo -e "  debug           default to false"
+    echo -e "  directory		default to /usr/local/mysql"
     echo -e ""
 
     exit 1
@@ -47,6 +49,7 @@ eval set -- "$TEMP"
 while true
 do
     case $1 in
+	-d|--directory)	install_dir=$2; shift 2;;
 	-h|--help)	usage; shift;;
 	-i|--install)	do_install=1; shift;;
 	-t|--tar)	do_tar=1; shift;;
@@ -73,7 +76,7 @@ mkdir -p $bld_dir
 cd $bld_dir
 rm -f CMakeCache.txt
 
-cmd="cmake .. -DMYSQL_SERVER_SUFFIX=$suffix -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr/local/mysql $debug_flag -DWITH_EMBEDDED_SERVER=OFF -DWITH_JEMALLOC=no -DWITH_SSL=no -DWITHOUT_MROONGA_STORAGE_ENGINE=1 -DWITHOUT_TOKUDB_STORAGE_ENGINE=1 -DWITHOUT_MARIA_STORAGE_ENGINE=1 -DWITH_ARIA_STORAGE_ENGINE=0 -DWITH_NUMA=no -DWITH_WSREP=0"
+cmd="cmake .. -DMYSQL_SERVER_SUFFIX=$suffix -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=$install_dir $debug_flag -DWITH_EMBEDDED_SERVER=OFF -DWITH_JEMALLOC=no -DWITH_SSL=no -DWITHOUT_MROONGA_STORAGE_ENGINE=1 -DWITHOUT_TOKUDB_STORAGE_ENGINE=1 -DWITHOUT_MARIA_STORAGE_ENGINE=1 -DWITH_ARIA_STORAGE_ENGINE=0 -DWITH_NUMA=no -DWITH_WSREP=0"
 echo "compile args:"
 echo "$cmd"
 $cmd
