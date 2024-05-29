@@ -1,3 +1,5 @@
+-- sql_mode=STRICT_TRANS_TABLES may lead to init failed
+set sql_mode="";
 -- add by will; move from spider storage, install spider table when mysql_install_db
 CREATE TABLE IF NOT EXISTS `mysql`.`spider_link_failed_log` (
   `db_name` char(64) COLLATE utf8_bin NOT NULL DEFAULT '',
