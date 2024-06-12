@@ -2415,7 +2415,8 @@ int spider_db_fetch_minimum_columns(ha_spider *spider, uchar *buf, TABLE *table,
       DBUG_RETURN(spider_convert_errno(result->get_errno()));
     }
   } else {
-    if (result_list->bgs_phase > 0 && result_list->bgs_error) {
+    if (result_list->quick_mode == 3 && result_list->bgs_phase > 0
+        && result_list->bgs_error) {
       /*
         Bugfix for Issue #76:
         Under spider_quick_mode=3 & spider_bgs_mode=1, when a data node responds
