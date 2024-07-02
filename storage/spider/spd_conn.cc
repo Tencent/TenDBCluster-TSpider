@@ -2261,7 +2261,11 @@ void *spider_bg_conn_action(void *arg) {
                         sql_type, conn, result_list->quick_mode,
                         &spider->need_mons[conn->link_idx])) {
                   result_list->bgs_error = spider_db_errorno(conn);
-                  spider_set_bgs_errmsg(spider, result_list);
+                  if (result_list->sql_type == SPIDER_SQL_TYPE_INSERT_SQL) {
+                      if ((result_list->bgs_error_with_message = thd->is_error()))
+                        strmov(result_list->bgs_error_msg, spider_stmt_da_message(thd));
+                  } else
+                    spider_set_bgs_errmsg(spider, result_list);
                   //if ((result_list->bgs_error_with_message = thd->is_error()))
                   //  strmov(result_list->bgs_error_msg,
                   //         spider_stmt_da_message(thd));
