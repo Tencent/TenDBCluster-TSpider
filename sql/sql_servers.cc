@@ -1510,6 +1510,13 @@ void get_server_by_wrapper(List<FOREIGN_SERVER>* server_list, MEM_ROOT* mem, con
     mysql_rwlock_unlock(&THR_LOCK_servers);
 }
 
+void servers_lock_rdlock() {
+  mysql_rwlock_rdlock(&THR_LOCK_servers);
+}
+
+void servers_unlock() {
+  mysql_rwlock_unlock(&THR_LOCK_servers);
+}
 
 ulong get_servers_count()
 {

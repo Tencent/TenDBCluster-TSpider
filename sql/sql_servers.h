@@ -57,4 +57,6 @@ bool backup_server_cache();
 FOREIGN_SERVER *get_server_by_idx(MEM_ROOT *mem, int idx, FOREIGN_SERVER *buff);
 void get_server_by_wrapper(List<FOREIGN_SERVER>* server_list, MEM_ROOT* mem, const char* wrapper_name);
 ulong get_servers_count();
+void servers_lock_rdlock();
+void servers_unlock();
 #endif /* SQL_SERVERS_INCLUDED */

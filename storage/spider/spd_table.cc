@@ -45,6 +45,7 @@
 #include "spd_malloc.h"
 #include "spd_group_by_handler.h"
 #include "my_stacktrace.h"
+#include "sql_servers.h"
 
 extern HASH spider_conn_meta_info;
 extern HASH spider_for_sts_conns;
@@ -3608,6 +3609,16 @@ SPIDER_SHARE *spider_get_share(const char *table_name, TABLE *table, THD *thd,
   my_hash_value_type hash_value = my_calc_hash(
       &spider_open_tables, (uchar *)table_name_with_version, length);
 #endif
+  /*
+   servers_reload() call mysql_rwlock_wrlock(&THR_LOCK_servers) first and success,
+   and then may open mysql.servers. If this open trigger LRU and evict spider tables,
+   spider_free_share should call pthread_mutex_lock(&spider_tbl_mutex).At the same
+   time other sql request had opened spider table(need call spider_get_share) and hold
+   pthread_mutex_lock(&spider_tbl_mutex) success, this request call spider_create_share
+   and need mysql_rwlock_rdlock(&THR_LOCK_servers). Deadlock happen.
+   To avoid this, we should call mysql_rwlock_rdlock(&THR_LOCK_servers) first
+  */
+  servers_lock_rdlock();
   pthread_mutex_lock(&spider_tbl_mutex);
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   if (!(share = (SPIDER_SHARE *)my_hash_search_using_hash_value(
@@ -3648,6 +3659,7 @@ SPIDER_SHARE *spider_get_share(const char *table_name, TABLE *table, THD *thd,
     spider->conn_link_idx = &tmp_conn_link_idx;
 
     share->use_count++;
+    servers_unlock();
     pthread_mutex_unlock(&spider_tbl_mutex);
 
     if (!share->link_status_init) {
@@ -3898,6 +3910,7 @@ SPIDER_SHARE *spider_get_share(const char *table_name, TABLE *table, THD *thd,
     share->init = TRUE;
   } else {
     share->use_count++;
+    servers_unlock();
     pthread_mutex_unlock(&spider_tbl_mutex);
 
     int sleep_cnt = 0;
@@ -4183,6 +4196,7 @@ SPIDER_SHARE *spider_get_share(const char *table_name, TABLE *table, THD *thd,
 error_hash_insert:
   spider_free_share_resource_only(share);
 error_alloc_share:
+  servers_unlock();
   pthread_mutex_unlock(&spider_tbl_mutex);
 error_get_link_statuses:
   if (table_tables) {
