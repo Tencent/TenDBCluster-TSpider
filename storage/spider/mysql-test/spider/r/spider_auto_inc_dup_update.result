@@ -1,0 +1,248 @@
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+drop and create databases
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET @old_log_output = @@global.log_output;
+SET @old_log_output1 = @@global.spider_general_log;
+SET GLOBAL log_output = 'TABLE,FILE';
+set global spider_general_log=1;
+TRUNCATE TABLE mysql.general_log;
+CREATE DATABASE auto_test_local;
+USE auto_test_local;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+CREATE DATABASE auto_test_remote;
+USE auto_test_remote;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+CREATE DATABASE auto_test_remote_2;
+USE auto_test_remote_2;
+
+create table for child
+connection child2_1;
+CHILD2_1_DROP_TABLES
+CHILD2_1_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+connection child2_2;
+CHILD2_2_DROP_TABLES
+CHILD2_2_CREATE_TABLES
+SET @old_log_output = @@global.log_output;
+TRUNCATE TABLE mysql.general_log;
+set global log_output = 'TABLE';
+
+create table for master
+connection master_1;
+DROP TABLE IF EXISTS ta_l;
+CREATE TABLE tbl_a (
+`part_id` int(11) NOT NULL,
+`game_tool_id` int(11) NOT NULL AUTO_INCREMENT,
+`c` int(11) DEFAULT NULL,
+PRIMARY KEY (`game_tool_id`,`part_id`)
+) ENGINE=Spider  PARTITION BY LIST (crc32(part_id)%2)
+(PARTITION pt0 VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"',
+PARTITION pt1 VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"');
+show create table tbl_a;
+Table	Create Table
+tbl_a	CREATE TABLE `tbl_a` (
+  `part_id` int(11) NOT NULL,
+  `game_tool_id` int(11) NOT NULL AUTO_INCREMENT,
+  `c` int(11) DEFAULT NULL,
+  PRIMARY KEY (`game_tool_id`,`part_id`)
+) ENGINE=SPIDER DEFAULT CHARSET=latin1
+ PARTITION BY LIST (crc32(`part_id`) MOD 2)
+(PARTITION `pt0` VALUES IN (0) COMMENT = 'database "auto_test_remote", table "tbl_a", srv "s_2_1",aim "0"' ENGINE = SPIDER,
+ PARTITION `pt1` VALUES IN (1) COMMENT = 'database "auto_test_remote_2", table "tbl_a", srv "s_2_2",aim "1"' ENGINE = SPIDER)
+select * from tbl_a;
+part_id	game_tool_id	c
+
+test for insert
+TRUNCATE mysql.general_log;
+show variables like 'spider_auto_increment%';
+Variable_name	Value
+spider_auto_increment_mode_switch	ON
+spider_auto_increment_mode_value	12
+spider_auto_increment_step	17
+affected rows: 3
+insert into tbl_a values(1,0,12) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,29) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,46) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,63) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,80) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+select * from tbl_a;
+part_id	game_tool_id	c
+1	12	12
+1	29	29
+1	46	46
+1	63	63
+1	80	80
+affected rows: 5
+flush tables;
+affected rows: 0
+insert into tbl_a values(1,63,63) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 2
+insert into tbl_a values(1,0,97) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+select * from tbl_a;
+part_id	game_tool_id	c
+1	12	12
+1	29	29
+1	46	46
+1	63	64
+1	80	80
+1	97	97
+affected rows: 6
+truncate tbl_a;
+affected rows: 0
+insert into tbl_a values(1,2,2) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,3,3) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,4) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,5) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,6,6) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,7,7) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,8) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+insert into tbl_a values(1,0,9) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+flush tables;
+affected rows: 0
+insert into tbl_a values(1,0,10) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+flush tables;
+affected rows: 0
+insert into tbl_a values(1,11,11) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1;
+affected rows: 1
+select * from tbl_a;
+part_id	game_tool_id	c
+1	2	2
+1	3	3
+1	6	6
+1	7	7
+1	11	11
+1	12	4
+1	29	5
+1	46	8
+1	63	9
+1	80	10
+affected rows: 10
+SELECT argument FROM mysql.general_log WHERE argument NOT LIKE '%argument%';
+argument
+show variables like 'spider_auto_increment%'
+insert into tbl_a values(1,0,12) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,12,12)
+insert into tbl_a values(1,0,29) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,29,29)
+insert into tbl_a values(1,0,46) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,46,46)
+insert into tbl_a values(1,0,63) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,63,63)
+insert into tbl_a values(1,0,80) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,80,80)
+select * from tbl_a
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a`
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a`
+flush tables
+insert into tbl_a values(1,63,63) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,63,63)
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a` where `game_tool_id` = 63 and `part_id` = 1 for update
+mysql localhost 3306 update `auto_test_remote_2`.`tbl_a` set `part_id` = 1,`game_tool_id` = 63,`c` = 64 where `part_id` = 1 and `game_tool_id` = 63 limit 1
+insert into tbl_a values(1,0,97) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,97,97)
+select * from tbl_a
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a`
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a`
+truncate tbl_a
+mysql localhost 3306 truncate table `auto_test_remote`.`tbl_a`
+mysql localhost 3306 truncate table `auto_test_remote_2`.`tbl_a`
+insert into tbl_a values(1,2,2) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,2,2)
+insert into tbl_a values(1,3,3) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,3,3)
+insert into tbl_a values(1,0,4) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,12,4)
+insert into tbl_a values(1,0,5) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,29,5)
+insert into tbl_a values(1,6,6) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,6,6)
+insert into tbl_a values(1,7,7) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,7,7)
+insert into tbl_a values(1,0,8) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,46,8)
+insert into tbl_a values(1,0,9) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,63,9)
+flush tables
+insert into tbl_a values(1,0,10) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a` order by `game_tool_id` desc,`part_id` desc limit 1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,80,10)
+flush tables
+insert into tbl_a values(1,11,11) on duplicate key update part_id=values(part_id),game_tool_id=(game_tool_id),c=c+1
+mysql localhost 3306 insert high_priority into `auto_test_remote_2`.`tbl_a`(`part_id`,`game_tool_id`,`c`)values(1,11,11)
+select * from tbl_a
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote`.`tbl_a`
+mysql localhost 3306 select `part_id`,`game_tool_id`,`c` from `auto_test_remote_2`.`tbl_a`
+TRUNCATE mysql.general_log;
+select * from tbl_a;
+part_id	game_tool_id	c
+1	2	2
+1	3	3
+1	6	6
+1	7	7
+1	11	11
+1	12	4
+1	29	5
+1	46	8
+1	63	9
+1	80	10
+
+deinit
+connection master_1;
+DROP DATABASE IF EXISTS auto_test_local;
+SET GLOBAL log_output = @old_log_output;
+SET GLOBAL spider_general_log = @old_log_output1;
+connection child2_1;
+DROP DATABASE IF EXISTS auto_test_remote;
+SET GLOBAL log_output = @old_log_output;
+connection child2_2;
+DROP DATABASE IF EXISTS auto_test_remote_2;
+SET GLOBAL log_output = @old_log_output;
+for master_1
+for child2
+child2_1
+child2_2
+child2_3
+for child3
+child3_1
+child3_2
+child3_3
+
+end of test

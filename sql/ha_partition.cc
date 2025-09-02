@@ -7213,7 +7213,7 @@ int ha_partition::info(uint flag) {
           if (opt_spider_auto_increment_mode_switch &&
               is_spider_storage_engine()) { /* spider_auto_increment */
             if (part_share->next_auto_inc_val == 0 ||
-                part_share->last_insert_failed) { 
+                part_share->last_insert_failed || !part_share->auto_inc_initialized) {
               /* part_share->next_auto_inc_val  would be 0 after flush
                  table/restart mysqld, or last_insert_failed, 
                  then get this value from remote db */
@@ -7240,7 +7240,11 @@ int ha_partition::info(uint flag) {
         if (auto_inc_is_first_in_idx) {
           set_if_bigger(part_share->next_auto_inc_val, auto_increment_value);
           /*if (can_use_for_auto_inc_init())*/
-          part_share->auto_inc_initialized = true;
+          if (opt_spider_auto_increment_mode_switch && is_spider_storage_engine() &&
+            table->found_next_number_field->val_uint() !=0)
+            part_share->auto_inc_initialized = false;
+          else
+            part_share->auto_inc_initialized = true;
           if (thd_sql_command(thd) == SQLCOM_INSERT        ||
               thd_sql_command(thd) == SQLCOM_REPLACE       ||
               thd_sql_command(thd) == SQLCOM_INSERT_SELECT ||
