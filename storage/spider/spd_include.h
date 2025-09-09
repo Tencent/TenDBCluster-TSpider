@@ -568,18 +568,6 @@ typedef struct st_spider_conn {
   ulong current_key_version;
 } SPIDER_CONN;
 
-typedef struct st_spider_lgtm_tblhnd_share {
-  char *table_name;
-  uint table_name_length;
-#ifdef SPIDER_HAS_HASH_VALUE_TYPE
-  my_hash_value_type table_path_hash_value;
-#endif
-  pthread_mutex_t auto_increment_mutex;
-  volatile bool auto_increment_init;
-  volatile ulonglong auto_increment_lclval;
-  ulonglong auto_increment_value;
-} SPIDER_LGTM_TBLHND_SHARE;
-
 #ifdef WITH_PARTITION_STORAGE_ENGINE
 typedef struct st_spider_patition_handler_share {
   uint use_count;
@@ -744,7 +732,6 @@ typedef struct st_spider_share {
   */
   THR_LOCK lock;
   TABLE_SHARE *table_share;
-  SPIDER_LGTM_TBLHND_SHARE *lgtm_tblhnd_share;
 #ifdef SPIDER_HAS_HASH_VALUE_TYPE
   my_hash_value_type table_name_hash_value;
 #ifdef WITH_PARTITION_STORAGE_ENGINE
@@ -815,16 +802,15 @@ typedef struct st_spider_share {
 
   MEM_ROOT mem_root;
 
-  /*
-    volatile bool      auto_increment_init;
-    volatile ulonglong auto_increment_lclval;
-  */
+  //auto increment for auto_mode=1
+  volatile bool      auto_increment_init;
+  volatile ulonglong auto_increment_lclval;
+  ulonglong          auto_increment_value;
+  pthread_mutex_t    auto_increment_mutex;
+
   ulonglong data_file_length;
   ulonglong max_data_file_length;
   ulonglong index_file_length;
-  /*
-    ulonglong          auto_increment_value;
-  */
   ha_rows records;
   ulong mean_rec_length;
   time_t check_time;

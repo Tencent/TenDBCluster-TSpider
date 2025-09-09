@@ -4639,10 +4639,10 @@ int spider_db_update_auto_increment(ha_spider *spider, int link_idx) {
     last_insert_id = conn->db_conn->last_insert_id();
     affected_rows = conn->db_conn->affected_rows();
     DBUG_PRINT("info", ("spider last_insert_id=%llu", last_insert_id));
-    share->lgtm_tblhnd_share->auto_increment_value =
+    share->auto_increment_value =
         last_insert_id + affected_rows;
     DBUG_PRINT("info", ("spider auto_increment_value=%llu",
-                        share->lgtm_tblhnd_share->auto_increment_value));
+                        share->auto_increment_value));
     /*
         thd->record_first_successful_insert_id_in_cur_stmt(last_insert_id);
     */
