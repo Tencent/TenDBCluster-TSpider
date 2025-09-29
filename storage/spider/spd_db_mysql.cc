@@ -10049,10 +10049,10 @@ int spider_mysql_handler::show_table_status(int link_idx, int sts_mode,
   if (share->static_mean_rec_length != -1) {
     share->mean_rec_length = (ulong)share->static_mean_rec_length;
   }
-  if (auto_increment_value > share->lgtm_tblhnd_share->auto_increment_value) {
-    share->lgtm_tblhnd_share->auto_increment_value = auto_increment_value;
+  if (auto_increment_value > share->auto_increment_value) {
+    share->auto_increment_value = auto_increment_value;
     DBUG_PRINT("info", ("spider auto_increment_value=%llu",
-                        share->lgtm_tblhnd_share->auto_increment_value));
+                        share->auto_increment_value));
   }
 
   DBUG_RETURN(0);

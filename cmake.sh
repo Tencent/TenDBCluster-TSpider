@@ -20,6 +20,8 @@ usage(){
     exit 1
 }
 
+#gcc=4.4.6
+#tlinux=1.2
 do_install=0
 debug=0
 do_tar=0
